@@ -115,7 +115,7 @@ final class Package extends Model
      */
     public function getFeaturesStringAttribute(): string
     {
-        if (!$this->features) {
+        if (!$this->features || !is_array($this->features)) {
             return '';
         }
 
@@ -127,7 +127,7 @@ final class Package extends Model
      */
     public function getRestrictionsStringAttribute(): string
     {
-        if (!$this->restrictions) {
+        if (!$this->restrictions || !is_array($this->restrictions)) {
             return '';
         }
 

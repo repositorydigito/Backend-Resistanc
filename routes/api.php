@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserContactController;
@@ -77,6 +78,13 @@ Route::prefix('users')->name('users.')->group(function () {
         Route::patch('/{contact}', [UserContactController::class, 'update'])->name('patch');
         Route::delete('/{contact}', [UserContactController::class, 'destroy'])->name('destroy');
     });
+});
+
+
+
+Route::prefix('users')->name('users.')->group(function () {
+    // Basic CRUD
+    Route::get('/', [PackageController::class, 'index'])->name('index');
 });
 
 /*
