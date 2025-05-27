@@ -19,8 +19,11 @@ class DatabaseSeeder extends Seeder
         // Create admin/test user first
         $this->createAdminUser();
 
-        // Run the main RSISTANC seeder
+        // Run the main RSISTANC user seeder
         $this->call(RsistancSeeder::class);
+
+        // Run the complete system seeder
+        $this->call(RsistancCompleteSeeder::class);
 
         $this->command->info('🎉 Database seeding completed!');
     }

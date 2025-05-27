@@ -113,8 +113,8 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
      * ```
      */
     'servers' => [
-        'Desarrollo Local' => 'http://rsistanc.test/api',
-        'Producción' => env('APP_URL', 'http://rsistanc.test') . '/api',
+        'Desarrollo Local' => 'http://backend-resistanc.test/api',
+        'Producción' => env('APP_URL', 'http://backend-resistanc.test/') . '/api',
     ],
 
     /**

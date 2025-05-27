@@ -6,7 +6,7 @@
  * Run with: php test-api.php
  */
 
-$baseUrl = 'http://rsistanc.test/api';
+$baseUrl = 'http://backend-resistanc.test/api';
 
 function testEndpoint($url, $description) {
     echo "\n🧪 Testing: $description\n";
