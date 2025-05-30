@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Support\Str;
+
+
 final class Package extends Model
 {
     use HasFactory;
@@ -33,6 +36,10 @@ final class Package extends Model
         'features',
         'restrictions',
         'target_audience',
+
+        // Relaciones
+        'membership_id',
+
     ];
 
     protected $casts = [
@@ -190,5 +197,55 @@ final class Package extends Model
             $years = round($this->validity_days / 365);
             return $years . ' años';
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($membership) {
+            if (empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+
+        static::updating(function ($membership) {
+            if ($membership->isDirty('name') && empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->where('id', '!=', $membership->id)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+    }
+
+
+
+    // Relacion uno a uno
+    public function membership()
+    {
+        return $this->belongsTo(Membership::class);
+    }
+
+    public function userPackage()
+    {
+        return $this->hasMany(UserPackage::class);
+    }
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 }

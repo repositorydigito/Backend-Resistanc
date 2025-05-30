@@ -33,11 +33,11 @@ final class AuthController extends Controller
      * @param  \App\Http\Requests\RegisterRequest  $request
      * @return \App\Http\Resources\AuthResource
      *
-     * @bodyParam name string required Nombre completo del usuario. Example: Ana Lucía Torres
-     * @bodyParam email string required Correo electrónico único. Example: ana.torres@ejemplo.com
-     * @bodyParam password string required Contraseña (mínimo 8 caracteres, debe incluir mayúsculas, minúsculas, números y símbolos). Example: MiContraseña123!
-     * @bodyParam password_confirmation string required Confirmación de contraseña. Example: MiContraseña123!
-     * @bodyParam device_name string Nombre del dispositivo para el token. Example: iPhone de Ana
+     * @bodyParam email string required Correo electrónico del usuario. Example: admin@rsistanc.com
+     * @bodyParam password string required Contraseña del usuario. Example: admin123
+     * @bodyParam remember boolean Recordar sesión por más tiempo. Example: true
+     * @bodyParam device_name string Nombre del dispositivo para el token. Example: "API Client"
+
      *
      * @response 201 {
      *   "user": {
@@ -119,10 +119,9 @@ final class AuthController extends Controller
      * @param  \App\Http\Requests\LoginRequest  $request
      * @return \App\Http\Resources\AuthResource
      *
-     * @bodyParam email string required Correo electrónico del usuario. Example: ana.torres@ejemplo.com
-     * @bodyParam password string required Contraseña del usuario. Example: MiContraseña123!
-     * @bodyParam remember boolean Recordar sesión por más tiempo. Example: true
-     * @bodyParam device_name string Nombre del dispositivo para el token. Example: iPhone de Ana
+     * @bodyParam email string required Correo electrónico del usuario. Example: admin@rsistanc.com
+     * @bodyParam password string required Contraseña del usuario. Example: admin123
+     * @bodyParam device_name string Nombre del dispositivo para el token. Example: API Client
      *
      * @response 200 {
      *   "user": {

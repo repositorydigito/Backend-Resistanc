@@ -25,6 +25,9 @@ class DatabaseSeeder extends Seeder
         // Run the complete system seeder
         $this->call(RsistancCompleteSeeder::class);
 
+        // Run the info seeder
+        $this->call(InfoSeeder::class);
+
         $this->command->info('🎉 Database seeding completed!');
     }
 

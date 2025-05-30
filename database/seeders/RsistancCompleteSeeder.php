@@ -204,9 +204,9 @@ class RsistancCompleteSeeder extends Seeder
         $this->command->info('📦 Creating packages...');
 
         // Create essential packages
-        Package::factory()->starter()->active()->create();
-        Package::factory()->premium()->active()->create();
-        Package::factory()->monthlyUnlimited()->active()->create();
+        // Package::factory()->starter()->active()->create();
+        // Package::factory()->premium()->active()->create();
+        // Package::factory()->monthlyUnlimited()->active()->create();
 
         // Create additional packages
         Package::factory(8)->active()->create();

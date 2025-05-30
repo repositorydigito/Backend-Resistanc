@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * Usuario principal del sistema RSISTANC
@@ -29,16 +30,18 @@ use Laravel\Sanctum\HasApiTokens;
  * @property-read \App\Models\UserContact|null $primaryContact Contacto principal
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialAccount> $socialAccounts Cuentas sociales
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LoginAudit> $loginAudits Auditoría de logins
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserPackage> $userPackages Paquetes del usuario
  * @property-read int|null $contacts_count Número de contactos
  * @property-read int|null $social_accounts_count Número de cuentas sociales
  * @property-read int|null $login_audits_count Número de auditorías de login
+ * @property-read int|null $user_packages_count Número de paquetes del usuario
  * @property-read string $full_name Nombre completo calculado
  * @property-read bool $has_complete_profile Si tiene perfil completo
  */
 final class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -117,6 +120,15 @@ final class User extends Authenticatable
     }
 
     /**
+     * Get the user's packages.
+     */
+    public function userPackages(): HasMany
+    {
+        return $this->hasMany(UserPackage::class);
+    }
+
+
+    /**
      * Get the user's full name from profile.
      */
     public function getFullNameAttribute(): ?string
@@ -142,5 +154,25 @@ final class User extends Authenticatable
     {
         // For now, return false. Implement role system later
         return false;
+    }
+
+    public function package(){
+        return $this->belongsToMany(Package::class, 'user_packages');
+    }
+
+    /**
+     * Get the user's avatar URL for Filament.
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->profile?->avatar_url ?? null;
+    }
+
+    /**
+     * Get the user's name for Filament.
+     */
+    public function getFilamentName(): string
+    {
+        return $this->name ?? $this->email;
     }
 }

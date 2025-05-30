@@ -21,8 +21,8 @@ class PackageResource extends JsonResource
             'description' => $this->description,
             'short_description' => $this->short_description,
             'classes_quantity' => $this->classes_quantity,
-            'price_soles' => $this->price_soles,
-            'original_price_soles' => $this->original_price_soles,
+            'price_soles' => number_format($this->price_soles, 2, '.', ''), // Formato: 999.99
+            'original_price_soles' => number_format($this->original_price_soles, 2, '.', ''),
             'validity_days' => $this->validity_days,
             'package_type' => $this->package_type,
             'billing_type' => $this->billing_type,
@@ -45,7 +45,7 @@ class PackageResource extends JsonResource
             'discount_percentage' => $this->discount_percentage,
             'features_string' => $this->features_string,
             'restrictions_string' => $this->restrictions_string,
-            'price_per_credit' => $this->price_per_credit,
+            'price_per_credit' => round($this->price_per_credit, 2),
             'type_display_name' => $this->type_display_name,
             'billing_type_display_name' => $this->billing_type_display_name,
             'validity_period' => $this->validity_period,
@@ -55,6 +55,21 @@ class PackageResource extends JsonResource
             // 'user_packages' => $this->whenLoaded('userPackages', function () {
             //     return UserPackageResource::collection($this->userPackages);
             // }),
+
+
+            // ✅ AGREGAR INFORMACIÓN DE MEMBRESÍA
+            'membership' => $this->whenLoaded('membership', function () {
+                return [
+                    'id' => $this->membership->id,
+                    'name' => $this->membership->name,
+                    'slug' => $this->membership->slug,
+                    'level' => $this->membership->level,
+                    'color_hex' => $this->membership->color_hex,
+                    'benefits' => $this->membership->benefits,
+                    'is_active' => $this->membership->is_active,
+                    'display_order' => $this->membership->display_order,
+                ];
+            }),
 
             // Stats (if loaded)
             'stats' => $this->when(isset($this->user_packages_count), [

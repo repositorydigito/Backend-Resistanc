@@ -82,7 +82,7 @@ Route::prefix('users')->name('users.')->group(function () {
 
 
 
-Route::prefix('users')->name('users.')->group(function () {
+Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(function () {
     // Basic CRUD
     Route::get('/', [PackageController::class, 'index'])->name('index');
 });

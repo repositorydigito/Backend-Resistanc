@@ -133,7 +133,27 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
         RestrictedDocsAccess::class,
     ],
 
-    'extensions' => [],
+    'extensions' => [
+        \App\Extensions\AddAuthorizationHeader::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security Schemes
+    |--------------------------------------------------------------------------
+    |
+    | Define security schemes for API authentication. This will add an
+    | "Authorize" button to the documentation interface.
+    |
+    */
+    'security' => [
+        'sanctum' => [
+            'type' => 'http',
+            'scheme' => 'bearer',
+            'bearerFormat' => 'JWT',
+            'description' => 'Token de autenticación Laravel Sanctum. Obtén tu token haciendo login en `/api/auth/login`',
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

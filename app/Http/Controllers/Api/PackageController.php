@@ -18,6 +18,7 @@ final class PackageController extends Controller
      * Lista todos los paquetes activos del sistema
      *
      * Obtiene una lista paginada de paquetes activos ordenados por precio de menor a mayor.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
      *
      * @summary Listar paquetes activos
      * @operationId getPackagesList
@@ -49,49 +50,39 @@ final class PackageController extends Controller
      *       "is_popular": false,
      *       "status": "active",
      *       "display_order": 1,
-     *       "features": ["Acceso a todas las máquinas", "Asesoría personalizada", "Plan nutricional básico"],
-     *       "restrictions": ["Válido solo en horarios regulares", "No incluye días festivos"],
+     *       "features": ["Acceso a todas las máquinas", "Asesoría personalizada"],
+     *       "restrictions": ["Válido solo en horarios regulares"],
      *       "target_audience": "beginner",
+     *       "membership": {
+     *         "id": 1,
+     *         "name": "RSISTANC GOLD",
+     *         "slug": "rsistanc-gold",
+     *         "level": "gold",
+     *         "color_hex": "#ebc919",
+     *         "benefits": ["Acceso prioritario", "Descuentos especiales"]
+     *       },
      *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z",
-     *       "is_unlimited": false,
-     *       "is_on_sale": true,
-     *       "discount_percentage": 20,
-     *       "features_string": "Acceso a todas las máquinas, Asesoría personalizada, Plan nutricional básico",
-     *       "restrictions_string": "Válido solo en horarios regulares, No incluye días festivos",
-     *       "price_per_credit": 24.00,
-     *       "type_display_name": "Presencial",
-     *       "billing_type_display_name": "Pago Único",
-     *       "validity_period": "2 meses",
-     *       "is_active": true,
-     *       "user_packages_count": 45,
-     *       "active_user_packages_count": 12
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
      *     }
-     *   ],
-     *   "links": {
-     *     "first": "http://rsistanc.test/api/packages?page=1",
-     *     "last": "http://rsistanc.test/api/packages?page=5",
-     *     "prev": null,
-     *     "next": "http://rsistanc.test/api/packages?page=2"
-     *   },
-     *   "meta": {
-     *     "current_page": 1,
-     *     "from": 1,
-     *     "last_page": 5,
-     *     "per_page": 15,
-     *     "to": 15,
-     *     "total": 67
-     *   }
+     *   ]
      * }
      */
     public function index(Request $request): AnonymousResourceCollection
     {
         $packages = Package::query()
+            ->with(['membership']) // ✅ Cargar la relación membership
             ->withCount(['userPackages'])
             ->active() // Solo paquetes activos
             ->orderBy('price_soles', 'asc') // Ordenar por precio de menor a mayor
-            ->paginate($request->integer('per_page', 15));
+            ->paginate(
+                perPage: $request->integer('per_page', 15),
+                page: $request->integer('page', 1)
+            );
 
         return PackageResource::collection($packages);
     }
+
+
+
+
 }
