@@ -6,6 +6,7 @@ use App\Filament\Resources\InstructorResource\Pages;
 use App\Filament\Resources\InstructorResource\RelationManagers;
 use App\Models\Instructor;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -32,45 +33,139 @@ class InstructorResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name'),
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('phone')
-                    ->tel()
-                    ->maxLength(15),
-                Forms\Components\TextInput::make('specialties')
-                    ->required(),
-                Forms\Components\Textarea::make('bio')
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('certifications'),
-                Forms\Components\FileUpload::make('profile_image')
-                    ->image(),
-                Forms\Components\TextInput::make('instagram_handle')
-                    ->maxLength(100),
+                // Forms\Components\Select::make('user_id')
+                //     ->relationship('user', 'name'),
                 Forms\Components\Toggle::make('is_head_coach')
+                    ->label('¿Es Head Coach?')
                     ->required(),
-                Forms\Components\TextInput::make('experience_years')
-                    ->numeric(),
-                Forms\Components\TextInput::make('rating_average')
-                    ->required()
-                    ->numeric()
-                    ->default(0.00),
-                Forms\Components\TextInput::make('total_classes_taught')
-                    ->required()
-                    ->numeric()
-                    ->default(0),
-                Forms\Components\DatePicker::make('hire_date'),
-                Forms\Components\TextInput::make('hourly_rate_soles')
-                    ->numeric(),
-                Forms\Components\TextInput::make('status')
-                    ->required(),
-                Forms\Components\TextInput::make('availability_schedule'),
+
+                Forms\Components\Section::make('Información del instructor')
+                    ->columns(2)
+                    ->schema([
+
+
+                        Forms\Components\FileUpload::make('profile_image')
+                            ->label('Imagen de Perfil')
+                            ->directory('instructors/profiles') // Carpeta dentro de storage/app/public
+                            ->disk('public')    // Usa el filesystem configurado como 'public'
+                            ->visibility('public') // Permisos (opcional)
+                            ->extraAttributes(['class' => 'h-64 w-64'])
+                            ->preserveFilenames() // Opcional: mantiene el nombre original
+                            ->maxSize(2048)
+                            ->columnSpanFull()
+                            ->image(),
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('email')
+                            ->label('Correo Electrónico')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('phone')
+                            ->label('Teléfono')
+                            ->tel()
+                            ->maxLength(15),
+                        Forms\Components\TextInput::make('experience_years')
+                            ->label('Años de Experiencia')
+                            ->numeric(),
+
+                        Forms\Components\DatePicker::make('hire_date')
+                            ->label('Fecha de Contratación'),
+
+                        Forms\Components\TextInput::make('hourly_rate_soles')
+                            ->label('Tarifa por Hora (S/.)')
+                            ->numeric(),
+
+                        // En lugar de TextInput, usar:
+                        Forms\Components\TagsInput::make('specialties')
+                            ->dehydrated(true)
+                            ->label('Especialidades')
+                            ->placeholder('Presiona Enter después de cada equipo')
+                            ->columnSpanFull(),
+
+                        // En lugar de TextInput, usar:
+                        Forms\Components\TagsInput::make('certifications')
+                            ->dehydrated(true)
+                            ->label('Certificaciones')
+                            ->placeholder('Presiona Enter después de cada equipo')
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('bio')
+                            ->label('Biografía')
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('instagram_handle')
+                            ->label('Instagram')
+                            ->maxLength(100),
+
+
+                        Forms\Components\TextInput::make('rating_average')
+                            ->label('Calificación Promedio')
+                            ->required()
+                            ->numeric()
+                            ->default(0.00),
+
+
+                        Forms\Components\TextInput::make('total_classes_taught')
+                            ->label('Total de Clases Dictadas')
+                            ->required()
+                            ->numeric()
+                            ->default(0),
+
+
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->options([
+                                'active' => 'Activo',
+                                'inactive' => 'Inactivo',
+                                'on_leave' => 'En Licencia',
+                                'terminated' => 'Terminado',
+                            ])
+                            ->required(),
+
+                        // Repeater para el horario de disponibilidad
+
+                        Section::make('Horario de Disponibilidad')
+
+                            ->schema([
+
+
+                                Forms\Components\Repeater::make('availability_schedule')
+                                    ->label('')
+                                    ->defaultItems(0)
+                                    ->schema([
+                                        Forms\Components\Select::make('day')
+                                            ->label('Día')
+                                            ->options([
+                                                'monday' => 'Lunes',
+                                                'tuesday' => 'Martes',
+                                                'wednesday' => 'Miércoles',
+                                                'thursday' => 'Jueves',
+                                                'friday' => 'Viernes',
+                                                'saturday' => 'Sábado',
+                                                'sunday' => 'Domingo',
+                                            ])
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems() // 🔥
+                                            ->required(),
+                                        Forms\Components\TimePicker::make('start_time')
+                                            ->label('Hora de Inicio')
+                                            ->required(),
+                                        Forms\Components\TimePicker::make('end_time')
+                                            ->label('Hora de Fin')
+                                            ->required(),
+                                        // Forms\Components\Toggle::make('is_available')
+                                        //     ->label('Disponible')
+                                        //     ->default(true),
+                                    ])
+                                    ->columns(3)
+                                    ->addActionLabel('Agregar Horario')
+                                    ->reorderable()
+                                    ->collapsible()
+                                    ->columnSpanFull()
+                            ])
+                    ])
             ]);
     }
 
@@ -143,6 +238,7 @@ class InstructorResource extends Resource
                 //     ->sortable()
                 //     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

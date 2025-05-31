@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Strategio')        // 👈 Texto al lado del logo (opcional)
 
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#B0694C'), // Color exacto
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

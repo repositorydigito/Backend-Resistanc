@@ -20,7 +20,7 @@ class UserResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Seguridad';
 
     protected static ?string $navigationLabel = 'Usuarios';
 
@@ -41,10 +41,34 @@ class UserResource extends Resource
                     ->email()
                     ->required()
                     ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
+
+                Forms\Components\Select::make('roles')
+                    ->label('Roles')
+                    ->multiple()
+                    ->relationship('roles', 'name')
+                    ->options(function () {
+                        $user = auth()->user();
+
+                        // Si el usuario logueado es super_admin, mostrar todos los roles
+                        if ($user && $user->hasRole('super_admin')) {
+                            return \Spatie\Permission\Models\Role::pluck('name', 'id');
+                        }
+
+                        // Si no es super_admin, excluir ese rol
+                        return \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name', 'id');
+                    })
+                    ->preload()
+                    ->searchable(),
+
+                // Forms\Components\DateTimePicker::make('email_verified_at'),
+                // ✅ SOLUCIÓN 1: Campo password con dehydrated condicional
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->required()
+                    ->label('Contraseña')
+                    ->helperText('Dejar vacío para mantener la contraseña actual')
+                    ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
+                    ->dehydrated(fn($state) => filled($state))
+                    ->dehydrateStateUsing(fn($state) => filled($state) ? bcrypt($state) : null)
                     ->maxLength(255),
             ]);
     }
@@ -57,6 +81,9 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->label('Roles'),
                 // Tables\Columns\TextColumn::make('email_verified_at')
                 //     ->dateTime()
                 //     ->sortable(),
@@ -81,6 +108,22 @@ class UserResource extends Resource
                 ]),
             ]);
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (!auth()->user()?->hasRole('super_admin')) {
+            // Ocultar usuarios que tengan el rol super_admin
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'super_admin');
+            });
+        }
+
+        return $query;
+    }
+
+
 
     public static function getRelations(): array
     {

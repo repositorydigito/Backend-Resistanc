@@ -6,6 +6,7 @@ use App\Filament\Resources\ClassModelResource\Pages;
 use App\Filament\Resources\ClassModelResource\RelationManagers;
 use App\Models\ClassModel;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -32,38 +33,96 @@ class ClassModelResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Select::make('discipline_id')
-                    ->relationship('discipline', 'name')
-                    ->required(),
-                Forms\Components\Select::make('instructor_id')
-                    ->relationship('instructor', 'name')
-                    ->required(),
-                Forms\Components\Select::make('studio_id')
-                    ->relationship('studio', 'name')
-                    ->required(),
-                Forms\Components\TextInput::make('type')
-                    ->required(),
-                Forms\Components\TextInput::make('duration_minutes')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('max_capacity')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\Textarea::make('description')
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('difficulty_level')
-                    ->required(),
-                Forms\Components\TextInput::make('music_genre')
-                    ->maxLength(100),
-                Forms\Components\Textarea::make('special_requirements')
-                    ->columnSpanFull(),
+
                 Forms\Components\Toggle::make('is_featured')
+                    ->label('Destacada')
                     ->required(),
-                Forms\Components\TextInput::make('status')
-                    ->required(),
+                Section::make('Información de la clase')
+                    ->columns(2)
+                    ->schema([
+
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\Select::make('discipline_id')
+                            ->searchable()
+                            ->preload()
+                            ->label('Disciplina')
+                            ->relationship('discipline', 'name')
+                            ->required(),
+
+                        Forms\Components\Select::make('instructor_id')
+                            ->searchable()
+                            ->label('Instructor')
+                            ->relationship(
+                                name: 'instructor',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn(Builder $query) => $query
+                                    ->where('status', 'active')
+                                    ->whereHas('user.roles', fn($q) => $q->where('name', 'Instructor'))
+                            )
+                            ->preload()
+                            ->required(),
+
+                        Forms\Components\Select::make('studio_id')
+                            ->label('Sala')
+                            ->searchable()
+                            ->preload()
+                            ->relationship('studio', 'name')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('max_capacity')
+                            ->label('Capacidad Máxima')
+                            ->required()
+                            ->numeric(),
+
+                        Forms\Components\Select::make('type')
+                            ->label('Modalidad')
+                            ->options([
+                                'presencial' => 'Presencial',
+                                'en_vivo' => 'En Vivo',
+                                'grabada' => 'Grabada',
+                            ])
+                            ->required(),
+                        Forms\Components\TextInput::make('duration_minutes')
+                            ->label('Duración (minutos)')
+                            ->required()
+                            ->numeric(),
+
+                        Forms\Components\Select::make('difficulty_level')
+                            ->label('Nivel de Dificultad')
+                            ->options([
+                                'beginner' => 'Principiante',
+                                'intermediate' => 'Intermedio',
+                                'advanced' => 'Avanzado',
+                                'all_levels' => 'Todos los Niveles',
+                            ])
+                            ->required(),
+
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->options([
+                                'active' => 'Activo',
+                                'inactive' => 'Inactivo',
+                                'draft' => 'Borrador',
+                            ]),
+                        Forms\Components\TextInput::make('music_genre')
+                            ->label('Género Musical')
+                            ->maxLength(100),
+                        Forms\Components\Textarea::make('special_requirements')
+                            ->label('Requerimientos Especiales')
+                            ->columnSpanFull(),
+
+
+                        Forms\Components\Textarea::make('description')
+                            ->label('Descripción')
+                            ->columnSpanFull(),
+
+
+
+
+                    ]),
             ]);
     }
 
