@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserContactController;
+use App\Http\Controllers\Api\UserPayMethodController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -54,7 +55,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('users')->name('users.')->group(function () {
+Route::prefix('users')->name('users.')->middleware('auth:sanctum')->group(function () {
     // Basic CRUD
     Route::get('/', [UserController::class, 'index'])->name('index');
     Route::post('/', [UserController::class, 'store'])->name('store');
@@ -80,6 +81,17 @@ Route::prefix('users')->name('users.')->group(function () {
     });
 });
 
+/*
+|--------------------------------------------------------------------------
+| User Payment Methods API Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [UserPayMethodController::class, 'index'])->name('index');
+    Route::post('/', [UserPayMethodController::class, 'store'])->name('store');
+    Route::get('/{paymentMethod}', [UserPayMethodController::class, 'show'])->name('show');
+});
 
 
 Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(function () {

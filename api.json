@@ -1,0 +1,2031 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Documentaci\u00f3n API RSISTANC",
+        "version": "1.0.0",
+        "description": "\ud83d\ude80 **API RSISTANC** - Sistema de Resistencia y An\u00e1lisis de Capacidades\n\nAPI RESTful completa para gesti\u00f3n de usuarios, perfiles, contactos y auditor\u00eda de accesos.\n\n**Caracter\u00edsticas principales:**\n- \ud83d\udc64 Gesti\u00f3n completa de usuarios y perfiles\n- \ud83d\udcde Sistema de contactos m\u00faltiples\n- \ud83d\udd10 Auditor\u00eda de inicios de sesi\u00f3n y seguridad\n- \ud83c\udf10 Integraci\u00f3n con redes sociales (Google/Facebook)\n- \ud83d\udcca Filtros avanzados y paginaci\u00f3n\n- \ud83d\udd0d B\u00fasqueda por m\u00faltiples criterios\n\n**Tecnolog\u00edas:**\n- Laravel 12.0+ con PHP 8.3+\n- Laravel API Resources\n- Arquitectura limpia con principios SOLID\n- Base de datos relacional optimizada\n\n**Modelos del sistema:**\n- **Usuario** - Usuario principal del sistema\n- **Perfil de Usuario** - Perfil detallado (nombre, edad, g\u00e9nero, talla)\n- **Contacto de Usuario** - Contactos m\u00faltiples (tel\u00e9fono, direcci\u00f3n)\n- **Cuenta Social** - Cuentas sociales vinculadas (Google/Facebook)\n- **Auditor\u00eda de Acceso** - Auditor\u00eda de intentos de inicio de sesi\u00f3n"
+    },
+    "servers": [
+        {
+            "url": "http://backend-resistanc.test/api",
+            "description": "Desarrollo Local"
+        },
+        {
+            "url": "http://Backend-Resistanc.test/api",
+            "description": "Producci\u00f3n"
+        }
+    ],
+    "paths": {
+        "/auth/register": {
+            "post": {
+                "operationId": "registerUser",
+                "description": "Crea una nueva cuenta de usuario en el sistema RSISTANC.\nGenera autom\u00e1ticamente un token de acceso para la API.",
+                "summary": "Registrar un nuevo usuario",
+                "tags": [
+                    "Autenticaci\u00f3n",
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 201
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "operationId": "loginUser",
+                "description": "Autentica un usuario existente y genera un token de acceso para la API.\nRegistra el intento de login en la auditor\u00eda del sistema.",
+                "summary": "Iniciar sesi\u00f3n",
+                "tags": [
+                    "Autenticaci\u00f3n",
+                    "Auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/LoginRequest"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "description": "Correo electr\u00f3nico del usuario",
+                                                "example": "migelo5511@gmail.com"
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "description": "Contrase\u00f1a del usuario",
+                                                "example": "123456789"
+                                            },
+                                            "remember": {
+                                                "type": "boolean",
+                                                "description": "Recordar sesi\u00f3n por m\u00e1s tiempo",
+                                                "example": true
+                                            },
+                                            "device_name": {
+                                                "type": "string",
+                                                "description": "Nombre del dispositivo para el token",
+                                                "example": "Mi Dispositivo"
+                                            }
+                                        },
+                                        "required": [
+                                            "email",
+                                            "password"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "operationId": "getAuthenticatedUser",
+                "description": "Retorna la informaci\u00f3n completa del usuario actualmente autenticado,\nincluyendo su perfil, contacto principal y estad\u00edsticas de login.",
+                "summary": "Obtener usuario autenticado",
+                "tags": [
+                    "Autenticaci\u00f3n",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "operationId": "logoutUser",
+                "description": "Revoca el token de acceso actual del usuario autenticado.\nEl token dejar\u00e1 de ser v\u00e1lido inmediatamente.",
+                "summary": "Cerrar sesi\u00f3n",
+                "tags": [
+                    "Autenticaci\u00f3n",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/logout-all": {
+            "post": {
+                "operationId": "logoutAllDevices",
+                "description": "Revoca todos los tokens de acceso del usuario autenticado.\n\u00datil para cerrar sesi\u00f3n en todos los dispositivos.",
+                "summary": "Cerrar todas las sesiones",
+                "tags": [
+                    "Autenticaci\u00f3n",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "operationId": "refreshToken",
+                "description": "Genera un nuevo token de acceso y revoca el actual.\n\u00datil para renovar tokens antes de que expiren.",
+                "summary": "Renovar token de acceso",
+                "tags": [
+                    "Autenticaci\u00f3n",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "device_name": {
+                                        "type": "string",
+                                        "description": "Get device name from request or use current token name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/{user}/contacts": {
+            "get": {
+                "operationId": "getUserContacts",
+                "description": "Obtiene todos los contactos asociados a un usuario espec\u00edfico.\nPermite filtrar por contacto principal y pa\u00eds.",
+                "summary": "Lista todos los contactos de un usuario",
+                "tags": [
+                    "Contactos de Usuario",
+                    "UserContact"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "createUserContact",
+                "description": "A\u00f1ade un nuevo contacto al usuario especificado. Si se marca como principal,\nautom\u00e1ticamente desmarca otros contactos principales del mismo usuario.",
+                "summary": "Crea un nuevo contacto para un usuario",
+                "tags": [
+                    "Contactos de Usuario",
+                    "UserContact"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "address_line": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "city": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "country": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 2,
+                                        "maxLength": 2
+                                    },
+                                    "is_primary": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "phone"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 201
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/{user}/contacts/{contact}": {
+            "get": {
+                "operationId": "getUserContact",
+                "description": "Retorna la informaci\u00f3n detallada de un contacto espec\u00edfico\nque pertenece al usuario indicado.",
+                "summary": "Obtiene un contacto espec\u00edfico de un usuario",
+                "tags": [
+                    "Contactos de Usuario",
+                    "UserContact"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "contact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "userContact.update_1",
+                "description": "Permite actualizar la informaci\u00f3n de un contacto existente.\nSolo se actualizan los campos proporcionados en la petici\u00f3n.\nSi se marca como principal, autom\u00e1ticamente desmarca otros contactos principales.",
+                "summary": "Actualiza un contacto espec\u00edfico de un usuario",
+                "tags": [
+                    "Contactos de Usuario",
+                    "UserContact"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "contact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "address_line": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "city": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "country": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 2,
+                                        "maxLength": 2
+                                    },
+                                    "is_primary": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "userContact.update_2",
+                "description": "Permite actualizar la informaci\u00f3n de un contacto existente.\nSolo se actualizan los campos proporcionados en la petici\u00f3n.\nSi se marca como principal, autom\u00e1ticamente desmarca otros contactos principales.",
+                "summary": "Actualiza un contacto espec\u00edfico de un usuario",
+                "tags": [
+                    "Contactos de Usuario",
+                    "UserContact"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "contact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "address_line": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "city": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "country": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 2,
+                                        "maxLength": 2
+                                    },
+                                    "is_primary": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "deleteUserContact",
+                "description": "Elimina permanentemente un contacto del usuario.\nEsta acci\u00f3n no se puede deshacer.",
+                "summary": "Elimina un contacto espec\u00edfico de un usuario",
+                "tags": [
+                    "Contactos de Usuario",
+                    "UserContact"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "contact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/payment-methods": {
+            "get": {
+                "operationId": "getMyPaymentMethodsList",
+                "description": "Obtiene una lista de m\u00e9todos de pago activos del usuario autenticado ordenados por m\u00e9todo por defecto primero.\n**Requiere autenticaci\u00f3n:** Incluye el token Bearer en el header Authorization.\n\n**Ruta:** GET /api/me/payment-methods",
+                "summary": "Lista todos los m\u00e9todos de pago del usuario autenticado",
+                "tags": [
+                    "M\u00e9todos de Pago",
+                    "UserPayMethod"
+                ],
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserPaymentMethodResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserPaymentMethodResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "createMyPaymentMethod",
+                "description": "Crea un nuevo m\u00e9todo de pago para el usuario autenticado. Si se marca como predeterminado,\nautom\u00e1ticamente se quitar\u00e1 la marca de predeterminado de otros m\u00e9todos del usuario.\n**Requiere autenticaci\u00f3n:** Incluye el token Bearer en el header Authorization.\n\n**Ruta:** POST /api/me/payment-methods",
+                "summary": "Crear un nuevo m\u00e9todo de pago",
+                "tags": [
+                    "M\u00e9todos de Pago",
+                    "UserPayMethod"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payment_type": {
+                                        "type": "string",
+                                        "description": "Tipo de pago",
+                                        "example": "credit_card"
+                                    },
+                                    "card_brand": {
+                                        "type": "string",
+                                        "description": "Marca de la tarjeta",
+                                        "example": "visa"
+                                    },
+                                    "card_last_four": {
+                                        "type": "string",
+                                        "description": "\u00daltimos 4 d\u00edgitos de la tarjeta",
+                                        "example": "4532"
+                                    },
+                                    "card_holder_name": {
+                                        "type": "string",
+                                        "description": "Nombre del titular de la tarjeta",
+                                        "example": "Juan Carlos P\u00e9rez"
+                                    },
+                                    "card_expiry_month": {
+                                        "type": "integer",
+                                        "description": "Mes de expiraci\u00f3n (1-12)",
+                                        "example": 12
+                                    },
+                                    "card_expiry_year": {
+                                        "type": "integer",
+                                        "description": "A\u00f1o de expiraci\u00f3n",
+                                        "example": 2026
+                                    },
+                                    "bank_name": {
+                                        "type": "string",
+                                        "description": "Nombre del banco emisor",
+                                        "example": "Banco de Cr\u00e9dito del Per\u00fa"
+                                    },
+                                    "is_default": {
+                                        "type": "boolean",
+                                        "description": "Marcar como m\u00e9todo de pago predeterminado",
+                                        "example": false
+                                    },
+                                    "gateway_token": {
+                                        "type": "string",
+                                        "description": "Token del gateway de pago",
+                                        "example": "tok_1234567890abcdef"
+                                    },
+                                    "gateway_customer_id": {
+                                        "type": "string",
+                                        "description": "ID del cliente en el gateway",
+                                        "example": "cus_customer123456"
+                                    },
+                                    "billing_address": {
+                                        "type": "object",
+                                        "description": "Direcci\u00f3n de facturaci\u00f3n",
+                                        "example": {
+                                            "street": "Av. Javier Prado Este 4200",
+                                            "city": "Lima",
+                                            "state": "Lima",
+                                            "postal_code": "15023",
+                                            "country": "Per\u00fa"
+                                        },
+                                        "properties": {
+                                            "street": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 255
+                                            },
+                                            "city": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 100
+                                            },
+                                            "state": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 100
+                                            },
+                                            "postal_code": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 20
+                                            },
+                                            "country": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 100
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "payment_type",
+                                    "card_brand",
+                                    "card_last_four",
+                                    "card_holder_name",
+                                    "card_expiry_month",
+                                    "card_expiry_year"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 201
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/payment-methods/{id}": {
+            "get": {
+                "operationId": "getMyPaymentMethod",
+                "description": "Obtiene los detalles de un m\u00e9todo de pago espec\u00edfico que pertenece al usuario autenticado.\nSolo se pueden ver m\u00e9todos de pago propios del usuario.\n**Requiere autenticaci\u00f3n:** Incluye el token Bearer en el header Authorization.\n\n**Ruta:** GET /api/me/payment-methods/{id}",
+                "summary": "Mostrar un m\u00e9todo de pago espec\u00edfico",
+                "tags": [
+                    "M\u00e9todos de Pago",
+                    "UserPayMethod"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/packages": {
+            "get": {
+                "operationId": "getPackagesList",
+                "description": "Obtiene una lista paginada de paquetes activos ordenados por precio de menor a mayor.\n**Requiere autenticaci\u00f3n:** Incluye el token Bearer en el header Authorization.",
+                "summary": "Lista todos los paquetes activos del sistema",
+                "tags": [
+                    "Paquetes",
+                    "Package"
+                ],
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/test": {
+            "get": {
+                "operationId": "testApiStatus",
+                "description": "Endpoint de prueba para verificar que la API RSISTANC est\u00e1 funcionando correctamente.\nRetorna informaci\u00f3n b\u00e1sica del sistema y estad\u00edsticas de usuarios.",
+                "summary": "Verifica el estado de la API",
+                "tags": [
+                    "Sistema",
+                    "Test"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "operationId": "getUsersList",
+                "description": "Obtiene una lista paginada de usuarios con sus perfiles y contactos principales.\nIncluye funcionalidades de b\u00fasqueda y filtrado avanzado.",
+                "summary": "Lista todos los usuarios del sistema",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "createUser",
+                "description": "Registra un nuevo usuario con informaci\u00f3n b\u00e1sica, perfil opcional y contacto inicial.\nTodos los datos se validan seg\u00fan las reglas definidas en StoreUserRequest.",
+                "summary": "Crea un nuevo usuario en el sistema",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 201
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/users/{user}": {
+            "get": {
+                "operationId": "getUserById",
+                "description": "Retorna informaci\u00f3n detallada del usuario incluyendo perfil, contactos,\ncuentas sociales y auditor\u00eda de logins (limitada para administradores).",
+                "summary": "Obtiene los detalles completos de un usuario espec\u00edfico",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "user.update_1",
+                "description": "Permite actualizar la informaci\u00f3n b\u00e1sica del usuario y su perfil.\nSolo se actualizan los campos proporcionados en la petici\u00f3n.",
+                "summary": "Actualiza un usuario existente en el sistema",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "user.update_2",
+                "description": "Permite actualizar la informaci\u00f3n b\u00e1sica del usuario y su perfil.\nSolo se actualizan los campos proporcionados en la petici\u00f3n.",
+                "summary": "Actualiza un usuario existente en el sistema",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "deleteUser",
+                "description": "Elimina permanentemente un usuario y todos sus datos relacionados\n(perfil, contactos, cuentas sociales y auditor\u00eda de logins).\nEsta acci\u00f3n no se puede deshacer.",
+                "summary": "Elimina un usuario del sistema",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/{user}/profile": {
+            "get": {
+                "operationId": "getUserProfile",
+                "description": "Retorna la informaci\u00f3n del perfil del usuario incluyendo datos personales\ncomo nombre completo, fecha de nacimiento, g\u00e9nero y talla de zapato.",
+                "summary": "Obtiene el perfil de un usuario espec\u00edfico",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/{user}/social-accounts": {
+            "get": {
+                "operationId": "getUserSocialAccounts",
+                "description": "Lista todas las cuentas sociales vinculadas al usuario\n(Google, Facebook, etc.) con opciones de filtrado.",
+                "summary": "Obtiene las cuentas sociales de un usuario",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/{user}/login-audits": {
+            "get": {
+                "operationId": "getUserLoginAudits",
+                "description": "Lista todos los intentos de inicio de sesi\u00f3n del usuario con opciones\nde filtrado por \u00e9xito/fallo, IP y per\u00edodo de tiempo.",
+                "summary": "Obtiene la auditor\u00eda de inicios de sesi\u00f3n de un usuario",
+                "tags": [
+                    "Usuarios",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Token de autorizaci\u00f3n Bearer. Obt\u00e9n tu token haciendo login en /api/auth/login",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Bearer {tu_token_aqui}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "LoginRequest": {
+                "type": "object",
+                "description": "Request para validar datos de login",
+                "title": "LoginRequest"
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "description": "Request para validar datos de registro",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "device_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "RegisterRequest"
+            },
+            "StoreUserRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    },
+                    "profile": {
+                        "type": "object",
+                        "properties": {
+                            "first_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Optional profile data",
+                                "maxLength": 255
+                            },
+                            "last_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 255
+                            },
+                            "birth_date": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "date-time"
+                            },
+                            "gender": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "enum": [
+                                    "female",
+                                    "male",
+                                    "other",
+                                    "na"
+                                ]
+                            },
+                            "shoe_size_eu": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 20,
+                                "maximum": 60
+                            }
+                        }
+                    },
+                    "contact": {
+                        "type": "object",
+                        "properties": {
+                            "phone": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Optional contact data",
+                                "maxLength": 20
+                            },
+                            "address_line": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 255
+                            },
+                            "city": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 100
+                            },
+                            "country": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "minLength": 2,
+                                "maxLength": 2
+                            },
+                            "is_primary": {
+                                "type": [
+                                    "boolean",
+                                    "null"
+                                ],
+                                "description": "ISO country code"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "StoreUserRequest"
+            },
+            "UpdateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    },
+                    "profile": {
+                        "type": "object",
+                        "properties": {
+                            "first_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Profile data",
+                                "maxLength": 255
+                            },
+                            "last_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 255
+                            },
+                            "birth_date": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "date-time"
+                            },
+                            "gender": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "enum": [
+                                    "female",
+                                    "male",
+                                    "other",
+                                    "na"
+                                ]
+                            },
+                            "shoe_size_eu": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 20,
+                                "maximum": 60
+                            }
+                        }
+                    }
+                },
+                "title": "UpdateUserRequest"
+            },
+            "UserPaymentMethodResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "payment_type": {
+                        "type": "string"
+                    },
+                    "card_brand": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "card_last_four": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "card_holder_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expiry_date": {
+                        "type": "string"
+                    },
+                    "is_expired": {
+                        "type": "string",
+                        "description": "Usa el accessor del modelo"
+                    },
+                    "bank_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Usa el accessor del modelo"
+                    },
+                    "account_number_masked": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_default": {
+                        "type": "boolean"
+                    },
+                    "is_saved_for_future": {
+                        "type": "boolean"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "verification_status": {
+                        "type": "string"
+                    },
+                    "last_used_at": {
+                        "type": "string"
+                    },
+                    "billing_address": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {}
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "payment_type",
+                    "card_brand",
+                    "card_last_four",
+                    "card_holder_name",
+                    "expiry_date",
+                    "is_expired",
+                    "bank_name",
+                    "account_number_masked",
+                    "is_default",
+                    "is_saved_for_future",
+                    "status",
+                    "verification_status",
+                    "last_used_at",
+                    "billing_address",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "UserPaymentMethodResource"
+            }
+        },
+        "responses": {
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthorizationException": {
+                "description": "Authorization error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

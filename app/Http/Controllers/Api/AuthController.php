@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Dedoc\Scramble\Attributes\BodyParameter;
 
 /**
  * @tags Autenticación
@@ -33,11 +34,11 @@ final class AuthController extends Controller
      * @param  \App\Http\Requests\RegisterRequest  $request
      * @return \App\Http\Resources\AuthResource
      *
-     * @bodyParam email string required Correo electrónico del usuario. Example: admin@rsistanc.com
-     * @bodyParam password string required Contraseña del usuario. Example: admin123
-     * @bodyParam remember boolean Recordar sesión por más tiempo. Example: true
-     * @bodyParam device_name string Nombre del dispositivo para el token. Example: "API Client"
-
+     * @bodyParam name string required Nombre completo del usuario. Example: Juan Carlos Pérez
+     * @bodyParam email string required Correo electrónico del usuario. Example: juan.perez@resistanc.com
+     * @bodyParam password string required Contraseña del usuario (mín. 8 caracteres). Example: MiPassword123!
+     * @bodyParam password_confirmation string required Confirmación de la contraseña. Example: MiPassword123!
+     * @bodyParam device_name string Nombre del dispositivo para el token. Example: Mi Aplicación Móvil
      *
      * @response 201 {
      *   "user": {
@@ -119,10 +120,6 @@ final class AuthController extends Controller
      * @param  \App\Http\Requests\LoginRequest  $request
      * @return \App\Http\Resources\AuthResource
      *
-     * @bodyParam email string required Correo electrónico del usuario. Example: admin@rsistanc.com
-     * @bodyParam password string required Contraseña del usuario. Example: admin123
-     * @bodyParam device_name string Nombre del dispositivo para el token. Example: API Client
-     *
      * @response 200 {
      *   "user": {
      *     "id": 1,
@@ -167,6 +164,10 @@ final class AuthController extends Controller
      *   }
      * }
      */
+    #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'migelo5511@gmail.com')]
+    #[BodyParameter('password', description: 'Contraseña del usuario', type: 'string', example: '123456789')]
+    #[BodyParameter('remember', description: 'Recordar sesión por más tiempo', type: 'boolean', example: true)]
+    #[BodyParameter('device_name', description: 'Nombre del dispositivo para el token', type: 'string', example: 'Mi Dispositivo')]
     public function login(LoginRequest $request): AuthResource
     {
         $validated = $request->validated();

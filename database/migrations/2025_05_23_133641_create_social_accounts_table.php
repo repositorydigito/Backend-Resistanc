@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('social_accounts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->enum('provider', ['google', 'facebook']);
+            // $table->enum('provider', ['google', 'facebook']);
             $table->string('provider_uid', 191);
             $table->string('provider_email', 191)->nullable();
             $table->text('token'); // Será encriptado en el modelo
@@ -23,7 +23,7 @@ return new class extends Migration
 
             // Índices
             $table->index('user_id');
-            $table->unique(['provider', 'provider_uid']);
+            // $table->unique(['provider', 'provider_uid']);
         });
     }
 

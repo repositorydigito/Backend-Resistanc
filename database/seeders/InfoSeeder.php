@@ -15,19 +15,21 @@ class InfoSeeder extends Seeder
     public function run(): void
     {
         $superAdminRole = Role::firstOrCreate(['name' => 'super_admin']);
+        $instructornRole = Role::firstOrCreate(['name' => 'Instructor']);
 
-        $user = User::create([
+        $user_admin = User::create([
             'name' => 'Diego Miguel Saravia',
             'email' => 'migelo5511@gmail.com',
             'password' => bcrypt('123456789'),
         ]);
 
-        $user->assignRole($superAdminRole);
+        $user_admin->assignRole($superAdminRole);
 
-        User::create([
+        $user_instructor = User::create([
             'name' => 'Danna Cervantes Quispe',
             'email' => 'danna@gmail.com',
             'password' => bcrypt('123456789'),
         ]);
+        $user_instructor->assignRole($instructornRole);
     }
 }

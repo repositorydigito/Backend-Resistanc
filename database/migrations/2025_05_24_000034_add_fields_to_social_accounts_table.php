@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::table('social_accounts', function (Blueprint $table) {
             // Agregar nuevos providers
-            $table->dropColumn('provider');
         });
 
         Schema::table('social_accounts', function (Blueprint $table) {
+
+
             $table->enum('provider', ['google', 'facebook', 'apple', 'instagram', 'tiktok'])->after('user_id');
             $table->string('provider_name')->nullable()->after('provider_email');
             $table->string('provider_avatar', 500)->nullable()->after('provider_name');

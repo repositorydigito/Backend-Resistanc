@@ -175,4 +175,9 @@ final class User extends Authenticatable
     {
         return $this->name ?? $this->email;
     }
+
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(UserPaymentMethod::class);
+    }
 }

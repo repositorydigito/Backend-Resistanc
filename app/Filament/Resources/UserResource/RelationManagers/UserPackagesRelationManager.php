@@ -14,6 +14,11 @@ class UserPackagesRelationManager extends RelationManager
 {
     protected static string $relationship = 'userPackages';
 
+    protected static ?string $title = 'Paquetes de Usuario';
+
+    protected static ?string $modelLabel = 'Paquete de Usuario'; // Nombre en singular
+    protected static ?string $pluralModelLabel = 'Paquetes de Usuario'; // Nombre en plural
+
     public function form(Form $form): Form
     {
         return $form

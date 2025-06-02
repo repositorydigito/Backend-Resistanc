@@ -96,6 +96,7 @@ class UserResource extends Resource
                 //     ->sortable()
                 //     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
                 //
             ])
@@ -129,6 +130,7 @@ class UserResource extends Resource
     {
         return [
             RelationManagers\UserPackagesRelationManager::class,
+            RelationManagers\UserPaymentMethodRelationManager::class,
         ];
     }
 

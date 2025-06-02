@@ -24,7 +24,7 @@ class AddAuthorizationHeader extends OperationExtension
                         Schema::fromType(new StringType())
                     )
                     ->required(true)
-                    ->example("Bearer 9|RRZPrI7wx5baofjy3wFT4RGfp87DnO3UyrWYjCwGce5031ab")
+                    ->example("Bearer {tu_token_aqui}")
                     ->description("Token de autorización Bearer. Obtén tu token haciendo login en /api/auth/login")
             ]);
         }

@@ -25,8 +25,8 @@ return new class extends Migration
             $table->unsignedInteger('usage_limit_total')->nullable();
             $table->unsignedTinyInteger('usage_limit_per_user')->default(1);
             $table->unsignedInteger('usage_count')->default(0);
-            $table->timestamp('starts_at');
-            $table->timestamp('expires_at');
+            $table->datetime('starts_at')->nullable(); // o usar una fecha específica
+            $table->datetime('expires_at')->nullable(); // o usar una fecha específica;
             $table->boolean('is_active')->default(true);
             $table->boolean('is_first_time_only')->default(false);
             $table->json('target_audience')->nullable()->comment('Criterios de audiencia objetivo');
