@@ -35,6 +35,9 @@ return new class extends Migration
             $table->enum('target_audience', ['beginner', 'intermediate', 'advanced', 'all'])->default('all');
             $table->timestamps();
 
+
+
+
             // Índices
             $table->index(['status', 'display_order']);
             $table->index(['package_type', 'status']);

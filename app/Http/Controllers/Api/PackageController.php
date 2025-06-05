@@ -7,7 +7,7 @@ use App\Http\Resources\PackageResource;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-
+use Illuminate\Support\Facades\DB;
 
 /**
  * @tags Paquetes
@@ -70,10 +70,19 @@ final class PackageController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $packages = Package::query()
-            ->with(['membership']) // ✅ Cargar la relación membership
+            ->with(['membership'])
             ->withCount(['userPackages'])
-            ->active() // Solo paquetes activos
-            ->orderBy('price_soles', 'asc') // Ordenar por precio de menor a mayor
+            ->active()
+            ->orderBy(DB::raw("
+            CASE type
+                WHEN 'promotion' THEN 1
+                WHEN 'offer' THEN 2
+                WHEN 'basic' THEN 3
+                ELSE 4
+            END
+        "))
+            ->orderBy('display_order', 'asc')
+            ->orderBy('price_soles', 'asc')
             ->paginate(
                 perPage: $request->integer('per_page', 15),
                 page: $request->integer('page', 1)
@@ -81,8 +90,4 @@ final class PackageController extends Controller
 
         return PackageResource::collection($packages);
     }
-
-
-
-
 }

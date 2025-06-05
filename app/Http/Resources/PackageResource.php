@@ -38,6 +38,7 @@ class PackageResource extends JsonResource
             'target_audience' => $this->target_audience,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+            'color_hex' => $this->color_hex,
 
             // Computed attributes using model accessors
             'is_unlimited' => $this->is_unlimited,
@@ -52,9 +53,7 @@ class PackageResource extends JsonResource
             'is_active' => $this->status === 'active',
 
             // Conditional relationships (if loaded)
-            // 'user_packages' => $this->whenLoaded('userPackages', function () {
-            //     return UserPackageResource::collection($this->userPackages);
-            // }),
+            // TODO: Add user packages relationship when needed
 
 
             // ✅ AGREGAR INFORMACIÓN DE MEMBRESÍA

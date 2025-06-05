@@ -82,15 +82,27 @@ class InstructorResource extends Resource
                         Forms\Components\TagsInput::make('specialties')
                             ->dehydrated(true)
                             ->label('Especialidades')
-                            ->placeholder('Presiona Enter después de cada equipo')
-                            ->columnSpanFull(),
+                            ->placeholder('Presiona Enter después de cada especialidad')
+                            ->columnSpanFull()
+                            ->default([])
+                            ->afterStateHydrated(function (Forms\Components\TagsInput $component, $state) {
+                                if (is_string($state)) {
+                                    $component->state(json_decode($state, true) ?? []);
+                                }
+                            }),
 
                         // En lugar de TextInput, usar:
                         Forms\Components\TagsInput::make('certifications')
                             ->dehydrated(true)
                             ->label('Certificaciones')
-                            ->placeholder('Presiona Enter después de cada equipo')
-                            ->columnSpanFull(),
+                            ->placeholder('Presiona Enter después de cada certificación')
+                            ->columnSpanFull()
+                            ->default([])
+                            ->afterStateHydrated(function (Forms\Components\TagsInput $component, $state) {
+                                if (is_string($state)) {
+                                    $component->state(json_decode($state, true) ?? []);
+                                }
+                            }),
 
                         Forms\Components\Textarea::make('bio')
                             ->label('Biografía')

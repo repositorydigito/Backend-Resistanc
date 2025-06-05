@@ -207,10 +207,10 @@ final class ClassSchedule extends Model
      */
     public function getCanBookAttribute(): bool
     {
-        return !$this->is_cancelled && 
-               !$this->is_past && 
-               $this->available_spots > 0 &&
-               $this->start_time->diffInHours(now()) >= 2; // At least 2 hours before
+        return !$this->is_cancelled &&
+            !$this->is_past &&
+            $this->available_spots > 0 &&
+            $this->start_time->diffInHours(now()) >= 2; // At least 2 hours before
     }
 
     /**
@@ -265,5 +265,21 @@ final class ClassSchedule extends Model
             'cancellation_reason' => $reason,
             'status' => 'cancelled',
         ]);
+    }
+
+    /**
+     * ✅ FALTABA: Get the instructor for this schedule.
+     */
+    public function instructor(): BelongsTo
+    {
+        return $this->belongsTo(Instructor::class);
+    }
+
+    /**
+     * ✅ FALTABA: Get the studio for this schedule.
+     */
+    public function studio(): BelongsTo
+    {
+        return $this->belongsTo(Studio::class);
     }
 }

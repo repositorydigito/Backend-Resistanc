@@ -157,6 +157,19 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
 
     /*
     |--------------------------------------------------------------------------
+    | Global Security Requirements
+    |--------------------------------------------------------------------------
+    |
+    | Define global security requirements that apply to all endpoints.
+    | This ensures the "Authorize" button appears in the documentation.
+    |
+    */
+    'global_security' => [
+        ['sanctum' => []],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Modelos para esquemas
     |--------------------------------------------------------------------------
     |
@@ -170,5 +183,7 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
         \App\Models\UserContact::class,
         \App\Models\SocialAccount::class,
         \App\Models\LoginAudit::class,
+        \App\Models\UserPackage::class,
+        \App\Models\Package::class,
     ],
 ];

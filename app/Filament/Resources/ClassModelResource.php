@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Log;
 
 class ClassModelResource extends Resource
 {
@@ -55,15 +56,25 @@ class ClassModelResource extends Resource
                         Forms\Components\Select::make('instructor_id')
                             ->searchable()
                             ->label('Instructor')
-                            ->relationship(
-                                name: 'instructor',
-                                titleAttribute: 'name',
-                                modifyQueryUsing: fn(Builder $query) => $query
-                                    ->where('status', 'active')
-                                    ->whereHas('user.roles', fn($q) => $q->where('name', 'Instructor'))
-                            )
+                            ->options(function () {
+                                // Debug: Ver qué instructores tienes
+                                $instructors = \App\Models\Instructor::with('user')->get();
+
+                                foreach ($instructors as $instructor) {
+                                    Log::info('Instructor: ' . $instructor->name);
+                                    if ($instructor->user) {
+                                        Log::info('User roles: ' . $instructor->user->roles->pluck('name'));
+                                    }
+                                }
+
+                                return \App\Models\Instructor::where('status', 'active')
+                                    ->pluck('name', 'id');
+                            })
                             ->preload()
                             ->required(),
+
+
+
 
                         Forms\Components\Select::make('studio_id')
                             ->label('Sala')
@@ -179,7 +190,8 @@ class ClassModelResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ClassSchedulesRelationManager::class,
+
         ];
     }
 

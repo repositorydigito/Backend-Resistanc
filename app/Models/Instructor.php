@@ -35,8 +35,7 @@ final class Instructor extends Model
     ];
 
     protected $casts = [
-        'specialties' => 'array',
-        'certifications' => 'array',
+        // Removed 'specialties' and 'certifications' casts to avoid conflicts with accessors
         'availability_schedule' => 'array',
         'is_head_coach' => 'boolean',
         'experience_years' => 'integer',
@@ -45,6 +44,110 @@ final class Instructor extends Model
         'hourly_rate_soles' => 'decimal:2',
         'hire_date' => 'date',
     ];
+
+    /**
+     * Mutator for specialties to ensure it's always stored as JSON
+     */
+    public function setSpecialtiesAttribute($value): void
+    {
+        if (is_null($value)) {
+            $this->attributes['specialties'] = json_encode([]);
+            return;
+        }
+
+        if (is_string($value)) {
+            // If it's already a JSON string, validate it
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->attributes['specialties'] = $value;
+            } else {
+                // If it's not valid JSON, treat as single value
+                $this->attributes['specialties'] = json_encode([$value]);
+            }
+            return;
+        }
+
+        if (is_array($value)) {
+            $this->attributes['specialties'] = json_encode($value);
+            return;
+        }
+
+        // Fallback for any other type
+        $this->attributes['specialties'] = json_encode([]);
+    }
+
+    /**
+     * Mutator for certifications to ensure it's always stored as JSON
+     */
+    public function setCertificationsAttribute($value): void
+    {
+        if (is_null($value)) {
+            $this->attributes['certifications'] = json_encode([]);
+            return;
+        }
+
+        if (is_string($value)) {
+            // If it's already a JSON string, validate it
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->attributes['certifications'] = $value;
+            } else {
+                // If it's not valid JSON, treat as single value
+                $this->attributes['certifications'] = json_encode([$value]);
+            }
+            return;
+        }
+
+        if (is_array($value)) {
+            $this->attributes['certifications'] = json_encode($value);
+            return;
+        }
+
+        // Fallback for any other type
+        $this->attributes['certifications'] = json_encode([]);
+    }
+
+    /**
+     * Accessor for specialties to ensure it's always an array
+     */
+    public function getSpecialtiesAttribute($value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return [];
+    }
+
+    /**
+     * Accessor for certifications to ensure it's always an array
+     */
+    public function getCertificationsAttribute($value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return [];
+    }
 
     /**
      * Get the user account associated with this instructor.
@@ -117,11 +220,13 @@ final class Instructor extends Model
      */
     public function getCertificationsStringAttribute(): string
     {
-        if (!$this->certifications) {
+        $certifications = $this->certifications;
+
+        if (empty($certifications)) {
             return '';
         }
 
-        return implode(', ', $this->certifications);
+        return implode(', ', $certifications);
     }
 
     /**

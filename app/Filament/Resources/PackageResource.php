@@ -75,6 +75,10 @@ class PackageResource extends Resource
                             ])
                             ->label('Modalidad')
                             ->required(),
+                        Forms\Components\ColorPicker::make('color_hex')
+                            ->label('Color')
+                            ->required()
+                            ->default('#000000'),
                         Forms\Components\Select::make('billing_type')
                             ->options([
                                 'one_time' => 'Pago único',
@@ -110,7 +114,22 @@ class PackageResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->required()
                             ->numeric()
-                            ->default(0),
+                            ->helperText(function () {
+                                $existingOrders = \App\Models\Package::orderBy('display_order')
+                                    ->pluck('display_order')
+                                    ->filter()
+                                    ->unique()
+                                    ->values()
+                                    ->toArray();
+
+                                $nextAvailable = (max($existingOrders) ?? 0) + 1;
+
+                                return "Órdenes ya usados: " . implode(', ', $existingOrders) .
+                                    ". Siguiente disponible: {$nextAvailable}";
+                            })
+                            ->default(function () {
+                                return (\App\Models\Package::max('display_order') ?? 0) + 1;
+                            }),
                         // Forms\Components\TextInput::make('features'),
                         // Forms\Components\TextInput::make('restrictions'),
                         Forms\Components\Select::make('target_audience')
@@ -121,6 +140,14 @@ class PackageResource extends Resource
                                 'advanced' => 'Avanzados',
                                 'all' => 'Todos',
                             ])
+                            ->required(),
+                        Forms\Components\Select::make('type')
+                            ->options([
+                                'promotion' => 'Promoción',
+                                'offer' => 'Oferta',
+                                'basic' => 'Básico',
+                            ])
+                            ->label('Tipo de paquete')
                             ->required(),
                         Forms\Components\TextArea::make('short_description')
                             ->label('Descripción corta')

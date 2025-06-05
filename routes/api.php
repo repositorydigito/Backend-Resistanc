@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserContactController;
+use App\Http\Controllers\Api\UserPackageController;
 use App\Http\Controllers\Api\UserPayMethodController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -55,20 +56,25 @@ Route::prefix('auth')->name('auth.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('users')->name('users.')->middleware('auth:sanctum')->group(function () {
+Route::prefix('users')->name('users.')->group(function () {
     // Basic CRUD
-    Route::get('/', [UserController::class, 'index'])->name('index');
-    Route::post('/', [UserController::class, 'store'])->name('store');
-    Route::get('/{user}', [UserController::class, 'show'])->name('show');
-    Route::put('/{user}', [UserController::class, 'update'])->name('update');
-    Route::patch('/{user}', [UserController::class, 'update'])->name('patch');
-    Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
 
-    // User relationships
-    Route::get('/{user}/profile', [UserController::class, 'profile'])->name('profile');
-    Route::get('/{user}/contacts', [UserController::class, 'contacts'])->name('contacts');
-    Route::get('/{user}/social-accounts', [UserController::class, 'socialAccounts'])->name('social-accounts');
-    Route::get('/{user}/login-audits', [UserController::class, 'loginAudits'])->name('login-audits');
+    Route::post('/', [UserController::class, 'store'])->name('store');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::patch('/{user}', [UserController::class, 'update'])->name('patch');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+
+        // User relationships
+        Route::get('/{user}/profile', [UserController::class, 'profile'])->name('profile');
+        Route::get('/{user}/contacts', [UserController::class, 'contacts'])->name('contacts');
+        Route::get('/{user}/social-accounts', [UserController::class, 'socialAccounts'])->name('social-accounts');
+        Route::get('/{user}/login-audits', [UserController::class, 'loginAudits'])->name('login-audits');
+    });
+
 
     // User contacts CRUD
     Route::prefix('/{user}/contacts')->name('contacts.')->group(function () {
@@ -91,6 +97,17 @@ Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:
     Route::get('/', [UserPayMethodController::class, 'index'])->name('index');
     Route::post('/', [UserPayMethodController::class, 'store'])->name('store');
     Route::get('/{paymentMethod}', [UserPayMethodController::class, 'show'])->name('show');
+});
+
+/*
+|--------------------------------------------------------------------------
+| User Packages API Routes (Usuario Logueado)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('me/packages')->name('my-packages.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [UserPackageController::class, 'index'])->name('index');
+    Route::post('/', [UserPackageController::class, 'store'])->name('store');
 });
 
 

@@ -23,6 +23,7 @@ final class ClassModel extends Model
         'description',
         'duration_minutes',
         'max_participants',
+        'max_capacity',
         'type',
         'intensity_level',
         'difficulty_level',
@@ -184,5 +185,10 @@ final class ClassModel extends Model
             ->where('status', 'scheduled')
             ->orderBy('scheduled_date')
             ->first();
+    }
+
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class, 'class_id');
     }
 }

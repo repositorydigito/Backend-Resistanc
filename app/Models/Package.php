@@ -37,6 +37,10 @@ final class Package extends Model
         'restrictions',
         'target_audience',
 
+        // nuevo
+        'color_hex',
+        'type',
+
         // Relaciones
         'membership_id',
 
