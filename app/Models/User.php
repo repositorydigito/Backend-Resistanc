@@ -180,4 +180,99 @@ final class User extends Authenticatable
     {
         return $this->hasMany(UserPaymentMethod::class);
     }
+
+    // 🎫 Relaciones con reservas de asientos
+
+    /**
+     * Get all seat reservations for this user.
+     */
+    public function seatReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class);
+    }
+
+    /**
+     * Get active seat reservations (reserved or occupied).
+     */
+    public function activeSeatReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class)
+            ->whereIn('status', ['reserved', 'occupied'])
+            ->with(['classSchedule.class', 'classSchedule.studio', 'seat']);
+    }
+
+    /**
+     * Get upcoming seat reservations.
+     */
+    public function upcomingSeatReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class)
+            ->whereIn('status', ['reserved', 'occupied'])
+            ->whereHas('classSchedule', function ($query) {
+                $query->where('scheduled_date', '>=', now()->toDateString());
+            })
+            ->with(['classSchedule.class', 'classSchedule.studio', 'seat'])
+            ->orderBy('reserved_at');
+    }
+
+    /**
+     * Get past seat reservations.
+     */
+    public function pastSeatReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class)
+            ->whereIn('status', ['occupied', 'Completed'])
+            ->whereHas('classSchedule', function ($query) {
+                $query->where('scheduled_date', '<', now()->toDateString());
+            })
+            ->with(['classSchedule.class', 'classSchedule.studio', 'seat'])
+            ->orderBy('reserved_at', 'desc');
+    }
+
+    /**
+     * Get expired reservations that need to be released.
+     */
+    public function expiredReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class)
+            ->where('status', 'reserved')
+            ->where('expires_at', '<', now());
+    }
+
+    /**
+     * Check if user has a reservation for a specific class schedule.
+     */
+    public function hasReservationForSchedule(int $classScheduleId): bool
+    {
+        return $this->seatReservations()
+            ->where('class_schedules_id', $classScheduleId)
+            ->whereIn('status', ['reserved', 'occupied'])
+            ->exists();
+    }
+
+    /**
+     * Get user's reservation for a specific class schedule.
+     */
+    public function getReservationForSchedule(int $classScheduleId): ?ClassScheduleSeat
+    {
+        return $this->seatReservations()
+            ->where('class_schedules_id', $classScheduleId)
+            ->whereIn('status', ['reserved', 'occupied'])
+            ->with(['seat', 'classSchedule'])
+            ->first();
+    }
+
+    /**
+     * Release all expired reservations for this user.
+     */
+    public function releaseExpiredReservations(): int
+    {
+        $expired = $this->expiredReservations()->get();
+
+        foreach ($expired as $reservation) {
+            $reservation->release();
+        }
+
+        return $expired->count();
+    }
 }

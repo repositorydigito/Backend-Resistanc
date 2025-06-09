@@ -32,6 +32,10 @@ final class Instructor extends Model
         'hourly_rate_soles',
         'status',
         'availability_schedule',
+
+        // nuevo
+        'type_document',
+        'document_number',
     ];
 
     protected $casts = [
@@ -43,6 +47,8 @@ final class Instructor extends Model
         'total_classes_taught' => 'integer',
         'hourly_rate_soles' => 'decimal:2',
         'hire_date' => 'date',
+
+
     ];
 
     /**
@@ -168,10 +174,10 @@ final class Instructor extends Model
     /**
      * Get the classes taught by this instructor.
      */
-    public function classes(): HasMany
-    {
-        return $this->hasMany(ClassModel::class, 'instructor_id');
-    }
+    // public function classes(): HasMany
+    // {
+    //     return $this->hasMany(ClassModel::class, 'instructor_id');
+    // }
 
     /**
      * Get the class schedules for this instructor.
@@ -274,7 +280,8 @@ final class Instructor extends Model
      */
     public function updateRatingAverage(): void
     {
-        $average = $this->ratings()->avg('rating');
+        // Use 'score' field if available, fallback to 'rating'
+        $average = $this->ratings()->avg('score') ?? $this->ratings()->avg('rating');
         $this->update(['rating_average' => $average ?? 0]);
     }
 

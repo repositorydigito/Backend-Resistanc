@@ -15,11 +15,6 @@ class InstructorFactory extends Factory
 {
     protected $model = Instructor::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         $specialties = [
@@ -50,7 +45,7 @@ class InstructorFactory extends Factory
 
         $selectedSpecialties = $this->faker->randomElement($specialties);
         $selectedCertifications = [];
-        
+
         foreach ($selectedSpecialties as $specialty) {
             switch ($specialty) {
                 case 1:
@@ -64,81 +59,77 @@ class InstructorFactory extends Factory
                     break;
             }
         }
-        
+
         $selectedCertifications = array_merge($selectedCertifications, $this->faker->randomElements($certifications['general'], 1));
 
-        $availabilitySchedule = [
-            'monday' => $this->generateDaySchedule(),
-            'tuesday' => $this->generateDaySchedule(),
-            'wednesday' => $this->generateDaySchedule(),
-            'thursday' => $this->generateDaySchedule(),
-            'friday' => $this->generateDaySchedule(),
-            'saturday' => $this->generateDaySchedule(),
-            'sunday' => $this->generateDaySchedule(),
-        ];
+        // ✅ CORREGIR: Generar horarios en el formato que espera el Repeater
+        $availabilitySchedule = $this->generateAvailabilityForRepeater();
 
         return [
-            'user_id' => $this->faker->boolean(70) ? User::factory() : null, // 70% tienen cuenta de usuario
+            'user_id' => $this->faker->boolean(70) ? User::factory() : null,
             'name' => $name,
             'email' => $email,
             'phone' => '+51 9' . $this->faker->numerify('########'),
-            'specialties' => json_encode($selectedSpecialties),
+            'specialties' => $selectedSpecialties, // ✅ Como array, el modelo lo convertirá
             'bio' => $this->generateBio($name, $experienceYears, $selectedSpecialties),
-            'certifications' => json_encode($selectedCertifications),
+            'certifications' => $selectedCertifications, // ✅ Como array, el modelo lo convertirá
             'profile_image' => '/images/instructors/' . strtolower(str_replace(' ', '_', $name)) . '.jpg',
             'instagram_handle' => '@' . strtolower(str_replace(' ', '', $name)) . '_rsistanc',
-            'is_head_coach' => $this->faker->boolean(15), // 15% son head coaches
+            'is_head_coach' => $this->faker->boolean(15),
             'experience_years' => $experienceYears,
             'rating_average' => $rating,
             'total_classes_taught' => $totalClasses,
             'hire_date' => $this->faker->dateTimeBetween('-' . $experienceYears . ' years', '-6 months'),
             'hourly_rate_soles' => $this->faker->randomFloat(2, 80.00, 200.00),
-            'status' => $this->faker->randomElement(['active', 'active', 'active', 'active', 'inactive', 'on_leave']), // Mayoría activos
-            'availability_schedule' => json_encode($availabilitySchedule),
+            'status' => $this->faker->randomElement(['active', 'active', 'active', 'active', 'inactive', 'on_leave']),
+            'availability_schedule' => $availabilitySchedule, // ✅ Nuevo formato
             'created_at' => $this->faker->dateTimeBetween('-2 years', '-6 months'),
             'updated_at' => $this->faker->dateTimeBetween('-6 months', 'now'),
         ];
     }
 
     /**
-     * Generate a day schedule for availability.
+     * ✅ NUEVO: Generar horarios en formato compatible con Repeater
      */
+    private function generateAvailabilityForRepeater(): array
+    {
+        $schedules = [];
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        // Generar 3-5 días de trabajo aleatorios
+        $workingDays = $this->faker->randomElements($days, $this->faker->numberBetween(3, 5));
+
+        foreach ($workingDays as $day) {
+            // Cada día puede tener 1-2 bloques de horarios
+            $shifts = $this->faker->numberBetween(1, 2);
+
+            for ($i = 0; $i < $shifts; $i++) {
+                if ($i === 0) {
+                    // Primer turno - mañana/tarde
+                    $startHour = $this->faker->numberBetween(6, 10);
+                    $endHour = $startHour + $this->faker->numberBetween(3, 6);
+                } else {
+                    // Segundo turno - tarde/noche
+                    $startHour = $this->faker->numberBetween(15, 18);
+                    $endHour = $startHour + $this->faker->numberBetween(2, 4);
+                }
+
+                $schedules[] = [
+                    'day' => $day,
+                    'start_time' => sprintf('%02d:00', $startHour),
+                    'end_time' => sprintf('%02d:00', min($endHour, 22)), // Máximo hasta las 22:00
+                ];
+            }
+        }
+
+        return $schedules;
+    }
+
+    // ✅ ELIMINAR o SIMPLIFICAR este método ya que no lo usamos
     private function generateDaySchedule(): array
     {
-        if ($this->faker->boolean(20)) { // 20% chance of not being available
-            return ['available' => false];
-        }
-
-        $shifts = [];
-        
-        // Morning shift
-        if ($this->faker->boolean(70)) {
-            $shifts[] = [
-                'start' => '06:00',
-                'end' => '12:00',
-            ];
-        }
-
-        // Afternoon shift
-        if ($this->faker->boolean(60)) {
-            $shifts[] = [
-                'start' => '14:00',
-                'end' => '18:00',
-            ];
-        }
-
-        // Evening shift
-        if ($this->faker->boolean(80)) {
-            $shifts[] = [
-                'start' => '18:00',
-                'end' => '21:00',
-            ];
-        }
-
-        return [
-            'available' => true,
-            'shifts' => $shifts,
-        ];
+        // Este método ya no se usa con el nuevo formato
+        return [];
     }
 
     /**
@@ -171,7 +162,7 @@ class InstructorFactory extends Factory
      */
     public function active(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'status' => 'active',
         ]);
     }
@@ -181,7 +172,7 @@ class InstructorFactory extends Factory
      */
     public function headCoach(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'is_head_coach' => true,
             'experience_years' => $this->faker->numberBetween(5, 15),
             'rating_average' => $this->faker->randomFloat(2, 4.5, 5.0),
@@ -194,7 +185,7 @@ class InstructorFactory extends Factory
      */
     public function cycling(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'specialties' => json_encode([1]), // cycling
             'certifications' => json_encode(['Spinning Certified', 'Indoor Cycling Instructor', 'CPR Certified']),
         ]);
@@ -205,7 +196,7 @@ class InstructorFactory extends Factory
      */
     public function reformer(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'specialties' => json_encode([2]), // reformer
             'certifications' => json_encode(['Pilates Reformer Certified', 'BASI Pilates', 'First Aid Certified']),
         ]);

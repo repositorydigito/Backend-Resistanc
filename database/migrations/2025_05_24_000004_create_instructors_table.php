@@ -32,6 +32,9 @@ return new class extends Migration
             $table->json('availability_schedule')->nullable()->comment('Horarios disponibles por día');
             $table->timestamps();
 
+            $table->enum('type_document', ['dni', 'passport', 'other'])->default('dni');
+            $table->string('document_number', 15)->unique();
+
             // Índices
             $table->index('status');
             $table->index(['is_head_coach', 'status']);

@@ -22,6 +22,15 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
+            // nuevo
+            $table->unsignedTinyInteger('capacity_per_seat')->nullable();
+            $table->enum('addressing', ['right_to_left', 'left_to_right', 'center']);
+            $table->integer('row')->nullable();
+            $table->integer('column')->nullable();
+
+
+
+
             // Índices
             $table->index(['studio_type', 'is_active']);
         });

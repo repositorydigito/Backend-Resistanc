@@ -8,7 +8,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Log;
 
 final class ClassSchedule extends Model
 {
@@ -30,12 +32,125 @@ final class ClassSchedule extends Model
         'is_cancelled',
         'cancellation_reason',
         'status',
+
+        'booking_opens_at',     // ✅ Asegúrate de que estén aquí
+        'booking_closes_at',    // ✅
+        'cancellation_deadline', // ✅
+        // ✅ FALTABA: Agregar los campos de las relaciones
+        'instructor_id',
+        'studio_id',
+
     ];
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($classSchedule) {
+            Log::info("=== ClassSchedule::creating EVENT ===");
+            Log::info("booking_opens_at antes: " . json_encode($classSchedule->booking_opens_at));
+            Log::info("booking_closes_at antes: " . json_encode($classSchedule->booking_closes_at));
+            Log::info("cancellation_deadline antes: " . json_encode($classSchedule->cancellation_deadline));
+
+            // Obtener los valores raw directamente de los atributos sin casts
+            $rawAttributes = $classSchedule->getAttributes();
+            Log::info("Atributos raw: " . json_encode($rawAttributes));
+
+            $classSchedule->available_spots = $classSchedule->max_capacity - ($classSchedule->booked_spots ?? 0);
+
+            // ✅ Configurar límite de cancelación automáticamente si no se proporciona
+            if (empty($classSchedule->cancellation_deadline)) {
+                // Usar los valores raw directamente desde los atributos
+                $scheduledDate = $rawAttributes['scheduled_date'] ?? null;
+                $startTime = $rawAttributes['start_time'] ?? null;
+
+                Log::info("Calculando cancellation_deadline - scheduled_date: " . json_encode($scheduledDate) . ", start_time: " . json_encode($startTime));
+
+                if ($scheduledDate && $startTime) {
+                    // Asegurar que scheduledDate sea solo fecha
+                    if (strlen($scheduledDate) > 10) {
+                        $scheduledDate = substr($scheduledDate, 0, 10); // Solo YYYY-MM-DD
+                    }
+
+                    // Asegurar que startTime sea solo hora
+                    if (strlen($startTime) > 8) {
+                        $parts = explode(' ', $startTime);
+                        $startTime = end($parts); // Tomar la última parte (la hora)
+                    }
+
+                    Log::info("Valores limpiados - scheduled_date: " . json_encode($scheduledDate) . ", start_time: " . json_encode($startTime));
+
+                    $classDate = Carbon::parse($scheduledDate . ' ' . $startTime);
+                    $cancellationDeadline = $classDate->copy()->subDays(3);
+
+                    $classSchedule->cancellation_deadline = $cancellationDeadline->format('Y-m-d H:i:s');
+                    Log::info("cancellation_deadline calculado: " . $classSchedule->cancellation_deadline);
+                }
+            }
+
+            // ✅ SOLO configurar fechas de reserva por defecto si NO vienen de la importación
+            if (is_null($classSchedule->booking_opens_at)) {
+                // Las reservas abren 7 días antes de la clase
+                $scheduledDate = $rawAttributes['scheduled_date'] ?? null;
+                $startTime = $rawAttributes['start_time'] ?? null;
+
+                if ($scheduledDate && $startTime) {
+                    // Limpiar valores como arriba
+                    if (strlen($scheduledDate) > 10) {
+                        $scheduledDate = substr($scheduledDate, 0, 10);
+                    }
+                    if (strlen($startTime) > 8) {
+                        $parts = explode(' ', $startTime);
+                        $startTime = end($parts);
+                    }
+
+                    $classDate = Carbon::parse($scheduledDate . ' ' . $startTime);
+                    $bookingOpens = $classDate->copy()->subDays(7);
+
+                    $classSchedule->booking_opens_at = $bookingOpens->format('Y-m-d H:i:s');
+                }
+            }
+
+            if (is_null($classSchedule->booking_closes_at)) {
+                // Las reservas cierran 1 hora antes de la clase
+                $scheduledDate = $rawAttributes['scheduled_date'] ?? null;
+                $startTime = $rawAttributes['start_time'] ?? null;
+
+                if ($scheduledDate && $startTime) {
+                    // Limpiar valores como arriba
+                    if (strlen($scheduledDate) > 10) {
+                        $scheduledDate = substr($scheduledDate, 0, 10);
+                    }
+                    if (strlen($startTime) > 8) {
+                        $parts = explode(' ', $startTime);
+                        $startTime = end($parts);
+                    }
+
+                    $classDate = Carbon::parse($scheduledDate . ' ' . $startTime);
+                    $bookingCloses = $classDate->copy()->subHour();
+
+                    $classSchedule->booking_closes_at = $bookingCloses->format('Y-m-d H:i:s');
+                }
+            }
+
+            Log::info("=== ClassSchedule::creating EVENT FINAL ===");
+            Log::info("booking_opens_at después: " . json_encode($classSchedule->booking_opens_at));
+            Log::info("booking_closes_at después: " . json_encode($classSchedule->booking_closes_at));
+            Log::info("cancellation_deadline después: " . json_encode($classSchedule->cancellation_deadline));
+        });
+
+        // static::updating(function ($classSchedule) {
+        //     $classSchedule->available_spots = $classSchedule->max_capacity - ($classSchedule->booked_spots ?? 0);
+        // });
+    }
 
     protected $casts = [
-        'scheduled_date' => 'datetime',
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
+        'scheduled_date' => 'date', // Solo fecha, sin hora
+        // NO usar casts para start_time y end_time - mantenerlos como string
+        // 'start_time' => 'datetime',
+        // 'end_time' => 'datetime',
+        'booking_opens_at' => 'datetime',
+        'booking_closes_at' => 'datetime',
+        'cancellation_deadline' => 'datetime',
         'max_capacity' => 'integer',
         'booked_spots' => 'integer',
         'available_spots' => 'integer',
@@ -281,5 +396,73 @@ final class ClassSchedule extends Model
     public function studio(): BelongsTo
     {
         return $this->belongsTo(Studio::class);
+    }
+
+
+
+    // 🆕 Relación many-to-many con asientos
+    public function seats(): BelongsToMany
+    {
+        return $this->belongsToMany(Seat::class, 'class_schedule_seat', 'class_schedules_id', 'seats_id')
+            ->withPivot(['user_id', 'status', 'reserved_at', 'expires_at'])
+            ->withTimestamps();
+    }
+
+    // 🆕 Relación directa con la tabla intermedia
+    public function seatAssignments(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class, 'class_schedules_id');
+    }
+
+    // 🆕 Asientos disponibles
+    public function availableSeats()
+    {
+        return $this->seatAssignments()->available()->with('seat');
+    }
+
+    // 🆕 Asientos reservados
+    public function reservedSeats()
+    {
+        return $this->seatAssignments()->reserved()->with('seat', 'user');
+    }
+
+    // 🆕 Asientos ocupados
+    public function occupiedSeats()
+    {
+        return $this->seatAssignments()->occupied()->with('seat', 'user');
+    }
+
+    // 🆕 Liberar reservas expiradas
+    public function releaseExpiredReservations(): int
+    {
+        $expired = $this->seatAssignments()->expired()->get();
+
+        foreach ($expired as $seatAssignment) {
+            $seatAssignment->release();
+        }
+
+        return $expired->count();
+    }
+
+    // 🆕 Obtener mapa de asientos con estado
+    public function getSeatMap()
+    {
+        return $this->seatAssignments()
+            ->with(['seat' => function ($query) {
+                $query->select('id', 'row', 'number', 'type');
+            }])
+            ->get()
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->seats_id,
+                    'row' => $assignment->seat->row,
+                    'number' => $assignment->seat->number,
+                    'type' => $assignment->seat->type,
+                    'status' => $assignment->status,
+                    'user_id' => $assignment->user_id,
+                    'reserved_at' => $assignment->reserved_at,
+                    'expires_at' => $assignment->expires_at,
+                ];
+            });
     }
 }

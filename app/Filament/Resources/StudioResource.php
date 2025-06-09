@@ -71,7 +71,79 @@ class StudioResource extends Resource
                             ->placeholder('Presiona Enter después de cada equipo')
                             ->columnSpanFull(),
 
+                        Forms\Components\Select::make('addressing')
+                            ->label('Dirección')
+                            ->options([
+                                'right_to_left' => 'Derecha a Izquierda',
+                                'left_to_right' => 'Izquierda a Derecha',
+                                'center' => 'Centro',
+                            ])
+                            ->required(),
 
+                        Forms\Components\TextInput::make('row')
+                            ->label('Filas')
+                            ->required()
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(20)
+                            ->helperText('Número de filas para distribuir los asientos'),
+
+                        Forms\Components\TextInput::make('column')
+                            ->label('Columnas')
+                            ->required()
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(20)
+                            ->helperText('Número de columnas para distribuir los asientos')
+                            ->live()
+                            ->afterStateUpdated(function ($state, $get, $set) {
+                                $rows = (int) $get('row');
+                                $columns = (int) $state;
+                                $maxCapacity = (int) $get('max_capacity');
+
+                                if ($rows > 0 && $columns > 0 && $maxCapacity > 0) {
+                                    $maxPossible = $rows * $columns;
+                                    if ($maxPossible < $maxCapacity) {
+                                        // Optionally adjust max_capacity or show warning
+                                        // $set('max_capacity', $maxPossible);
+                                    }
+                                }
+                            }),
+
+                        Forms\Components\TextInput::make('capacity_per_seat')
+                            ->label('Capacidad por Asiento')
+                            ->required()
+                            ->numeric(),
+
+                        Forms\Components\Placeholder::make('seats_info')
+                            ->label('Información de Asientos')
+                            ->content(function ($record) {
+                                if (!$record) {
+                                    return 'Los asientos se generarán automáticamente al crear la sala. Se crearán según la "Capacidad por Asiento" especificada, distribuidos fila por fila según las filas y columnas configuradas.';
+                                }
+
+                                $seatsCount = $record->seats()->count();
+                                $seatCapacity = $record->capacity_per_seat ?? 0;
+                                $maxPossible = ($record->row ?? 0) * ($record->column ?? 0);
+
+                                $info = "Asientos generados: {$seatsCount} de {$seatCapacity} (capacidad por asiento)";
+
+                                if ($maxPossible < $seatCapacity) {
+                                    $info .= " | ⚠️ Configuración: {$record->row}×{$record->column} = {$maxPossible} posiciones (menor que capacidad por asiento)";
+                                } else {
+                                    $info .= " | Configuración: {$record->row}×{$record->column} posiciones disponibles";
+                                }
+
+                                $info .= " | Direccionamiento: " . match($record->addressing) {
+                                    'left_to_right' => 'Izquierda a Derecha',
+                                    'right_to_left' => 'Derecha a Izquierda',
+                                    'center' => 'Centro',
+                                    default => 'No definido'
+                                };
+
+                                return $info;
+                            })
+                            ->columnSpanFull(),
 
                         // En lugar de TextInput, usar:
                         Forms\Components\TagsInput::make('amenities')
@@ -99,6 +171,20 @@ class StudioResource extends Resource
                     ->label('Capacidad Máxima')
                     ->numeric()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('seats_count')
+                    ->label('Asientos')
+                    ->getStateUsing(function ($record) {
+                        $seatsCount = $record->seats()->count();
+                        $seatCapacity = $record->capacity_per_seat ?? 0;
+                        return "{$seatsCount}/{$seatCapacity}";
+                    })
+                    ->badge()
+                    ->color(function ($record) {
+                        $seatsCount = $record->seats()->count();
+                        $seatCapacity = $record->capacity_per_seat ?? 0;
+                        return $seatsCount === $seatCapacity ? 'success' : 'warning';
+                    }),
                 Tables\Columns\TextColumn::make('studio_type')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
                         'cycling' => 'Ciclo',
@@ -145,7 +231,8 @@ class StudioResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\SeatMapDirectRelationManager::class,
+            RelationManagers\SeatsRelationManager::class,
         ];
     }
 

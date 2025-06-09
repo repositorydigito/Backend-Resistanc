@@ -73,8 +73,8 @@ class ClassFactory extends Factory
 
         return [
             'discipline_id' => Discipline::factory(),
-            'instructor_id' => Instructor::factory(),
-            'studio_id' => Studio::factory(),
+            // 'instructor_id' => Instructor::factory(),
+            // 'studio_id' => Studio::factory(),
             'name' => $name,
             'description' => $this->generateDescription($name, $disciplineName, $intensity),
             'duration_minutes' => $duration,
@@ -189,7 +189,7 @@ class ClassFactory extends Factory
         ];
 
         $disciplineRequirements = $requirements[$discipline] ?? [];
-        
+
         if (empty($disciplineRequirements)) {
             return null;
         }

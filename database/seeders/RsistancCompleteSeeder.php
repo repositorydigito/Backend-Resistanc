@@ -72,7 +72,7 @@ class RsistancCompleteSeeder extends Seeder
         $this->command->info('👥 Seeding business data...');
 
         // Create instructors
-        $this->createInstructors();
+        // $this->createInstructors();
 
         // Create classes will be done after we have all dependencies
     }
@@ -113,15 +113,15 @@ class RsistancCompleteSeeder extends Seeder
         $locations = StudioLocation::all();
 
         foreach ($locations as $location) {
-            // Each location has multiple studios
-            Studio::factory()->cycling()->create(['location' => $location->name . ' - Planta Baja']);
-            Studio::factory()->cycling()->create(['location' => $location->name . ' - Primer Piso']);
-            Studio::factory()->reformer()->create(['location' => $location->name . ' - Segundo Piso']);
-            Studio::factory()->reformer()->create(['location' => $location->name . ' - Segundo Piso']);
-            Studio::factory()->mat()->create(['location' => $location->name . ' - Tercer Piso']);
-            Studio::factory()->multipurpose()->create(['location' => $location->name . ' - Tercer Piso']);
+            // // Each location has multiple studios
+            // Studio::factory()->cycling()->create(['location' => $location->name . ' - Planta Baja']);
+            // // Studio::factory()->cycling()->create(['location' => $location->name . ' - Primer Piso']);
+            // Studio::factory()->reformer()->create(['location' => $location->name . ' - Segundo Piso']);
+            // // Studio::factory()->reformer()->create(['location' => $location->name . ' - Segundo Piso']);
+            // Studio::factory()->mat()->create(['location' => $location->name . ' - Tercer Piso']);
+            // Studio::factory()->multipurpose()->create(['location' => $location->name . ' - Tercer Piso']);
 
-            $this->command->line("✅ Created studios for: {$location->name}");
+            // $this->command->line("✅ Created studios for: {$location->name}");
         }
     }
 
@@ -133,21 +133,21 @@ class RsistancCompleteSeeder extends Seeder
         $this->command->info('👨‍🏫 Creating instructors...');
 
         // Create head coaches
-        Instructor::factory(5)->headCoach()->active()->create();
+        // Instructor::factory(5)->headCoach()->active()->create();
 
         // Create cycling instructors
-        Instructor::factory(8)->cycling()->active()->create();
+        // Instructor::factory(8)->cycling()->active()->create();
 
         // Create reformer instructors
-        Instructor::factory(6)->reformer()->active()->create();
+        // Instructor::factory(6)->reformer()->active()->create();
 
         // Create general instructors
-        Instructor::factory(12)->active()->create();
+        // Instructor::factory(12)->active()->create();
 
         // Create some inactive instructors
-        Instructor::factory(3)->create(['status' => 'inactive']);
+        // Instructor::factory(3)->create(['status' => 'inactive']);
 
-        $this->command->line("✅ Created " . Instructor::count() . " instructors");
+        // $this->command->line("✅ Created " . Instructor::count() . " instructors");
     }
 
     /**
@@ -235,15 +235,16 @@ class RsistancCompleteSeeder extends Seeder
         $disciplines = Discipline::all();
         $instructors = Instructor::all();
 
+        // En database/seeders/RsistancCompleteSeeder.php línea 240
         foreach ($instructors as $instructor) {
-            // Get specialties from instructor
-            $specialties = json_decode($instructor->specialties, true) ?? [];
+            // Ahora specialties siempre será un array gracias al accessor
+            $specialties = $instructor->specialties; // Ya no necesitas json_decode()
 
             // Attach corresponding disciplines
             foreach ($specialties as $disciplineId) {
                 $discipline = $disciplines->find($disciplineId);
                 if ($discipline) {
-                    $instructor->disciplines()->attach($discipline->id);
+                    // ... resto del código
                 }
             }
         }

@@ -53,35 +53,35 @@ class ClassModelResource extends Resource
                             ->relationship('discipline', 'name')
                             ->required(),
 
-                        Forms\Components\Select::make('instructor_id')
-                            ->searchable()
-                            ->label('Instructor')
-                            ->options(function () {
-                                // Debug: Ver qué instructores tienes
-                                $instructors = \App\Models\Instructor::with('user')->get();
+                        // Forms\Components\Select::make('instructor_id')
+                        //     ->searchable()
+                        //     ->label('Instructor')
+                        //     ->options(function () {
+                        //         // Debug: Ver qué instructores tienes
+                        //         $instructors = \App\Models\Instructor::with('user')->get();
 
-                                foreach ($instructors as $instructor) {
-                                    Log::info('Instructor: ' . $instructor->name);
-                                    if ($instructor->user) {
-                                        Log::info('User roles: ' . $instructor->user->roles->pluck('name'));
-                                    }
-                                }
+                        //         foreach ($instructors as $instructor) {
+                        //             Log::info('Instructor: ' . $instructor->name);
+                        //             if ($instructor->user) {
+                        //                 Log::info('User roles: ' . $instructor->user->roles->pluck('name'));
+                        //             }
+                        //         }
 
-                                return \App\Models\Instructor::where('status', 'active')
-                                    ->pluck('name', 'id');
-                            })
-                            ->preload()
-                            ->required(),
-
-
+                        //         return \App\Models\Instructor::where('status', 'active')
+                        //             ->pluck('name', 'id');
+                        //     })
+                        //     ->preload()
+                        //     ->required(),
 
 
-                        Forms\Components\Select::make('studio_id')
-                            ->label('Sala')
-                            ->searchable()
-                            ->preload()
-                            ->relationship('studio', 'name')
-                            ->required(),
+
+
+                        // Forms\Components\Select::make('studio_id')
+                        //     ->label('Sala')
+                        //     ->searchable()
+                        //     ->preload()
+                        //     ->relationship('studio', 'name')
+                        //     ->required(),
 
                         Forms\Components\TextInput::make('max_capacity')
                             ->label('Capacidad Máxima')
@@ -142,37 +142,89 @@ class ClassModelResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('discipline.name')
+                    ->label('Disciplina')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('instructor.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('studio.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('type'),
+                // Tables\Columns\TextColumn::make('instructor.name')
+                //     ->numeric()
+                //     ->sortable(),
+
+                // Tables\Columns\TextColumn::make('studio.name')
+                //     ->numeric()
+                //     ->sortable(),
+
+                Tables\Columns\TextColumn::make('type')
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'presencial' => 'Presencial',
+                        'en_vivo' => 'En Vivo',
+                        'grabada' => 'Grabada',
+                        default => ucfirst($state),
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'presencial' => 'primary',
+                        'en_vivo' => 'info',
+                        'grabada' => 'warning',
+                        default => 'gray',
+                    })
+                    ->label('Modalidad'),
                 Tables\Columns\TextColumn::make('duration_minutes')
+                    ->label('Duración (minutos)')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('max_capacity')
+                    ->label('Capacidad Máxima')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('difficulty_level'),
+                Tables\Columns\TextColumn::make('difficulty_level')
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'beginner' => 'Principiante',
+                        'intermediate' => 'Intermedio',
+                        'advanced' => 'Avanzado',
+                        'all_levels' => 'Todos los Niveles',
+                        default => ucfirst($state),
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'beginner' => 'success',
+                        'intermediate' => 'warning',
+                        'advanced' => 'danger',
+                        'all_levels' => 'primary',
+                        default => 'gray',
+                    })
+                    ->label('Nivel de Dificultad'),
                 Tables\Columns\TextColumn::make('music_genre')
+                    ->label('Género Musical')
                     ->searchable(),
                 Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Destacada')
                     ->boolean(),
-                Tables\Columns\TextColumn::make('status'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'active' => 'Activo',
+                        'inactive' => 'Inactivo',
+                        'draft' => 'Borrador',
+                        default => ucfirst($state),
+                    })
+                    ->color(fn(string $state): string => match ($state) {
+                        'active' => 'success',
+                        'inactive' => 'danger',
+                        'draft' => 'warning',
+                        default => 'gray',
+                    })
+                    ->label('Estado'),
+                // Tables\Columns\TextColumn::make('created_at')
+                //     ->dateTime()
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('updated_at')
+                //     ->dateTime()
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

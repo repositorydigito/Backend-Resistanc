@@ -67,6 +67,12 @@ class InstructorResource extends Resource
                             ->label('Teléfono')
                             ->tel()
                             ->maxLength(15),
+
+                        Forms\Components\Select::make('disciplines')
+                            ->label('Disciplinas')
+                            ->multiple()
+                            ->relationship('disciplines', 'name')
+                            ->preload(),
                         Forms\Components\TextInput::make('experience_years')
                             ->label('Años de Experiencia')
                             ->numeric(),
@@ -77,6 +83,20 @@ class InstructorResource extends Resource
                         Forms\Components\TextInput::make('hourly_rate_soles')
                             ->label('Tarifa por Hora (S/.)')
                             ->numeric(),
+
+                        Forms\Components\Select::make('type_document')
+                            ->label('Tipo de Documento')
+                            ->options([
+                                'dni' => 'DNI',
+                                'passport' => 'Pasaporte',
+                                'other' => 'Otro',
+                            ])
+                            ->required(),
+
+                        Forms\Components\TextInput::make('document_number')
+                            ->label('Número de Documento')
+                            ->required()
+                            ->maxLength(15),
 
                         // En lugar de TextInput, usar:
                         Forms\Components\TagsInput::make('specialties')
@@ -159,7 +179,7 @@ class InstructorResource extends Resource
                                                 'saturday' => 'Sábado',
                                                 'sunday' => 'Domingo',
                                             ])
-                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems() // 🔥
+                                            // ->disableOptionsWhenSelectedInSiblingRepeaterItems() // 🔥
                                             ->required(),
                                         Forms\Components\TimePicker::make('start_time')
                                             ->label('Hora de Inicio')
@@ -194,6 +214,10 @@ class InstructorResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('Correo Electrónico')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('document_number')
+                    ->label('Número de Documento')
+                    ->searchable()
+                    ->sortable(),
                 // Tables\Columns\TextColumn::make('phone')
                 //     ->label('Teléfono')
                 //     ->searchable(),
@@ -267,7 +291,7 @@ class InstructorResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\CoachRatingsRelationManager::class,
         ];
     }
 

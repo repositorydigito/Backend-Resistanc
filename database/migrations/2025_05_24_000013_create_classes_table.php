@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->foreignId('discipline_id')->constrained('disciplines')->onDelete('restrict');
-            $table->foreignId('instructor_id')->constrained('instructors')->onDelete('restrict');
-            $table->foreignId('studio_id')->constrained('studios')->onDelete('restrict');
+            // $table->foreignId('instructor_id')->constrained('instructors')->onDelete('restrict');
+            // $table->foreignId('studio_id')->constrained('studios')->onDelete('restrict');
             $table->enum('type', ['presencial', 'en_vivo', 'grabada'])->default('presencial');
             $table->unsignedTinyInteger('duration_minutes');
             $table->unsignedTinyInteger('max_capacity');
@@ -30,8 +30,8 @@ return new class extends Migration
 
             // Índices
             $table->index(['discipline_id', 'status']);
-            $table->index(['instructor_id', 'status']);
-            $table->index('studio_id');
+            // $table->index(['instructor_id', 'status']);
+            // $table->index('studio_id');
             $table->index(['type', 'status']);
         });
     }

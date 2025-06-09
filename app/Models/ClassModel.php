@@ -16,9 +16,7 @@ final class ClassModel extends Model
     protected $table = 'classes';
 
     protected $fillable = [
-        'discipline_id',
-        'instructor_id',
-        'studio_id',
+
         'name',
         'description',
         'duration_minutes',
@@ -31,6 +29,12 @@ final class ClassModel extends Model
         'special_requirements',
         'is_featured',
         'status',
+
+        // Relaciones
+        'discipline_id',
+        // 'instructor_id',
+        // 'studio_id',
+
     ];
 
     protected $casts = [
@@ -50,18 +54,18 @@ final class ClassModel extends Model
     /**
      * Get the instructor for this class.
      */
-    public function instructor(): BelongsTo
-    {
-        return $this->belongsTo(Instructor::class);
-    }
+    // public function instructor(): BelongsTo
+    // {
+    //     return $this->belongsTo(Instructor::class);
+    // }
 
     /**
      * Get the studio where this class is held.
      */
-    public function studio(): BelongsTo
-    {
-        return $this->belongsTo(Studio::class);
-    }
+    // public function studio(): BelongsTo
+    // {
+    //     return $this->belongsTo(Studio::class);
+    // }
 
     /**
      * Get the schedules for this class.
