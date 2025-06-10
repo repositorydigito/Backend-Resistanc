@@ -1,6 +1,9 @@
 <x-filament-panels::page>
-    {{-- Estadísticas de Reservas --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+    {{-- Componente Visual Mejorado --}}
+    @livewire(\App\Livewire\ScheduleSeatMapComponent::class, ['schedule' => $this->record], key('manage-seats-' . $this->record->id))
+
+    {{-- Estadísticas de Reservas (Backup - se puede eliminar si no se necesita) --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6" style="display: none;">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total</div>
             <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $reservationStats['total_seats'] }}</div>
@@ -216,4 +219,43 @@ Estado: {{ ucfirst($seat['status']) }}
             </div>
         </div>
     @endif
+
+    {{-- JavaScript para escuchar eventos de actualización --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Escuchar evento de actualización del horario desde el formulario de edición
+            window.addEventListener('schedule-updated', function(event) {
+                console.log('Schedule updated, refreshing seat map...', event.detail);
+
+                // Buscar el componente Livewire y llamar al método de actualización
+                const livewireComponent = Livewire.find('manage-seats-{{ $this->record->id }}');
+                if (livewireComponent) {
+                    livewireComponent.call('refreshAfterScheduleUpdate');
+                }
+            });
+
+            // Escuchar evento de actualización del mapa de asientos
+            window.addEventListener('seatMapRefreshed', function(event) {
+                console.log('Seat map refreshed');
+
+                // Mostrar notificación de actualización
+                if (window.filamentNotifications) {
+                    window.filamentNotifications.show({
+                        title: '🔄 Mapa actualizado',
+                        body: 'El mapa de asientos se ha actualizado automáticamente.',
+                        type: 'success',
+                        duration: 3000
+                    });
+                }
+            });
+
+            // Auto-refresh cada 30 segundos para mantener sincronizado
+            setInterval(function() {
+                const livewireComponent = Livewire.find('manage-seats-{{ $this->record->id }}');
+                if (livewireComponent && document.visibilityState === 'visible') {
+                    livewireComponent.call('refreshSeatMap');
+                }
+            }, 30000);
+        });
+    </script>
 </x-filament-panels::page>

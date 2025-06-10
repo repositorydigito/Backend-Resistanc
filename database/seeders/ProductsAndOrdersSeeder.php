@@ -35,7 +35,7 @@ class ProductsAndOrdersSeeder extends Seeder
             $this->createProductsWithVariants();
 
             // 2. Create user packages
-            $this->createUserPackages();
+            // $this->createUserPackages();
 
             // 3. Create orders
             $this->createOrders();

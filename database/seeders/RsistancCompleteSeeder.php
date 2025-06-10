@@ -55,7 +55,7 @@ class RsistancCompleteSeeder extends Seeder
         $this->command->info('📊 Seeding basic data...');
 
         // Seed disciplines
-        $this->call(DisciplineSeeder::class);
+        // $this->call(DisciplineSeeder::class);
 
         // Seed studio locations
         $this->call(StudioLocationSeeder::class);
@@ -100,7 +100,7 @@ class RsistancCompleteSeeder extends Seeder
     {
         $this->command->info('📦 Seeding package data...');
 
-        $this->createPackages();
+        // $this->createPackages();
     }
 
     /**
@@ -209,7 +209,7 @@ class RsistancCompleteSeeder extends Seeder
         // Package::factory()->monthlyUnlimited()->active()->create();
 
         // Create additional packages
-        Package::factory(8)->active()->create();
+        // Package::factory(8)->active()->create();
 
         $this->command->line("✅ Created " . Package::count() . " packages");
     }

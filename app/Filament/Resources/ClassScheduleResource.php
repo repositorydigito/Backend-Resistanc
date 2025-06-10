@@ -79,10 +79,97 @@ class ClassScheduleResource extends Resource
                             ->dehydrated() // ✅ AGREGAR ESTO - asegura que se envíe aunque esté disabled
                             ->disabled(fn(Get $get): bool => !filled($get('class_id')))
                             ->helperText('Primero selecciona una clase para ver instructores disponibles'),
+
+
+
+
                         Forms\Components\Select::make('studio_id')
                             ->label('Sala/Estudio')
                             ->relationship('studio', 'name')
-                            ->required(),
+                            ->required()
+                            ->disabled(function (Get $get, $record): bool {
+                                // Deshabilitar si no hay class_id seleccionado
+                                if (!filled($get('class_id'))) {
+                                    return true;
+                                }
+
+                                // Deshabilitar si ya tiene asientos reservados POR USUARIOS
+                                if ($record && $record->seats()->wherePivotNotNull('user_id')->exists()) {
+                                    return true;
+                                }
+
+                                return false;
+                            })
+                            ->helperText(function ($record) {
+                                if ($record && $record->seats()->wherePivotNotNull('user_id')->exists()) {
+                                    $seatsCount = $record->seats()->wherePivotNotNull('user_id')->count();
+                                    return "⚠️ No se puede cambiar la sala porque hay {$seatsCount} asiento(s) reservado(s) por usuarios";
+                                }
+                                return null;
+                            })
+                            ->live() // Hacer reactivo para detectar cambios
+                            ->afterStateUpdated(function (Get $get, Set $set, $state, $old) {
+                                // Solo procesar si realmente cambió la sala y estamos en modo edición
+                                if ($state && $old && $state !== $old) {
+                                    // Validar que la nueva sala no esté ocupada en este horario
+                                    $scheduledDate = $get('scheduled_date');
+                                    $startTime = $get('start_time');
+                                    $endTime = $get('end_time');
+
+                                    if ($scheduledDate && $startTime && $endTime) {
+                                        $conflict = \App\Models\ClassSchedule::where('studio_id', $state)
+                                            ->where('scheduled_date', $scheduledDate)
+                                            ->where('status', '!=', 'cancelled')
+                                            ->where('id', '!=', $get('id')) // Excluir el horario actual
+                                            ->where(function ($query) use ($startTime, $endTime) {
+                                                $query->where(function ($q) use ($startTime, $endTime) {
+                                                    $q->where('start_time', '<', $endTime)
+                                                        ->where('end_time', '>', $startTime);
+                                                });
+                                            })->first();
+
+                                        if ($conflict) {
+                                            // Revertir el cambio
+                                            $set('studio_id', $old);
+
+                                            // Mostrar notificación de error
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('Conflicto de Sala')
+                                                ->body("La sala ya está ocupada el {$scheduledDate} de {$conflict->start_time} a {$conflict->end_time} por la clase '{$conflict->class->name}'")
+                                                ->danger()
+                                                ->duration(8000)
+                                                ->send();
+                                            return;
+                                        }
+                                    }
+                                }
+                            })
+                            ->rules([
+                                fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    // Validación adicional en el servidor
+                                    $scheduledDate = $get('scheduled_date');
+                                    $startTime = $get('start_time');
+                                    $endTime = $get('end_time');
+                                    $currentId = $get('id');
+
+                                    if ($value && $scheduledDate && $startTime && $endTime) {
+                                        $conflict = \App\Models\ClassSchedule::where('studio_id', $value)
+                                            ->where('scheduled_date', $scheduledDate)
+                                            ->where('status', '!=', 'cancelled')
+                                            ->when($currentId, fn($q) => $q->where('id', '!=', $currentId))
+                                            ->where(function ($query) use ($startTime, $endTime) {
+                                                $query->where(function ($q) use ($startTime, $endTime) {
+                                                    $q->where('start_time', '<', $endTime)
+                                                        ->where('end_time', '>', $startTime);
+                                                });
+                                            })->first();
+
+                                        if ($conflict) {
+                                            $fail("La sala ya está ocupada el {$scheduledDate} de {$conflict->start_time} a {$conflict->end_time} por la clase '{$conflict->class->name}'");
+                                        }
+                                    }
+                                },
+                            ]),
                         Forms\Components\DatePicker::make('scheduled_date')
                             ->minDate(now()->subDays(1))
                             ->maxDate(now()->addDays(30))
@@ -155,6 +242,25 @@ class ClassScheduleResource extends Resource
                         Forms\Components\Textarea::make('special_notes')
                             ->label('Notas Especiales')
                             ->columnSpanFull(),
+
+                        // 🆕 Vista previa del mapa de asientos
+                        // Forms\Components\Placeholder::make('seat_preview')
+                        //     ->label('Vista Previa de Asientos')
+                        //     ->content(function (Get $get) {
+                        //         $studioId = $get('studio_id');
+                        //         if (!$studioId) {
+                        //             return view('filament.forms.components.studio-seat-empty')->render();
+                        //         }
+
+                        //         $studio = \App\Models\Studio::find($studioId);
+                        //         if (!$studio) {
+                        //             return view('filament.forms.components.studio-seat-not-found')->render();
+                        //         }
+
+                        //         return view('filament.forms.components.studio-seat-map', compact('studio'))->render();
+                        //     })
+                        //     ->columnSpanFull()
+                        //     ->visible(fn(Get $get): bool => filled($get('studio_id'))),http://backend-resistanc.test/admin/class-schedules/5/edit
                         Forms\Components\Toggle::make('is_holiday_schedule')
                             ->label('Horario de Feriado')
                             ->required(),
@@ -214,13 +320,13 @@ class ClassScheduleResource extends Resource
 
                 Tables\Columns\TextColumn::make('available_seats_count')
                     ->label('Disponibles')
-                    ->getStateUsing(fn ($record) => $record->seatAssignments()->where('status', 'available')->count())
+                    ->getStateUsing(fn($record) => $record->seatAssignments()->where('status', 'available')->count())
                     ->badge()
                     ->color('success'),
 
                 Tables\Columns\TextColumn::make('occupied_seats_count')
                     ->label('Ocupados')
-                    ->getStateUsing(fn ($record) => $record->seatAssignments()->whereIn('status', ['reserved', 'occupied'])->count())
+                    ->getStateUsing(fn($record) => $record->seatAssignments()->whereIn('status', ['reserved', 'occupied'])->count())
                     ->badge()
                     ->color('danger'),
                 // Tables\Columns\TextColumn::make('available_spots')
@@ -281,7 +387,7 @@ class ClassScheduleResource extends Resource
                     ->label('Asientos')
                     ->icon('heroicon-o-squares-plus')
                     ->color('info')
-                    ->url(fn ($record) => static::getUrl('manage-seats', ['record' => $record]))
+                    ->url(fn($record) => static::getUrl('manage-seats', ['record' => $record]))
                     ->tooltip('Gestionar asientos para este horario'),
 
                 Tables\Actions\EditAction::make(),
@@ -296,6 +402,7 @@ class ClassScheduleResource extends Resource
     public static function getRelations(): array
     {
         return [
+            RelationManagers\SeatMapVisualRelationManager::class,
             RelationManagers\SeatAssignmentsRelationManager::class,
         ];
     }

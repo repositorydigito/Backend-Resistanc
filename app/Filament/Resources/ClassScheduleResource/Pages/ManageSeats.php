@@ -34,6 +34,20 @@ class ManageSeats extends Page
         $this->loadReservationStats();
     }
 
+    // 🆕 Método para refrescar cuando se actualice el horario
+    public function refreshAfterScheduleUpdate()
+    {
+        // Recargar el registro desde la base de datos
+        $this->record = $this->record->fresh();
+
+        $this->loadSeatMap();
+        $this->loadStudioInfo();
+        $this->loadReservationStats();
+
+        // Emitir evento para notificar que se actualizó
+        $this->dispatch('seatMapRefreshed');
+    }
+
     public function getTitle(): string|Htmlable
     {
         return "Asientos - {$this->record->class->name} ({$this->record->scheduled_date->format('d/m/Y')} {$this->record->start_time})";

@@ -6,8 +6,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Log;
 
 final class Studio extends Model
 {
@@ -22,14 +22,46 @@ final class Studio extends Model
 
         // Generate seats automatically when a studio is created
         static::created(function ($studio) {
-            $studio->generateSeats();
+            Log::info("=== Studio::created EVENT TRIGGERED ===");
+            Log::info("Studio data:", [
+                'id' => $studio->id,
+                'name' => $studio->name,
+                'row' => $studio->row,
+                'column' => $studio->column,
+                'capacity_per_seat' => $studio->capacity_per_seat,
+                'addressing' => $studio->addressing,
+                'all_attributes' => $studio->getAttributes()
+            ]);
+
+            try {
+                $studio->generateSeats();
+                $seatsCount = $studio->seats()->count();
+                Log::info("Asientos generados exitosamente para estudio ID: {$studio->id}, Total: {$seatsCount}");
+            } catch (\Exception $e) {
+                Log::error("Error generando asientos para estudio ID: {$studio->id}", [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         });
 
         // Regenerate seats when studio configuration changes
         static::updated(function ($studio) {
             // Only regenerate if seating configuration changed
             if ($studio->wasChanged(['row', 'column', 'addressing', 'capacity_per_seat'])) {
-                $studio->generateSeats();
+                Log::info("=== Studio::updated EVENT ===");
+                Log::info("Regenerando asientos para estudio ID: {$studio->id} debido a cambios en configuración");
+
+                try {
+                    $studio->generateSeats();
+                    $seatsCount = $studio->seats()->count();
+                    Log::info("Asientos regenerados exitosamente para estudio ID: {$studio->id}, Total: {$seatsCount}");
+                } catch (\Exception $e) {
+                    Log::error("Error regenerando asientos para estudio ID: {$studio->id}", [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
             }
         });
     }
@@ -139,15 +171,33 @@ final class Studio extends Model
      */
     public function generateSeats(): void
     {
+        Log::info("Iniciando generación de asientos para estudio: {$this->name} (ID: {$this->id})");
+
         // Delete existing seats first
-        $this->seats()->delete();
+        $existingSeats = $this->seats()->count();
+        if ($existingSeats > 0) {
+            Log::info("Eliminando {$existingSeats} asientos existentes");
+            $this->seats()->delete();
+        }
 
         $seatCapacity = (int) $this->capacity_per_seat;
         $rows = (int) $this->row;
         $columns = (int) $this->column;
         $addressing = $this->addressing;
 
+        Log::info("Configuración del estudio:", [
+            'capacity_per_seat' => $seatCapacity,
+            'rows' => $rows,
+            'columns' => $columns,
+            'addressing' => $addressing
+        ]);
+
         if ($seatCapacity <= 0 || $rows <= 0 || $columns <= 0) {
+            Log::warning("Configuración inválida para generar asientos", [
+                'capacity_per_seat' => $seatCapacity,
+                'rows' => $rows,
+                'columns' => $columns
+            ]);
             return;
         }
 
@@ -176,6 +226,13 @@ final class Studio extends Model
         // Bulk insert for better performance
         if (!empty($seats)) {
             Seat::insert($seats);
+            Log::info("Asientos creados exitosamente:", [
+                'total_seats' => count($seats),
+                'studio_id' => $this->id,
+                'studio_name' => $this->name
+            ]);
+        } else {
+            Log::warning("No se crearon asientos para el estudio {$this->name} (ID: {$this->id})");
         }
     }
 

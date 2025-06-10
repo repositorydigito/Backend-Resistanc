@@ -177,7 +177,7 @@ class StudioResource extends Resource
                     ->getStateUsing(function ($record) {
                         $seatsCount = $record->seats()->count();
                         $seatCapacity = $record->capacity_per_seat ?? 0;
-                        return "{$seatsCount}/{$seatCapacity}";
+                        return "{$seatsCount}";
                     })
                     ->badge()
                     ->color(function ($record) {
@@ -242,6 +242,7 @@ class StudioResource extends Resource
             'index' => Pages\ListStudios::route('/'),
             'create' => Pages\CreateStudio::route('/create'),
             'edit' => Pages\EditStudio::route('/{record}/edit'),
+            'manage-seats' => Pages\ManageStudioSeats::route('/{record}/seats'),
         ];
     }
 }

@@ -49,6 +49,8 @@ class ListClassSchedules extends ListRecords
                         $errors = $import->getErrors();
                         $warnings = $import->getWarnings();
 
+
+
                         if (!empty($errors)) {
                             // Mostrar errores detallados
                             $errorMessage = "Se encontraron errores en el archivo:\n\n";
@@ -84,6 +86,11 @@ class ListClassSchedules extends ListRecords
                         // Si no hay errores, mostrar éxito
                         $successMessage = "✅ Horarios importados exitosamente!";
 
+                        // Contar asientos generados automáticamente
+                        $totalSeatsGenerated = \App\Models\ClassScheduleSeat::whereHas('classSchedule', function($query) {
+                            $query->whereDate('created_at', today());
+                        })->count();
+
                         // Agregar advertencias si las hay
                         if (!empty($warnings)) {
                             $successMessage .= "\n\n⚠️ Advertencias encontradas:\n";
@@ -95,6 +102,11 @@ class ListClassSchedules extends ListRecords
                             if (count($warnings) > 5) {
                                 $successMessage .= "... y " . (count($warnings) - 5) . " advertencias más.\n";
                             }
+                        }
+
+                        // Agregar información sobre asientos generados
+                        if ($totalSeatsGenerated > 0) {
+                            $successMessage .= "\n\n🪑 Se generaron {$totalSeatsGenerated} asientos automáticamente para los horarios importados.";
                         }
 
                         Notification::make()
@@ -137,10 +149,7 @@ class ListClassSchedules extends ListRecords
                                     ->button()
                                     ->action(function () {
                                         // Opcionalmente, redirigir a los logs
-                                        logger()->error('Error en importación de horarios', [
-                                            'message' => $e->getMessage(),
-                                            'trace' => $e->getTraceAsString()
-                                        ]);
+                                        logger()->info('Usuario solicitó ver logs de importación de horarios');
                                     }),
                                 \Filament\Notifications\Actions\Action::make('Descargar plantilla')
                                     ->button()

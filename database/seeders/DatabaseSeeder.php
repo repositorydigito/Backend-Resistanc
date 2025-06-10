@@ -17,13 +17,13 @@ class DatabaseSeeder extends Seeder
         $this->command->info('🌱 Starting RSISTANC database seeding...');
 
         // Create admin/test user first
-        $this->createAdminUser();
+        // $this->createAdminUser();
 
         // Run the main RSISTANC user seeder
-        $this->call(RsistancSeeder::class);
+        // $this->call(RsistancSeeder::class);
 
         // Run the complete system seeder
-        $this->call(RsistancCompleteSeeder::class);
+        // $this->call(RsistancCompleteSeeder::class);
 
         // Run the info seeder
         $this->call(InfoSeeder::class);

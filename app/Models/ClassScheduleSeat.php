@@ -108,4 +108,28 @@ class ClassScheduleSeat extends Model
 
         return true;
     }
+
+    public function block(): bool
+    {
+        $this->update([
+            'status' => 'blocked',
+            'expires_at' => null
+        ]);
+
+        return true;
+    }
+
+    public function unblock(): bool
+    {
+        $this->update([
+            'user_id' => null,
+            'status' => 'available',
+            'reserved_at' => null,
+            'expires_at' => null
+        ]);
+
+        return true;
+    }
+
+
 }

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DisciplineController;
+use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
@@ -115,6 +117,20 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
     // Basic CRUD
     Route::get('/', [PackageController::class, 'index'])->name('index');
 });
+
+
+// Disciplinas
+Route::prefix('disciplines')->name('disciplines.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [DisciplineController::class, 'index'])->name('index');
+});
+// Fin disciplinas
+
+// Instructores
+Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [InstructorController::class, 'index'])->name('index');
+});
+// Fin instructores
+
 
 /*
 |--------------------------------------------------------------------------

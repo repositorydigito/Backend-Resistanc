@@ -138,9 +138,70 @@ final class ClassSchedule extends Model
             Log::info("cancellation_deadline después: " . json_encode($classSchedule->cancellation_deadline));
         });
 
-        // static::updating(function ($classSchedule) {
-        //     $classSchedule->available_spots = $classSchedule->max_capacity - ($classSchedule->booked_spots ?? 0);
-        // });
+        // Evento después de crear el horario
+        static::created(function ($classSchedule) {
+            Log::info("=== ClassSchedule::created EVENT ===");
+            Log::info("Generando asientos automáticamente para horario ID: {$classSchedule->id}");
+
+            try {
+                $classSchedule->generateSeatsAutomatically();
+                Log::info("Asientos generados exitosamente para horario ID: {$classSchedule->id}");
+            } catch (\Exception $e) {
+                Log::error("Error generando asientos para horario ID: {$classSchedule->id}", [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        });
+
+        // Evento antes de actualizar el horario
+        static::updating(function ($classSchedule) {
+            // Actualizar spots disponibles si cambió la capacidad
+            if ($classSchedule->isDirty('max_capacity')) {
+                $classSchedule->available_spots = $classSchedule->max_capacity - ($classSchedule->booked_spots ?? 0);
+            }
+        });
+
+        // Evento después de actualizar el horario
+        static::updated(function ($classSchedule) {
+            // Verificar si cambió la sala
+            if ($classSchedule->wasChanged('studio_id')) {
+                $oldStudioId = $classSchedule->getOriginal('studio_id');
+                $newStudioId = $classSchedule->studio_id;
+
+                Log::info("Cambio de sala detectado en horario", [
+                    'schedule_id' => $classSchedule->id,
+                    'old_studio_id' => $oldStudioId,
+                    'new_studio_id' => $newStudioId
+                ]);
+
+                try {
+                    // Eliminar asientos existentes del horario anterior
+                    $deletedSeats = ClassScheduleSeat::where('class_schedules_id', $classSchedule->id)->delete();
+
+                    Log::info("Asientos eliminados del horario anterior", [
+                        'schedule_id' => $classSchedule->id,
+                        'deleted_seats' => $deletedSeats
+                    ]);
+
+                    // Generar nuevos asientos para la nueva sala
+                    $seatsGenerated = $classSchedule->generateSeatsAutomatically();
+
+                    Log::info("Asientos regenerados exitosamente", [
+                        'schedule_id' => $classSchedule->id,
+                        'new_studio_id' => $newStudioId,
+                        'seats_generated' => $seatsGenerated
+                    ]);
+
+                } catch (\Exception $e) {
+                    Log::error("Error regenerando asientos después del cambio de sala", [
+                        'schedule_id' => $classSchedule->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+        });
     }
 
     protected $casts = [
@@ -444,6 +505,78 @@ final class ClassSchedule extends Model
         return $expired->count();
     }
 
+    // 🆕 Generar asientos automáticamente para este horario
+    public function generateSeatsAutomatically(): int
+    {
+        // Verificar que el horario tenga un estudio asignado
+        if (!$this->studio_id) {
+            Log::warning("No se puede generar asientos: horario sin estudio asignado", [
+                'schedule_id' => $this->id
+            ]);
+            return 0;
+        }
+
+        // Obtener el estudio
+        $studio = $this->studio;
+        if (!$studio) {
+            Log::warning("No se puede generar asientos: estudio no encontrado", [
+                'schedule_id' => $this->id,
+                'studio_id' => $this->studio_id
+            ]);
+            return 0;
+        }
+
+        // Verificar que el estudio tenga asientos configurados
+        $studioSeats = $studio->seats()->where('is_active', true)->get();
+        if ($studioSeats->isEmpty()) {
+            Log::info("No hay asientos activos en el estudio, generando asientos del estudio primero", [
+                'schedule_id' => $this->id,
+                'studio_id' => $studio->id,
+                'studio_name' => $studio->name
+            ]);
+
+            // Generar asientos del estudio si no existen
+            $studio->generateSeats();
+            $studioSeats = $studio->seats()->where('is_active', true)->get();
+
+            if ($studioSeats->isEmpty()) {
+                Log::warning("No se pudieron generar asientos para el estudio", [
+                    'schedule_id' => $this->id,
+                    'studio_id' => $studio->id
+                ]);
+                return 0;
+            }
+        }
+
+        // Generar asientos para este horario
+        $created = 0;
+        foreach ($studioSeats as $seat) {
+            // Solo crear si no existe ya
+            $exists = ClassScheduleSeat::where('class_schedules_id', $this->id)
+                ->where('seats_id', $seat->id)
+                ->exists();
+
+            if (!$exists) {
+                ClassScheduleSeat::create([
+                    'class_schedules_id' => $this->id,
+                    'seats_id' => $seat->id,
+                    'status' => 'available',
+                ]);
+                $created++;
+            }
+        }
+
+        Log::info("Asientos generados automáticamente", [
+            'schedule_id' => $this->id,
+            'studio_id' => $studio->id,
+            'studio_name' => $studio->name,
+            'seats_created' => $created,
+            'total_studio_seats' => $studioSeats->count()
+        ]);
+
+        return $created;
+    }
+
     // 🆕 Obtener mapa de asientos con estado
     public function getSeatMap()
     {
@@ -465,4 +598,5 @@ final class ClassSchedule extends Model
                 ];
             });
     }
+
 }
