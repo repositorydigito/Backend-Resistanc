@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClassScheduleController;
 use App\Http\Controllers\Api\DisciplineController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\PackageController;
@@ -128,8 +129,18 @@ Route::prefix('disciplines')->name('disciplines.')->middleware('auth:sanctum')->
 // Instructores
 Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [InstructorController::class, 'index'])->name('index');
+    Route::get('/week', [InstructorController::class, 'instructorsWeek'])->name('week');
+    Route::get('/show/{instructor}', [InstructorController::class, 'show'])->name('show');
 });
 // Fin instructores
+
+// Horarios
+
+Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ClassScheduleController::class, 'index'])->name('index');
+});
+
+// Fin Horarios
 
 
 /*

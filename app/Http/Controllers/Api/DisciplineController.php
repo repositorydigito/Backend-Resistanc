@@ -78,10 +78,15 @@ final class DisciplineController extends Controller
             $query->withCount(['classes', 'instructors']);
         }
 
-        $disciplines = $query->paginate(
-            perPage: $request->integer('per_page', 15),
-            page: $request->integer('page', 1)
-        );
+        // Si no se especifica per_page, devolver todo sin paginar
+        if ($request->has('per_page')) {
+            $disciplines = $query->paginate(
+                perPage: $request->integer('per_page', 15),
+                page: $request->integer('page', 1)
+            );
+        } else {
+            $disciplines = $query->get();
+        }
 
         return DisciplineResource::collection($disciplines);
     }

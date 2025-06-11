@@ -361,7 +361,7 @@ class ClassScheduleResource extends Resource
                         default => ucfirst($state),
                     })
                     ->color(fn(string $state): string => match ($state) {
-                        'scheduled' => 'secondary',
+                        'scheduled' => 'gray',
                         'in_progress' => 'warning',
                         'completed' => 'success',
                         'cancelled' => 'danger',
@@ -383,12 +383,6 @@ class ClassScheduleResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\Action::make('manageSeats')
-                    ->label('Asientos')
-                    ->icon('heroicon-o-squares-plus')
-                    ->color('info')
-                    ->url(fn($record) => static::getUrl('manage-seats', ['record' => $record]))
-                    ->tooltip('Gestionar asientos para este horario'),
 
                 Tables\Actions\EditAction::make(),
             ])

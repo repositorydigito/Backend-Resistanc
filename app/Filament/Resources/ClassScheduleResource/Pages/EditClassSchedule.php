@@ -14,13 +14,15 @@ class EditClassSchedule extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('manageSeats')
-                ->label('Gestionar Asientos')
-                ->icon('heroicon-o-squares-plus')
-                ->color('info')
-                ->url(fn () => static::$resource::getUrl('manage-seats', ['record' => $this->record])),
+            // Actions\Action::make('manageSeats')
+            //     ->label('Gestionar Asientos')
+            //     ->icon('heroicon-o-squares-plus')
+            //     ->color('info')
+            //     ->url(fn () => static::$resource::getUrl('manage-seats', ['record' => $this->record])),
 
             Actions\DeleteAction::make(),
+
+
         ];
     }
 

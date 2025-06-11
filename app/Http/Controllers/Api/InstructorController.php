@@ -128,4 +128,92 @@ final class InstructorController extends Controller
 
         return InstructorResource::collection($instructors);
     }
+
+    /**
+     * Lista los instructores activos del sistema que tienen clases programadas para la semana actual
+     *
+     * Obtiene una lista de instructores activos que tienen clases programadas para la semana actual.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar instructores activos con clases para la semana actual
+     * @operationId getInstructorsWeek
+     *
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Juan Pérez",
+     *       "email": "juan@gmail.com",
+     *       "phone": "987654321",
+     *       "profile_image": "/images/instructors/juan.jpg",
+     *       "specialties": ["Cycling", "Reforma", "Pilates", "Yoga", "Barre"],
+     *       "bio": "Instructor con más de 10 años de experiencia en fitness",
+     *       "certifications": ["Spinning Certified", "Pilates Certified"],
+     *       "instagram_handle": "@juan_fitness",
+     *       "is_head_coach": true,
+     *       "experience_years": 10,
+     *       "rating_average": 4.8,
+     *       "total_classes_taught": 500,
+     *       "status": "active",
+     *       "availability_schedule": [
+     *         {
+     *           "day": "monday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "20:00:00"
+     *         },
+     *         {
+     *           "day": "tuesday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "20:00:00"
+     *         },
+     *         {
+     *           "day": "wednesday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "20:00:00"
+     *         },
+     *         {
+     *           "day": "thursday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "20:00:00"
+     *         },
+     *         {
+     *           "day": "friday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "20:00:00"
+     *         },
+     *         {
+     *           "day": "saturday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "14:00:00"
+     *         },
+     *         {
+     *           "day": "sunday",
+     *           "start_time": "08:00:00",
+     *           "end_time": "14:00:00"
+     *         }
+     *       ],
+     *       "hourly_rate_soles": 150.00,
+     *       "hire_date": "2015-01-01",
+     *       "class_schedules_count": 5,
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     }
+     *   ]
+     * }
+     */
+    public function instructorsWeek()
+    {
+        $instructors = Instructor::query()
+            ->active()
+            ->withCount(['classSchedules' => function ($query) {
+                $query->whereBetween('scheduled_date', [now()->startOfWeek(), now()->endOfWeek()]);
+            }])
+            ->having('class_schedules_count', '>', 0)
+            ->orderBy('class_schedules_count', 'desc')
+            ->get();
+
+        return InstructorResource::collection($instructors);
+    }
 }
