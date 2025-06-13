@@ -577,26 +577,128 @@ final class ClassSchedule extends Model
         return $created;
     }
 
-    // 🆕 Obtener mapa de asientos con estado
+    // 🆕 Obtener mapa de asientos con estado y distribución completa
     public function getSeatMap()
     {
-        return $this->seatAssignments()
-            ->with(['seat' => function ($query) {
-                $query->select('id', 'row', 'number', 'type');
-            }])
+        $studio = $this->studio;
+        if (!$studio) {
+            return [
+                'error' => 'Studio not found',
+                'studio_info' => null,
+                'seat_grid' => [],
+                'seats_by_status' => [],
+                'summary' => []
+            ];
+        }
+
+        $rows = $studio->row ?? 0;
+        $columns = $studio->column ?? 0;
+
+        // Información del estudio
+        $studioInfo = [
+            'id' => $studio->id,
+            'name' => $studio->name,
+            'rows' => $rows,
+            'columns' => $columns,
+            'total_positions' => $rows * $columns,
+            'addressing' => $studio->addressing ?? 'left_to_right',
+            'capacity' => $studio->capacity_per_seat ?? $studio->max_capacity ?? 0
+        ];
+
+        // Cargar asientos asignados con relaciones
+        $seatAssignments = $this->seatAssignments()
+            ->with(['seat', 'user:id,name,email'])
             ->get()
-            ->map(function ($assignment) {
-                return [
-                    'id' => $assignment->seats_id,
-                    'row' => $assignment->seat->row,
-                    'number' => $assignment->seat->number,
-                    'type' => $assignment->seat->type,
-                    'status' => $assignment->status,
-                    'user_id' => $assignment->user_id,
-                    'reserved_at' => $assignment->reserved_at,
-                    'expires_at' => $assignment->expires_at,
-                ];
+            ->keyBy(function ($assignment) {
+                return $assignment->seat->row . '-' . $assignment->seat->column;
             });
+
+        // Crear grid de asientos
+        $seatGrid = [];
+        for ($row = 1; $row <= $rows; $row++) {
+            for ($col = 1; $col <= $columns; $col++) {
+                $seatKey = $row . '-' . $col;
+                $assignment = $seatAssignments->get($seatKey);
+
+                if ($assignment && $assignment->seat) {
+                    $seat = $assignment->seat;
+                    $seatGrid[$row][$col] = [
+                        'exists' => true,
+                        'seat_id' => $seat->id,
+                        'assignment_id' => $assignment->id,
+                        'seat_number' => $seat->seat_number,
+                        'row' => $seat->row,
+                        'column' => $seat->column,
+                        'status' => $assignment->status,
+                        'is_active' => $seat->is_active,
+                        'user' => $assignment->user ? [
+                            'id' => $assignment->user->id,
+                            'name' => $assignment->user->name,
+                            'email' => $assignment->user->email
+                        ] : null,
+                        'reserved_at' => $assignment->reserved_at?->toISOString(),
+                        'expires_at' => $assignment->expires_at?->toISOString(),
+                        'is_expired' => $assignment->isExpired()
+                    ];
+                } else {
+                    $seatGrid[$row][$col] = [
+                        'exists' => false,
+                        'seat_id' => null,
+                        'assignment_id' => null,
+                        'seat_number' => null,
+                        'row' => $row,
+                        'column' => $col,
+                        'status' => 'empty',
+                        'is_active' => false,
+                        'user' => null,
+                        'reserved_at' => null,
+                        'expires_at' => null,
+                        'is_expired' => false
+                    ];
+                }
+            }
+        }
+
+        // Agrupar asientos por estado
+        $seatsByStatus = $seatAssignments->groupBy('status')->map(function ($assignments, $status) {
+            return $assignments->map(function ($assignment) {
+                return [
+                    'id' => $assignment->seat->id,
+                    'assignment_id' => $assignment->id,
+                    'seat_number' => $assignment->seat->seat_number,
+                    'row' => $assignment->seat->row,
+                    'column' => $assignment->seat->column,
+                    'status' => $assignment->status,
+                    'user' => $assignment->user ? [
+                        'id' => $assignment->user->id,
+                        'name' => $assignment->user->name,
+                        'email' => $assignment->user->email
+                    ] : null,
+                    'reserved_at' => $assignment->reserved_at?->toISOString(),
+                    'expires_at' => $assignment->expires_at?->toISOString(),
+                    'is_expired' => $assignment->isExpired()
+                ];
+            })->values();
+        });
+
+        // Resumen estadístico
+        $summary = [
+            'total_seats' => $seatAssignments->count(),
+            'available_count' => $seatAssignments->where('status', 'available')->count(),
+            'reserved_count' => $seatAssignments->where('status', 'reserved')->count(),
+            'occupied_count' => $seatAssignments->where('status', 'occupied')->count(),
+            'completed_count' => $seatAssignments->where('status', 'Completed')->count(),
+            'blocked_count' => $seatAssignments->where('status', 'blocked')->count(),
+            'expired_count' => $seatAssignments->filter(fn($a) => $a->isExpired())->count(),
+            'empty_positions' => ($rows * $columns) - $seatAssignments->count()
+        ];
+
+        return [
+            'studio_info' => $studioInfo,
+            'seat_grid' => $seatGrid,
+            'seats_by_status' => $seatsByStatus,
+            'summary' => $summary
+        ];
     }
 
 }

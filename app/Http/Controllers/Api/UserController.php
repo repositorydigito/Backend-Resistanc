@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 /**
  * @tags Usuarios
@@ -99,7 +100,7 @@ final class UserController extends Controller
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
                 $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             })
             ->when($request->filled('has_profile'), function ($query) use ($request) {
                 if ($request->boolean('has_profile')) {
@@ -523,6 +524,13 @@ final class UserController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
             ]);
+
+            // Assign "Cliente" role
+            $clienteRole = Role::where('name', 'Cliente')->first();
+            if ($clienteRole) {
+                $user->roles()->attach($clienteRole->id);
+                // O si usas Spatie Permission: $user->assignRole('Cliente');
+            }
 
             // Create profile if provided
             if (isset($validated['profile'])) {

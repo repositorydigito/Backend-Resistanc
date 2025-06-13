@@ -83,8 +83,8 @@ final class AdditionalService extends Model
             'equipment_rental' => 'Alquiler de Equipos',
             'locker_rental' => 'Alquiler de Casillero',
             'towel_service' => 'Servicio de Toallas',
-            default => ucfirst($this->type),
-        ];
+            default => ucfirst($this->type)
+        };
     }
 
     /**

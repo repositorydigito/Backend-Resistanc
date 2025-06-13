@@ -49,13 +49,17 @@ class PackageResource extends Resource
                             ->required()
                             ->maxLength(100),
 
-
-
-
                         Forms\Components\TextInput::make('classes_quantity')
                             ->label('Cantidad de clases')
                             ->required()
                             ->numeric(),
+
+
+                        Forms\Components\Select::make('discipline_id')
+                            ->label('Disciplina')
+                            ->relationship('discipline', 'name')
+                            ->required(),
+
                         Forms\Components\TextInput::make('price_soles')
                             ->label('Precio con descuento')
                             ->required()
@@ -67,14 +71,17 @@ class PackageResource extends Resource
                             ->label('Días validos')
                             ->required()
                             ->numeric(),
-                        Forms\Components\Select::make('package_type')
+
+                        Forms\Components\Select::make('buy_type')
                             ->options([
-                                'presencial' => 'Presencial',
-                                // 'virtual' => 'Virtual',
-                                // 'mixto' => 'Mixto',
+                                'affordable' => 'Comprable',
+                                'assignable' => 'Asignable',
                             ])
-                            ->label('Modalidad')
+                            ->label('Tipo de compra')
+                            ->default('assignable')
                             ->required(),
+
+
                         Forms\Components\ColorPicker::make('color_hex')
                             ->label('Color')
                             ->required()
@@ -109,6 +116,7 @@ class PackageResource extends Resource
                             ->label('Estado')
                             ->required(),
 
+
                         Forms\Components\TextInput::make('display_order')
                             ->label('Orden de visualización')
                             ->unique(ignoreRecord: true)
@@ -142,13 +150,41 @@ class PackageResource extends Resource
                             ])
                             ->required(),
                         Forms\Components\Select::make('type')
+                            ->live() // Hace que el campo sea reactivo
+                            ->options([
+                                'fixed' => 'Fijo',
+                                'temporary' => 'Temporal',
+                            ])
+                            ->label('Tipo de paquete')
+                            ->required(),
+
+                        Forms\Components\Select::make('commercial_type')
                             ->options([
                                 'promotion' => 'Promoción',
                                 'offer' => 'Oferta',
                                 'basic' => 'Básico',
                             ])
-                            ->label('Tipo de paquete')
+                            ->label('Comercial')
                             ->required(),
+                        Forms\Components\Select::make('mode_type')
+                            ->options([
+                                'presencial' => 'Presencial',
+                                'virtual' => 'Virtual',
+                                'mixto' => 'Mixto',
+                            ])
+                            ->label('Modalidad')
+                            ->required(),
+                        Forms\Components\DatePicker::make('start_date')
+                            ->visible(fn($get) => $get('type') !== 'fixed') // Visible cuando NO es fijo
+                            ->label('Fecha de inicio')
+                            ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
+
+                        Forms\Components\DatePicker::make('end_date')
+                            ->visible(fn($get) => $get('type') !== 'fixed') // Visible cuando NO es fijo
+                            ->label('Fecha de fin')
+                            ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
+
+
                         Forms\Components\TextArea::make('short_description')
                             ->label('Descripción corta')
                             ->columnSpanFull()
@@ -187,6 +223,20 @@ class PackageResource extends Resource
 
     public static function table(Table $table): Table
     {
+
+        if (!function_exists('getContrastColor')) {
+            function getContrastColor($hexcolor)
+            {
+                $hexcolor = ltrim($hexcolor, '#');
+                if (strlen($hexcolor) !== 6) return '#ffffff';
+
+                $r = hexdec(substr($hexcolor, 0, 2));
+                $g = hexdec(substr($hexcolor, 2, 2));
+                $b = hexdec(substr($hexcolor, 4, 2));
+                $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
+                return ($yiq >= 128) ? '#000000' : '#ffffff';
+            }
+        }
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
@@ -201,14 +251,72 @@ class PackageResource extends Resource
                     ->numeric()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('buy_type')
+                    ->label('Tipo de compra')
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'affordable' => 'Comprable',
+                        'assignable' => 'Asignable',
+                        default => ucfirst($state),
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'affordable' => 'success',
+                        'assignable' => 'warning',
+                        default => 'gray',
+                    })
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('membership.name')
                     ->label('Membresía')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('price_soles')
-                    ->label('Precio con descuento')
-                    ->numeric()
+
+                Tables\Columns\TextColumn::make('discipline.name')
+                    ->label('Disciplina')
+                    ->badge()
+                    ->color(fn($record) => $record->discipline->color_hex)
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'cycling' => 'Ciclo',
+                        'solidreformer' => 'Reformer',
+                        'pilates_mat' => 'Pilates Mat',
+                        default => ucfirst($state),
+                    })
+                    ->searchable()
+                    ->extraAttributes(function ($record) {
+                        return [
+                            'style' => "background-color: {$record->discipline->color_hex}10; color:  {$record->discipline->color_hex}; border: 1px solid {$record->discipline->color_hex}; padding: 0; font-weight: bold; border-radius: 0.45rem; text-align: center; display: flex; width: 100%; justify-content: center; align-items: center;",
+                            'class' => 'p-0 text-sm text-center' // Estilos adicionales para el badge
+                        ];
+                    }),
+
+
+                // Tables\Columns\TextColumn::make('price_soles')
+                //     ->label('Precio con descuento')
+                //     ->numeric()
+                //     ->sortable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Tipo de paquete')
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'fixed' => 'Fijo',
+                        'temporary' => 'Temporal',
+                        default => ucfirst($state),
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'fixed' => 'success',
+                        'temporary' => 'warning',
+                        default => 'gray',
+                    })
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('start_date')
+                    ->label('Fecha de inicio')
+                    ->date('M d') // Ej: "Ene 15", "Feb 28"
                     ->sortable(),
+                Tables\Columns\TextColumn::make('end_date')
+                    ->label('Fecha de fin')
+                    ->date('M d') // Ej: "Ene 15", "Feb 28"
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('original_price_soles')
                     ->label('Precio Base')
                     ->numeric()

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('price_soles', 8, 2);
             $table->decimal('original_price_soles', 8, 2)->nullable()->comment('Precio original para mostrar descuentos');
             $table->unsignedInteger('validity_days')->comment('Días de vigencia del paquete');
-            $table->enum('package_type', ['presencial', 'virtual', 'mixto'])->default('presencial');
+
             $table->enum('billing_type', ['one_time', 'monthly', 'quarterly', 'yearly'])->default('one_time');
             $table->boolean('is_virtual_access')->default(false);
             $table->unsignedTinyInteger('priority_booking_days')->default(0)->comment('Días de anticipación para reservar');
@@ -37,10 +37,20 @@ return new class extends Migration
 
 
 
+            // nuevo
+            $table->enum('buy_type', ['affordable', 'assignable'])->default('affordable');
+            $table->enum('type', ['fixed', 'temporary']);
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->enum('mode_type', ['presencial', 'virtual', 'mixto'])->default('presencial');
+            $table->enum('commercial_type', ['promotion', 'offer', 'basic'])->default('basic');
+
+            // Relaciones
+            $table->foreignId('discipline_id')->constrained('disciplines');
 
             // Índices
             $table->index(['status', 'display_order']);
-            $table->index(['package_type', 'status']);
+            $table->index(['mode_type', 'status']);
             $table->index('price_soles');
             $table->index(['is_featured', 'is_popular']);
         });

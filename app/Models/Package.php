@@ -24,7 +24,7 @@ final class Package extends Model
         'price_soles',
         'original_price_soles',
         'validity_days',
-        'package_type',
+
         'billing_type',
         'is_virtual_access',
         'priority_booking_days',
@@ -38,8 +38,16 @@ final class Package extends Model
         'target_audience',
 
         // nuevo
+
         'color_hex',
         'type',
+        'mode_type',
+        'commercial_type',
+        'discipline_id',
+        'buy_type',
+        'start_date',
+        'end_date',
+
 
         // Relaciones
         'membership_id',
@@ -162,12 +170,11 @@ final class Package extends Model
      */
     public function getTypeDisplayNameAttribute(): string
     {
-        return match ($this->package_type) {
-            'presencial' => 'Presencial',
-            'virtual' => 'Virtual',
-            'mixto' => 'Mixto',
-            default => ucfirst($this->package_type),
-        };
+        // Validar que el valor no sea null antes de usar ucfirst
+        return $this->type ? ucfirst($this->type) : '';
+
+        // O si quieres un valor por defecto más específico:
+        // return $this->type ? ucfirst($this->type) : 'Basic';
     }
 
     /**
@@ -251,5 +258,9 @@ final class Package extends Model
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+    public function discipline()
+    {
+        return $this->belongsTo(Discipline::class);
     }
 }

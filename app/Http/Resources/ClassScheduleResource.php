@@ -25,6 +25,7 @@ class ClassScheduleResource extends JsonResource
             'instructor' => [
                 'id' => $this->instructor->id,
                 'name' => $this->instructor->name,
+                'profile_image' =>  asset('storage/') . '/' . $this->instructor->profile_image,
             ],
             'studio' => [
                 'id' => $this->studio->id,
@@ -43,7 +44,38 @@ class ClassScheduleResource extends JsonResource
             'special_notes' => $this->special_notes,
             'is_holiday_schedule' => $this->is_holiday_schedule,
             'status' => $this->status,
-        ];
 
+
+            // Contadores de asientos
+            'seats_summary' => [
+                'total_seats' => $this->total_seats_count ?? 0,
+                'available_count' => $this->available_seats_count ?? 0,
+                'reserved_count' => $this->reserved_seats_count ?? 0,
+                'occupied_count' => $this->occupied_seats_count ?? 0,
+                'blocked_count' => $this->blocked_seats_count ?? 0,
+            ],
+
+            // Asientos (solo si están cargados)
+            'seats' => $this->when($this->relationLoaded('seats'), function () {
+                return $this->seats->groupBy('pivot.status')->map(function ($seats, $status) {
+                    return $seats->map(function ($seat) {
+                        return [
+                            'id' => $seat->id,
+                            'seat_number' => $seat->seat_number,
+                            'row' => $seat->row,
+                            'column' => $seat->column,
+                            'status' => $seat->pivot->status,
+                            'user' => $seat->pivot->user_id ? [
+                                'id' => $seat->user?->id,
+                                'name' => $seat->user?->name,
+                            ] : null,
+                            'reserved_at' => $seat->pivot->reserved_at,
+                            'expires_at' => $seat->pivot->expires_at,
+                        ];
+                    });
+                });
+            }),
+
+        ];
     }
 }

@@ -186,7 +186,7 @@ final class User extends Authenticatable
     /**
      * Get all seat reservations for this user.
      */
-    public function seatReservations(): HasMany
+    public function classScheduleSeats(): HasMany
     {
         return $this->hasMany(ClassScheduleSeat::class);
     }

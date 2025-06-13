@@ -138,6 +138,11 @@ Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->
 
 Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [ClassScheduleController::class, 'index'])->name('index');
+    Route::get('/show/{classSchedule}', [ClassScheduleController::class, 'show'])->name('show');
+    Route::get('/{classSchedule}/seat-map', [ClassScheduleController::class, 'getSeatMap'])->name('seat-map');
+    Route::post('/{classSchedule}/reserve-seats', [ClassScheduleController::class, 'reserveSeats'])->name('reserve-seats');
+    Route::post('/release-seats', [ClassScheduleController::class, 'releaseSeats'])->name('release-seats');
+    Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
 });
 
 // Fin Horarios

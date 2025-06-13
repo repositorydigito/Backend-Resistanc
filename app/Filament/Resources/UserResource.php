@@ -35,9 +35,11 @@ class UserResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label('Nombre')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('email')
+                    ->label('Correo Electrónico')
                     ->email()
                     ->required()
                     ->maxLength(255),
@@ -78,8 +80,10 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->label('Correo Electrónico')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('roles.name')
@@ -98,7 +102,22 @@ class UserResource extends Resource
             ])
             ->defaultSort('id', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('roles')
+                    ->label('Roles')
+                    ->multiple()
+                    ->preload()
+                    ->relationship('roles', 'name')
+                    ->options(function () {
+                        $user = auth()->user();
+
+                        // Si el usuario logueado es super_admin, mostrar todos los roles
+                        if ($user && $user->hasRole('super_admin')) {
+                            return \Spatie\Permission\Models\Role::pluck('name', 'id');
+                        }
+
+                        // Si no es super_admin, excluir ese rol
+                        return \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name', 'id');
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -131,6 +150,7 @@ class UserResource extends Resource
         return [
             RelationManagers\UserPackagesRelationManager::class,
             RelationManagers\UserPaymentMethodRelationManager::class,
+            RelationManagers\ClassScheduleSeatsRelationManager::class,
         ];
     }
 

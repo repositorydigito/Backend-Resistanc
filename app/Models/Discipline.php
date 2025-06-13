@@ -68,4 +68,8 @@ final class Discipline extends Model
 
         return implode(', ', $this->equipment_required);
     }
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class, 'discipline_id');
+    }
 }
