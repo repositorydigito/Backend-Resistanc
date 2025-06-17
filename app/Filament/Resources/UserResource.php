@@ -151,6 +151,9 @@ class UserResource extends Resource
             RelationManagers\UserPackagesRelationManager::class,
             RelationManagers\UserPaymentMethodRelationManager::class,
             RelationManagers\ClassScheduleSeatsRelationManager::class,
+            RelationManagers\DrinkUserRelationManager::class,
+            RelationManagers\UserFavorityRelationManager::class,
+            RelationManagers\UserWaitingClassRelationManager::class,
         ];
     }
 

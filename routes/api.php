@@ -5,8 +5,13 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClassScheduleController;
 use App\Http\Controllers\Api\DisciplineController;
+use App\Http\Controllers\Api\DrinkController;
+use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\ProductCategoryController;
+use App\Http\Controllers\Api\ProductTagController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserContactController;
@@ -111,6 +116,7 @@ Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:
 Route::prefix('me/packages')->name('my-packages.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [UserPackageController::class, 'index'])->name('index');
     Route::post('/', [UserPackageController::class, 'store'])->name('store');
+    Route::get('/summary-by-discipline', [UserPackageController::class, 'getPackagesSummaryByDiscipline'])->name('summary-by-discipline');
 });
 
 
@@ -131,22 +137,69 @@ Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->
     Route::get('/', [InstructorController::class, 'index'])->name('index');
     Route::get('/week', [InstructorController::class, 'instructorsWeek'])->name('week');
     Route::get('/show/{instructor}', [InstructorController::class, 'show'])->name('show');
+    Route::get('/ten', [InstructorController::class, 'indexTen'])->name('ten');
 });
 // Fin instructores
 
 // Horarios
-
 Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [ClassScheduleController::class, 'index'])->name('index');
     Route::get('/show/{classSchedule}', [ClassScheduleController::class, 'show'])->name('show');
     Route::get('/{classSchedule}/seat-map', [ClassScheduleController::class, 'getSeatMap'])->name('seat-map');
+    Route::get('/{classSchedule}/check-packages', [ClassScheduleController::class, 'checkPackageAvailability'])->name('check-packages');
     Route::post('/{classSchedule}/reserve-seats', [ClassScheduleController::class, 'reserveSeats'])->name('reserve-seats');
     Route::post('/release-seats', [ClassScheduleController::class, 'releaseSeats'])->name('release-seats');
+    Route::post('/confirm-attendance', [ClassScheduleController::class, 'confirmAttendance'])->name('confirm-attendance');
     Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
 });
-
 // Fin Horarios
 
+// Bebidas
+Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [DrinkController::class, 'index'])->name('index');
+    Route::get('/{id}', [DrinkController::class, 'show'])->name('show');
+
+});
+// Fin bebidas
+
+
+// Tienda
+
+// Categorias de productos
+
+Route::prefix('product-categories')->name('product-categories.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ProductCategoryController::class, 'index'])->name('index');
+});
+
+// Fin categorias de productos
+
+// Etiquetas de productos
+
+Route::prefix('product-tags')->name('product-tags.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ProductTagController::class, 'index'])->name('index');
+});
+
+// Fin etiquetas de productos
+
+// Fin Tienda
+
+
+// Favoritos
+Route::prefix('favorites')->name('favorites.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [FavoriteController::class, 'index'])->name('index');
+    Route::post('/drinks/{drink}', [FavoriteController::class, 'storeDrink'])->name('favorite-drink');
+    Route::post('/products/{product}', [FavoriteController::class, 'storeProduct'])->name('favorite-product');
+    Route::post('/classes/{class}', [FavoriteController::class, 'storeClass'])->name('favorite-class');
+    Route::post('/instructors/{instructor}', [FavoriteController::class, 'storeInstructor'])->name('favorite-instructor');
+
+});
+// Fin Favoritos
+
+// Home
+Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [HomeController::class, 'index'])->name('index');
+});
+// Fin home
 
 /*
 |--------------------------------------------------------------------------

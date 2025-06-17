@@ -10,12 +10,18 @@ class ClassScheduleSeat extends Model
     protected $table = 'class_schedule_seat';
 
     protected $fillable = [
-        'class_schedules_id',
-        'seats_id',
-        'user_id',
+
         'status',
         'reserved_at',
-        'expires_at'
+        'expires_at',
+        'code',
+
+        // relaciones
+        'class_schedules_id',
+        'user_package_id',
+        'seats_id',
+        'user_id',
+
     ];
 
     protected $casts = [
@@ -131,5 +137,8 @@ class ClassScheduleSeat extends Model
         return true;
     }
 
-
+    function generateScheduleSeatCode(int $scheduleId, int $seatId): string
+    {
+        return 'SCH-' . $scheduleId . '-SEAT-' . $seatId;
+    }
 }

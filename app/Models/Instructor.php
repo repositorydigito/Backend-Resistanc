@@ -292,4 +292,13 @@ final class Instructor extends Model
     {
         $this->increment('total_classes_taught');
     }
+
+
+      public function userFavorites(): BelongsToMany
+    {
+        return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
 }

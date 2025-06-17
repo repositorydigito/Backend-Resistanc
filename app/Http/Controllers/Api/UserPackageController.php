@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserPackageRequest;
 use App\Http\Resources\UserPackageResource;
 use App\Models\UserPackage;
+use App\Services\PackageValidationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -235,6 +236,82 @@ class UserPackageController extends Controller
 
             return new UserPackageResource($userPackage);
         });
+    }
+
+    /**
+     * Obtener resumen de paquetes del usuario por disciplina
+     *
+     * Muestra un resumen organizado de todos los paquetes activos del usuario,
+     * agrupados por disciplina con información de clases disponibles.
+     *
+     * @summary Resumen de paquetes por disciplina
+     * @operationId getPackagesSummaryByDiscipline
+     * @tags Mis Paquetes
+     *
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Resumen de paquetes obtenido exitosamente",
+     *   "data": {
+     *     "disciplines": [
+     *       {
+     *         "discipline_id": 1,
+     *         "discipline_name": "Yoga",
+     *         "total_packages": 2,
+     *         "total_classes_remaining": 15,
+     *         "packages": [
+     *           {
+     *             "id": 42,
+     *             "package_code": "PKG001-2024",
+     *             "package_name": "Paquete Yoga 10 Clases",
+     *             "remaining_classes": 9,
+     *             "expiry_date": "2025-02-15"
+     *           }
+     *         ]
+     *       }
+     *     ],
+     *     "summary": {
+     *       "total_disciplines": 3,
+     *       "total_packages": 5,
+     *       "total_classes_remaining": 42
+     *     }
+     *   }
+     * }
+     */
+    public function getPackagesSummaryByDiscipline()
+    {
+        try {
+            $userId = Auth::id();
+            $packageValidationService = new PackageValidationService();
+
+            $disciplinesSummary = $packageValidationService->getUserPackagesSummaryByDiscipline($userId);
+
+            // Calcular totales generales
+            $totalDisciplines = count($disciplinesSummary);
+            $totalPackages = array_sum(array_column($disciplinesSummary, 'total_packages'));
+            $totalClassesRemaining = array_sum(array_column($disciplinesSummary, 'total_classes_remaining'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Resumen de paquetes obtenido exitosamente',
+                'data' => [
+                    'disciplines' => $disciplinesSummary,
+                    'summary' => [
+                        'total_disciplines' => $totalDisciplines,
+                        'total_packages' => $totalPackages,
+                        'total_classes_remaining' => $totalClassesRemaining
+                    ]
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al obtener resumen de paquetes',
+                'data' => null
+            ], 500);
+        }
     }
 
     /**

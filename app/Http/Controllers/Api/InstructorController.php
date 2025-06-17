@@ -216,4 +216,79 @@ final class InstructorController extends Controller
 
         return InstructorResource::collection($instructors);
     }
+
+    /**
+     * Lista de 10 instructores activos del sistema
+     *
+     * Obtiene una lista paginada de instructores activos con opciones de filtrado y búsqueda.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar instructores activos
+     * @operationId getInstructorsList
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     *
+     * @queryParam per_page integer Número de instructores por página (máximo 50). Example: 15
+     * @queryParam page integer Número de página para la paginación. Example: 1
+     * @queryParam search string Buscar por nombre o email del instructor. Example: "Juan"
+     * @queryParam status string Filtrar por estado del instructor (active, inactive). Example: "active"
+     * @queryParam is_head_coach boolean Filtrar por instructores principales. Example: true
+     * @queryParam min_experience_years integer Años mínimos de experiencia. Example: 5
+     * @queryParam max_experience_years integer Años máximos de experiencia. Example: 15
+     * @queryParam min_rating_average number Calificación mínima promedio. Example: 4.0
+     * @queryParam max_rating_average number Calificación máxima promedio. Example: 5.0
+     * @queryParam include_counts boolean Incluir contadores de clases y disciplinas. Example: true
+     * @queryParam include_disciplines boolean Incluir información de disciplinas. Example: true
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Juan Pérez",
+     *       "email": "juan@gmail.com",
+     *       "phone": "987654321",
+     *       "bio": "Instructor con más de 10 años de experiencia en fitness",
+     *       "profile_image": "/images/instructors/juan.jpg",
+     *       "instagram_handle": "@juan_fitness",
+     *       "is_head_coach": true,
+     *       "experience_years": 10,
+     *       "rating_average": 4.8,
+     *       "total_classes_taught": 500,
+     *       "status": "active",
+     *       "certifications": ["Spinning Certified", "Pilates Certified"],
+     *       "hourly_rate_soles": 150.00,
+     *       "hire_date": "2015-01-01",
+     *       "disciplines_count": 3,
+     *       "classes_count": 25,
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     }
+     *   ],
+     *   "links": {
+     *     "first": "http://localhost/api/instructors?page=1",
+     *     "last": "http://localhost/api/instructors?page=1",
+     *     "prev": null,
+     *     "next": null
+     *   },
+     *   "meta": {
+     *     "current_page": 1,
+     *     "from": 1,
+     *     "last_page": 1,
+     *     "path": "http://localhost/api/instructors",
+     *     "per_page": 15,
+     *     "to": 1,
+     *     "total": 1
+     *   }
+     * }
+     */
+    public function indexTen(Request $request): AnonymousResourceCollection
+    {
+        $instructors = Instructor::query()
+            ->where('status', 'active')
+            ->limit(10)
+            ->get();
+
+        return InstructorResource::collection($instructors);
+    }
 }

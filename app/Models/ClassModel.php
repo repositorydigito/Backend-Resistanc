@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class ClassModel extends Model
@@ -194,5 +195,12 @@ final class ClassModel extends Model
     public function classSchedules()
     {
         return $this->hasMany(ClassSchedule::class, 'class_id');
+    }
+
+    public function userFavorites(): BelongsToMany
+    {
+        return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
     }
 }

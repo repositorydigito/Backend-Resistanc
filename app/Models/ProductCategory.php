@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Support\Str;
+
+
 final class ProductCategory extends Model
 {
     use HasFactory;
@@ -73,5 +76,49 @@ final class ProductCategory extends Model
     public function getActiveProductsCountAttribute(): int
     {
         return $this->products()->where('status', 'active')->count();
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($membership) {
+            if (empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+
+        static::updating(function ($membership) {
+            if ($membership->isDirty('name') && empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->where('id', '!=', $membership->id)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+    }
+
+
+    public function parent()
+    {
+        return $this->belongsTo(ProductCategory::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(ProductCategory::class, 'parent_id');
     }
 }

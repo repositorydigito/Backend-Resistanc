@@ -8,6 +8,7 @@ use App\Http\Requests\ReserveSeatsRequest;
 use App\Http\Resources\ClassScheduleResource;
 use App\Models\ClassSchedule;
 use App\Models\ClassScheduleSeat;
+use App\Services\PackageValidationService;
 use Error;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -558,6 +559,10 @@ final class ClassScheduleController extends Controller
      * Permite al usuario autenticado reservar uno o más asientos en un horario de clase específico.
      * Los asientos se reservan temporalmente y expiran después del tiempo especificado.
      *
+     * **IMPORTANTE:** El usuario debe tener paquetes disponibles para la disciplina de la clase.
+     * El sistema validará automáticamente que el usuario tenga paquetes activos y con clases
+     * disponibles para la disciplina específica antes de permitir la reserva.
+     *
      * @summary Reservar asientos en horario
      * @operationId reserveSeatsInSchedule
      * @tags Reservas de Asientos
@@ -572,6 +577,7 @@ final class ClassScheduleController extends Controller
      *   "data": {
      *     "reserved_seats": [
      *       {
+     *         "class_schedule_seat_id": 267,
      *         "seat_id": 1,
      *         "seat_number": "1.1",
      *         "row": 1,
@@ -585,7 +591,19 @@ final class ClassScheduleController extends Controller
      *       "total_reserved": 2,
      *       "expires_in_minutes": 15,
      *       "user_id": 10,
-     *       "schedule_id": 5
+     *       "schedule_id": 5,
+     *       "class_name": "Yoga Matutino",
+     *       "studio_name": "Sala Principal",
+     *       "scheduled_date": "2025-01-15",
+     *       "start_time": "08:00:00"
+     *     },
+     *     "package_consumption": {
+     *       "id": 42,
+     *       "package_code": "PKG001-2024",
+     *       "package_name": "Paquete Yoga 10 Clases",
+     *       "classes_consumed": 1,
+     *       "remaining_classes": 9,
+     *       "used_classes": 1
      *     }
      *   }
      * }
@@ -602,6 +620,19 @@ final class ClassScheduleController extends Controller
      * @response 404 {
      *   "success": false,
      *   "message": "Horario de clase no encontrado"
+     * }
+     *
+     * @response 422 {
+     *   "success": false,
+     *   "message": "No tienes paquetes disponibles para la disciplina 'Yoga'",
+     *   "data": {
+     *     "reason": "insufficient_packages",
+     *     "discipline_required": {
+     *       "id": 1,
+     *       "name": "Yoga"
+     *     },
+     *     "available_packages": []
+     *   }
      * }
      *
      * @response 422 {
@@ -664,8 +695,32 @@ final class ClassScheduleController extends Controller
             $classScheduleSeatIds = $request->validated()['class_schedule_seat_ids'];
             $minutesToExpire = $request->validated()['minutes_to_expire'];
 
+            // 🎯 VALIDAR PAQUETES DISPONIBLES PARA LA DISCIPLINA
+            $packageValidationService = new PackageValidationService();
+            $packageValidation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
+
+            if (!$packageValidation['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $packageValidation['message'],
+                    'data' => [
+                        'reason' => 'insufficient_packages',
+                        'discipline_required' => $packageValidation['discipline_required'],
+                        'available_packages' => $packageValidation['available_packages']
+                    ]
+                ], 422);
+            }
+
+            // Log de paquetes disponibles para debugging
+            Log::info('Paquetes validados para reserva', [
+                'user_id' => $userId,
+                'schedule_id' => $classSchedule->id,
+                'discipline_required' => $packageValidation['discipline_required'],
+                'available_packages_count' => count($packageValidation['available_packages'])
+            ]);
+
             // Usar transacción para asegurar consistencia
-            return DB::transaction(function () use ($classSchedule, $classScheduleSeatIds, $userId, $minutesToExpire) {
+            return DB::transaction(function () use ($classSchedule, $classScheduleSeatIds, $userId, $minutesToExpire, $packageValidationService) {
 
                 // Verificar que todos los asientos existen y pertenecen a este horario
                 $seatAssignments = ClassScheduleSeat::where('class_schedules_id', $classSchedule->id)
@@ -755,6 +810,38 @@ final class ClassScheduleController extends Controller
                     ];
                 }
 
+                // 🎯 CONSUMIR PAQUETE PARA LA RESERVA
+                // Cargar la clase con su disciplina para obtener el discipline_id
+                $classSchedule->load(['class.discipline']);
+                $disciplineId = $classSchedule->class->discipline_id;
+
+                $packageConsumption = $packageValidationService->consumeClassFromPackage($userId, $disciplineId);
+
+                if (!$packageConsumption['success']) {
+                    // Si no se puede consumir el paquete, revertir las reservas
+                    foreach ($availableAssignments as $assignment) {
+                        $assignment->update([
+                            'user_id' => null,
+                            'status' => 'available',
+                            'reserved_at' => null,
+                            'expires_at' => null
+                        ]);
+                    }
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se pudo consumir el paquete: ' . $packageConsumption['message'],
+                        'data' => ['reason' => 'package_consumption_failed']
+                    ], 422);
+                }
+
+                // Log del consumo de paquete
+                Log::info('Paquete consumido por reserva', [
+                    'user_id' => $userId,
+                    'schedule_id' => $classSchedule->id,
+                    'consumed_package' => $packageConsumption['consumed_package']
+                ]);
+
                 // Preparar respuesta exitosa
                 return response()->json([
                     'success' => true,
@@ -771,7 +858,8 @@ final class ClassScheduleController extends Controller
                             'studio_name' => $classSchedule->studio->name ?? 'N/A',
                             'scheduled_date' => $classSchedule->scheduled_date,
                             'start_time' => $classSchedule->start_time
-                        ]
+                        ],
+                        'package_consumption' => $packageConsumption['consumed_package']
                     ]
                 ], 200);
             });
@@ -1146,6 +1234,219 @@ final class ClassScheduleController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno al obtener reservas',
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirmar asistencia y marcar asientos como ocupados
+     *
+     * Este método se usa cuando el usuario llega a la clase y confirma su asistencia.
+     * Cambia el estado de los asientos de 'reserved' a 'occupied'.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @bodyParam class_schedule_seat_ids array required Los IDs de la tabla class_schedule_seat a confirmar. Example: [267, 268, 269]
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Asistencia confirmada exitosamente",
+     *   "data": {
+     *     "confirmed_seats": [
+     *       {
+     *         "class_schedule_seat_id": 267,
+     *         "seat_id": 1,
+     *         "seat_number": "1.1",
+     *         "previous_status": "reserved",
+     *         "new_status": "occupied",
+     *         "confirmed_at": "2025-01-11T20:30:00.000000Z"
+     *       }
+     *     ],
+     *     "confirmation_summary": {
+     *       "total_confirmed": 3,
+     *       "user_id": 10,
+     *       "class_name": "Yoga Matutino",
+     *       "scheduled_date": "2025-01-15",
+     *       "start_time": "08:00:00"
+     *     }
+     *   }
+     * }
+     */
+    public function confirmAttendance(Request $request)
+    {
+        try {
+            // Validar datos de entrada
+            $request->validate([
+                'class_schedule_seat_ids' => 'required|array|min:1|max:10',
+                'class_schedule_seat_ids.*' => 'required|integer|exists:class_schedule_seat,id'
+            ]);
+
+            $userId = Auth::id();
+            $assignmentIds = $request->validated()['class_schedule_seat_ids'];
+
+            // Usar transacción para asegurar consistencia
+            return DB::transaction(function () use ($assignmentIds, $userId) {
+
+                // Obtener las asignaciones que pertenecen al usuario autenticado
+                $assignments = ClassScheduleSeat::whereIn('id', $assignmentIds)
+                    ->where('user_id', $userId)
+                    ->where('status', 'reserved') // Solo asientos reservados pueden ser confirmados
+                    ->with(['classSchedule.class', 'seat'])
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($assignments->isEmpty()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se encontraron asientos reservados para confirmar',
+                        'data' => null
+                    ], 400);
+                }
+
+                // Confirmar todos los asientos
+                $confirmedSeats = [];
+                $confirmedAt = now();
+
+                foreach ($assignments as $assignment) {
+                    $previousStatus = $assignment->status;
+
+                    // Actualizar a ocupado
+                    $assignment->update([
+                        'status' => 'occupied',
+                        'expires_at' => null // Ya no expira porque está confirmado
+                    ]);
+
+                    $confirmedSeats[] = [
+                        'class_schedule_seat_id' => $assignment->id,
+                        'seat_id' => $assignment->seats_id,
+                        'seat_number' => $assignment->seat->row . '.' . $assignment->seat->column,
+                        'row' => $assignment->seat->row,
+                        'column' => $assignment->seat->column,
+                        'previous_status' => $previousStatus,
+                        'new_status' => 'occupied',
+                        'confirmed_at' => $confirmedAt->toISOString()
+                    ];
+                }
+
+                // Obtener información de la clase para el resumen
+                $firstAssignment = $assignments->first();
+                $classSchedule = $firstAssignment->classSchedule;
+
+                // Preparar respuesta exitosa
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Asistencia confirmada exitosamente',
+                    'data' => [
+                        'confirmed_seats' => $confirmedSeats,
+                        'confirmation_summary' => [
+                            'total_confirmed' => count($confirmedSeats),
+                            'user_id' => $userId,
+                            'schedule_id' => $classSchedule->id,
+                            'class_name' => $classSchedule->class->name ?? 'N/A',
+                            'scheduled_date' => $classSchedule->scheduled_date,
+                            'start_time' => $classSchedule->start_time,
+                            'confirmed_at' => $confirmedAt->toISOString()
+                        ]
+                    ]
+                ], 200);
+            });
+
+        } catch (\Exception $e) {
+            // Log del error para debugging
+            Log::error('Error al confirmar asistencia', [
+                'user_id' => Auth::id(),
+                'assignment_ids' => $request->input('class_schedule_seat_ids', []),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al confirmar asistencia',
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Verificar disponibilidad de paquetes para un horario específico
+     *
+     * Permite verificar si el usuario tiene paquetes disponibles para la disciplina
+     * de una clase específica antes de intentar hacer una reserva.
+     *
+     * @summary Verificar paquetes disponibles para horario
+     * @operationId checkPackageAvailability
+     * @tags Validación de Paquetes
+     *
+     * @param  \App\Models\ClassSchedule  $classSchedule Horario de clase
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Paquetes disponibles encontrados",
+     *   "data": {
+     *     "can_reserve": true,
+     *     "discipline_required": {
+     *       "id": 1,
+     *       "name": "Yoga"
+     *     },
+     *     "available_packages": [
+     *       {
+     *         "id": 42,
+     *         "package_code": "PKG001-2024",
+     *         "package_name": "Paquete Yoga 10 Clases",
+     *         "remaining_classes": 9,
+     *         "expiry_date": "2025-02-15",
+     *         "days_remaining": 35
+     *       }
+     *     ]
+     *   }
+     * }
+     *
+     * @response 422 {
+     *   "success": false,
+     *   "message": "No tienes paquetes disponibles para la disciplina 'Yoga'",
+     *   "data": {
+     *     "can_reserve": false,
+     *     "discipline_required": {
+     *       "id": 1,
+     *       "name": "Yoga"
+     *     },
+     *     "available_packages": []
+     *   }
+     * }
+     */
+    public function checkPackageAvailability(ClassSchedule $classSchedule)
+    {
+        try {
+            $userId = Auth::id();
+            $packageValidationService = new PackageValidationService();
+
+            $validation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
+
+            return response()->json([
+                'success' => $validation['valid'],
+                'message' => $validation['message'],
+                'data' => [
+                    'can_reserve' => $validation['valid'],
+                    'discipline_required' => $validation['discipline_required'],
+                    'available_packages' => $validation['available_packages']
+                ]
+            ], $validation['valid'] ? 200 : 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error al verificar disponibilidad de paquetes', [
+                'user_id' => Auth::id(),
+                'schedule_id' => $classSchedule->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al verificar paquetes',
                 'data' => null
             ], 500);
         }

@@ -13,9 +13,7 @@ return new class extends Migration
     {
         Schema::create('class_schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
-            $table->foreignId('instructor_id')->constrained('instructors')->onDelete('restrict');
-            $table->foreignId('studio_id')->constrained('studios')->onDelete('restrict');
+
             $table->date('scheduled_date');
             $table->time('start_time');
             $table->time('end_time');
@@ -30,6 +28,18 @@ return new class extends Migration
             $table->boolean('is_holiday_schedule')->default(false);
             $table->enum('status', ['scheduled', 'in_progress', 'completed', 'cancelled', 'postponed'])->default('scheduled');
             $table->timestamps();
+
+            // RELACIONES
+            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
+            $table->foreignId('instructor_id')->constrained('instructors')->onDelete('restrict');
+            // 👇 Nuevo campo para suplente
+            $table->foreignId('substitute_instructor_id')
+                ->nullable()
+                ->constrained('instructors')
+                ->onDelete('set null');
+
+            $table->boolean('is_replaced')->default(false);
+            $table->foreignId('studio_id')->constrained('studios')->onDelete('restrict');
 
             // Índices
             $table->unique(['class_id', 'scheduled_date', 'start_time']);

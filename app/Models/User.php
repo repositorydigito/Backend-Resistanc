@@ -142,8 +142,8 @@ final class User extends Authenticatable
     public function hasCompleteProfile(): bool
     {
         return $this->profile !== null &&
-               $this->profile->first_name !== null &&
-               $this->profile->last_name !== null;
+            $this->profile->first_name !== null &&
+            $this->profile->last_name !== null;
     }
 
     /**
@@ -156,7 +156,8 @@ final class User extends Authenticatable
         return false;
     }
 
-    public function package(){
+    public function package()
+    {
         return $this->belongsToMany(Package::class, 'user_packages');
     }
 
@@ -275,4 +276,50 @@ final class User extends Authenticatable
 
         return $expired->count();
     }
+
+    public function drinks()
+    {
+        return $this->belongsToMany(Drink::class, 'drink_user', 'user_id', 'drink_id')
+            ->withPivot('quantity', 'classschedule_id')
+            ->withTimestamps();
+    }
+
+    public function userFavorites()
+    {
+        return $this->hasMany(UserFavorite::class, 'user_id');
+    }
+
+    public function favoriteDrinks()
+    {
+        return $this->morphedByMany(Drink::class, 'favoritable', 'user_favorites', 'user_id', 'favoritable_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
+    public function favoriteProducts()
+    {
+        return $this->morphedByMany(Product::class, 'favoritable', 'user_favorites', 'user_id', 'favoritable_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
+    public function favoriteClasses()
+    {
+        return $this->morphedByMany(ClassModel::class, 'favoritable', 'user_favorites', 'user_id', 'favoritable_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
+    public function favoriteInstructors()
+    {
+        return $this->morphedByMany(Instructor::class, 'favoritable', 'user_favorites', 'user_id', 'favoritable_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
+    public function waitingClasses(): HasMany
+    {
+        return $this->hasMany(WaitingClass::class);
+    }
+
 }

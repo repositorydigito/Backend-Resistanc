@@ -141,32 +141,32 @@ class SeatAssignmentsRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Asignar Asiento'),
+                // Tables\Actions\CreateAction::make()
+                //     ->label('Asignar Asiento'),
 
-                Tables\Actions\Action::make('generateSeats')
-                    ->label('Generar Asientos Automáticamente')
-                    ->icon('heroicon-o-squares-plus')
-                    ->color('info')
-                    ->action(function () {
-                        $this->generateSeatsForSchedule();
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Generar Asientos')
-                    ->modalDescription('Esto creará automáticamente asientos para todos los asientos activos del estudio. ¿Continuar?'),
+                // Tables\Actions\Action::make('generateSeats')
+                //     ->label('Generar Asientos Automáticamente')
+                //     ->icon('heroicon-o-squares-plus')
+                //     ->color('info')
+                //     ->action(function () {
+                //         $this->generateSeatsForSchedule();
+                //     })
+                //     ->requiresConfirmation()
+                //     ->modalHeading('Generar Asientos')
+                //     ->modalDescription('Esto creará automáticamente asientos para todos los asientos activos del estudio. ¿Continuar?'),
 
-                Tables\Actions\Action::make('releaseExpired')
-                    ->label('Liberar Expirados')
-                    ->icon('heroicon-o-clock')
-                    ->color('warning')
-                    ->action(function () {
-                        $count = $this->getOwnerRecord()->releaseExpiredReservations();
-                        Notification::make()
-                            ->title('Reservas Liberadas')
-                            ->body("Se liberaron {$count} reservas expiradas.")
-                            ->success()
-                            ->send();
-                    }),
+                // Tables\Actions\Action::make('releaseExpired')
+                //     ->label('Liberar Expirados')
+                //     ->icon('heroicon-o-clock')
+                //     ->color('warning')
+                //     ->action(function () {
+                //         $count = $this->getOwnerRecord()->releaseExpiredReservations();
+                //         Notification::make()
+                //             ->title('Reservas Liberadas')
+                //             ->body("Se liberaron {$count} reservas expiradas.")
+                //             ->success()
+                //             ->send();
+                //     }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -213,20 +213,20 @@ class SeatAssignmentsRelationManager extends RelationManager
                     })
                     ->requiresConfirmation(),
 
-                Tables\Actions\Action::make('release')
-                    ->label('Liberar')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->visible(fn($record) => in_array($record->status, ['reserved', 'occupied']))
-                    ->action(function ($record) {
-                        $record->release();
-                        Notification::make()
-                            ->title('Asiento Liberado')
-                            ->body('Asiento liberado exitosamente.')
-                            ->success()
-                            ->send();
-                    })
-                    ->requiresConfirmation(),
+                // Tables\Actions\Action::make('release')
+                //     ->label('Liberar')
+                //     ->icon('heroicon-o-x-circle')
+                //     ->color('danger')
+                //     ->visible(fn($record) => in_array($record->status, ['reserved', 'occupied']))
+                //     ->action(function ($record) {
+                //         $record->release();
+                //         Notification::make()
+                //             ->title('Asiento Liberado')
+                //             ->body('Asiento liberado exitosamente.')
+                //             ->success()
+                //             ->send();
+                //     })
+                //     ->requiresConfirmation(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

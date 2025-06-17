@@ -200,6 +200,85 @@ final class UserPackage extends Model
     }
 
     /**
+     * Use classes from this package.
+     */
+    public function useClasses(int $classes = 1): bool
+    {
+        if (!$this->is_valid || $this->remaining_classes < $classes) {
+            return false;
+        }
+
+        $this->increment('used_classes', $classes);
+        $this->decrement('remaining_classes', $classes);
+
+        return true;
+    }
+
+    /**
+     * Refund classes to this package.
+     */
+    public function refundClasses(int $classes = 1): bool
+    {
+        if ($this->used_classes < $classes) {
+            return false;
+        }
+
+        $this->decrement('used_classes', $classes);
+        $this->increment('remaining_classes', $classes);
+
+        return true;
+    }
+
+    /**
+     * Check if this package can be used for a specific discipline.
+     */
+    public function canUseForDiscipline(int $disciplineId): bool
+    {
+        if (!$this->is_valid || !$this->has_classes) {
+            return false;
+        }
+
+        // Cargar la relación del paquete si no está cargada
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+
+        return $this->package && $this->package->discipline_id === $disciplineId;
+    }
+
+    /**
+     * Check if the package has classes available.
+     */
+    public function getHasClassesAttribute(): bool
+    {
+        return $this->remaining_classes > 0;
+    }
+
+    /**
+     * Get the discipline ID of this package.
+     */
+    public function getDisciplineIdAttribute(): ?int
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+
+        return $this->package?->discipline_id;
+    }
+
+    /**
+     * Get the discipline name of this package.
+     */
+    public function getDisciplineNameAttribute(): ?string
+    {
+        if (!$this->relationLoaded('package.discipline')) {
+            $this->load('package.discipline');
+        }
+
+        return $this->package?->discipline?->name;
+    }
+
+    /**
      * Activate the package.
      */
     public function activate(): void

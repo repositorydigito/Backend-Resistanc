@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Support\Str;
+
 final class Product extends Model
 {
     use HasFactory;
@@ -232,4 +234,47 @@ final class Product extends Model
     {
         $this->increment('stock_quantity', $quantity);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($membership) {
+            if (empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+
+        static::updating(function ($membership) {
+            if ($membership->isDirty('name') && empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->where('id', '!=', $membership->id)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+    }
+
+    // relacion muchos a muchos polimorfica
+
+    public function userFavorites(): BelongsToMany
+    {
+        return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
 }

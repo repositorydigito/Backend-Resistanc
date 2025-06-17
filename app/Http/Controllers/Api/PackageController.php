@@ -77,8 +77,10 @@ final class PackageController extends Controller
     {
         $packages = Package::query()
             ->with(['discipline'])
+
             ->withCount(['userPackages'])
             ->where('buy_type', 'affordable')
+
             ->active()
             ->where(function ($query) {
                 // Mostrar paquetes fijos siempre

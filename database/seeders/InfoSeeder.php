@@ -4,14 +4,18 @@ namespace Database\Seeders;
 
 use App\Models\Basedrink;
 use App\Models\ClassModel;
+use App\Models\ClassSchedule;
+use App\Models\ClassScheduleSeat;
 use App\Models\Discipline;
 use App\Models\Drink;
 use App\Models\Flavordrink;
 use App\Models\Instructor;
 use App\Models\Package;
+use App\Models\Seat;
 use App\Models\Studio;
 use App\Models\Typedrink;
 use App\Models\User;
+use App\Models\UserPackage;
 use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -91,6 +95,37 @@ class InfoSeeder extends Seeder
         $user_cliente_four->assignRole($clienteRole);
 
         // Fin clientes
+
+
+
+        // cliente con metodo de pago
+
+
+        $method = $user_cliente->paymentMethods()->create([
+            'payment_type' => 'credit_card',
+            'card_brand' => 'visa',
+            'card_last_four' => '1111',
+            'card_holder_name' => 'Juan Pérez',
+            'card_expiry_month' => 12,
+            'card_expiry_year' => 2025,
+            'is_default' => false,
+            'status' => 'active',
+            'verification_status' => 'pending',
+            'is_saved_for_future' => true,
+            'billing_address' => [
+                'street' => 'Av. Lima 123',
+                'city' => 'Lima',
+                'state' => 'Lima',
+                'postal_code' => '15001',
+                'country' => 'Perú',
+            ],
+            'gateway_token' => 'tok_test123456',
+            'gateway_customer_id' => 'cus_fake123',
+        ]);
+
+        // Fin cliente con metodo de pago
+
+
 
         // Disciplinas
 
@@ -662,6 +697,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 0.00,
                 'original_price_soles' => 35.00,
                 'validity_days' => 30,
+                'buy_type' => 'assignable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -691,6 +727,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 35.00,
                 'original_price_soles' => 35.00,
                 'validity_days' => 30,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -720,6 +757,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 250.00,
                 'original_price_soles' => 250.00,
                 'validity_days' => 30,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -749,6 +787,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 450.00,
                 'original_price_soles' => 450.00,
                 'validity_days' => 60,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -778,6 +817,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 850.00,
                 'original_price_soles' => 850.00,
                 'validity_days' => 180,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -807,6 +847,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 1700.00,
                 'original_price_soles' => 1700.00,
                 'validity_days' => 365,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -838,6 +879,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 0.00,
                 'original_price_soles' => 69.00,
                 'validity_days' => 30,
+                'buy_type' => 'assignable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -867,6 +909,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 69.00,
                 'original_price_soles' => 69.00,
                 'validity_days' => 30,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -896,6 +939,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 250.00,
                 'original_price_soles' => 250.00,
                 'validity_days' => 30,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -925,6 +969,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 450.00,
                 'original_price_soles' => 450.00,
                 'validity_days' => 60,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -954,6 +999,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 540.00,
                 'original_price_soles' => 540.00,
                 'validity_days' => 60,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -983,6 +1029,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 950.00,
                 'original_price_soles' => 950.00,
                 'validity_days' => 180,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -1012,6 +1059,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 1800.00,
                 'original_price_soles' => 1800.00,
                 'validity_days' => 365,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
@@ -1042,6 +1090,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 320.00,
                 'original_price_soles' => 400.00,
                 'validity_days' => 45,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1071,6 +1120,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 450.00,
                 'original_price_soles' => 550.00,
                 'validity_days' => 45,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1102,6 +1152,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 380.00,
                 'original_price_soles' => 500.00,
                 'validity_days' => 60,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1133,6 +1184,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 420.00,
                 'original_price_soles' => 520.00,
                 'validity_days' => 90,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1164,6 +1216,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 480.00,
                 'original_price_soles' => 650.00,
                 'validity_days' => 75,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1195,6 +1248,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 300.00,
                 'original_price_soles' => 380.00,
                 'validity_days' => 40,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1226,6 +1280,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 600.00,
                 'original_price_soles' => 1000.00,
                 'validity_days' => 120,
+                'buy_type' => 'affordable',
                 'mode_type' => 'mixto',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1257,6 +1312,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 480.00,
                 'original_price_soles' => 720.00,
                 'validity_days' => 90,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1288,6 +1344,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 540.00,
                 'original_price_soles' => 810.00,
                 'validity_days' => 100,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1319,6 +1376,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 1200.00,
                 'original_price_soles' => 2000.00,
                 'validity_days' => 365,
+                'buy_type' => 'affordable',
                 'mode_type' => 'mixto',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1350,6 +1408,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 750.00,
                 'original_price_soles' => 1100.00,
                 'validity_days' => 150,
+                'buy_type' => 'affordable',
                 'mode_type' => 'virtual',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1381,6 +1440,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 660.00,
                 'original_price_soles' => 990.00,
                 'validity_days' => 120,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1412,6 +1472,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 350.00,
                 'original_price_soles' => 450.00,
                 'validity_days' => 60,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1443,6 +1504,7 @@ class InfoSeeder extends Seeder
                 'price_soles' => 900.00,
                 'original_price_soles' => 1200.00,
                 'validity_days' => 90,
+                'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
@@ -1543,8 +1605,8 @@ class InfoSeeder extends Seeder
             'price' => 10.00,
             'created_at' => now(),
         ]);
-        $drink_one->basedrinks()->attach(1);
-        $drink_one->typedrinks()->attach(1);
+        $drink_one->basesdrinks()->attach(1);
+        $drink_one->typesdrinks()->attach(1);
         $drink_one->flavordrinks()->attach(1);
         $drink_one->save();
 
@@ -1557,11 +1619,131 @@ class InfoSeeder extends Seeder
             'price' => 12.00,
             'created_at' => now(),
         ]);
-        $drink_two->basedrinks()->attach(2);
-        $drink_two->typedrinks()->attach(1);
+        $drink_two->basesdrinks()->attach(2);
+        $drink_two->typesdrinks()->attach(1);
         $drink_two->flavordrinks()->attach(2);
         $drink_two->save();
         // Fin bebidas
+
+
+
+
+        // horarios
+
+        $baseDate = Carbon::parse('next monday'); // Lunes de la siguiente semana
+
+
+        // Horarios por 2 semanas
+        $mapping = [
+            'Monday' => 1,
+            'Wednesday' => 3,
+            'Friday' => 5,
+        ];
+
+        $classTemplates = [
+            ['start' => '08:00:00', 'end' => '09:00:00', 'class_id' => 1],
+            ['start' => '18:00:00', 'end' => '19:00:00', 'class_id' => 2],
+        ];
+
+        $classSchedule = [];
+        $startDate = Carbon::today();
+        $endDate = $startDate->copy()->addWeeks(2);
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            $dayName = $date->format('l'); // Ej: Monday
+
+            if (!array_key_exists($dayName, $mapping)) continue;
+
+            foreach ($classTemplates as $template) {
+                $classSchedule[] = [
+                    'class_id' => $template['class_id'],
+                    'instructor_id' => 1, // ajusta según lógica
+                    'studio_id' => 1,     // ajusta según lógica
+                    'scheduled_date' => $date->format('Y-m-d'),
+                    'start_time' => $template['start'],
+                    'end_time' => $template['end'],
+                    'max_capacity' => 10,
+                    'available_spots' => 10,
+                    'booked_spots' => 0,
+                    'waitlist_spots' => 0,
+                    'status' => 'scheduled',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        ClassSchedule::insert($classSchedule);
+
+        // Crear asientos relacionados
+        $allSchedules = ClassSchedule::whereDate('scheduled_date', '>=', Carbon::today())->get();
+
+        foreach ($allSchedules as $schedule) {
+            $studio = $schedule->studio;
+            if (!$studio) continue;
+
+            $rows = $studio->row;
+            $columns = $studio->column;
+
+            for ($r = 1; $r <= $rows; $r++) {
+                for ($c = 1; $c <= $columns; $c++) {
+                    $seat = Seat::firstOrCreate(
+                        [
+                            'studio_id' => $studio->id,
+                            'row' => $r,
+                            'column' => $c,
+                        ],
+                        [
+                            'is_active' => true,
+                        ]
+                    );
+
+                    $code = 'SCH-' . $schedule->id . '-SEAT-' . $seat->id;
+
+                    ClassScheduleSeat::create([
+                        'class_schedules_id' => $schedule->id,
+                        'seats_id' => $seat->id,
+                        'status' => 'available',
+                        'code' => $code,
+                    ]);
+                }
+            }
+        }
+
+        // cliente paquete
+        $package1 = Package::firstWhere('id', 1); // o el id si lo conoces
+        $package2 = Package::firstWhere('id', 2);
+
+        UserPackage::create([
+            'user_id' => $user_cliente->id,
+            'package_id' => $package1->id,
+            'package_code' => 'PCK-001',
+            'total_classes' => $package1->classes_quantity,
+            'used_classes' => 0,
+            'remaining_classes' => $package1->classes_quantity,
+            'amount_paid_soles' => $package1->price_soles,
+            'currency' => 'PEN',
+            'purchase_date' => now(),
+            'activation_date' => now(),
+            'expiry_date' => now()->addDays($package1->validity_days),
+            'status' => 'active',
+        ]);
+
+        UserPackage::create([
+            'user_id' => $user_cliente->id,
+            'package_id' => $package2->id,
+            'package_code' => 'PCK-002',
+            'total_classes' => $package2->classes_quantity,
+            'used_classes' => 0,
+            'remaining_classes' => $package2->classes_quantity,
+            'amount_paid_soles' => $package2->price_soles,
+            'currency' => 'PEN',
+            'purchase_date' => now(),
+            'activation_date' => now(),
+            'expiry_date' => now()->addDays($package2->validity_days),
+            'status' => 'active',
+        ]);
+        // Fin cliente paquete
 
     }
 }

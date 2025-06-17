@@ -21,6 +21,7 @@ class ClassScheduleResource extends JsonResource
                 'id' => $this->class->id,
                 'name' => $this->class->name,
                 'discipline' => $this->class->discipline->name,
+                'discipline_img' => asset('storage/') . '/' . $this->class->discipline->icon_url,
             ],
             'instructor' => [
                 'id' => $this->instructor->id,

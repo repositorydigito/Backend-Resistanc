@@ -241,7 +241,8 @@ class PackageResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 // Tables\Columns\TextColumn::make('short_description')
                 //     ->searchable(),
@@ -264,6 +265,7 @@ class PackageResource extends Resource
                         'assignable' => 'warning',
                         default => 'gray',
                     })
+                    ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('membership.name')
@@ -287,7 +289,8 @@ class PackageResource extends Resource
                             'style' => "background-color: {$record->discipline->color_hex}10; color:  {$record->discipline->color_hex}; border: 1px solid {$record->discipline->color_hex}; padding: 0; font-weight: bold; border-radius: 0.45rem; text-align: center; display: flex; width: 100%; justify-content: center; align-items: center;",
                             'class' => 'p-0 text-sm text-center' // Estilos adicionales para el badge
                         ];
-                    }),
+                    })
+                    ,
 
 
                 // Tables\Columns\TextColumn::make('price_soles')
@@ -307,6 +310,7 @@ class PackageResource extends Resource
                         'temporary' => 'warning',
                         default => 'gray',
                     })
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_date')
                     ->label('Fecha de inicio')
@@ -368,6 +372,53 @@ class PackageResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 //
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'active' => 'Activo',
+                        'inactive' => 'Inactivo',
+                        'coming_soon' => 'Próximamente',
+                        'discontinued' => 'Descontinuado',
+                    ])
+                    ->default('active'),
+                Tables\Filters\SelectFilter::make('buy_type')
+                    ->label('Tipo de compra')
+                    ->options([
+                        'affordable' => 'Comprable',
+                        'assignable' => 'Asignable',
+                    ]),
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tipo de paquete')
+                    ->options([
+                        'fixed' => 'Fijo',
+                        'temporary' => 'Temporal',
+                    ]),
+                Tables\Filters\SelectFilter::make('commercial_type')
+                    ->label('Comercial')
+                    ->options([
+                        'promotion' => 'Promoción',
+                        'offer' => 'Oferta',
+                        'basic' => 'Básico',
+                    ]),
+                Tables\Filters\SelectFilter::make('mode_type')
+                    ->label('Modo')
+                    ->options([
+                        'presencial' => 'Presencial',
+                        'virtual' => 'Virtual',
+                        'mixto' => 'Mixto',
+                    ]),
+                // Tables\Filters\SelectFilter::make('target_audience')
+                //     ->options([
+                //         'beginner' => 'Principiantes',
+                //         'intermediate' => 'Intermedios',
+                //         'advanced' => 'Avanzados',
+                //         'all' => 'Todos',
+                //     ])
+                //     ->default('all'),
+                Tables\Filters\SelectFilter::make('discipline_id')
+                    ->label('Disciplina')
+                    ->relationship('discipline', 'name')
+                    ->label('Disciplina'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

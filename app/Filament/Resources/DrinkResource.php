@@ -4,7 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DrinkResource\Pages;
 use App\Filament\Resources\DrinkResource\RelationManagers;
+use App\Models\Basedrink;
 use App\Models\Drink;
+use App\Models\Flavordrink;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -57,6 +59,40 @@ class DrinkResource extends Resource
                         // Forms\Components\TextInput::make('slug')
                         //     ->required()
                         //     ->maxLength(255),
+
+                        Forms\Components\Select::make('basesdrinks')
+                            ->label('Base de la bebida')
+                            ->relationship('basesdrinks', 'name')
+                            ->options(
+                                Basedrink::all()->pluck('name', 'id')
+                            )
+                            ->searchable()
+                            ->required()
+                            ->multiple()
+                            ->preload(),
+                        Forms\Components\Select::make('flavordrinks')
+                            ->label('Sabor de la bebida')
+                            ->relationship('flavordrinks', 'name')
+                            ->options(
+                                Flavordrink::all()->pluck('name', 'id')
+                            )
+                            ->searchable()
+                            ->required()
+                            ->multiple()
+                            ->preload(),
+
+                        Forms\Components\Select::make('typesdrinks')
+                            ->label('Tipo de bebida')
+                            ->relationship('typesdrinks', 'name')
+                            ->options(
+                                \App\Models\Typedrink::all()->pluck('name', 'id')
+                            )
+
+                            ->searchable()
+                            ->required()
+                            ->multiple()
+                            ->preload(),
+
 
 
                         Forms\Components\TextInput::make('price')

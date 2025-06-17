@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('class_schedule_seat', function (Blueprint $table) {
             $table->id();
             // 🔗 Claves foráneas
+            $table->string('code')->unique();
+
             $table->foreignId('class_schedules_id')
                 ->constrained('class_schedules')
                 ->onDelete('cascade');
@@ -25,6 +27,16 @@ return new class extends Migration
             $table->foreignId('user_id')
                 ->nullable()
                 ->constrained('users')
+                ->onDelete('set null');
+
+            $table->foreignId('user_waiting_id')
+                ->nullable()
+                ->constrained('users')
+                ->onDelete('set null');
+
+            $table->foreignId('user_package_id')
+                ->nullable()
+                ->constrained('user_packages')
                 ->onDelete('set null');
 
             // 📊 Estados del asiento

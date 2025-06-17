@@ -39,6 +39,8 @@ final class ClassSchedule extends Model
         // ✅ FALTABA: Agregar los campos de las relaciones
         'instructor_id',
         'studio_id',
+        'substitute_instructor_id', // Nuevo campo para suplente
+        'is_replaced', // Nuevo campo para indicar si es un reemplazo
 
     ];
     protected static function boot()
@@ -192,7 +194,6 @@ final class ClassSchedule extends Model
                         'new_studio_id' => $newStudioId,
                         'seats_generated' => $seatsGenerated
                     ]);
-
                 } catch (\Exception $e) {
                     Log::error("Error regenerando asientos después del cambio de sala", [
                         'schedule_id' => $classSchedule->id,
@@ -701,4 +702,40 @@ final class ClassSchedule extends Model
         ];
     }
 
+    public function drinks()
+    {
+        return $this->belongsToMany(Drink::class, 'drink_user', 'classschedule_id', 'drink_id')
+            ->withTimestamps()
+            ->withPivot('id', 'quantity', 'user_id');
+    }
+    public function classScheduleSeats(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class, 'class_schedules_id');
+    }
+
+    /**
+     * Get the waiting users for this class schedule.
+     */
+    public function waitingUsers(): HasMany
+    {
+        return $this->hasMany(WaitingClass::class, 'class_schedules_id')
+            ->with('user:id,name,email')
+            ->orderBy('created_at', 'asc')
+            ->where(function ($query) {
+                $query->where('status', 'waiting')
+                    ->orWhere('status', 'notified')
+                    ->orWhere('status', 'confirmed');
+            });
+    }
+    /**
+     * Get the substitute instructor for this schedule.
+     */
+    public function substituteInstructor(): BelongsTo
+    {
+        return $this->belongsTo(Instructor::class, 'substitute_instructor_id', 'id')
+            ->withDefault([
+                'name' => 'No Substitute',
+                'profile_image' => 'default-substitute.png', // Cambia esto por una imagen
+            ]);
+    }
 }

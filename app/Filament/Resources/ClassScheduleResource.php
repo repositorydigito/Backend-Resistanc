@@ -5,8 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ClassScheduleResource\Pages;
 use App\Filament\Resources\ClassScheduleResource\RelationManagers;
 use App\Models\ClassSchedule;
+use App\Models\Instructor;
 use Closure;
 use Filament\Forms;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -81,6 +84,27 @@ class ClassScheduleResource extends Resource
                             ->helperText('Primero selecciona una clase para ver instructores disponibles'),
 
 
+                        Toggle::make('is_replaced')
+                            ->label('¿Sera remplazado?')
+                            ->live() // Hacer reactivo
+                            ->default(false)
+                            ->helperText('Marca si el instructor sera reemplazado. Si es así, selecciona un suplente.'), // Solo en crear/editar
+                        // Nuevo campo para suplente
+
+                        Select::make('substitute_instructor_id')
+                            ->label('Instructor Suplente')
+                            ->visible(fn(Get $get): bool => $get('is_replaced')) // Solo visible si es reemplazo
+                            ->options(function ($get) {
+                                $primary = $get('instructor_id');
+
+                                return \App\Models\Instructor::query()
+                                    ->where('status', 'active')
+                                    ->when($primary, fn($query) => $query->where('id', '!=', $primary))
+                                    ->pluck('name', 'id');
+                            })
+                            ->searchable()
+                            ->nullable()
+                            ->helperText('Seleccione un instructor suplente si es necesario'),
 
 
                         Forms\Components\Select::make('studio_id')
@@ -398,6 +422,7 @@ class ClassScheduleResource extends Resource
         return [
             RelationManagers\SeatMapVisualRelationManager::class,
             RelationManagers\SeatAssignmentsRelationManager::class,
+            RelationManagers\WaitingUserClassRelationManager::class,
         ];
     }
 
