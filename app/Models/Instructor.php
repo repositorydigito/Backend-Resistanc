@@ -280,8 +280,8 @@ final class Instructor extends Model
      */
     public function updateRatingAverage(): void
     {
-        // Use 'score' field if available, fallback to 'rating'
-        $average = $this->ratings()->avg('score') ?? $this->ratings()->avg('rating');
+        // Usar solo la columna 'score' para el promedio
+        $average = $this->ratings()->avg('score');
         $this->update(['rating_average' => $average ?? 0]);
     }
 
@@ -300,5 +300,8 @@ final class Instructor extends Model
             ->withPivot('notes', 'priority')
             ->withTimestamps();
     }
+
+
+
 
 }

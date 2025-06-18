@@ -738,4 +738,13 @@ final class ClassSchedule extends Model
                 'profile_image' => 'default-substitute.png', // Cambia esto por una imagen
             ]);
     }
+
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(UserPackage::class, 'user_package_id', 'id')
+            ->withDefault([
+                'name' => 'No Package',
+                'description' => 'This class schedule is not associated with any package.',
+            ]);
+    }
 }

@@ -28,6 +28,7 @@ final class CoachRating extends Model
         'moderator_notes',
 
         // nuevo
+        'comment', // Comentario del usuario
         'score',
     ];
 

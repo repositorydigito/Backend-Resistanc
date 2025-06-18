@@ -30,12 +30,10 @@ final class InstructorController extends Controller
      * @queryParam search string Buscar por nombre o email del instructor. Example: "Juan"
      * @queryParam status string Filtrar por estado del instructor (active, inactive). Example: "active"
      * @queryParam is_head_coach boolean Filtrar por instructores principales. Example: true
-     * @queryParam min_experience_years integer Años mínimos de experiencia. Example: 5
-     * @queryParam max_experience_years integer Años máximos de experiencia. Example: 15
-     * @queryParam min_rating_average number Calificación mínima promedio. Example: 4.0
-     * @queryParam max_rating_average number Calificación máxima promedio. Example: 5.0
      * @queryParam include_counts boolean Incluir contadores de clases y disciplinas. Example: true
      * @queryParam include_disciplines boolean Incluir información de disciplinas. Example: true
+     * @queryParam discipline_id integer Filtrar instructores que enseñan una disciplina específica. Example: 3
+
      *
      * @response 200 {
      *   "data": [
@@ -93,17 +91,10 @@ final class InstructorController extends Controller
             ->when($request->filled('is_head_coach'), function ($query) use ($request) {
                 $query->where('is_head_coach', $request->boolean('is_head_coach'));
             })
-            ->when($request->filled('min_experience_years'), function ($query) use ($request) {
-                $query->where('experience_years', '>=', $request->integer('min_experience_years'));
-            })
-            ->when($request->filled('max_experience_years'), function ($query) use ($request) {
-                $query->where('experience_years', '<=', $request->integer('max_experience_years'));
-            })
-            ->when($request->filled('min_rating_average'), function ($query) use ($request) {
-                $query->where('rating_average', '>=', $request->float('min_rating_average'));
-            })
-            ->when($request->filled('max_rating_average'), function ($query) use ($request) {
-                $query->where('rating_average', '<=', $request->float('max_rating_average'));
+            ->when($request->filled('discipline_id'), function ($query) use ($request) {
+                $query->whereHas('disciplines', function ($q) use ($request) {
+                    $q->where('id', $request->integer('discipline_id'));
+                });
             });
 
         // Incluir contadores si se solicita
@@ -290,5 +281,122 @@ final class InstructorController extends Controller
             ->get();
 
         return InstructorResource::collection($instructors);
+    }
+    /**
+     * Mostrar detalles de un instructor específico
+     *
+     * Retorna la información detallada de un instructor, incluyendo disciplinas y horarios de clases.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Mostrar instructor
+     * @operationId getInstructorDetails
+     *
+     * @urlParam instructor integer required ID del instructor. Example: 1
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": 1,
+     *     "name": "Juan Pérez",
+     *     "email": "juan@gmail.com",
+     *     "phone": "987654321",
+     *     "bio": "Instructor con más de 10 años de experiencia",
+     *     "profile_image": "/images/instructors/juan.jpg",
+     *     "instagram_handle": "@juan_fitness",
+     *     "is_head_coach": true,
+     *     "experience_years": 10,
+     *     "rating_average": 4.8,
+     *     "certifications": ["Spinning Certified"],
+     *     "hourly_rate_soles": 150.00,
+     *     "hire_date": "2015-01-01",
+     *     "disciplines": [...],
+     *     "class_schedules": [...],
+     *     "created_at": "2024-01-15T10:30:00.000Z",
+     *     "updated_at": "2024-01-15T10:30:00.000Z"
+     *   }
+     * }
+     */
+
+    public function show(Instructor $instructor): InstructorResource
+    {
+        // Cargar relaciones necesarias
+        $instructor->load(['disciplines', 'classSchedules']);
+
+        return new InstructorResource($instructor);
+    }
+
+    /**
+     * Calificar a un instructor
+     *
+     * Permite a un usuario autenticado calificar a un instructor. Solo se permite una calificación por instructor por usuario.
+     *
+     * @summary Calificar instructor
+     * @operationId scoreInstructor
+     *
+     * @urlParam instructor integer required ID del instructor a calificar. Example: 1
+     *
+     * @bodyParam score integer required Calificación del instructor (1 a 5). Example: 5
+     * @bodyParam comment string Comentario opcional. Max 500 caracteres. Example: "Muy buen instructor"
+     *
+     * @response 200 {
+     *   "message": "Calificación registrada exitosamente.",
+     *   "rating": {
+     *     "id": 10,
+     *     "user_id": 2,
+     *     "instructor_id": 1,
+     *     "score": 5,
+     *     "comment": "Muy buen instructor",
+     *     "created_at": "2024-06-15T12:34:56.000Z",
+     *     "updated_at": "2024-06-15T12:34:56.000Z"
+     *   }
+     * }
+     *
+     * @response 422 {
+     *   "message": "Ya has calificado a este instructor."
+     * }
+     */
+
+    public function scoreInstructor(Request $request, Instructor $instructor): \Illuminate\Http\JsonResponse
+    {
+        // Validar la puntuación
+
+        try {
+            // Validar la puntuación
+            $request->validate([
+                'score' => 'required|integer|min:1|max:5',
+                'comment' => 'nullable|string|max:500',
+            ]);
+
+            $userId = auth()->id();
+
+            // Verificar si ya existe una calificación previa
+            $alreadyRated = $instructor->ratings()
+                ->where('user_id', $userId)
+                ->exists();
+
+            if ($alreadyRated) {
+                return response()->json([
+                    'message' => 'Ya has calificado a este instructor.',
+                ], 422); // Código 422 Unprocessable Entity
+            }
+
+            // Crear la calificación
+            $rating = $instructor->ratings()->create([
+                'user_id' => $userId,
+                'score' => $request->input('score'),
+                'comment' => $request->input('comment'),
+            ]);
+
+            // Actualizar el promedio de calificaciones del instructor
+            $instructor->updateRatingAverage();
+
+            return response()->json([
+                'message' => 'Calificación registrada exitosamente.',
+                'rating' => $rating,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Error al registrar la calificación: ' . $th->getMessage(),
+            ], 500); // Código 500 Internal Server Error
+        }
     }
 }

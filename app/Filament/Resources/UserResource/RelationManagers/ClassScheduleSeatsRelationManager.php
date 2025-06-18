@@ -47,6 +47,11 @@ class ClassScheduleSeatsRelationManager extends RelationManager
                     ->sortable()
                     ->searchable(),
 
+                Tables\Columns\TextColumn::make('classSchedule.Package.name')
+                    ->label('Paquete utilizado')
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('classSchedule.scheduled_date')
                     ->label('Fecha')
                     ->date()
@@ -102,11 +107,23 @@ class ClassScheduleSeatsRelationManager extends RelationManager
             ])
             ->actions([
                 // Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('release')
+                    ->label('Liberar')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('warning')
+                    ->action(function ($record) {
+                        $record->update([
+                            'user_id' => null,
+                            'status' => 'available',
+                            'reserved_at' => null,
+                            'expires_at' => null,
+                        ]);
+                    })
+                    ->requiresConfirmation(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

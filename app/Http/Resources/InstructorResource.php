@@ -32,12 +32,29 @@ class InstructorResource extends JsonResource
             'hire_date' => $this->hire_date,
             'hourly_rate_soles' => $this->hourly_rate_soles,
             'status' => $this->status,
-            'availability_schedule' => $this->availability_schedule,
+            // 'availability_schedule' => $this->availability_schedule,
+            'disciplines' => $this->disciplines->map(function ($discipline) {
+                return [
+                    'id' => $discipline->id,
+                    'name' => $discipline->name,
+                    'icon_url' => asset($discipline->icon_url),
+                ];
+            }),
+            'ratings_summary' => [
+                'count' => $this->ratings->count(),
+                'average' => round($this->ratings->avg('score'), 1),
+                'distribution' => [
+                    '5' => $this->ratings->where('score', 5)->count(),
+                    '4' => $this->ratings->where('score', 4)->count(),
+                    '3' => $this->ratings->where('score', 3)->count(),
+                    '2' => $this->ratings->where('score', 2)->count(),
+                    '1' => $this->ratings->where('score', 1)->count(),
+                ],
+            ],
             'type_document' => $this->type_document,
             'document_number' => $this->document_number,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
-
     }
 }

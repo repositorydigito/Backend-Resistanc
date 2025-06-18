@@ -145,7 +145,7 @@ final class UserPackage extends Model
             return 0;
         }
 
-        return $this->expiry_date->diffInDays(now());
+        return (int) $this->expiry_date->diffInDays(now());
     }
 
     /**

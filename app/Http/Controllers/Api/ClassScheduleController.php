@@ -489,6 +489,7 @@ final class ClassScheduleController extends Controller
 
             return response()->json([
                 'success' => true,
+                'message' => 'Mapa de asientos obtenido exitosamente',
                 'data' => $seatMap
             ], 200);
         } catch (\Exception $e) {
@@ -645,8 +646,11 @@ final class ClassScheduleController extends Controller
      */
     public function reserveSeats(ClassSchedule $classSchedule, ReserveSeatsRequest $request)
     {
+
+
         try {
             // Log inicial para debugging
+
             Log::info('Iniciando reserva de asientos', [
                 'schedule_id' => $classSchedule->id,
                 'request_data' => $request->validated(),
@@ -659,7 +663,7 @@ final class ClassScheduleController extends Controller
                     'success' => false,
                     'message' => 'No se puede reservar en un horario cancelado',
                     'data' => ['reason' => 'schedule_cancelled']
-                ], 422);
+                ], 200);
             }
 
             // Verificar que no sea un horario pasado
@@ -673,7 +677,7 @@ final class ClassScheduleController extends Controller
                     'success' => false,
                     'message' => 'No se puede reservar en un horario pasado',
                     'data' => ['reason' => 'schedule_past']
-                ], 422);
+                ], 200);
             }
 
             // Verificar que las reservas estén abiertas (al menos 2 horas antes)
@@ -688,7 +692,7 @@ final class ClassScheduleController extends Controller
                         'class_datetime' => $scheduleDateTime->toISOString(),
                         'current_time' => now()->toISOString()
                     ]
-                ], 422);
+                ], 200);
             }
 
             $userId = Auth::id();
@@ -708,7 +712,7 @@ final class ClassScheduleController extends Controller
                         'discipline_required' => $packageValidation['discipline_required'],
                         'available_packages' => $packageValidation['available_packages']
                     ]
-                ], 422);
+                ], 200);
             }
 
             // Log de paquetes disponibles para debugging
@@ -720,7 +724,24 @@ final class ClassScheduleController extends Controller
             ]);
 
             // Usar transacción para asegurar consistencia
-            return DB::transaction(function () use ($classSchedule, $classScheduleSeatIds, $userId, $minutesToExpire, $packageValidationService) {
+            return DB::transaction(function () use ($classSchedule, $classScheduleSeatIds, $userId, $minutesToExpire, $packageValidationService, $packageValidation) {
+                // Obtener los paquetes disponibles como modelos Eloquent
+                $classSchedule->load(['class.discipline']);
+                $disciplineId = $classSchedule->class->discipline_id;
+                $availablePackages = $packageValidationService->getUserAvailablePackagesForDiscipline($userId, $disciplineId);
+                $totalAvailableSeats = $availablePackages->sum('remaining_classes');
+
+                // Validar que el usuario no reserve más asientos de los que tiene disponibles
+                if (count($classScheduleSeatIds) > $totalAvailableSeats) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes suficientes asientos disponibles en tus paquetes para reservar esta cantidad.',
+                        'data' => [
+                            'requested_seats' => count($classScheduleSeatIds),
+                            'available_seats' => $totalAvailableSeats
+                        ]
+                    ], 200);
+                }
 
                 // Verificar que todos los asientos existen y pertenecen a este horario
                 $seatAssignments = ClassScheduleSeat::where('class_schedules_id', $classSchedule->id)
@@ -777,70 +798,57 @@ final class ClassScheduleController extends Controller
                 $reservedAt = now();
                 $expiresAt = $reservedAt->copy()->addMinutes($minutesToExpire);
 
-                foreach ($availableAssignments as $assignment) {
+                // Consumir un asiento de un paquete por cada asiento reservado
+                $availablePackages = $availablePackages->sortBy('expiry_date')->values();
+                $packageIndex = 0;
+                foreach ($availableAssignments as $i => $assignment) {
+                    // Buscar el siguiente paquete con clases disponibles
+                    while ($packageIndex < $availablePackages->count() && $availablePackages[$packageIndex]->remaining_classes <= 0) {
+                        $packageIndex++;
+                    }
+                    if ($packageIndex >= $availablePackages->count()) {
+                        // Esto no debería ocurrir por la validación previa
+                        break;
+                    }
+                    $package = $availablePackages[$packageIndex];
+                    $package->loadMissing('package'); // Asegura que la relación esté cargada
+                    $package->useClasses(1);
+                    $packageConsumptionDetails[] = [
+                        'package_id' => $package->id,
+                        'package_code' => $package->package_code,
+                        'package_name' => $package->package->name ?? 'N/A',
+                        'remaining_classes' => $package->remaining_classes
+                    ];
+
+                    // Actualizar el asiento con el user_package_id
                     $assignment->update([
                         'user_id' => $userId,
                         'status' => 'reserved',
                         'reserved_at' => $reservedAt,
-                        'expires_at' => $expiresAt
+                        'expires_at' => $expiresAt,
+                        'user_package_id' => $package->id
                     ]);
 
                     // Cargar la relación del asiento para obtener información completa
                     $assignment->load('seat');
 
                     $reservedSeats[] = [
-                        // 🎯 ID de la tabla class_schedule_seat (para futuras operaciones)
                         'class_schedule_seat_id' => $assignment->id,
-
-                        // 📍 Información del asiento
                         'seat_id' => $assignment->seats_id,
                         'seat_number' => $assignment->seat->row . '.' . $assignment->seat->column,
                         'row' => $assignment->seat->row,
                         'column' => $assignment->seat->column,
-
-                        // 📊 Estado y reserva
                         'status' => 'reserved',
                         'user_id' => $userId,
                         'reserved_at' => $reservedAt->toISOString(),
                         'expires_at' => $expiresAt->toISOString(),
-
-                        // 🔗 Referencias (para compatibilidad)
-                        'assignment_id' => $assignment->id, // Alias del class_schedule_seat_id
-                        'schedule_id' => $classSchedule->id
+                        'assignment_id' => $assignment->id,
+                        'schedule_id' => $classSchedule->id,
+                        'user_package_id' => $package->id, // Mostrar el paquete usado
+                        'package_code' => $package->package_code,
+                        'package_name' => $package->package->name ?? 'N/A'
                     ];
                 }
-
-                // 🎯 CONSUMIR PAQUETE PARA LA RESERVA
-                // Cargar la clase con su disciplina para obtener el discipline_id
-                $classSchedule->load(['class.discipline']);
-                $disciplineId = $classSchedule->class->discipline_id;
-
-                $packageConsumption = $packageValidationService->consumeClassFromPackage($userId, $disciplineId);
-
-                if (!$packageConsumption['success']) {
-                    // Si no se puede consumir el paquete, revertir las reservas
-                    foreach ($availableAssignments as $assignment) {
-                        $assignment->update([
-                            'user_id' => null,
-                            'status' => 'available',
-                            'reserved_at' => null,
-                            'expires_at' => null
-                        ]);
-                    }
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No se pudo consumir el paquete: ' . $packageConsumption['message'],
-                        'data' => ['reason' => 'package_consumption_failed']
-                    ], 422);
-                }
-
-                // Log del consumo de paquete
-                Log::info('Paquete consumido por reserva', [
-                    'user_id' => $userId,
-                    'schedule_id' => $classSchedule->id,
-                    'consumed_package' => $packageConsumption['consumed_package']
-                ]);
 
                 // Preparar respuesta exitosa
                 return response()->json([
@@ -859,7 +867,7 @@ final class ClassScheduleController extends Controller
                             'scheduled_date' => $classSchedule->scheduled_date,
                             'start_time' => $classSchedule->start_time
                         ],
-                        'package_consumption' => $packageConsumption['consumed_package']
+                        'package_consumption' => $packageConsumptionDetails
                     ]
                 ], 200);
             });
@@ -1140,9 +1148,10 @@ final class ClassScheduleController extends Controller
                             'past_reservations' => 0,
                             'total_seats_reserved' => 0
                         ]
-                    ]
-                ], 404);
+                    ]])
+                ->setStatusCode(404);
             }
+
 
             // Agrupar por horario
             $groupedReservations = $seatReservations->groupBy('class_schedules_id');

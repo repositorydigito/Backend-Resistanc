@@ -137,7 +137,7 @@ Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->
     Route::get('/', [InstructorController::class, 'index'])->name('index');
     Route::get('/week', [InstructorController::class, 'instructorsWeek'])->name('week');
     Route::get('/show/{instructor}', [InstructorController::class, 'show'])->name('show');
-    Route::get('/ten', [InstructorController::class, 'indexTen'])->name('ten');
+    Route::post('/{instructor}/favorite', [InstructorController::class, 'scoreInstructor'])->name('favorite');
 });
 // Fin instructores
 
@@ -158,29 +158,22 @@ Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:san
 Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [DrinkController::class, 'index'])->name('index');
     Route::get('/{id}', [DrinkController::class, 'show'])->name('show');
-
 });
 // Fin bebidas
 
 
 // Tienda
-
 // Categorias de productos
-
 Route::prefix('product-categories')->name('product-categories.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [ProductCategoryController::class, 'index'])->name('index');
 });
-
 // Fin categorias de productos
 
 // Etiquetas de productos
-
 Route::prefix('product-tags')->name('product-tags.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [ProductTagController::class, 'index'])->name('index');
 });
-
 // Fin etiquetas de productos
-
 // Fin Tienda
 
 

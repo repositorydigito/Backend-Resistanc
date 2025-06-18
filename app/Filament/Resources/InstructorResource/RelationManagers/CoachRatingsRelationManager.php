@@ -4,6 +4,7 @@ namespace App\Filament\Resources\InstructorResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,38 +16,70 @@ class CoachRatingsRelationManager extends RelationManager
 {
     protected static string $relationship = 'ratings';
 
+    protected static ?string $title = 'Calificaciones';
+
+    protected static ?string $modelLabel = 'Calificación';
+
+    protected static ?string $pluralModelLabel = 'Calificaciones';
+
+
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['instructor_id'] = $this->ownerRecord->id;
         $data['user_id'] = Auth::id() ?? 1; // Fallback to user ID 1 if no auth
-
+        if (isset($data['score'])) {
+            $data['rating'] = $data['score']; // Sincroniza rating con score
+        }
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['instructor_id'] = $this->ownerRecord->id;
-
+        if (isset($data['score'])) {
+            $data['rating'] = $data['score']; // Sincroniza rating con score
+        }
         return $data;
     }
 
     public function form(Form $form): Form
     {
         return $form
+            ->columns(1)
             ->schema([
+                Forms\Components\Hidden::make('user_id')
+                    ->default(fn() => Auth::id() ?? 1),
                 Forms\Components\TextInput::make('score')
                     ->label('Puntuación')
                     ->required()
                     ->numeric()
                     ->minValue(1)
                     ->maxValue(5)
-                    ->helperText('Calificación del 1 al 5'),
+                    ->helperText('Calificación del 1 al 5')
+                    ->rules([
+                        function () {
+                            return function ($attribute, $value, $fail) {
+                                $userId = auth()->id();
+                                $instructorId = $this->ownerRecord->id ?? null;
 
-                Forms\Components\Textarea::make('review')
-                    ->label('Comentario')
-                    ->maxLength(500)
-                    ->rows(3)
-                    ->columnSpanFull(),
+                                if (!$userId || !$instructorId) {
+                                    return;
+                                }
+
+                                $exists = \App\Models\CoachRating::where('user_id', $userId)
+                                    ->where('instructor_id', $instructorId)
+                                    ->exists();
+
+                                if ($exists) {
+                                    $fail('Ya has calificado a este instructor.');
+                                }
+                            };
+                        },
+                    ]),
+                Forms\Components\Textarea::make('comment')
+                    ->label('Comentario'),
+                // ->maxLength(500),
             ]);
     }
 
@@ -55,9 +88,10 @@ class CoachRatingsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('score')
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('id')
+                //     ->label('ID')
+                //     ->hidden(true)
+                //     ->sortable(),
 
                 // Tables\Columns\TextColumn::make('instructor.name')
                 //     ->label('Instructor')
@@ -79,7 +113,7 @@ class CoachRatingsRelationManager extends RelationManager
                     })
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('review')
+                Tables\Columns\TextColumn::make('comment')
                     ->label('Comentario')
                     ->limit(50)
                     ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
@@ -137,7 +171,7 @@ class CoachRatingsRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
