@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\FormsComponent;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
@@ -55,8 +56,7 @@ class ClassScheduleResource extends Resource
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
                             ->image()
-                            ->columnSpanFull()
-                            ->required(),
+                            ->columnSpanFull(),
 
                         Forms\Components\Select::make('class_id')
                             ->label('Clase')
@@ -255,13 +255,17 @@ class ClassScheduleResource extends Resource
                             ->dehydrated(false) // No se envía en el formulario
                             ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
 
-                        Forms\Components\TextInput::make('booked_spots')
-                            ->label('Lugares Reservados')
-                            ->numeric()
-                            ->default(0)
-                            ->disabled() // Solo lectura
-                            ->dehydrated(false) // No se envía en el formulario
-                            ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
+                        // Forms\Components\TextInput::make('booked_spots')
+                        //     ->label('Lugares Reservados')
+                        //     ->numeric()
+                        //     ->default(0)
+                        //     ->disabled() // Solo lectura
+                        //     ->dehydrated(false) // No se envía en el formulario
+                        //     ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
+
+
+                        Forms\Components\TextInput::make('theme')
+                            ->label('Tema'), // Ocupa todo el ancho
 
                         Forms\Components\TextInput::make('waitlist_spots')
                             ->label('Lista de Espera')

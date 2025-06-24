@@ -32,6 +32,7 @@ return new class extends Migration
 
             // Nuevo
             $table->string('img_url')->nullable();
+            $table->string('theme')->nullable();
 
             // RELACIONES
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');

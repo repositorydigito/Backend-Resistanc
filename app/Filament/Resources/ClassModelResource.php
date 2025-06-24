@@ -53,8 +53,7 @@ class ClassModelResource extends Resource
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
                             ->image()
-                            ->columnSpanFull()
-                            ->required(),
+                            ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')

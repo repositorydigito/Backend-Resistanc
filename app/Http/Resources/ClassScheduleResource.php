@@ -47,6 +47,8 @@ class ClassScheduleResource extends JsonResource
             'special_notes' => $this->special_notes,
             'is_holiday_schedule' => $this->is_holiday_schedule,
             'status' => $this->status,
+            'theme' => $this->theme,
+            'img_url' => $this->img_url ? asset('storage/') . '/' . $this->img_url : null,
 
 
             // Contadores de asientos

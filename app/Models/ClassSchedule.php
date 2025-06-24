@@ -45,6 +45,7 @@ final class ClassSchedule extends Model
 
         // Nuevo
         'img_url',
+        'theme',
 
     ];
     protected static function boot()
