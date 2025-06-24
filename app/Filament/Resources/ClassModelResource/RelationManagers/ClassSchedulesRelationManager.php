@@ -19,6 +19,12 @@ class ClassSchedulesRelationManager extends RelationManager
     protected static ?string $label = 'Horario';
     protected static ?string $pluralLabel = 'Horarios';
 
+
+    protected static ?string $title = 'Horarios de Clase';
+
+    protected static ?string $modelLabel = 'Horario';
+
+    protected static ?string $pluralModelLabel = 'Horarios';
     public function form(Form $form): Form
     {
         return $form
@@ -162,15 +168,8 @@ class ClassSchedulesRelationManager extends RelationManager
                     ->numeric()
                     ->sortable(),
 
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
-                    ->colors([
-                        'secondary' => 'scheduled',
-                        'warning' => 'in_progress',
-                        'success' => 'completed',
-                        'danger' => 'cancelled',
-                        'info' => 'postponed',
-                    ])
                     ->formatStateUsing(fn($state) => match ($state) {
                         'scheduled' => 'Programado',
                         'in_progress' => 'En Progreso',
@@ -178,7 +177,16 @@ class ClassSchedulesRelationManager extends RelationManager
                         'cancelled' => 'Cancelado',
                         'postponed' => 'Pospuesto',
                         default => $state
-                    }),
+                    })
+
+                    ->colors([
+                        'gray' => 'scheduled',
+                        'warning' => 'in_progress',
+                        'success' => 'completed',
+                        'danger' => 'cancelled',
+                        'info' => 'postponed',
+                    ])
+                    ->badge(),
 
                 Tables\Columns\IconColumn::make('is_holiday_schedule')
                     ->label('Feriado')
@@ -225,24 +233,24 @@ class ClassSchedulesRelationManager extends RelationManager
                     ->label('Crear Horario'),
             ])
             ->actions([
-                Tables\Actions\Action::make('mark_completed')
-                    ->label('Marcar Completado')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn($record) => $record->status === 'scheduled' || $record->status === 'in_progress')
-                    ->action(fn($record) => $record->update(['status' => 'completed']))
-                    ->requiresConfirmation(),
+                // Tables\Actions\Action::make('mark_completed')
+                //     ->label('Marcar Completado')
+                //     ->icon('heroicon-o-check-circle')
+                //     ->color('success')
+                //     ->visible(fn($record) => $record->status === 'scheduled' || $record->status === 'in_progress')
+                //     ->action(fn($record) => $record->update(['status' => 'completed']))
+                //     ->requiresConfirmation(),
 
-                Tables\Actions\Action::make('cancel')
-                    ->label('Cancelar')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->visible(fn($record) => $record->status === 'scheduled')
-                    ->action(fn($record) => $record->update(['status' => 'cancelled']))
-                    ->requiresConfirmation(),
+                // Tables\Actions\Action::make('cancel')
+                //     ->label('Cancelar')
+                //     ->icon('heroicon-o-x-circle')
+                //     ->color('danger')
+                //     ->visible(fn($record) => $record->status === 'scheduled')
+                //     ->action(fn($record) => $record->update(['status' => 'cancelled']))
+                //     ->requiresConfirmation(),
 
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Tables\Actions\EditAction::make(),
+                // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

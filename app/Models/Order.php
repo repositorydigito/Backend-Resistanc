@@ -14,7 +14,7 @@ final class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+
         'order_number',
         'order_type',
         'subtotal_soles',
@@ -33,6 +33,10 @@ final class Order extends Model
         'promocode_used',
         'notes',
         'discount_code_id',
+
+        // Relaciones
+        'user_id',
+
     ];
 
     protected $casts = [
@@ -271,8 +275,8 @@ final class Order extends Model
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
             'quantity' => $quantity,
-            'unit_price' => $price,
-            'total_price' => $price * $quantity,
+            'unit_price_soles' => $price,
+            'total_price_soles' => $price * $quantity,
             'product_name' => $product->name,
             'product_sku' => $variant ? $variant->full_sku : $product->sku,
         ]);
@@ -283,7 +287,7 @@ final class Order extends Model
      */
     public function recalculateTotals(): void
     {
-        $subtotal = $this->orderItems->sum('total_price');
+        $subtotal = $this->orderItems->sum('total_price_soles');
         $taxAmount = ($subtotal - $this->discount_amount_soles) * 0.18; // IGV 18%
         $totalAmount = $subtotal - $this->discount_amount_soles + $taxAmount + $this->shipping_amount_soles;
 

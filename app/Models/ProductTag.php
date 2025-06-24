@@ -14,6 +14,7 @@ final class ProductTag extends Model
 
     protected $fillable = [
         'name',
+
     ];
 
     /**

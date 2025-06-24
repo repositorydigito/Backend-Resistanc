@@ -42,6 +42,20 @@ class ClassModelResource extends Resource
                     ->columns(2)
                     ->schema([
 
+                       Forms\Components\FileUpload::make('img_url')
+                            ->label('Imagen')
+                            ->disk('public')
+                            ->directory('clases')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 5) // 5 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(800)
+                            ->imageResizeTargetHeight(600)
+                            ->image()
+                            ->columnSpanFull()
+                            ->required(),
+
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
                             ->required()

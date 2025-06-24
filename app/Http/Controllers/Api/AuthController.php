@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Dedoc\Scramble\Attributes\BodyParameter;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
 
 /**
  * @tags Autenticación
@@ -448,5 +450,84 @@ final class AuthController extends Controller
         }
 
         return 'Unknown';
+    }
+
+
+
+    // Logueo por Facebook
+
+    public function redirectToFacebook()
+    {
+        return Socialite::driver('facebook')->redirect();
+    }
+    public function loginWithFacebookToken(Request $request)
+    {
+
+        $accessToken = $request->input('access_token');
+
+        try {
+            $facebookUser = Socialite::driver('facebook')->stateless()->userFromToken($accessToken);
+
+            $user = User::firstOrCreate(
+                ['email' => $facebookUser->getEmail()],
+                [
+                    'name' => $facebookUser->getName(),
+                    'password' => bcrypt(Str::random(16)),
+                ]
+            );
+
+            $token = $user->createToken('Facebook Login')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => [
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al autenticar con Facebook.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // Logueo por Google
+    public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+    public function loginWithGoogleToken(Request $request)
+    {
+        $accessToken = $request->input('access_token');
+
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->userFromToken($accessToken);
+
+            $user = User::firstOrCreate(
+                ['email' => $googleUser->getEmail()],
+                [
+                    'name' => $googleUser->getName(),
+                    'password' => bcrypt(Str::random(16)),
+                ]
+            );
+
+            $token = $user->createToken('Google Login')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => [
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al autenticar con Google.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

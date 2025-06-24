@@ -185,6 +185,24 @@ class StudioResource extends Resource
                         $seatCapacity = $record->capacity_per_seat ?? 0;
                         return $seatsCount === $seatCapacity ? 'success' : 'warning';
                     }),
+
+                // Tables\Columns\TextColumn::make('class_schedules_count')
+                //     ->label('Horarios')
+                //     ->getStateUsing(function ($record) {
+                //         return $record->classSchedules()->count();
+                //     })
+                //     ->badge()
+                //     ->color(function ($record) {
+                //         $count = $record->classSchedules()->count();
+                //         return $count > 0 ? 'danger' : 'success';
+                //     })
+                //     ->tooltip(function ($record) {
+                //         $count = $record->classSchedules()->count();
+                //         return $count > 0
+                //             ? "Esta sala tiene {$count} horario(s) asociado(s) y no puede ser eliminada"
+                //             : "Esta sala no tiene horarios asociados";
+                //     }),
+
                 Tables\Columns\TextColumn::make('studio_type')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
                         'cycling' => 'Ciclo',
@@ -220,10 +238,34 @@ class StudioResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function (Studio $record) {
+                        if ($record->hasClassSchedules()) {
+                            $count = $record->classSchedules()->count();
+                            throw new \Exception("No se puede eliminar esta sala porque tiene {$count} horario(s) asociado(s). Primero debe eliminar o reasignar todos los horarios.");
+                        }
+                    })
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->tooltip(function (Studio $record) {
+                        return $record->hasClassSchedules()
+                            ? 'No se puede eliminar - tiene horarios asociados'
+                            : 'Eliminar sala';
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function ($records) {
+                            $studiosWithSchedules = $records->filter(function ($studio) {
+                                return $studio->hasClassSchedules();
+                            });
+
+                            if ($studiosWithSchedules->isNotEmpty()) {
+                                $studioNames = $studiosWithSchedules->pluck('name')->implode(', ');
+                                throw new \Exception("No se pueden eliminar las siguientes salas porque tienen horarios asociados: {$studioNames}");
+                            }
+                        }),
                 ]),
             ]);
     }

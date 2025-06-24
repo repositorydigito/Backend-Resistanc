@@ -47,7 +47,7 @@ class ClassScheduleSeatsRelationManager extends RelationManager
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('classSchedule.Package.name')
+                Tables\Columns\TextColumn::make('userPackage.package.name')
                     ->label('Paquete utilizado')
                     ->sortable()
                     ->searchable(),

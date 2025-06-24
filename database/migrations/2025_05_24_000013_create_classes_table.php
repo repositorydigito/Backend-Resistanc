@@ -26,6 +26,11 @@ return new class extends Migration
             $table->text('special_requirements')->nullable();
             $table->boolean('is_featured')->default(false);
             $table->enum('status', ['active', 'inactive', 'draft'])->default('active');
+
+            // nuevo
+            $table->string('img_url')->nullable();
+
+
             $table->timestamps();
 
             // Índices

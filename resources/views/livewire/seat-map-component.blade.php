@@ -152,8 +152,18 @@
             color: white;
         }
 
+        .btn-delete.disabled {
+            background: #9ca3af;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
         .action-btn:hover {
             transform: scale(1.1);
+        }
+
+        .action-btn.disabled:hover {
+            transform: none;
         }
 
         .seat.active {
@@ -166,6 +176,29 @@
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
             border-color: #b45309;
+        }
+
+        .seat.in-use {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border-color: #6d28d9;
+            position: relative;
+        }
+
+        .seat.in-use::after {
+            content: "🔒";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.75rem;
+            background: #ef4444;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid white;
         }
 
         .seat.empty {
@@ -272,19 +305,28 @@
                     @php
                         $seatKey = $row . '-' . $col;
                         $seat = $seats->get($seatKey);
+                        $isInUse = $seat ? $this->isSeatInUse($seat) : false;
+                        $usageInfo = $seat && $isInUse ? $this->getSeatUsageInfo($seat) : null;
                     @endphp
                     @if ($seat)
-                        <div class="seat {{ $seat->is_active ? 'active' : 'inactive' }}"
-                            title="Fila {{ $row }}, Columna {{ $col }} - {{ $seat->is_active ? 'Activo' : 'Inactivo' }}">
+                        <div class="seat {{ $seat->is_active ? 'active' : 'inactive' }} {{ $isInUse ? 'in-use' : '' }}"
+                            title="Fila {{ $row }}, Columna {{ $col }} - {{ $seat->is_active ? 'Activo' : 'Inactivo' }}{{ $isInUse ? ' - Asignado a horarios de clase' : '' }}">
                             <div class="seat-actions">
                                 <button class="action-btn btn-toggle" wire:click="toggleSeat({{ $seat->id }})"
                                     title="{{ $seat->is_active ? 'Desactivar' : 'Activar' }}">
                                     {{ $seat->is_active ? '⏸️' : '▶️' }}
                                 </button>
-                                <button class="action-btn btn-delete" wire:click="deleteSeat({{ $seat->id }})"
-                                    wire:confirm="¿Eliminar este asiento permanentemente?" title="Eliminar asiento">
-                                    🗑️
-                                </button>
+                                @if ($isInUse)
+                                    <button class="action-btn btn-delete disabled"
+                                        title="No se puede eliminar - Asignado a horarios ({{ $usageInfo['total_assignments'] }} asignaciones, {{ $usageInfo['upcoming_classes'] }} futuras)">
+                                        🔒
+                                    </button>
+                                @else
+                                    <button class="action-btn btn-delete" wire:click="deleteSeat({{ $seat->id }})"
+                                        wire:confirm="¿Eliminar este asiento permanentemente?" title="Eliminar asiento">
+                                        🗑️
+                                    </button>
+                                @endif
                             </div>
                             {{ $row }}.{{ $col }}
                         </div>
@@ -307,6 +349,12 @@
                 <span>Asiento Inactivo</span>
             </div>
             <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); position: relative;">
+                    <span style="position: absolute; top: -8px; right: -8px; font-size: 0.75rem; background: #ef4444; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid white;">🔒</span>
+                </div>
+                <span>Asignado a horarios (No se puede eliminar)</span>
+            </div>
+            <div class="legend-item">
                 <div class="legend-color" style="background: #f9fafb; border: 2px dashed #d1d5db;"></div>
                 <span>Posición Vacía (Clic para crear)</span>
             </div>
@@ -318,7 +366,8 @@
             • <strong>Posición vacía (+)</strong>: Clic para crear asiento<br>
             • <strong>Asiento existente</strong>: Hover para ver botones de acción<br>
             • <strong>▶️/⏸️</strong>: Activar/Desactivar asiento<br>
-            • <strong>🗑️</strong>: Eliminar asiento permanentemente
+            • <strong>🗑️</strong>: Eliminar asiento permanentemente<br>
+            • <strong>🔒</strong>: Asiento asignado a horarios (no se puede eliminar)
         </div>
     @else
         <div style="text-align: center; padding: 3rem; color: #6b7280;">

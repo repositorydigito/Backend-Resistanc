@@ -98,7 +98,7 @@ class ProductCategoryResource extends Resource
                             ->placeholder('Selecciona una categoría padre')
                             ->default(null)
                             ->columnSpanFull()
-                            ->required()
+
                             ->relationship('parent', 'name')
                             ->searchable(),
 

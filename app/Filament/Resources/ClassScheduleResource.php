@@ -44,6 +44,19 @@ class ClassScheduleResource extends Resource
                     ->columns(2)
                     ->schema([
 
+                         Forms\Components\FileUpload::make('img_url')
+                            ->label('Imagen')
+                            ->disk('public')
+                            ->directory('horarios')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 5) // 5 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(800)
+                            ->imageResizeTargetHeight(600)
+                            ->image()
+                            ->columnSpanFull()
+                            ->required(),
 
                         Forms\Components\Select::make('class_id')
                             ->label('Clase')
@@ -307,6 +320,11 @@ class ClassScheduleResource extends Resource
     {
         return $table
             ->columns([
+
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('class.name')
                     ->label('Clase')
                     ->numeric()

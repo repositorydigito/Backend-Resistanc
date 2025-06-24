@@ -31,6 +31,46 @@ class SeatMapComponent extends Component
         $this->addressing = $this->studio->addressing ?? 'left_to_right';
     }
 
+    /**
+     * Verificar si un asiento está siendo utilizado en algún horario de clase
+     */
+    protected function isSeatInUse(Seat $seat): bool
+    {
+        return $seat->seatAssignments()->exists();
+    }
+
+    /**
+     * Obtener información sobre el uso del asiento
+     */
+    protected function getSeatUsageInfo(Seat $seat): array
+    {
+        $assignments = $seat->seatAssignments()
+            ->with(['classSchedule.class', 'classSchedule.studio'])
+            ->get();
+
+        $totalAssignments = $assignments->count();
+        $activeAssignments = $assignments->whereIn('status', ['reserved', 'occupied'])->count();
+        $completedAssignments = $assignments->where('status', 'Completed')->count();
+        $availableAssignments = $assignments->where('status', 'available')->count();
+        
+        // Contar clases futuras usando una consulta separada
+        $upcomingClasses = $seat->seatAssignments()
+            ->whereHas('classSchedule', function ($query) {
+                $query->where('scheduled_date', '>=', now()->toDateString());
+            })
+            ->count();
+
+        $usageInfo = [
+            'total_assignments' => $totalAssignments,
+            'active_assignments' => $activeAssignments,
+            'completed_assignments' => $completedAssignments,
+            'available_assignments' => $availableAssignments,
+            'upcoming_classes' => $upcomingClasses,
+        ];
+
+        return $usageInfo;
+    }
+
     public function toggleSeat($seatId)
     {
         try {
@@ -112,8 +152,28 @@ class SeatMapComponent extends Component
         try {
             $seat = Seat::findOrFail($seatId);
             $position = $seat->row . '.' . $seat->column;
-            $seat->delete();
 
+            // 🚫 VALIDAR SI EL ASIENTO ESTÁ EN USO
+            if ($this->isSeatInUse($seat)) {
+                $usageInfo = $this->getSeatUsageInfo($seat);
+                
+                $message = "No se puede eliminar el asiento {$position} porque está asignado a horarios de clase:\n";
+                $message .= "• Total de asignaciones: {$usageInfo['total_assignments']}\n";
+                $message .= "• Asignaciones activas: {$usageInfo['active_assignments']}\n";
+                $message .= "• Asignaciones disponibles: {$usageInfo['available_assignments']}\n";
+                $message .= "• Clases futuras: {$usageInfo['upcoming_classes']}";
+                
+                Notification::make()
+                    ->title('No se puede eliminar')
+                    ->body($message)
+                    ->danger()
+                    ->send();
+                
+                return; // Cancela la eliminación
+            }
+
+            // ✅ Si no está en uso, proceder con la eliminación
+            $seat->delete();
             $this->loadSeats();
 
             Notification::make()
@@ -125,7 +185,7 @@ class SeatMapComponent extends Component
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error')
-                ->body('No se pudo eliminar el asiento')
+                ->body('No se pudo eliminar el asiento: ' . $e->getMessage())
                 ->danger()
                 ->send();
         }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ClassScheduleResource\RelationManagers;
 
 use App\Models\ClassScheduleSeat;
 use App\Models\Seat;
+use DragonCode\Contracts\Http\Builder;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -72,6 +73,8 @@ class SeatAssignmentsRelationManager extends RelationManager
             ]);
     }
 
+
+
     public function table(Table $table): Table
     {
         return $table
@@ -80,15 +83,23 @@ class SeatAssignmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('seat.id')
                     ->label('Asiento ID')
                     ->sortable()
+
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('seat.seat_number')
+                    ->label('Asiento')
+                    ->sortable()
+                    ->searchable(),
+
+
 
                 Tables\Columns\TextColumn::make('seat.row')
                     ->label('Fila')
-                    ->sortable(),
+                    ->sortable(false),
 
                 Tables\Columns\TextColumn::make('seat.column')
                     ->label('Columna')
-                    ->sortable(),
+                    ->sortable(false),
 
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Usuario')
@@ -118,7 +129,7 @@ class SeatAssignmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('reserved_at')
                     ->label('Reservado')
                     ->dateTime()
-                    ->sortable()
+                    ->sortable(false)
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('expires_at')
@@ -128,7 +139,13 @@ class SeatAssignmentsRelationManager extends RelationManager
                     ->placeholder('-')
                     ->color(fn($record) => $record?->isExpired() ? 'danger' : 'secondary'),
             ])
-            ->defaultSort('seat.row')
+            ->modifyQueryUsing(function ($query) {
+                return $query
+                    ->join('seats', 'class_schedule_seat.seats_id', '=', 'seats.id')
+                    ->orderBy('seats.row')
+                    ->orderBy('seats.column')
+                    ->select('class_schedule_seat.*'); // importante para evitar conflictos en el resultado
+            })
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
@@ -144,16 +161,16 @@ class SeatAssignmentsRelationManager extends RelationManager
                 // Tables\Actions\CreateAction::make()
                 //     ->label('Asignar Asiento'),
 
-                // Tables\Actions\Action::make('generateSeats')
-                //     ->label('Generar Asientos Automáticamente')
-                //     ->icon('heroicon-o-squares-plus')
-                //     ->color('info')
-                //     ->action(function () {
-                //         $this->generateSeatsForSchedule();
-                //     })
-                //     ->requiresConfirmation()
-                //     ->modalHeading('Generar Asientos')
-                //     ->modalDescription('Esto creará automáticamente asientos para todos los asientos activos del estudio. ¿Continuar?'),
+                Tables\Actions\Action::make('generateSeats')
+                    ->label('Generar Asientos Automáticamente')
+                    ->icon('heroicon-o-squares-plus')
+                    ->color('info')
+                    ->action(function () {
+                        $this->generateSeatsForSchedule();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Generar Asientos')
+                    ->modalDescription('Esto creará automáticamente asientos para todos los asientos activos del estudio. ¿Continuar?'),
 
                 // Tables\Actions\Action::make('releaseExpired')
                 //     ->label('Liberar Expirados')
@@ -270,6 +287,7 @@ class SeatAssignmentsRelationManager extends RelationManager
 
             if (!$exists) {
                 ClassScheduleSeat::create([
+                    'code' => $schedule->code . '-' . $seat->id,
                     'class_schedules_id' => $schedule->id,
                     'seats_id' => $seat->id,
                     'status' => 'available',

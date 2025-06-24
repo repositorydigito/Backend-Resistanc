@@ -1,4 +1,4 @@
-<div class="schedule-seat-map-container dark:bg-gray-800">
+<div class="schedule-seat-map-container dark:bg-gray-800 ">
     <style>
         .schedule-seat-map-container {
             padding: 1rem;
@@ -13,6 +13,7 @@
             padding: 1rem;
             border-radius: 0.5rem;
             font-weight: bold;
+
         }
 
         .schedule-info {
@@ -107,7 +108,7 @@
         .seat-map-grid {
             display: grid;
             gap: 0.55rem;
-            justify-content: center;
+            /* justify-content: center; */
             margin: 1rem 0;
             padding: 1.5rem;
             background: white;
@@ -325,7 +326,7 @@
     </style>
 
     @if ($rows > 0 && $columns > 0)
-        <div class="schedule-header dark:bg-gray-800">
+        <div class="schedule-header dark:bg-gray-800 ">
             🎭 {{ $schedule->class->name ?? 'Clase' }} - {{ $studioInfo['name'] }}
             <div class="text-black dark:text-white" style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.9;">
                 📅 {{ $schedule->scheduled_date->format('d/m/Y') }} •
@@ -420,7 +421,7 @@
             <div class="stage-label dark:text-white">Sala</div>
         </div> --}}
 
-        <div class="seat-map-grid dark:bg-gray-800"
+        <div class="seat-map-grid dark:bg-gray-800 overflow-auto w-full"
             style="grid-template-columns: auto repeat({{ $columns }}, 1fr);">
             <div></div>
             @for ($col = 1; $col <= $columns; $col++)

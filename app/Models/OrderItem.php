@@ -17,8 +17,8 @@ final class OrderItem extends Model
         'product_id',
         'product_variant_id',
         'quantity',
-        'unit_price',
-        'total_price',
+        'unit_price_soles',
+        'total_price_soles',
         'product_name',
         'product_sku',
         'product_image',
@@ -27,8 +27,8 @@ final class OrderItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
-        'unit_price' => 'decimal:2',
-        'total_price' => 'decimal:2',
+        'unit_price_soles' => 'decimal:2',
+        'total_price_soles' => 'decimal:2',
     ];
 
     /**
@@ -60,7 +60,7 @@ final class OrderItem extends Model
      */
     public function calculateTotal(): float
     {
-        return $this->quantity * $this->unit_price;
+        return $this->quantity * $this->unit_price_soles;
     }
 
     /**
@@ -68,6 +68,6 @@ final class OrderItem extends Model
      */
     public function updateTotal(): void
     {
-        $this->update(['total_price' => $this->calculateTotal()]);
+        $this->update(['total_price_soles' => $this->calculateTotal()]);
     }
 }

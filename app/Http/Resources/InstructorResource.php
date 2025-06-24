@@ -37,7 +37,7 @@ class InstructorResource extends JsonResource
                 return [
                     'id' => $discipline->id,
                     'name' => $discipline->name,
-                    'icon_url' => asset($discipline->icon_url),
+                    'icon_url' => asset('storage/') . '/' . $discipline->icon_url,
                 ];
             }),
             'ratings_summary' => [

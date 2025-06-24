@@ -7,10 +7,7 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -25,84 +22,163 @@ class ProductResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-cube';
 
     protected static ?string $navigationGroup = 'Tienda';
-
-    protected static ?string $navigationLabel = 'Productos'; // Nombre en el menú de navegación
-    protected static ?string $slug = 'products'; // Ruta del recurso
-
-    protected static ?string $label = 'Producto'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Productos'; // Nombre en plural
-
+    protected static ?string $navigationLabel = 'Productos';
+    protected static ?string $slug = 'productos';
+    protected static ?string $label = 'Producto';
+    protected static ?string $pluralLabel = 'Productos';
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-
-                Forms\Components\Section::make('Información del Producto')
+                Section::make('Información General')
                     ->columns(2)
                     ->schema([
 
+                        Forms\Components\FileUpload::make('img_url')
+                            ->label('Imagen principal')
+                            ->image()
+                            ->directory('products/main')
+                            ->disk('public') // Usa el filesystem configurado como 'public'
+                            ->preserveFilenames()
+                            ->nullable(),
 
-                        Section::make('Datos Básicos')
-                            ->columns(2)
-                            ->schema([
-                                TextInput::make('sku')->label('SKU')->required()->maxLength(50)->unique(ignoreRecord: true),
-                                TextInput::make('name')->label('Nombre del Producto')->required()->maxLength(255),
-                                Select::make('category_id')->label('Categoría')->required()->relationship('category', 'name'),
-                                TextInput::make('price_soles')->label('Precio (S/)')->numeric()->required(),
-                                TextInput::make('compare_price_soles')->label('Precio Comparación (S/)')->numeric(),
-                                TextInput::make('cost_price_soles')->label('Costo (S/)')->numeric(),
-                                Select::make('tags')
-                                    ->label('Etiquetas')
-                                    ->multiple()
-                                    ->relationship('tags', 'name')
-                                    ->preload()
-                                    ->searchable(),
-                            ]),
 
-                        Section::make('Inventario')
-                            ->columns(2)
-                            ->schema([
-                                TextInput::make('stock_quantity')->label('Stock')->numeric()->default(0)->required(),
-                                TextInput::make('min_stock_alert')->label('Stock Mínimo')->numeric()->default(5)->required(),
-                                TextInput::make('weight_grams')->label('Peso (g)')->numeric(),
-                            ]),
 
-                        Section::make('Descripciones')
-                            ->schema([
-                                TextInput::make('short_description')->label('Descripción Corta')->maxLength(500),
-                                Textarea::make('description')->label('Descripción')->rows(3)->columnSpanFull(),
-                            ]),
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required(),
 
-                        Section::make('Información Técnica')
-                            ->columns(2)
-                            ->schema([
-                                TextInput::make('dimensions')->label('Dimensiones')->maxLength(50)->helperText('Largo x Ancho x Alto (cm)'),
-                                TextInput::make('images')->label('Imágenes (URLs)')->maxLength(500)->helperText('Separadas por comas'),
-                                TextInput::make('nutritional_info')->label('Info Nutricional'),
-                                TextInput::make('ingredients')->label('Ingredientes'),
-                                TextInput::make('allergens')->label('Alérgenos'),
-                            ]),
+                        Forms\Components\TextInput::make('slug')
+                            ->label('Slug')
+                            ->required(),
 
-                        Section::make('Configuraciones')
-                            ->columns(3)
-                            ->schema([
-                                TextInput::make('product_type')->label('Tipo de Producto')->required(),
-                                Toggle::make('requires_variants')->label('¿Requiere Variantes?')->required(),
-                                Toggle::make('is_virtual')->label('¿Es Virtual?')->required(),
-                                Toggle::make('is_featured')->label('¿Es Destacado?')->required(),
-                                Toggle::make('is_available_for_booking')->label('¿Se Puede Reservar?')->required(),
-                                TextInput::make('status')->label('Estado')->default('active')->required(),
-                            ]),
+                        Forms\Components\Select::make('category_id')
+                            ->label('Categoría')
+                            ->relationship('category', 'name'),
 
-                        Section::make('SEO')
-                            ->columns(2)
-                            ->schema([
-                                TextInput::make('meta_title')->label('Meta Título')->maxLength(255),
-                                TextInput::make('meta_description')->label('Meta Descripción')->maxLength(500),
-                            ]),
+                        Forms\Components\TextInput::make('sku')
+                            ->label('SKU')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('short_description')
+                            ->label('Descripción corta')
+                            ->maxLength(500),
+
+                        Textarea::make('description')
+                            ->label('Descripción larga')
+                            ->columnSpanFull(),
                     ]),
+
+                Section::make('Precios y Stock')
+                    ->columns(3)
+                    ->schema([
+                        Forms\Components\TextInput::make('price_soles')
+                            ->label('Precio de venta (S/.)')
+                            ->numeric(),
+
+                        Forms\Components\TextInput::make('cost_price_soles')
+                            ->label('Precio de costo (S/.)')
+                            ->numeric(),
+
+                        Forms\Components\TextInput::make('compare_price_soles')
+                            ->label('Precio original / comparación')
+                            ->numeric(),
+
+                        Forms\Components\TextInput::make('min_stock_alert')
+                            ->label('Alerta de stock mínimo')
+                            ->numeric()
+                            ->default(5),
+
+                        Forms\Components\TextInput::make('weight_grams')
+                            ->label('Peso (gramos)')
+                            ->numeric(),
+                    ]),
+
+                Section::make('Opciones del Producto')
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\Select::make('product_type')
+                            ->label('Tipo de producto')
+                            ->options([
+                                'shake' => 'Batido',
+                                'supplement' => 'Suplemento',
+                                'merchandise' => 'Merchandising',
+                                'service' => 'Servicio',
+                                'gift_card' => 'Tarjeta de regalo',
+                            ])
+                            ->required(),
+
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->options([
+                                'active' => 'Activo',
+                                'inactive' => 'Inactivo',
+                                'out_of_stock' => 'Sin stock',
+                                'discontinued' => 'Descontinuado',
+                            ])
+                            ->required(),
+
+                        Forms\Components\Toggle::make('requires_variants')
+                            ->label('¿Requiere variantes?'),
+
+                        Forms\Components\Toggle::make('is_virtual')
+                            ->label('¿Es virtual?'),
+
+                        Forms\Components\Toggle::make('is_featured')
+                            ->label('¿Es destacado?'),
+
+                        Forms\Components\Toggle::make('is_available_for_booking')
+                            ->label('¿Disponible para reservas?'),
+                    ]),
+
+                Section::make('Metadatos y SEO')
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('meta_title')
+                            ->label('Meta título'),
+
+                        Forms\Components\TextInput::make('meta_description')
+                            ->label('Meta descripción')
+                            ->maxLength(500),
+                    ]),
+
+                Section::make('Información Adicional')
+                    ->columns(1)
+                    ->schema([
+                        Forms\Components\Repeater::make('dimensions')
+                            ->label('Dimensiones')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('nombre')
+                                    ->label('Nombre')
+                                    ->required(),
+                                Forms\Components\TextInput::make('valor')
+                                    ->label('Valor')
+                                    ->required(),
+                            ])
+                            ->createItemButtonLabel('Agregar dimensión')
+                            ,
+
+                        Forms\Components\FileUpload::make('images')
+                            ->label('Imágenes del producto')
+                            ->multiple()
+                            ->reorderable()
+                            ->image()
+                            ->directory('products') // se guardará en storage/app/public/products
+                            ->preserveFilenames()
+                          ,
+
+                        Forms\Components\KeyValue::make('nutritional_info')
+                            ->label('Características')
+                            ->keyLabel('Nombre')
+                            ->valueLabel('Valor')
+                            ->addButtonLabel('Agregar dato')
+                           ,
+                    ])
+
+
             ]);
     }
 
@@ -111,61 +187,40 @@ class ProductResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
-                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('category.name')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Categoría'),
+
                 Tables\Columns\TextColumn::make('sku')
-                    ->label('SKU')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('short_description')
-                    ->searchable(),
+                    ->label('SKU'),
+
                 Tables\Columns\TextColumn::make('price_soles')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('cost_price_soles')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('compare_price_soles')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('stock_quantity')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('min_stock_alert')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('weight_grams')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('product_type'),
+                    ->label('Precio (S/.)')
+                    ->numeric(),
+
                 Tables\Columns\IconColumn::make('requires_variants')
+                    ->label('¿Variantes?')
                     ->boolean(),
-                Tables\Columns\IconColumn::make('is_virtual')
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('is_featured')
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('is_available_for_booking')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('status'),
-                Tables\Columns\TextColumn::make('meta_title')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('meta_description')
-                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('product_type')
+                    ->label('Tipo'),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Estado'),
+
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
@@ -176,10 +231,12 @@ class ProductResource extends Resource
             ]);
     }
 
+
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ProductVariantRelationManager::class,
+
         ];
     }
 

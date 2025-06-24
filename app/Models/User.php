@@ -317,9 +317,24 @@ final class User extends Authenticatable
             ->withTimestamps();
     }
 
-    public function waitingClasses(): HasMany
+    public function waitingClasses()
     {
-        return $this->hasMany(WaitingClass::class);
+        return $this->hasMany(WaitingClass::class); // O el modelo correspondiente
     }
 
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function completedSeatReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class)
+            ->where('status', 'Completed');
+    }
+    public function pendingSeatReservations(): HasMany
+    {
+        return $this->hasMany(ClassScheduleSeat::class)
+            ->where('status', 'reserved');
+    }
 }

@@ -39,6 +39,7 @@ class PackageResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'color_hex' => $this->color_hex,
+            'commercial_type' => $this->commercial_type,
 
             // Computed attributes using model accessors
             'is_unlimited' => $this->is_unlimited,

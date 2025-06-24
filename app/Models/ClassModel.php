@@ -31,6 +31,9 @@ final class ClassModel extends Model
         'is_featured',
         'status',
 
+        // Nuevo
+        'img_url',
+
         // Relaciones
         'discipline_id',
         // 'instructor_id',

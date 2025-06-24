@@ -42,6 +42,10 @@ final class ClassSchedule extends Model
         'substitute_instructor_id', // Nuevo campo para suplente
         'is_replaced', // Nuevo campo para indicar si es un reemplazo
 
+
+        // Nuevo
+        'img_url',
+
     ];
     protected static function boot()
     {
@@ -178,7 +182,7 @@ final class ClassSchedule extends Model
                 ]);
 
                 try {
-                    // Eliminar asientos existentes del horario anterior
+                    // Eliminar TODOS los asientos existentes del horario anterior
                     $deletedSeats = ClassScheduleSeat::where('class_schedules_id', $classSchedule->id)->delete();
 
                     Log::info("Asientos eliminados del horario anterior", [
@@ -225,9 +229,9 @@ final class ClassSchedule extends Model
     /**
      * Get the class for this schedule.
      */
-    public function class(): BelongsTo
+    public function class()
     {
-        return $this->belongsTo(ClassModel::class, 'class_id');
+        return $this->belongsTo(ClassModel::class); // Ajusta el modelo real si se llama diferente
     }
 
     /**
@@ -506,6 +510,43 @@ final class ClassSchedule extends Model
         return $expired->count();
     }
 
+    // 🆕 Regenerar asientos manualmente (elimina todos y crea nuevos)
+    public function regenerateSeats(): int
+    {
+        Log::info("Regenerando asientos manualmente", [
+            'schedule_id' => $this->id,
+            'studio_id' => $this->studio_id
+        ]);
+
+        try {
+            // Eliminar todos los asientos existentes
+            $deletedCount = ClassScheduleSeat::where('class_schedules_id', $this->id)->delete();
+
+            Log::info("Asientos eliminados para regeneración", [
+                'schedule_id' => $this->id,
+                'deleted_count' => $deletedCount
+            ]);
+
+            // Generar nuevos asientos
+            $createdCount = $this->generateSeatsAutomatically();
+
+            Log::info("Asientos regenerados exitosamente", [
+                'schedule_id' => $this->id,
+                'deleted_count' => $deletedCount,
+                'created_count' => $createdCount
+            ]);
+
+            return $createdCount;
+        } catch (\Exception $e) {
+            Log::error("Error regenerando asientos", [
+                'schedule_id' => $this->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
+
     // 🆕 Generar asientos automáticamente para este horario
     public function generateSeatsAutomatically(): int
     {
@@ -549,21 +590,47 @@ final class ClassSchedule extends Model
             }
         }
 
+        // 🚨 ELIMINAR TODOS LOS ASIENTOS EXISTENTES ANTES DE GENERAR NUEVOS
+        $existingSeats = ClassScheduleSeat::where('class_schedules_id', $this->id)->get();
+
+        if ($existingSeats->isNotEmpty()) {
+            Log::info("Eliminando asientos existentes antes de regenerar", [
+                'schedule_id' => $this->id,
+                'existing_seats_count' => $existingSeats->count()
+            ]);
+
+            // Eliminar todos los asientos existentes
+            ClassScheduleSeat::where('class_schedules_id', $this->id)->delete();
+        }
+
         // Generar asientos para este horario
         $created = 0;
         foreach ($studioSeats as $seat) {
-            // Solo crear si no existe ya
-            $exists = ClassScheduleSeat::where('class_schedules_id', $this->id)
-                ->where('seats_id', $seat->id)
-                ->exists();
+            try {
+                // Generar código único para este asiento
+                $code = $this->generateSeatCode($this->id, $seat->id);
 
-            if (!$exists) {
                 ClassScheduleSeat::create([
                     'class_schedules_id' => $this->id,
                     'seats_id' => $seat->id,
                     'status' => 'available',
+                    'code' => $code,
                 ]);
                 $created++;
+
+                Log::debug("Asiento creado", [
+                    'schedule_id' => $this->id,
+                    'seat_id' => $seat->id,
+                    'code' => $code
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error("Error creando asiento", [
+                    'schedule_id' => $this->id,
+                    'seat_id' => $seat->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Continuar con el siguiente asiento
             }
         }
 
@@ -572,10 +639,17 @@ final class ClassSchedule extends Model
             'studio_id' => $studio->id,
             'studio_name' => $studio->name,
             'seats_created' => $created,
-            'total_studio_seats' => $studioSeats->count()
+            'total_studio_seats' => $studioSeats->count(),
+            'existing_seats_before' => $existingSeats->count()
         ]);
 
         return $created;
+    }
+
+    // 🆕 Generar código único para asiento
+    private function generateSeatCode(int $scheduleId, int $seatId): string
+    {
+        return 'SCH-' . $scheduleId . '-SEAT-' . $seatId . '-' . time() . '-' . rand(1000, 9999);
     }
 
     // 🆕 Obtener mapa de asientos con estado y distribución completa
@@ -741,10 +815,11 @@ final class ClassSchedule extends Model
 
     public function package(): BelongsTo
     {
-        return $this->belongsTo(UserPackage::class, 'user_package_id', 'id')
-            ->withDefault([
-                'name' => 'No Package',
-                'description' => 'This class schedule is not associated with any package.',
-            ]);
+        return $this->belongsTo(Package::class);
+    }
+
+    public function getClassNameAttribute()
+    {
+        return $this->class?->name ?? 'Sin nombre';
     }
 }

@@ -87,6 +87,7 @@ final class DrinkController extends Controller
     {
         $query = Drink::query();
 
+
         // Incluir relaciones si se solicita
         if ($request->boolean('include_relations', false)) {
             $query->with(['basesdrinks', 'flavordrinks', 'typesdrinks']);
@@ -97,7 +98,7 @@ final class DrinkController extends Controller
             $search = $request->string('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -132,7 +133,8 @@ final class DrinkController extends Controller
         }
 
         // Ordenar por nombre
-        $query->orderBy('name', 'asc');
+        $query->orderBy('name', 'asc')->whereHas('packages');          // y al menos una class
+        ;
 
         // Paginación o lista completa
         if ($request->has('per_page')) {
@@ -204,8 +206,4 @@ final class DrinkController extends Controller
 
         return new DrinkResource($drink);
     }
-
-
-
-
 }

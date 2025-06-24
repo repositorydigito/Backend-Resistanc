@@ -37,16 +37,49 @@ class WaitingUserClassRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('user_id')
             ->columns([
-                Tables\Columns\TextColumn::make('user_id'),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Usuario')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('package.name')
+                    ->label('Paquete')
+
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'waiting' => 'En espera',
+                        'notified' => 'Notificado',
+                        'confirmed' => 'Confirmado',
+                        'expired' => 'Expirado',
+                        'cancelled' => 'Cancelado',
+                        default => $state,
+                    })
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'waiting' => 'warning',
+                        'notified' => 'info',
+                        'confirmed' => 'success',
+                        'expired' => 'danger',
+                        'cancelled' => 'secondary',
+                        default => 'primary',
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de creación')
+                    ->dateTime('d/m/Y H:i:s')
+                    ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                // Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

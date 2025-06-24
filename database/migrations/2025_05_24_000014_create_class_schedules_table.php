@@ -29,6 +29,10 @@ return new class extends Migration
             $table->enum('status', ['scheduled', 'in_progress', 'completed', 'cancelled', 'postponed'])->default('scheduled');
             $table->timestamps();
 
+
+            // Nuevo
+            $table->string('img_url')->nullable();
+
             // RELACIONES
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->foreignId('instructor_id')->constrained('instructors')->onDelete('restrict');

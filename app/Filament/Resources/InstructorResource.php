@@ -292,6 +292,7 @@ class InstructorResource extends Resource
     {
         return [
             RelationManagers\CoachRatingsRelationManager::class,
+            RelationManagers\ClassScheduleRelationManager::class,
         ];
     }
 

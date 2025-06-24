@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
             // Cambiar row y column a integer
+            $table->integer('seat_number')->nullable(); // Asiento único
             $table->integer('row');
             $table->integer('column');
 

@@ -12,6 +12,7 @@ class Seat extends Model
     protected $fillable = [
         'studio_id',
         // 'class_schedule_id',
+        'seat_number', // Asiento único
         'row',
         'column',
         'is_active',

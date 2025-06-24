@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClassScheduleResource;
 use App\Http\Resources\InstructorResource;
+use App\Http\Resources\ProductResource;
 use App\Models\ClassSchedule;
 use App\Models\Instructor;
 use App\Models\Product;
@@ -73,6 +74,12 @@ final class HomeController extends Controller
     {
         $user = request()->user(); // más seguro que Auth::user()
 
+        // Cantidad de reservas de asientos completadas
+        $classSchedulesCompletedCount = $user->completedSeatReservations()->count();
+
+        $classSchedulesPendingCount = $user->pendingSeatReservations()->count();
+
+        // Instructores activos con disciplina
         $instructors = Instructor::with('disciplines')
             ->whereHas('disciplines', fn($q) => $q->where('status', 'active'))
             ->orderBy('name')
@@ -88,6 +95,9 @@ final class HomeController extends Controller
             ->get();
 
         $classSchedules = ClassSchedule::with(['class', 'studio'])
+            ->where('scheduled_date', '>=', now()->toDateString())
+            ->orderBy('scheduled_date', 'asc')
+            ->orderBy('start_time', 'asc')
             ->limit(10)
             ->get();
 
@@ -104,6 +114,10 @@ final class HomeController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
+                    ],
+                    'info' => [
+                        'completedClassSchedulesCount' => $classSchedulesCompletedCount,
+                        'pendingClassSchedulesCount' => $classSchedulesPendingCount,
                     ],
                     'contact' => $user->contact ? [
                         'phone' => $user->contact->phone,
@@ -130,7 +144,7 @@ final class HomeController extends Controller
                 'instructors' => InstructorResource::collection($instructors),
                 'classSchedules' => ClassScheduleResource::collection($classSchedules),
                 'classSchedulesMe' => ClassScheduleResource::collection($classSchedulesMe),
-                'products' => $products,
+                'products' => ProductResource::collection($products),
             ],
         ]);
     }

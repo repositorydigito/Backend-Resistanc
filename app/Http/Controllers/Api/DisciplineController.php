@@ -70,6 +70,7 @@ final class DisciplineController extends Controller
     {
         $query = Discipline::query()
             ->active()
+            ->whereHas('packages')
             ->orderBy('sort_order', 'asc')
             ->orderBy('display_name', 'asc');
 

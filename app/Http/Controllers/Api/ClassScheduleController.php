@@ -8,6 +8,7 @@ use App\Http\Requests\ReserveSeatsRequest;
 use App\Http\Resources\ClassScheduleResource;
 use App\Models\ClassSchedule;
 use App\Models\ClassScheduleSeat;
+use App\Models\WaitingClass;
 use App\Services\PackageValidationService;
 use Error;
 use Illuminate\Http\Request;
@@ -871,7 +872,6 @@ final class ClassScheduleController extends Controller
                     ]
                 ], 200);
             });
-
         } catch (Error $e) {
             // Log del error para debugging
             Log::error('Error al reservar asientos', [
@@ -1007,7 +1007,6 @@ final class ClassScheduleController extends Controller
                     ]
                 ], 200);
             });
-
         } catch (\Exception $e) {
             // Log del error para debugging
             Log::error('Error al liberar asientos', [
@@ -1103,12 +1102,12 @@ final class ClassScheduleController extends Controller
 
             // Construir query base
             $query = ClassScheduleSeat::with([
-                'classSchedule' => function($q) {
+                'classSchedule' => function ($q) {
                     $q->with(['class', 'instructor', 'studio']);
                 },
                 'seat'
             ])
-            ->where('user_id', $userId);
+                ->where('user_id', $userId);
 
             // Aplicar filtros
             if ($request->filled('status')) {
@@ -1116,19 +1115,19 @@ final class ClassScheduleController extends Controller
             }
 
             if ($request->filled('date_from')) {
-                $query->whereHas('classSchedule', function($q) use ($request) {
+                $query->whereHas('classSchedule', function ($q) use ($request) {
                     $q->where('scheduled_date', '>=', $request->date_from);
                 });
             }
 
             if ($request->filled('date_to')) {
-                $query->whereHas('classSchedule', function($q) use ($request) {
+                $query->whereHas('classSchedule', function ($q) use ($request) {
                     $q->where('scheduled_date', '<=', $request->date_to);
                 });
             }
 
             if ($request->boolean('upcoming')) {
-                $query->whereHas('classSchedule', function($q) {
+                $query->whereHas('classSchedule', function ($q) {
                     $q->where('scheduled_date', '>=', now()->toDateString());
                 });
             }
@@ -1148,8 +1147,9 @@ final class ClassScheduleController extends Controller
                             'past_reservations' => 0,
                             'total_seats_reserved' => 0
                         ]
-                    ]])
-                ->setStatusCode(404);
+                    ]
+                ])
+                    ->setStatusCode(404);
             }
 
 
@@ -1213,7 +1213,7 @@ final class ClassScheduleController extends Controller
             }
 
             // Ordenar por fecha (próximas primero)
-            usort($reservations, function($a, $b) {
+            usort($reservations, function ($a, $b) {
                 if ($a['is_upcoming'] && !$b['is_upcoming']) return -1;
                 if (!$a['is_upcoming'] && $b['is_upcoming']) return 1;
                 return strcmp($a['class_datetime'], $b['class_datetime']);
@@ -1232,7 +1232,6 @@ final class ClassScheduleController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error al obtener reservas del usuario', [
                 'user_id' => Auth::id(),
@@ -1361,7 +1360,6 @@ final class ClassScheduleController extends Controller
                     ]
                 ], 200);
             });
-
         } catch (\Exception $e) {
             // Log del error para debugging
             Log::error('Error al confirmar asistencia', [
@@ -1444,7 +1442,6 @@ final class ClassScheduleController extends Controller
                     'available_packages' => $validation['available_packages']
                 ]
             ], $validation['valid'] ? 200 : 422);
-
         } catch (\Exception $e) {
             Log::error('Error al verificar disponibilidad de paquetes', [
                 'user_id' => Auth::id(),
@@ -1460,4 +1457,7 @@ final class ClassScheduleController extends Controller
             ], 500);
         }
     }
+
+
+
 }

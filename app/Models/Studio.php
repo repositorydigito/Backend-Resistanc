@@ -173,24 +173,13 @@ final class Studio extends Model
     {
         Log::info("Iniciando generación de asientos para estudio: {$this->name} (ID: {$this->id})");
 
-        // Delete existing seats first
-        $existingSeats = $this->seats()->count();
-        if ($existingSeats > 0) {
-            Log::info("Eliminando {$existingSeats} asientos existentes");
-            $this->seats()->delete();
-        }
+        // Eliminar los asientos existentes primero
+        $this->seats()->delete();
 
         $seatCapacity = (int) $this->capacity_per_seat;
         $rows = (int) $this->row;
         $columns = (int) $this->column;
         $addressing = $this->addressing;
-
-        Log::info("Configuración del estudio:", [
-            'capacity_per_seat' => $seatCapacity,
-            'rows' => $rows,
-            'columns' => $columns,
-            'addressing' => $addressing
-        ]);
 
         if ($seatCapacity <= 0 || $rows <= 0 || $columns <= 0) {
             Log::warning("Configuración inválida para generar asientos", [
@@ -202,39 +191,32 @@ final class Studio extends Model
         }
 
         $seats = [];
-        $seatCount = 0;
-
-        // Generate seats row by row, column by column, up to capacity_per_seat
-        for ($row = 1; $row <= $rows && $seatCount < $seatCapacity; $row++) {
-            for ($col = 1; $col <= $columns && $seatCount < $seatCapacity; $col++) {
-                // Calculate the actual column position based on addressing
-                $actualColumn = $this->calculateColumnPosition($col, $columns, $addressing);
-
+        $seatNumber = 1;
+        for ($row = 1; $row <= $rows && $seatNumber <= $seatCapacity; $row++) {
+            for ($col = 1; $col <= $columns && $seatNumber <= $seatCapacity; $col++) {
                 $seats[] = [
-                    'studio_id' => $this->id,
-                    'row' => $row,
-                    'column' => $actualColumn,
-                    'is_active' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'studio_id'   => $this->id,
+                    'row'         => $row,
+                    'column'      => $col,
+                    'seat_number' => $seatNumber,
+                    'is_active'   => true,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
                 ];
-
-                $seatCount++;
+                $seatNumber++;
             }
         }
 
-        // Bulk insert for better performance
         if (!empty($seats)) {
             Seat::insert($seats);
-            Log::info("Asientos creados exitosamente:", [
-                'total_seats' => count($seats),
-                'studio_id' => $this->id,
-                'studio_name' => $this->name
-            ]);
-        } else {
-            Log::warning("No se crearon asientos para el estudio {$this->name} (ID: {$this->id})");
+            Log::info("Asientos generados exitosamente", ['total_seats' => count($seats)]);
+            
+            // Reordenar los números para asegurar secuencia correlativa
+            $this->reorderSeatNumbers();
+            Log::info("Números de asientos reordenados después de la generación");
         }
     }
+
 
     /**
      * Calculate the actual column position based on addressing direction.
@@ -315,5 +297,130 @@ final class Studio extends Model
         }
 
         return $preview;
+    }
+
+    /**
+     * Check if studio has associated class schedules.
+     */
+    public function hasClassSchedules(): bool
+    {
+        return $this->classSchedules()->exists();
+    }
+
+    /**
+     * Get the number of associated class schedules.
+     */
+    public function getClassSchedulesCountAttribute(): int
+    {
+        return $this->classSchedules()->count();
+    }
+
+    /**
+     * Reorder seat numbers to maintain sequential order.
+     * This method ensures that seat numbers are always sequential starting from 1.
+     */
+    public function reorderSeatNumbers(): void
+    {
+        Log::info("Reordenando números de asientos para estudio: {$this->name} (ID: {$this->id})");
+
+        // Get all seats ordered by row and column
+        $seats = $this->seats()
+            ->orderBy('row')
+            ->orderBy('column')
+            ->get();
+
+        $newSeatNumber = 1;
+        $updatedSeats = [];
+
+        foreach ($seats as $seat) {
+            if ($seat->seat_number !== $newSeatNumber) {
+                $updatedSeats[] = [
+                    'id' => $seat->id,
+                    'seat_number' => $newSeatNumber
+                ];
+            }
+            $newSeatNumber++;
+        }
+
+        // Update seat numbers in batches to avoid conflicts
+        foreach ($updatedSeats as $update) {
+            Seat::where('id', $update['id'])->update(['seat_number' => $update['seat_number']]);
+        }
+
+        if (!empty($updatedSeats)) {
+            Log::info("Números de asientos reordenados", [
+                'studio_id' => $this->id,
+                'updated_seats' => count($updatedSeats)
+            ]);
+        }
+    }
+
+    /**
+     * Add a new seat and reorder all seat numbers.
+     */
+    public function addSeat(int $row, int $column): Seat
+    {
+        Log::info("Agregando nuevo asiento para estudio: {$this->name}", [
+            'row' => $row,
+            'column' => $column
+        ]);
+
+        // Create the new seat
+        $seat = $this->seats()->create([
+            'row' => $row,
+            'column' => $column,
+            'seat_number' => 0, // Temporary number
+            'is_active' => true
+        ]);
+
+        // Reorder all seat numbers to maintain sequence
+        $this->reorderSeatNumbers();
+
+        // Refresh the seat to get the correct seat_number
+        $seat->refresh();
+
+        Log::info("Nuevo asiento creado y números reordenados", [
+            'seat_id' => $seat->id,
+            'final_seat_number' => $seat->seat_number
+        ]);
+
+        return $seat;
+    }
+
+    /**
+     * Delete a seat and reorder remaining seat numbers.
+     */
+    public function deleteSeat(int $seatId): bool
+    {
+        $seat = $this->seats()->find($seatId);
+        
+        if (!$seat) {
+            Log::warning("Asiento no encontrado para eliminar", ['seat_id' => $seatId]);
+            return false;
+        }
+
+        Log::info("Eliminando asiento", [
+            'seat_id' => $seatId,
+            'seat_number' => $seat->seat_number,
+            'row' => $seat->row,
+            'column' => $seat->column
+        ]);
+
+        // Check if seat is assigned to any class schedule
+        if ($seat->seatAssignments()->exists()) {
+            Log::warning("No se puede eliminar asiento asignado a horarios", ['seat_id' => $seatId]);
+            return false;
+        }
+
+        // Delete the seat
+        $deleted = $seat->delete();
+
+        if ($deleted) {
+            // Reorder remaining seat numbers
+            $this->reorderSeatNumbers();
+            Log::info("Asiento eliminado y números reordenados", ['seat_id' => $seatId]);
+        }
+
+        return $deleted;
     }
 }

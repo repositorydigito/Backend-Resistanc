@@ -263,4 +263,10 @@ final class Package extends Model
     {
         return $this->belongsTo(Discipline::class);
     }
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class);
+    }
+
+
 }

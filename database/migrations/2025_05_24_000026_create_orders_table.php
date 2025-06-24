@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+
             $table->string('order_number', 20)->unique();
             $table->enum('order_type', ['purchase', 'booking_extras', 'subscription', 'gift'])->default('purchase');
             $table->decimal('subtotal_soles', 10, 2);
@@ -33,6 +33,10 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->foreignId('discount_code_id')->nullable()->constrained('discount_codes');
             $table->timestamps();
+
+
+            // Relaciones
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             // Índices
             $table->index(['user_id', 'status']);

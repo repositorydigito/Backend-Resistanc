@@ -26,15 +26,29 @@ class UserWaitingClassRelationManager extends RelationManager
             ->schema([
 
                 Forms\Components\Select::make('class_schedules_id')
-                    ->relationship('classSchedule', 'name')
+                    ->label('Clase')
+                    ->options(function () {
+                        return \App\Models\ClassSchedule::with('class')
+                            ->where('scheduled_date', '>=', now())
+                            ->where('status', 'scheduled')
+                            ->get()
+                            ->mapWithKeys(fn($schedule) => [$schedule->id => $schedule->class?->name . ' - ' . $schedule->scheduled_date->format('d/m/Y '. $schedule->start_time . ' - ' . $schedule->end_time)])
+                            ->toArray();
+                    })
+
+
+                    ->searchable()
                     ->required(),
 
                 Forms\Components\Select::make('user_id')
+                    ->label('Usuario')
                     ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
                     ->required(),
 
                 Forms\Components\Select::make('user_package_id')
-                    ->relationship('userPackage', 'name')
+                    ->relationship('userPackage', 'package_id')
                     ->nullable(),
                 Forms\Components\Select::make('status')
                     ->options([
@@ -85,7 +99,7 @@ class UserWaitingClassRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                // Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

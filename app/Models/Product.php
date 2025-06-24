@@ -16,21 +16,69 @@ final class Product extends Model
 {
     use HasFactory;
 
+    // protected $fillable = [
+    //     'category_id',
+    //     'name',
+    //     'slug',
+    //     'description',
+    //     'short_description',
+    //     'sku',
+    //     'price_soles',
+    //     'cost_price_soles',
+    //     'compare_price_soles',
+    //     'stock_quantity',
+    //     'min_stock_alert',
+    //     'weight_grams',
+    //     'dimensions',
+    //     'images',
+    //     'nutritional_info',
+    //     'ingredients',
+    //     'allergens',
+    //     'product_type',
+    //     'requires_variants',
+    //     'is_virtual',
+    //     'is_featured',
+    //     'is_available_for_booking',
+    //     'status',
+    //     'meta_title',
+    //     'meta_description',
+    // ];
+
+    // protected $casts = [
+    //     'price_soles' => 'decimal:2',
+    //     'cost_price_soles' => 'decimal:2',
+    //     'compare_price_soles' => 'decimal:2',
+    //     'stock_quantity' => 'integer',
+    //     'min_stock_alert' => 'integer',
+    //     'weight_grams' => 'integer',
+    //     'dimensions' => 'array',
+    //     'images' => 'array',
+    //     'nutritional_info' => 'array',
+    //     'ingredients' => 'array',
+    //     'allergens' => 'array',
+    //     'requires_variants' => 'boolean',
+    //     'is_virtual' => 'boolean',
+    //     'is_featured' => 'boolean',
+    //     'is_available_for_booking' => 'boolean',
+    // ];
+
+
     protected $fillable = [
-        'category_id',
         'name',
         'slug',
+        'category_id',
+        'sku',
+        'stock_quantity',
         'description',
         'short_description',
-        'sku',
         'price_soles',
         'cost_price_soles',
         'compare_price_soles',
-        'stock_quantity',
         'min_stock_alert',
         'weight_grams',
         'dimensions',
         'images',
+        'img_url',
         'nutritional_info',
         'ingredients',
         'allergens',
@@ -41,13 +89,13 @@ final class Product extends Model
         'is_available_for_booking',
         'status',
         'meta_title',
-        'meta_description',
+        'meta_description'
     ];
 
     protected $casts = [
-        'price_soles' => 'decimal:2',
-        'cost_price_soles' => 'decimal:2',
-        'compare_price_soles' => 'decimal:2',
+        'price_soles' => 'float',
+        'cost_price_soles' => 'float',
+        'compare_price_soles' => 'float',
         'stock_quantity' => 'integer',
         'min_stock_alert' => 'integer',
         'weight_grams' => 'integer',
@@ -61,6 +109,7 @@ final class Product extends Model
         'is_featured' => 'boolean',
         'is_available_for_booking' => 'boolean',
     ];
+
 
     /**
      * Get the category that owns the product.
@@ -77,6 +126,12 @@ final class Product extends Model
     {
         return $this->hasMany(ProductVariant::class);
     }
+
+    public function optionValues(): HasMany
+    {
+        return $this->hasMany(ProductVariantOption::class);
+    }
+
 
     /**
      * Get the tags for this product.
@@ -147,7 +202,7 @@ final class Product extends Model
      */
     public function getFinalPriceAttribute(): float
     {
-        return $this->compare_price_soles ?? $this->price_soles;
+        return (float) ($this->compare_price_soles ?? $this->price_soles ?? 0);
     }
 
     /**
@@ -276,5 +331,4 @@ final class Product extends Model
             ->withPivot('notes', 'priority')
             ->withTimestamps();
     }
-
 }

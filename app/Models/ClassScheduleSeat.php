@@ -45,6 +45,11 @@ class ClassScheduleSeat extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function userPackage(): BelongsTo
+    {
+        return $this->belongsTo(UserPackage::class, 'user_package_id');
+    }
+
     // 📋 Scopes
     public function scopeAvailable($query)
     {
@@ -73,17 +78,27 @@ class ClassScheduleSeat extends Model
         return $this->expires_at && $this->expires_at->isPast() && $this->status === 'reserved';
     }
 
-    public function reserve(int $userId, int $minutesToExpire = 15): bool
+    public function reserve(int $userId, int $minutesToExpire = 15, ?int $userPackageId = null, ?string $classStartTime = null): bool
     {
         if ($this->status !== 'available') {
             return false;
+        }
+
+        // Si se proporciona la fecha de inicio de la clase, calcular expiración basada en eso
+        if ($classStartTime) {
+            $classDateTime = \Carbon\Carbon::parse($classStartTime);
+            $expiresAt = $classDateTime->copy()->addMinutes(10); // 10 minutos después del inicio
+        } else {
+            // Fallback al comportamiento anterior
+            $expiresAt = now()->addMinutes($minutesToExpire);
         }
 
         $this->update([
             'user_id' => $userId,
             'status' => 'reserved',
             'reserved_at' => now(),
-            'expires_at' => now()->addMinutes($minutesToExpire)
+            'expires_at' => $expiresAt,
+            'user_package_id' => $userPackageId
         ]);
 
         return true;
@@ -109,7 +124,8 @@ class ClassScheduleSeat extends Model
             'user_id' => null,
             'status' => 'available',
             'reserved_at' => null,
-            'expires_at' => null
+            'expires_at' => null,
+            'user_package_id' => null
         ]);
 
         return true;
@@ -137,8 +153,35 @@ class ClassScheduleSeat extends Model
         return true;
     }
 
+    // 🔍 Verificar si este asiento pertenece a una sala específica
+    public function belongsToStudio(int $studioId): bool
+    {
+        return $this->seat && $this->seat->studio_id === $studioId;
+    }
+
+    // 🔍 Verificar si este asiento está en una posición válida para la sala
+    public function isValidForStudio(): bool
+    {
+        if (!$this->seat || !$this->seat->studio) {
+            return false;
+        }
+
+        $studio = $this->seat->studio;
+        return $this->seat->row <= $studio->row && $this->seat->column <= $studio->column;
+    }
+
+    // 🔄 Regenerar código único para este asiento
+    public function regenerateCode(): void
+    {
+        $this->update([
+            'code' => $this->generateScheduleSeatCode($this->class_schedules_id, $this->seats_id)
+        ]);
+    }
+
     function generateScheduleSeatCode(int $scheduleId, int $seatId): string
     {
-        return 'SCH-' . $scheduleId . '-SEAT-' . $seatId;
+        return 'SCH-' . $scheduleId . '-SEAT-' . $seatId . '-' . time() . '-' . rand(1000, 9999);
     }
+
+
 }

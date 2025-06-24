@@ -25,7 +25,6 @@ class WaitingClass extends Model
     {
         return $this->belongsTo(ClassSchedule::class, 'class_schedules_id');
     }
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -33,7 +32,6 @@ class WaitingClass extends Model
 
     public function userPackage()
     {
-        return $this->belongsTo(UserPackage::class, 'user_package_id');
+        return $this->belongsTo(UserPackage::class);
     }
-
 }

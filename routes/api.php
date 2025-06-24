@@ -11,14 +11,19 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\ProductCategoryController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductTagController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserContactController;
 use App\Http\Controllers\Api\UserPackageController;
 use App\Http\Controllers\Api\UserPayMethodController;
+use App\Http\Controllers\Api\WaitingController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\StudioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Laravel\Socialite\Two\FacebookProvider;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +42,24 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Test route
 Route::get('/test', [TestController::class, 'status'])->name('test.status');
+
+
+
+// Logueo con redes sociales
+// Socials
+Route::prefix('social-login')->name('social-login.')->group(function () {
+    // Facebook
+    Route::get('/facebook', [AuthController::class, 'redirectToFacebook'])->name('facebook.redirect');
+    Route::post('/social-login/facebook-token', [AuthController::class, 'loginWithFacebookToken']);
+    // Fin facebook
+    // Google
+    Route::get('/google', [AuthController::class, 'redirectToGoogle'])->name('google.redirect');
+    Route::post('/social-login/google-token', [AuthController::class, 'loginWithGoogleToken']);
+    // Fin google
+});
+// Fin socials
+// Fin logueo con redes sociales
+
 
 /*
 |--------------------------------------------------------------------------
@@ -113,6 +136,7 @@ Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:
 |--------------------------------------------------------------------------
 */
 
+
 Route::prefix('me/packages')->name('my-packages.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [UserPackageController::class, 'index'])->name('index');
     Route::post('/', [UserPackageController::class, 'store'])->name('store');
@@ -151,8 +175,15 @@ Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:san
     Route::post('/release-seats', [ClassScheduleController::class, 'releaseSeats'])->name('release-seats');
     Route::post('/confirm-attendance', [ClassScheduleController::class, 'confirmAttendance'])->name('confirm-attendance');
     Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
+
 });
 // Fin Horarios
+
+// Lista de espera
+Route::prefix('waiting-list')->name('waiting-list.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [WaitingController::class, 'addWaitingList'])->name('add');
+});
+// Fin lista de espera
 
 // Bebidas
 Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(function () {
@@ -174,6 +205,16 @@ Route::prefix('product-tags')->name('product-tags.')->middleware('auth:sanctum')
     Route::get('/', [ProductTagController::class, 'index'])->name('index');
 });
 // Fin etiquetas de productos
+
+// Productos
+Route::prefix('products')->name('products.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('index');
+    Route::get('/{id}', [ProductController::class, 'show'])->name('show');
+    // Route::post('/{product}/favorite', [ProductController::class, 'scoreProduct'])->name('favorite');
+    // Route::post('/{product}/add-to-cart', [ProductController::class, 'addToCart'])->name('add-to-cart');
+});
+// Fin productos
+// Carrito de compras
 // Fin Tienda
 
 
@@ -206,3 +247,21 @@ Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function
 | - LoginAuditController
 |
 */
+
+Route::apiResource('instructors', InstructorController::class);
+Route::get('instructors-week', [InstructorController::class, 'instructorsWeek']);
+Route::post('instructors/{instructor}/score', [InstructorController::class, 'scoreInstructor']);
+Route::get('instructors-ten', [InstructorController::class, 'indexTen']);
+
+
+// Rutas de Pedidos
+
+Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [OrderController::class, 'index'])->name('index');
+    Route::get('/{order}', [OrderController::class, 'show'])->name('show');
+    Route::post('/', [OrderController::class, 'store'])->name('store');
+});
+
+
+
+
