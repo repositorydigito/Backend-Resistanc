@@ -16,13 +16,25 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('first_name', 60);
             $table->string('last_name', 60);
-            $table->date('birth_date');
-            $table->enum('gender', ['female', 'male', 'other', 'na']);
-            $table->unsignedTinyInteger('shoe_size_eu');
-            $table->timestamps();
+            $table->date('birth_date')->nullable();
+            $table->enum('gender', ['female', 'male', 'other', 'na'])->default('na');
+
+            // Modificar campo existente
+            $table->unsignedTinyInteger('shoe_size_eu')->nullable();
+
+            // Agregar nuevos campos
+            $table->string('profile_image')->nullable();
+            $table->text('bio')->nullable();
+            $table->string('emergency_contact_name', 100)->nullable();
+            $table->string('emergency_contact_phone', 15)->nullable();
+            $table->text('medical_conditions')->nullable();
+            $table->text('fitness_goals')->nullable();
+
 
             // Índices
             $table->unique('user_id');
+
+            $table->timestamps();
         });
     }
 

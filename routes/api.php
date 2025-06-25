@@ -176,6 +176,8 @@ Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:san
     Route::post('/confirm-attendance', [ClassScheduleController::class, 'confirmAttendance'])->name('confirm-attendance');
     Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
 
+    Route::get('/class-schedulesUser', [ClassScheduleController::class, 'classScheduleUser'])->name('class-schedules');
+
 });
 // Fin Horarios
 
@@ -234,6 +236,17 @@ Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function
     Route::get('/', [HomeController::class, 'index'])->name('index');
 });
 // Fin home
+
+// Perfil
+
+Route::prefix('profile')->name('profile.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [UserController::class, 'profile'])->name('index');
+
+});
+
+// Fin Perfil
+
+
 
 /*
 |--------------------------------------------------------------------------

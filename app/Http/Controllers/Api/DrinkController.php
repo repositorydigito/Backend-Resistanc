@@ -85,56 +85,55 @@ final class DrinkController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
+
+
         $query = Drink::query();
 
+        // // Incluir relaciones si se solicita
+        // if ($request->boolean('include_relations', false)) {
+        //     $query->with(['basesdrinks', 'flavordrinks', 'typesdrinks']);
+        // }
 
-        // Incluir relaciones si se solicita
-        if ($request->boolean('include_relations', false)) {
-            $query->with(['basesdrinks', 'flavordrinks', 'typesdrinks']);
-        }
+        // // Búsqueda por texto
+        // if ($request->filled('search')) {
+        //     $search = $request->string('search');
+        //     $query->where(function ($q) use ($search) {
+        //         $q->where('name', 'like', "%{$search}%")
+        //             ->orWhere('description', 'like', "%{$search}%");
+        //     });
+        // }
 
-        // Búsqueda por texto
-        if ($request->filled('search')) {
-            $search = $request->string('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
+        // // Filtrar por base de bebida
+        // if ($request->filled('base_id')) {
+        //     $query->whereHas('basesdrinks', function ($q) use ($request) {
+        //         $q->where('basedrink_id', $request->integer('base_id'));
+        //     });
+        // }
 
-        // Filtrar por base de bebida
-        if ($request->filled('base_id')) {
-            $query->whereHas('basesdrinks', function ($q) use ($request) {
-                $q->where('basedrink_id', $request->integer('base_id'));
-            });
-        }
+        // // Filtrar por sabor
+        // if ($request->filled('flavor_id')) {
+        //     $query->whereHas('flavordrinks', function ($q) use ($request) {
+        //         $q->where('flavordrink_id', $request->integer('flavor_id'));
+        //     });
+        // }
 
-        // Filtrar por sabor
-        if ($request->filled('flavor_id')) {
-            $query->whereHas('flavordrinks', function ($q) use ($request) {
-                $q->where('flavordrink_id', $request->integer('flavor_id'));
-            });
-        }
+        // // Filtrar por tipo
+        // if ($request->filled('type_id')) {
+        //     $query->whereHas('typesdrinks', function ($q) use ($request) {
+        //         $q->where('typedrink_id', $request->integer('type_id'));
+        //     });
+        // }
 
-        // Filtrar por tipo
-        if ($request->filled('type_id')) {
-            $query->whereHas('typesdrinks', function ($q) use ($request) {
-                $q->where('typedrink_id', $request->integer('type_id'));
-            });
-        }
+        // // Filtrar por rango de precio
+        // if ($request->filled('min_price')) {
+        //     $query->where('price', '>=', $request->float('min_price'));
+        // }
 
-        // Filtrar por rango de precio
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->float('min_price'));
-        }
+        // if ($request->filled('max_price')) {
+        //     $query->where('price', '<=', $request->float('max_price'));
+        // }
 
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->float('max_price'));
-        }
 
-        // Ordenar por nombre
-        $query->orderBy('name', 'asc')->whereHas('packages');          // y al menos una class
-        ;
 
         // Paginación o lista completa
         if ($request->has('per_page')) {

@@ -80,11 +80,11 @@ class SeatAssignmentsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('seat.seat_number')
             ->columns([
-                Tables\Columns\TextColumn::make('seat.id')
-                    ->label('Asiento ID')
-                    ->sortable()
+                // Tables\Columns\TextColumn::make('seat.id')
+                //     ->label('Asiento ID')
+                //     ->sortable()
 
-                    ->searchable(),
+                //     ->searchable(),
 
                 Tables\Columns\TextColumn::make('seat.seat_number')
                     ->label('Asiento')
@@ -187,33 +187,33 @@ class SeatAssignmentsRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Tables\Actions\DeleteAction::make(),
 
-                Tables\Actions\Action::make('reserve')
-                    ->label('Reservar')
-                    ->icon('heroicon-o-clock')
-                    ->color('warning')
-                    ->visible(fn($record) => $record->status === 'available')
-                    ->form([
-                        Forms\Components\Select::make('user_id')
-                            ->label('Usuario')
-                            ->relationship('user', 'name')
-                            ->searchable()
-                            ->required(),
-                        Forms\Components\TextInput::make('minutes')
-                            ->label('Minutos de reserva')
-                            ->numeric()
-                            ->default(15)
-                            ->required(),
-                    ])
-                    ->action(function ($record, array $data) {
-                        $record->reserve($data['user_id'], $data['minutes']);
-                        Notification::make()
-                            ->title('Asiento Reservado')
-                            ->body('Asiento reservado exitosamente.')
-                            ->success()
-                            ->send();
-                    }),
+                // Tables\Actions\Action::make('reserve')
+                //     ->label('Reservar')
+                //     ->icon('heroicon-o-clock')
+                //     ->color('warning')
+                //     ->visible(fn($record) => $record->status === 'available')
+                //     ->form([
+                //         Forms\Components\Select::make('user_id')
+                //             ->label('Usuario')
+                //             ->relationship('user', 'name')
+                //             ->searchable()
+                //             ->required(),
+                //         Forms\Components\TextInput::make('minutes')
+                //             ->label('Minutos de reserva')
+                //             ->numeric()
+                //             ->default(15)
+                //             ->required(),
+                //     ])
+                //     ->action(function ($record, array $data) {
+                //         $record->reserve($data['user_id'], $data['minutes']);
+                //         Notification::make()
+                //             ->title('Asiento Reservado')
+                //             ->body('Asiento reservado exitosamente.')
+                //             ->success()
+                //             ->send();
+                //     }),
 
                 Tables\Actions\Action::make('confirm')
                     ->label('Confirmar')

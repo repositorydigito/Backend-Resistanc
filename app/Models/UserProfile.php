@@ -40,6 +40,12 @@ final class UserProfile extends Model
         'birth_date',
         'gender',
         'shoe_size_eu',
+        'profile_image',
+        'bio',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'medical_conditions',
+        'fitness_goals',
     ];
 
     /**

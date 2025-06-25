@@ -27,7 +27,7 @@ class InstructorResource extends JsonResource
             'instagram_handle' => $this->instagram_handle,
             'is_head_coach' => $this->is_head_coach,
             'experience_years' => $this->experience_years,
-            'rating_average' => $this->rating_average,
+            'rating_average' => round($this->rating_average, 1),
             'total_classes_taught' => $this->total_classes_taught,
             'hire_date' => $this->hire_date,
             'hourly_rate_soles' => $this->hourly_rate_soles,

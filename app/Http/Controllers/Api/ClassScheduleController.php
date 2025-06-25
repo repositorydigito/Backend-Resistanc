@@ -1458,6 +1458,210 @@ final class ClassScheduleController extends Controller
         }
     }
 
+    /**
+     * Lista los horarios de clases reservados por el usuario autenticado
+     *
+     * Obtiene una lista de los horarios de clases en los que el usuario autenticado ha reservado un asiento.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar horarios de clases reservadas del usuario
+     * @operationId getClassSchedulesByUser
+     * @tags Horarios de Clases
+     *
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Horarios de clase obtenidos exitosamente",
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "scheduled_date": "2025-06-19",
+     *       "start_time": "08:00:00",
+     *       "end_time": "09:00:00",
+     *       "status": "scheduled",
+     *       "class": {
+     *         "id": 10,
+     *         "name": "Full Body Strength",
+     *         "discipline": "Funcional",
+     *         "img_url": "/storage/images/classes/full_body.jpg",
+     *         "discipline_img": "/storage/images/disciplines/funcional.svg"
+     *       },
+     *       "instructor": {
+     *         "id": 3,
+     *         "name": "Juan Pérez",
+     *         "profile_image": "/storage/images/instructors/juan.jpg",
+     *         "rating_average": 4.8,
+     *         "is_head_coach": true
+     *       },
+     *       "studio": {
+     *         "id": 1,
+     *         "name": "Sala Principal"
+     *       },
+     *       "max_capacity": 20,
+     *       "available_spots": 5,
+     *       "booked_spots": 15,
+     *       "waitlist_spots": 0
+     *     }
+     *   ]
+     * }
+     *
+     * @response 404 {
+     *   "success": false,
+     *   "message": "No tienes horarios de clase reservados",
+     *   "data": []
+     * }
+     */
+    public function classScheduleUser(Request $request)
+    {
+        try {
+            $userId = Auth::id();
 
+            // Validar parámetros de paginación
+            $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:50',
+                'page' => 'nullable|integer|min:1'
+            ]);
 
+            $query = ClassSchedule::with([
+                'class',
+                'instructor',
+                'studio',
+                'classScheduleSeats' => function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                        ->where('status', 'completed')
+                        ->with('seat');
+                }
+            ])
+                ->whereHas('classScheduleSeats', function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                        ->where('status', 'completed');
+                })
+                ->orderBy('scheduled_date', 'asc')
+                ->orderBy('start_time', 'asc');
+
+            // Aplicar paginación (siempre paginado)
+            $classSchedules = $query->paginate(
+                perPage: $request->integer('per_page', 15),
+                page: $request->integer('page', 1)
+            );
+
+            if ($classSchedules->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes horarios de clase reservados',
+                    'data' => [],
+                    'meta' => [
+                        'current_page' => $classSchedules->currentPage(),
+                        'per_page' => $classSchedules->perPage(),
+                        'total' => $classSchedules->total(),
+                        'last_page' => $classSchedules->lastPage(),
+                        'from' => $classSchedules->firstItem(),
+                        'to' => $classSchedules->lastItem()
+                    ],
+                    'links' => [
+                        'first' => $classSchedules->url(1),
+                        'last' => $classSchedules->url($classSchedules->lastPage()),
+                        'prev' => $classSchedules->previousPageUrl(),
+                        'next' => $classSchedules->nextPageUrl()
+                    ]
+                ], 200);
+            }
+
+            // Transformar los datos para incluir información de asientos
+            $formattedSchedules = $classSchedules->map(function ($schedule) use ($userId) {
+                $userSeats = $schedule->classScheduleSeats->map(function ($seatAssignment) {
+                    return [
+                        'class_schedule_seat_id' => $seatAssignment->id,
+                        'seat_id' => $seatAssignment->seats_id,
+                        'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
+                        'row' => $seatAssignment->seat->row,
+                        'column' => $seatAssignment->seat->column,
+                        'status' => $seatAssignment->status,
+                        'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                        'expires_at' => $seatAssignment->expires_at?->toISOString()
+                    ];
+                });
+
+                return [
+                    'id' => $schedule->id,
+                    'scheduled_date' => $schedule->scheduled_date,
+                    'start_time' => $schedule->start_time,
+                    'end_time' => $schedule->end_time,
+                    'status' => $schedule->status,
+                    'class' => [
+                        'id' => $schedule->class->id,
+                        'name' => $schedule->class->name,
+                        'discipline' => $schedule->class->discipline->name ?? 'N/A',
+                        'img_url' => asset($schedule->class->img_url) ?? null,
+                        'discipline_img' => $schedule->class->discipline->icon_url ?? null,
+                    ],
+                    'instructor' => [
+                        'id' => $schedule->instructor->id,
+                        'name' => $schedule->instructor->name,
+                        'profile_image' => asset($schedule->instructor->profile_image) ?? null,
+                        'rating_average' => $schedule->instructor->rating_average ?? null,
+                        'is_head_coach' => $schedule->instructor->is_head_coach ?? false,
+                    ],
+                    'studio' => [
+                        'id' => $schedule->studio->id,
+                        'name' => $schedule->studio->name,
+                    ],
+                    'max_capacity' => $schedule->max_capacity,
+                    'available_spots' => $schedule->available_spots,
+                    'booked_spots' => $schedule->booked_spots,
+                    'waitlist_spots' => $schedule->waitlist_spots,
+                    'my_seats' => $userSeats,
+                    'total_my_seats' => $userSeats->count()
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Horarios de clase obtenidos exitosamente',
+                'data' => $formattedSchedules,
+                'meta' => [
+                    'current_page' => $classSchedules->currentPage(),
+                    'per_page' => $classSchedules->perPage(),
+                    'total' => $classSchedules->total(),
+                    'last_page' => $classSchedules->lastPage(),
+                    'from' => $classSchedules->firstItem(),
+                    'to' => $classSchedules->lastItem()
+                ],
+                'links' => [
+                    'first' => $classSchedules->url(1),
+                    'last' => $classSchedules->url($classSchedules->lastPage()),
+                    'prev' => $classSchedules->previousPageUrl(),
+                    'next' => $classSchedules->nextPageUrl()
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            // Log del error para debugging
+            Log::error('Error al obtener horarios de clase del usuario', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al obtener horarios de clase',
+                'data' => [],
+                'meta' => [
+                    'current_page' => 1,
+                    'per_page' => $request->integer('per_page', 15),
+                    'total' => 0,
+                    'last_page' => 1,
+                    'from' => null,
+                    'to' => null
+                ],
+                'links' => [
+                    'first' => null,
+                    'last' => null,
+                    'prev' => null,
+                    'next' => null
+                ]
+            ], 500);
+        }
+    }
 }

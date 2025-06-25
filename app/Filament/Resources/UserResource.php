@@ -72,6 +72,39 @@ class UserResource extends Resource
                     ->dehydrated(fn($state) => filled($state))
                     ->dehydrateStateUsing(fn($state) => filled($state) ? bcrypt($state) : null)
                     ->maxLength(255),
+
+                // --- CAMPOS DEL PERFIL ---
+                Forms\Components\Section::make('Perfil')
+                    ->schema([
+                        Forms\Components\FileUpload::make('profile.profile_image')
+                            ->label('Imagen de perfil')
+                            ->columnSpan(2)
+                            ->image()
+                            ->directory('user/profile') // Carpeta dentro de storage/app/public
+                            ->disk('public')    // Usa el filesystem configurado como 'public'
+                            ->visibility('public') // Permisos (opcional)
+                            ->extraAttributes(['class' => 'h-64 w-64'])
+                            ->preserveFilenames(), // Opcional: mantiene el nombre original
+                        Forms\Components\TextInput::make('profile.first_name')->label('Nombre')->maxLength(60)->required(),
+                        Forms\Components\TextInput::make('profile.last_name')->label('Apellido')->maxLength(60)->required(),
+                        Forms\Components\DatePicker::make('profile.birth_date')->label('Fecha de nacimiento')->required(),
+                        Forms\Components\Select::make('profile.gender')
+                            ->label('Género')
+                            ->options([
+                                'female' => 'Femenino',
+                                'male' => 'Masculino',
+                                'other' => 'Otro',
+                                'na' => 'Prefiero no decirlo',
+                            ])->required(),
+                        Forms\Components\TextInput::make('profile.shoe_size_eu')->label('Talla de calzado (EU)')->numeric(),
+
+                        Forms\Components\TextInput::make('profile.emergency_contact_name')->label('Nombre contacto emergencia')->maxLength(100),
+                        Forms\Components\TextInput::make('profile.emergency_contact_phone')->label('Teléfono emergencia')->maxLength(15),
+                        Forms\Components\Textarea::make('profile.medical_conditions')->label('Condiciones médicas')->columnSpanFull(),
+                        Forms\Components\Textarea::make('profile.fitness_goals')->label('Objetivos fitness')->columnSpanFull(),
+                        Forms\Components\Textarea::make('profile.bio')->label('Biografía')->columnSpanFull(),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -154,6 +187,7 @@ class UserResource extends Resource
             RelationManagers\DrinkUserRelationManager::class,
             RelationManagers\UserFavorityRelationManager::class,
             RelationManagers\UserWaitingClassRelationManager::class,
+
         ];
     }
 

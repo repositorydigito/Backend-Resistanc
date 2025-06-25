@@ -26,13 +26,17 @@ final class UserProfileResource extends JsonResource
             'shoe_size_eu' => $this->shoe_size_eu,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
-            
+            'profile_image' => $this->when(
+                $this->profile_image,
+                fn () => asset($this->profile_image)
+            ),
+
             // Computed attributes
             'full_name' => $this->full_name,
             'age' => $this->when($this->birth_date, function () {
                 return $this->age;
             }),
-            
+
             // Related user (if loaded and requested)
             'user' => $this->whenLoaded('user', function () {
                 return new UserResource($this->user);
