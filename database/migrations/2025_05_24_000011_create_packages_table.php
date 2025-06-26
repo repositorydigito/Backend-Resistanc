@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('packages', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 100)->comment('Ej: 1CLASER, PAQUETE5R, PAQUETE40R, RSISTANC360');
+
+            // Relaciones
+            $table->foreignId('membership_id')->nullable()->constrained('memberships')->onDelete('set null');
+            $table->foreignId('discipline_id')->constrained('disciplines');
+
+            // Datos principales
+            $table->string('name', 100)->comment('Ej: 1CLASER, PAQUETE5R, RSISTANC360');
             $table->string('slug', 100)->unique();
             $table->text('description');
             $table->string('short_description')->nullable();
@@ -22,37 +28,44 @@ return new class extends Migration
             $table->decimal('original_price_soles', 8, 2)->nullable()->comment('Precio original para mostrar descuentos');
             $table->unsignedInteger('validity_days')->comment('Días de vigencia del paquete');
 
+            // Configuración de facturación
             $table->enum('billing_type', ['one_time', 'monthly', 'quarterly', 'yearly'])->default('one_time');
             $table->boolean('is_virtual_access')->default(false);
             $table->unsignedTinyInteger('priority_booking_days')->default(0)->comment('Días de anticipación para reservar');
             $table->boolean('auto_renewal')->default(false);
+
+            // Branding y visual
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_popular')->default(false);
-            $table->enum('status', ['active', 'inactive', 'coming_soon', 'discontinued'])->default('active');
             $table->unsignedTinyInteger('display_order')->default(0);
-            $table->json('features')->nullable()->comment('Características y beneficios del paquete');
-            $table->json('restrictions')->nullable()->comment('Restricciones y condiciones');
-            $table->enum('target_audience', ['beginner', 'intermediate', 'advanced', 'all'])->default('all');
-            $table->timestamps();
+            $table->string('color_hex')->nullable()->default('#d4691a');
 
-
-
-            // nuevo
+            // Tipos y segmentación
+            $table->enum('status', ['active', 'inactive', 'coming_soon', 'discontinued'])->default('active');
             $table->enum('buy_type', ['affordable', 'assignable'])->default('affordable');
             $table->enum('type', ['fixed', 'temporary']);
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->enum('mode_type', ['presencial', 'virtual', 'mixto'])->default('presencial');
             $table->enum('commercial_type', ['promotion', 'offer', 'basic'])->default('basic');
+            $table->enum('target_audience', ['beginner', 'intermediate', 'advanced', 'all'])->default('all');
 
-            // Relaciones
-            $table->foreignId('discipline_id')->constrained('disciplines');
+            // Extras
+            $table->json('features')->nullable()->comment('Características y beneficios del paquete');
+            $table->json('restrictions')->nullable()->comment('Restricciones y condiciones');
+
+
+            // nuevo
+            $table->string('icon_url')->nullable()->comment('URL de la imagen del paquete');
+
+            $table->timestamps();
 
             // Índices
             $table->index(['status', 'display_order']);
             $table->index(['mode_type', 'status']);
-            $table->index('price_soles');
             $table->index(['is_featured', 'is_popular']);
+            $table->index('price_soles');
+            $table->index('membership_id');
         });
     }
 

@@ -38,7 +38,7 @@ final class Package extends Model
         'target_audience',
 
         // nuevo
-
+        'icon_url',
         'color_hex',
         'type',
         'mode_type',

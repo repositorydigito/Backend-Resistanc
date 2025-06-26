@@ -16,9 +16,15 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('phone', 15);
             $table->string('address_line', 255);
-            $table->string('city', 80)->nullable();
-            $table->char('country', 2)->default('PE');
+            $table->string('city', 100)->nullable(false);
+            $table->string('state_province', 100)->nullable();
+            $table->string('country', 100)->default('Peru');
+            $table->string('postal_code', 20)->nullable();
+            $table->enum('contact_type', ['home', 'work', 'emergency', 'other'])->default('home');
             $table->boolean('is_primary')->default(true);
+            $table->boolean('is_billing_address')->default(false);
+
+
             $table->timestamps();
 
             // Índices

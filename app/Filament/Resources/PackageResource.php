@@ -44,6 +44,20 @@ class PackageResource extends Resource
                     ->schema([
 
 
+                            Forms\Components\FileUpload::make('icon_url')
+                            ->label('Icono')
+                            ->disk('public')
+                            ->directory('packages/icons')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 5) // 5 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(800)
+                            ->imageResizeTargetHeight(600)
+                            ->image()
+                            ->columnSpanFull(),
+
+
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
                             ->required()

@@ -15,14 +15,23 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             // $table->enum('provider', ['google', 'facebook']);
+            $table->enum('provider', ['google', 'facebook', 'apple', 'instagram', 'tiktok']);
             $table->string('provider_uid', 191);
             $table->string('provider_email', 191)->nullable();
+            $table->string('provider_name')->nullable();
+            $table->string('provider_avatar', 500)->nullable();
             $table->text('token'); // Será encriptado en el modelo
             $table->timestamp('token_expires_at')->nullable();
+
+            $table->boolean('is_active')->default(true);
+
+            $table->text('refresh_token')->nullable();
             $table->timestamps();
 
             // Índices
             $table->index('user_id');
+            $table->index(['provider', 'is_active']);
+            $table->index('provider_email');
             // $table->unique(['provider', 'provider_uid']);
         });
     }

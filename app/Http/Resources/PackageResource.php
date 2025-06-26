@@ -40,6 +40,7 @@ class PackageResource extends JsonResource
             'updated_at' => $this->updated_at?->toISOString(),
             'color_hex' => $this->color_hex,
             'commercial_type' => $this->commercial_type,
+            'icon_url' =>  $this->icon_url ?  asset('storage/' . $this->icon_url)  : '', // Ensure the URL is absolute
 
             // Computed attributes using model accessors
             'is_unlimited' => $this->is_unlimited,
