@@ -17,8 +17,9 @@ return new class extends Migration
             $table->string('session_id', 100)->nullable();
             $table->decimal('total_amount', 10, 2)->default(0.00);
             $table->unsignedInteger('item_count')->default(0);
-            $table->timestamps();
 
+            $table->enum('status', ['active', 'completed', 'abandoned'])->default('active');
+            $table->timestamps();
             // Índices
             $table->index('user_id');
             $table->index('session_id');
