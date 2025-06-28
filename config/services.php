@@ -44,5 +44,12 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI')
     ],
+    'izipay' => [
+        'url' => env('IZIPAY_URL'),
+        'client_id' => env('IZIPAY_CLIENT_ID'),
+        'client_secret' => env('IZIPAY_CLIENT_SECRET'),
+        'public_key' => env('IZIPAY_PUBLIC_KEY'),
+        'hash_key' => env('IZIPAY_HASH_KEY'),
+    ],
 
 ];

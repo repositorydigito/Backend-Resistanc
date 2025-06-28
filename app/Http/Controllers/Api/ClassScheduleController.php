@@ -358,72 +358,6 @@ final class ClassScheduleController extends Controller
      *   "data": null
      * }
      */
-    /**
-     * Obtiene el mapa de asientos de un horario de clase
-     *
-     * Devuelve la disposición visual de todos los asientos del estudio para el horario específico,
-     * incluyendo su estado actual (disponible, reservado, ocupado, bloqueado).
-     *
-     * @summary Obtener mapa de asientos
-     * @operationId getClassScheduleSeatMap
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "studio": {
-     *       "id": 1,
-     *       "name": "Cycling Studio A",
-     *       "max_capacity": 20,
-     *       "rows": 4,
-     *       "columns": 5
-     *     },
-     *     "seat_map": [
-     *       [
-     *         {
-     *           "id": 1,
-     *           "seat_number": "A1",
-     *           "row": "A",
-     *           "column": 1,
-     *           "status": "available",
-     *           "user": null
-     *         },
-     *         {
-     *           "id": 2,
-     *           "seat_number": "A2",
-     *           "row": "A",
-     *           "column": 2,
-     *           "status": "reserved",
-     *           "user": {
-     *             "id": 10,
-     *             "name": "Juan Pérez"
-     *           }
-     *         }
-     *       ]
-     *     ],
-     *     "summary": {
-     *       "total_seats": 20,
-     *       "available": 15,
-     *       "reserved": 4,
-     *       "occupied": 1,
-     *       "blocked": 0
-     *     }
-     *   }
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "Horario de clase no encontrado"
-     * }
-     *
-     * @response 422 {
-     *   "success": false,
-     *   "message": "No hay asientos configurados para este horario",
-     *   "data": null
-     * }
-     */
     public function getSeatMap(ClassSchedule $classSchedule)
     {
         try {
@@ -438,7 +372,7 @@ final class ClassScheduleController extends Controller
             }
 
             // Cargar las relaciones necesarias
-            $classSchedule->load(['studio', 'seats']);
+            $classSchedule->load(['studio', 'class.discipline', 'instructor']);
 
             // Verificar que el horario tiene un estudio asignado
             if (!$classSchedule->studio) {
@@ -449,11 +383,17 @@ final class ClassScheduleController extends Controller
                 ], 422);
             }
 
-            // Intentar obtener el mapa de asientos
-            $seatMap = $classSchedule->getSeatMap();
+            // Obtener el mapa de asientos del modelo
+            $seatMapData = $classSchedule->getSeatMap();
+
+            // Log para debugging
+            Log::info('Datos del mapa de asientos', [
+                'class_schedule_id' => $classSchedule->id,
+                'summary_data' => $seatMapData['summary'] ?? 'no summary'
+            ]);
 
             // Verificar que el método devolvió datos válidos
-            if (!$seatMap || (is_array($seatMap) && empty($seatMap))) {
+            if (!$seatMapData || (is_array($seatMapData) && empty($seatMapData))) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No hay asientos configurados para este horario',
@@ -461,37 +401,46 @@ final class ClassScheduleController extends Controller
                 ], 422);
             }
 
-            // Si getSeatMap() devuelve un array simple, estructurarlo mejor
-            if (is_array($seatMap) && !isset($seatMap['studio'])) {
-                $seatMap = [
-                    'studio' => [
-                        'id' => $classSchedule->studio->id,
-                        'name' => $classSchedule->studio->name,
-                        'max_capacity' => $classSchedule->studio->max_capacity,
-                        'rows' => $classSchedule->studio->row,
-                        'columns' => $classSchedule->studio->column,
-                        'location' => $classSchedule->studio->location
-                    ],
-                    'class' => [
-                        'id' => $classSchedule->class->id,
-                        'name' => $classSchedule->class->name,
-                        'discipline' => $classSchedule->class->discipline->name,
-                        'discipline_img' => asset('storage/') . '/' . $classSchedule->class->discipline->icon_url,
-                    ],
-                    'instructor' => [
-                        'id' => $classSchedule->instructor->id,
-                        'name' => $classSchedule->instructor->name,
-                        'profile_image' =>  asset('storage/') . '/' . $classSchedule->instructor->profile_image,
-                    ],
-                    'seat_map' => $seatMap,
-                    'summary' => $this->calculateSeatSummary($seatMap)
-                ];
-            }
+            // Estructurar la respuesta usando los datos del modelo
+            $responseData = [
+                'studio' => [
+                    'id' => $classSchedule->studio->id,
+                    'name' => $classSchedule->studio->name,
+                    'max_capacity' => $classSchedule->studio->max_capacity,
+                    'rows' => $classSchedule->studio->row,
+                    'columns' => $classSchedule->studio->column,
+                    'location' => $classSchedule->studio->location
+                ],
+                'class' => [
+                    'id' => $classSchedule->class->id,
+                    'name' => $classSchedule->class->name,
+                    'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
+                    'discipline_img' => asset('storage/') . '/' . $classSchedule->class->discipline->icon_url ?? null,
+                ],
+                'instructor' => [
+                    'id' => $classSchedule->instructor->id,
+                    'name' => $classSchedule->instructor->name,
+                    'profile_image' => asset('storage/') . '/' . $classSchedule->instructor->profile_image ?? null,
+                ],
+                'seat_map' => $seatMapData['seat_grid'] ?? [],
+                'summary' => [
+                    'total_seats' => $seatMapData['summary']['total_seats'] ?? 0,
+                    'available' => $seatMapData['summary']['available_count'] ?? 0,
+                    'reserved' => $seatMapData['summary']['reserved_count'] ?? 0,
+                    'occupied' => $seatMapData['summary']['occupied_count'] ?? 0,
+                    'blocked' => $seatMapData['summary']['blocked_count'] ?? 0
+                ]
+            ];
+
+            // Log del resumen calculado
+            Log::info('Resumen calculado', [
+                'calculated_summary' => $responseData['summary']
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Mapa de asientos obtenido exitosamente',
-                'data' => $seatMap
+                'data' => $responseData
             ], 200);
         } catch (\Exception $e) {
             // Log del error para debugging
@@ -507,52 +456,6 @@ final class ClassScheduleController extends Controller
                 'data' => null
             ], 500);
         }
-    }
-
-    /**
-     * Calcula el resumen de estados de asientos
-     *
-     * @param array $seatMap
-     * @return array
-     */
-    private function calculateSeatSummary(array $seatMap): array
-    {
-        $summary = [
-            'total_seats' => 0,
-            'available' => 0,
-            'reserved' => 0,
-            'occupied' => 0,
-            'blocked' => 0
-        ];
-
-        // Si es un array multidimensional (filas)
-        if (is_array($seatMap) && isset($seatMap[0]) && is_array($seatMap[0])) {
-            foreach ($seatMap as $row) {
-                foreach ($row as $seat) {
-                    if (isset($seat['status'])) {
-                        $summary['total_seats']++;
-                        $status = $seat['status'];
-                        if (isset($summary[$status])) {
-                            $summary[$status]++;
-                        }
-                    }
-                }
-            }
-        }
-        // Si es un array simple de asientos
-        else {
-            foreach ($seatMap as $seat) {
-                if (isset($seat['status'])) {
-                    $summary['total_seats']++;
-                    $status = $seat['status'];
-                    if (isset($summary[$status])) {
-                        $summary[$status]++;
-                    }
-                }
-            }
-        }
-
-        return $summary;
     }
 
     /**
@@ -667,34 +570,27 @@ final class ClassScheduleController extends Controller
                 ], 200);
             }
 
-            // Verificar que no sea un horario pasado
+            // Permitir reservar hasta 10 minutos después del inicio
             $scheduledDate = $classSchedule->scheduled_date instanceof \Carbon\Carbon
                 ? $classSchedule->scheduled_date->format('Y-m-d')
                 : $classSchedule->scheduled_date;
 
-            $scheduleDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $classSchedule->start_time);
-            if ($scheduleDateTime->isPast()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede reservar en un horario pasado',
-                    'data' => ['reason' => 'schedule_past']
-                ], 200);
-            }
+            $startDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $classSchedule->start_time);
+            $limitToReserve = $startDateTime->copy()->addMinutes(10);
 
-            // Verificar que las reservas estén abiertas (al menos 2 horas antes)
-            $hoursUntilClass = now()->diffInHours($scheduleDateTime, false);
-            if ($hoursUntilClass < 2) {
+            if (now()->greaterThan($limitToReserve)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Las reservas se cierran 2 horas antes del inicio de la clase',
+                    'message' => 'No se puede reservar después de los 10 minutos del inicio de la clase',
                     'data' => [
-                        'reason' => 'booking_closed',
-                        'hours_until_class' => $hoursUntilClass,
-                        'class_datetime' => $scheduleDateTime->toISOString(),
-                        'current_time' => now()->toISOString()
+                        'reason' => 'too_late',
+                        'start_time' => $startDateTime->toDateTimeString(),
+                        'limit_time' => $limitToReserve->toDateTimeString(),
+                        'now' => now()->toDateTimeString()
                     ]
                 ], 200);
             }
+
 
             $userId = Auth::id();
             $classScheduleSeatIds = $request->validated()['class_schedule_seat_ids'];
@@ -791,7 +687,7 @@ final class ClassScheduleController extends Controller
                             'unavailable_seats' => $unavailableSeats,
                             'available_seats' => collect($availableAssignments)->pluck('id')->toArray()
                         ]
-                    ], 400);
+                    ], 200);
                 }
 
                 // Reservar todos los asientos disponibles
@@ -1459,7 +1355,7 @@ final class ClassScheduleController extends Controller
     }
 
     /**
-     * Lista los horarios de clases reservados por el usuario autenticado
+     * Lista los horarios completados de clases reservados por el usuario autenticado
      *
      * Obtiene una lista de los horarios de clases en los que el usuario autenticado ha reservado un asiento.
      * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
@@ -1606,6 +1502,217 @@ final class ClassScheduleController extends Controller
                     'studio' => [
                         'id' => $schedule->studio->id,
                         'name' => $schedule->studio->name,
+                    ],
+                    'max_capacity' => $schedule->max_capacity,
+                    'available_spots' => $schedule->available_spots,
+                    'booked_spots' => $schedule->booked_spots,
+                    'waitlist_spots' => $schedule->waitlist_spots,
+                    'my_seats' => $userSeats,
+                    'total_my_seats' => $userSeats->count()
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Horarios de clase obtenidos exitosamente',
+                'data' => $formattedSchedules,
+                'meta' => [
+                    'current_page' => $classSchedules->currentPage(),
+                    'per_page' => $classSchedules->perPage(),
+                    'total' => $classSchedules->total(),
+                    'last_page' => $classSchedules->lastPage(),
+                    'from' => $classSchedules->firstItem(),
+                    'to' => $classSchedules->lastItem()
+                ],
+                'links' => [
+                    'first' => $classSchedules->url(1),
+                    'last' => $classSchedules->url($classSchedules->lastPage()),
+                    'prev' => $classSchedules->previousPageUrl(),
+                    'next' => $classSchedules->nextPageUrl()
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            // Log del error para debugging
+            Log::error('Error al obtener horarios de clase del usuario', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al obtener horarios de clase',
+                'data' => [],
+                'meta' => [
+                    'current_page' => 1,
+                    'per_page' => $request->integer('per_page', 15),
+                    'total' => 0,
+                    'last_page' => 1,
+                    'from' => null,
+                    'to' => null
+                ],
+                'links' => [
+                    'first' => null,
+                    'last' => null,
+                    'prev' => null,
+                    'next' => null
+                ]
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Lista los horarios pendiente de clases reservados por el usuario autenticado
+     *
+     * Obtiene una lista de los horarios de clases en los que el usuario autenticado ha reservado un asiento.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar horarios de clases reservadas del usuario
+     * @operationId getClassSchedulesByUser
+     * @tags Horarios de Clases
+     *
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Horarios de clase obtenidos exitosamente",
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "scheduled_date": "2025-06-19",
+     *       "start_time": "08:00:00",
+     *       "end_time": "09:00:00",
+     *       "status": "scheduled",
+     *       "class": {
+     *         "id": 10,
+     *         "name": "Full Body Strength",
+     *         "discipline": "Funcional",
+     *         "img_url": "/storage/images/classes/full_body.jpg",
+     *         "discipline_img": "/storage/images/disciplines/funcional.svg"
+     *       },
+     *       "instructor": {
+     *         "id": 3,
+     *         "name": "Juan Pérez",
+     *         "profile_image": "/storage/images/instructors/juan.jpg",
+     *         "rating_average": 4.8,
+     *         "is_head_coach": true
+     *       },
+     *       "studio": {
+     *         "id": 1,
+     *         "name": "Sala Principal"
+     *       },
+     *       "max_capacity": 20,
+     *       "available_spots": 5,
+     *       "booked_spots": 15,
+     *       "waitlist_spots": 0
+     *     }
+     *   ]
+     * }
+     *
+     * @response 404 {
+     *   "success": false,
+     *   "message": "No tienes horarios de clase reservados",
+     *   "data": []
+     * }
+     */
+    public function classScheduleUserPending(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+
+            // Validar parámetros de paginación
+            $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:50',
+                'page' => 'nullable|integer|min:1'
+            ]);
+
+            $query = ClassSchedule::with([
+                'class',
+                'instructor',
+                'studio',
+                'classScheduleSeats' => function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+
+                        ->with('seat');
+                }
+
+            ])
+                ->where('status', 'scheduled') // Solo horarios programados
+                ->where('scheduled_date', '>=', now()->toDateString()) // Solo horarios
+                ->whereHas('classScheduleSeats', function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                })
+                ->orderBy('scheduled_date', 'asc')
+                ->orderBy('start_time', 'asc');
+
+            // Aplicar paginación (siempre paginado)
+            $classSchedules = $query->paginate(
+                perPage: $request->integer('per_page', 15),
+                page: $request->integer('page', 1)
+            );
+
+            if ($classSchedules->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes horarios de clase reservados',
+                    'data' => [],
+                    'meta' => [
+                        'current_page' => $classSchedules->currentPage(),
+                        'per_page' => $classSchedules->perPage(),
+                        'total' => $classSchedules->total(),
+                        'last_page' => $classSchedules->lastPage(),
+                        'from' => $classSchedules->firstItem(),
+                        'to' => $classSchedules->lastItem()
+                    ],
+                    'links' => [
+                        'first' => $classSchedules->url(1),
+                        'last' => $classSchedules->url($classSchedules->lastPage()),
+                        'prev' => $classSchedules->previousPageUrl(),
+                        'next' => $classSchedules->nextPageUrl()
+                    ]
+                ], 200);
+            }
+
+            // Transformar los datos para incluir información de asientos
+            $formattedSchedules = $classSchedules->map(function ($schedule) use ($userId) {
+                $userSeats = $schedule->classScheduleSeats->map(function ($seatAssignment) {
+                    return [
+                        'class_schedule_seat_id' => $seatAssignment->id,
+                        'seat_id' => $seatAssignment->seats_id,
+                        'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
+                        'row' => $seatAssignment->seat->row,
+                        'column' => $seatAssignment->seat->column,
+                        'status' => $seatAssignment->status,
+                        'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                        'expires_at' => $seatAssignment->expires_at?->toISOString()
+                    ];
+                });
+
+                return [
+                    'id' => $schedule->id,
+                    'scheduled_date' => $schedule->scheduled_date->format('d/m/Y'),
+                    'start_time' => $schedule->start_time,
+                    'end_time' => $schedule->end_time,
+                    'status' => $schedule->status,
+                    'class' => [
+                        'id' => $schedule->class->id,
+                        'name' => $schedule->class->name,
+                        'discipline' => $schedule->class->discipline->name ?? 'N/A',
+                        'img_url' => asset($schedule->class->img_url) ?? null,
+                        'discipline_img' => asset($schedule->class->discipline->icon_url) ?? null,
+                    ],
+                    'instructor' => [
+                        'id' => $schedule->instructor->id,
+                        'name' => $schedule->instructor->name,
+                        'profile_image' => asset($schedule->instructor->profile_image) ?? null,
+                        'rating_average' => $schedule->instructor->rating_average ?? null,
+                        'is_head_coach' => $schedule->instructor->is_head_coach ?? false,
+                    ],
+                    'studio' => [
+                        'id' => $schedule->studio->id,
+                        'name' => $schedule->studio->name,
+                        'location' => $schedule->studio->location ?? 'N/A',
                     ],
                     'max_capacity' => $schedule->max_capacity,
                     'available_spots' => $schedule->available_spots,

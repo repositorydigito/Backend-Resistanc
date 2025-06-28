@@ -16,6 +16,81 @@ use Illuminate\Support\Facades\Log;
  */
 final class WaitingController extends Controller
 {
+    /**
+     * @summary Obtener lista de espera del usuario autenticado
+     * @operationId indexWaitingList
+     * @tags Lista de espera
+     *
+     * Retorna la lista de espera del usuario actualmente autenticado.
+     * Devuelve todas las entradas activas en estado `waiting`, con información relacionada a la clase y estudio.
+     *
+     * **Requiere autenticación:** Incluye el token Bearer en el encabezado Authorization.
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Lista de espera obtenida exitosamente",
+     *   "data": [
+     *     {
+     *       "id": 5,
+     *       "class_schedules_id": 10,
+     *       "user_id": 25,
+     *       "status": "waiting",
+     *       "created_at": "2025-06-20T20:30:00.000Z",
+     *       "updated_at": "2025-06-20T20:30:00.000Z",
+     *       "class_schedule": {
+     *         "id": 10,
+     *         "scheduled_date": "2025-06-28",
+     *         "start_time": "09:00:00",
+     *         "class": {
+     *           "id": 3,
+     *           "name": "Yoga Matutino"
+     *         },
+     *         "studio": {
+     *           "id": 2,
+     *           "name": "Studio A"
+     *         }
+     *       }
+     *     }
+     *   ]
+     * }
+     *
+     * @response 200 {
+     *   "success": false,
+     *   "message": "Error interno al obtener lista de espera",
+     *   "data": null
+     * }
+     */
+
+
+    public function indexWaitingList()
+    {
+
+        try {
+            $userId = Auth::id();
+            $waitingList = WaitingClass::where('user_id', $userId)
+                ->where('status', 'waiting')
+                ->with(['classSchedule.class', 'classSchedule.studio'])
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lista de espera obtenida exitosamente',
+                'data' => $waitingList
+            ], 200);
+        } catch (\Throwable $th) {
+            Log::error('Error al obtener lista de espera', [
+                'user_id' => Auth::id(),
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno al obtener lista de espera',
+                'data' => null
+            ], 200);
+        }
+    }
 
     /**
      * @summary Agregar usuario a la lista de espera
@@ -91,7 +166,7 @@ final class WaitingController extends Controller
                     'success' => false,
                     'message' => 'No se puede agregar a la lista de espera de un horario cancelado',
                     'data' => ['reason' => 'schedule_cancelled']
-                ], 422);
+                ], 200);
             }
 
             // Verificar que no sea un horario pasado
@@ -105,7 +180,7 @@ final class WaitingController extends Controller
                     'success' => false,
                     'message' => 'No se puede agregar a la lista de espera de un horario pasado',
                     'data' => ['reason' => 'schedule_past']
-                ], 422);
+                ], 200);
             }
 
             // 🎯 VALIDAR PAQUETES DISPONIBLES PARA LA DISCIPLINA
@@ -121,7 +196,7 @@ final class WaitingController extends Controller
                         'discipline_required' => $packageValidation['discipline_required'],
                         'available_packages' => $packageValidation['available_packages']
                     ]
-                ], 422);
+                ], 200);
             }
 
             // Verificar que el usuario no esté ya en la lista de espera para este horario
@@ -138,7 +213,7 @@ final class WaitingController extends Controller
                         'reason' => 'already_in_waiting_list',
                         'waiting_id' => $existingWaiting->id
                     ]
-                ], 422);
+                ], 200);
             }
 
             // Log de validación exitosa para debugging
@@ -168,7 +243,6 @@ final class WaitingController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Throwable $th) {
             Log::error('Error al agregar a la lista de espera', [
                 'user_id' => Auth::id(),
@@ -181,7 +255,7 @@ final class WaitingController extends Controller
                 'success' => false,
                 'message' => 'Error interno al agregar a la lista de espera',
                 'data' => null
-            ], 500);
+            ], 200);
         }
     }
 }

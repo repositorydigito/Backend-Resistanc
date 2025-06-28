@@ -195,6 +195,13 @@ class UserPackagesRelationManager extends RelationManager
                     ->sortable()
                     ->description(fn($record) => $record->package->short_description ?? ''),
 
+                Tables\Columns\TextColumn::make('package.discipline.name')
+                    ->label('Disciplina')
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
+                    ->color('primary'),
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()

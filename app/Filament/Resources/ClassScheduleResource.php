@@ -426,7 +426,16 @@ class ClassScheduleResource extends Resource
             ])
             ->defaultSort('scheduled_date', 'desc')
             ->filters([
-                //
+
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'scheduled' => 'Programado',
+                        'in_progress' => 'En Progreso',
+                        'completed' => 'Completado',
+                        'cancelled' => 'Cancelado',
+                        'postponed' => 'Pospuesto',
+                    ])->default('scheduled'),
             ])
             ->actions([
 

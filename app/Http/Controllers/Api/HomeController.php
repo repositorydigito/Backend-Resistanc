@@ -79,6 +79,13 @@ final class HomeController extends Controller
 
         $classSchedulesPendingCount = $user->pendingSeatReservations()->count();
 
+        // Clases disponibles del usuario
+        $availableClassesCount = $user->getAvailableClassesCount();
+        $availableClassesByDiscipline = $user->getAvailableClassesByDiscipline();
+
+        // Paquetes activos del usuario
+        $activePackagesCount = $user->getActivePackagesCount();
+
         // Instructores activos con disciplina
         $instructors = Instructor::with('disciplines')
             ->whereHas('disciplines', fn($q) => $q->where('status', 'active'))
@@ -96,6 +103,7 @@ final class HomeController extends Controller
 
         $classSchedules = ClassSchedule::with(['class', 'studio'])
             ->where('scheduled_date', '>=', now()->toDateString())
+            ->where('status', 'scheduled')
             ->orderBy('scheduled_date', 'asc')
             ->orderBy('start_time', 'asc')
             ->limit(10)
@@ -118,6 +126,9 @@ final class HomeController extends Controller
                     'info' => [
                         'completedClassSchedulesCount' => $classSchedulesCompletedCount,
                         'pendingClassSchedulesCount' => $classSchedulesPendingCount,
+                        'availableClassesCount' => $availableClassesCount,
+                        'availableClassesByDiscipline' => $availableClassesByDiscipline,
+                        'activePackagesCount' => $activePackagesCount,
                     ],
                     'contact' => $user->contact ? [
                         'phone' => $user->contact->phone,

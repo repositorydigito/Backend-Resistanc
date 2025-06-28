@@ -337,4 +337,56 @@ final class User extends Authenticatable
         return $this->hasMany(ClassScheduleSeat::class)
             ->where('status', 'reserved');
     }
+
+    /**
+     * Get the total number of available classes from user's active packages.
+     */
+    public function getAvailableClassesCount(): int
+    {
+        $count = $this->userPackages()
+            ->where('status', 'active')
+            ->where('expiry_date', '>', now())
+            ->where('remaining_classes', '>', 0)
+            ->sum('remaining_classes');
+        
+        return (int) $count;
+    }
+
+    /**
+     * Get the total number of active packages the user has.
+     */
+    public function getActivePackagesCount(): int
+    {
+        $count = $this->userPackages()
+            ->where('status', 'active')
+            ->where('expiry_date', '>', now())
+            ->count();
+        
+        return (int) $count;
+    }
+
+    /**
+     * Get the total number of available classes by discipline.
+     */
+    public function getAvailableClassesByDiscipline(): array
+    {
+        return $this->userPackages()
+            ->with('package.discipline')
+            ->where('status', 'active')
+            ->where('expiry_date', '>', now())
+            ->where('remaining_classes', '>', 0)
+            ->get()
+            ->groupBy('package.discipline_id')
+            ->map(function ($packages, $disciplineId) {
+                $discipline = $packages->first()->package->discipline;
+                return [
+                    'discipline_id' => $disciplineId,
+                    'discipline_name' => $discipline->name,
+                    'total_available_classes' => $packages->sum('remaining_classes'),
+                    'packages_count' => $packages->count(),
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
 }

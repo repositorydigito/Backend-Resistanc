@@ -20,27 +20,20 @@ use App\Http\Controllers\Api\UserPackageController;
 use App\Http\Controllers\Api\UserPayMethodController;
 use App\Http\Controllers\Api\WaitingController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PasarelaController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\StudioController;
+use App\Models\Instructor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Two\FacebookProvider;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Test route
+
 Route::get('/test', [TestController::class, 'status'])->name('test.status');
 
 
@@ -61,11 +54,7 @@ Route::prefix('social-login')->name('social-login.')->group(function () {
 // Fin logueo con redes sociales
 
 
-/*
-|--------------------------------------------------------------------------
-| Authentication API Routes
-|--------------------------------------------------------------------------
-*/
+
 
 Route::prefix('auth')->name('auth.')->group(function () {
     // Public authentication routes
@@ -81,11 +70,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| User API Routes
-|--------------------------------------------------------------------------
-*/
+
 
 Route::prefix('users')->name('users.')->group(function () {
     // Basic CRUD
@@ -106,7 +91,6 @@ Route::prefix('users')->name('users.')->group(function () {
         Route::get('/{user}/login-audits', [UserController::class, 'loginAudits'])->name('login-audits');
     });
 
-
     // User contacts CRUD
     Route::prefix('/{user}/contacts')->name('contacts.')->group(function () {
         Route::get('/', [UserContactController::class, 'index'])->name('index');
@@ -118,23 +102,7 @@ Route::prefix('users')->name('users.')->group(function () {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| User Payment Methods API Routes
-|--------------------------------------------------------------------------
-*/
 
-Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [UserPayMethodController::class, 'index'])->name('index');
-    Route::post('/', [UserPayMethodController::class, 'store'])->name('store');
-    Route::get('/{paymentMethod}', [UserPayMethodController::class, 'show'])->name('show');
-});
-
-/*
-|--------------------------------------------------------------------------
-| User Packages API Routes (Usuario Logueado)
-|--------------------------------------------------------------------------
-*/
 
 
 Route::prefix('me/packages')->name('my-packages.')->middleware('auth:sanctum')->group(function () {
@@ -175,15 +143,16 @@ Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:san
     Route::post('/release-seats', [ClassScheduleController::class, 'releaseSeats'])->name('release-seats');
     Route::post('/confirm-attendance', [ClassScheduleController::class, 'confirmAttendance'])->name('confirm-attendance');
     Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
-
     Route::get('/class-schedulesUser', [ClassScheduleController::class, 'classScheduleUser'])->name('class-schedules');
+    Route::get('/class-schedulesUserPending', [ClassScheduleController::class, 'classScheduleUserPending'])->name('class-schedules-pending');
 
 });
 // Fin Horarios
 
 // Lista de espera
 Route::prefix('waiting-list')->name('waiting-list.')->middleware('auth:sanctum')->group(function () {
-    Route::post('/', [WaitingController::class, 'addWaitingList'])->name('add');
+    Route::get('/', [WaitingController::class, 'indexWaitingList'])->name('index');
+    Route::post('create/', [WaitingController::class, 'addWaitingList'])->name('add');
 });
 // Fin lista de espera
 
@@ -216,10 +185,9 @@ Route::prefix('products')->name('products.')->middleware('auth:sanctum')->group(
     // Route::post('/{product}/add-to-cart', [ProductController::class, 'addToCart'])->name('add-to-cart');
 });
 // Fin productos
+
 // Carrito de compras
 // Fin Tienda
-
-
 // Favoritos
 Route::prefix('favorites')->name('favorites.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [FavoriteController::class, 'index'])->name('index');
@@ -237,34 +205,32 @@ Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function
 });
 // Fin home
 
-// Perfil
 
+// Perfil
 Route::prefix('profile')->name('profile.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [UserController::class, 'profile'])->name('index');
-
 });
-
 // Fin Perfil
 
+// Tarjetas
+Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [PaymentController::class, 'index'])->name('index');
+    Route::post('/create', [PaymentController::class, 'store'])->name('store');
+    Route::get('/show/{card}', [PaymentController::class, 'show'])->name('show');
+    Route::put('/update/{card}', [PaymentController::class, 'update'])->name('update');
+    Route::delete('/destroy/{card}', [PaymentController::class, 'destroy'])->name('destroy');
+});
 
+// Fin tarjetas
 
-/*
-|--------------------------------------------------------------------------
-| Future API Routes
-|--------------------------------------------------------------------------
-|
-| TODO: Add routes for:
-| - UserProfileController
-| - UserContactController
-| - SocialAccountController
-| - LoginAuditController
-|
-*/
+// Instructor
 
 Route::apiResource('instructors', InstructorController::class);
 Route::get('instructors-week', [InstructorController::class, 'instructorsWeek']);
 Route::post('instructors/{instructor}/score', [InstructorController::class, 'scoreInstructor']);
 Route::get('instructors-ten', [InstructorController::class, 'indexTen']);
+
+// Fin instructor1
 
 
 // Rutas de Pedidos
@@ -274,6 +240,13 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
     Route::get('/{order}', [OrderController::class, 'show'])->name('show');
     Route::post('/', [OrderController::class, 'store'])->name('store');
 });
+
+
+// Pasarela de pago
+Route::prefix('payment-gateway')->name('payment-gateway.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/izipay/token', [PasarelaController::class, 'izipayToken'])->name('izipay.token');
+});
+// Fin Pasarela de pago
 
 
 
