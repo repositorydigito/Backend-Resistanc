@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 use Illuminate\Support\Str;
+
 class UserPackagesRelationManager extends RelationManager
 {
     protected static string $relationship = 'userPackages';
@@ -31,7 +32,7 @@ class UserPackagesRelationManager extends RelationManager
                     ->searchable()
                     ->preload()
                     ->reactive()
-                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
                             $package = Package::find($state);
                             if ($package) {
@@ -43,7 +44,14 @@ class UserPackagesRelationManager extends RelationManager
                                 $set('currency', 'PEN');
 
                                 // Calcular fecha de expiración
-                                $expiryDate = now()->addDays($package->validity_days ?? 30);
+                                $purchaseDate = $get('purchase_date') ? \Carbon\Carbon::parse($get('purchase_date')) : now();
+                                if ($package->duration_in_months) {
+                                    $expiryDate = $purchaseDate->copy()->addMonths($package->duration_in_months);
+                                } elseif ($package->validity_days) {
+                                    $expiryDate = $purchaseDate->copy()->addDays($package->validity_days);
+                                } else {
+                                    $expiryDate = $purchaseDate->copy()->addDays(30);
+                                }
                                 $set('expiry_date', $expiryDate->toDateString());
 
                                 // Generar código único del paquete
@@ -118,7 +126,25 @@ class UserPackagesRelationManager extends RelationManager
                             ->label('Fecha de Compra')
                             ->required()
                             ->default(now())
-                            ->maxDate(now()),
+                            ->maxDate(now())
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                                $packageId = $get('package_id');
+                                if ($packageId) {
+                                    $package = Package::find($packageId);
+                                    if ($package) {
+                                        $purchaseDate = $state ? \Carbon\Carbon::parse($state) : now();
+                                        if ($package->duration_in_months) {
+                                            $expiryDate = $purchaseDate->copy()->addMonths($package->duration_in_months);
+                                        } elseif ($package->validity_days) {
+                                            $expiryDate = $purchaseDate->copy()->addDays($package->validity_days);
+                                        } else {
+                                            $expiryDate = $purchaseDate->copy()->addDays(30);
+                                        }
+                                        $set('expiry_date', $expiryDate->toDateString());
+                                    }
+                                }
+                            }),
 
                         Forms\Components\DatePicker::make('activation_date')
                             ->label('Fecha de Activación')
@@ -244,27 +270,22 @@ class UserPackagesRelationManager extends RelationManager
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('expiry_date')
-                    ->label('Expira')
+                    ->label('Expira (estimado)')
                     ->date()
-                    ->sortable()
-                    ->color(function ($record) {
-                        $daysToExpiry = now()->diffInDays($record->expiry_date, false);
-                        return match (true) {
-                            $daysToExpiry < 0 => 'danger',  // Expirado
-                            $daysToExpiry <= 7 => 'warning', // Por expirar
-                            default => 'success'
-                        };
-                    }),
+                    ->sortable(),
 
-                Tables\Columns\IconColumn::make('auto_renew')
-                    ->label('Auto Renovación')
-                    ->boolean(),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
+
+
+                // Tables\Columns\IconColumn::make('auto_renew')
+                //     ->label('Auto Renovación')
+                //     ->boolean(),
+
+                // Tables\Columns\TextColumn::make('created_at')
+                //     ->label('Creado')
+                //     ->dateTime()
+                //     ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -374,5 +395,13 @@ class UserPackagesRelationManager extends RelationManager
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+    public function getEstimatedExpiryDateAttribute()
+    {
+        if (! $this->package || ! $this->created_at) {
+            return null;
+        }
+
+        return $this->created_at->copy()->addMonths($this->package->duration_in_months);
     }
 }

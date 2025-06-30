@@ -862,19 +862,37 @@ final class ClassScheduleController extends Controller
                 // Liberar todos los asientos
                 $releasedSeats = [];
                 $releasedAt = now();
+                $refundedPackages = [];
 
                 foreach ($assignments as $assignment) {
                     $previousStatus = $assignment->status;
+                    $previousUserPackageId = $assignment->user_package_id;
 
                     // Cargar la relación del asiento
                     $assignment->load('seat');
+
+                    // Si tenía un paquete asignado, devolver la clase
+                    if ($previousUserPackageId) {
+                        $userPackage = \App\Models\UserPackage::find($previousUserPackageId);
+                        if ($userPackage && $userPackage->user_id === $userId) {
+                            $userPackage->refundClasses(1);
+                            $refundedPackages[] = [
+                                'package_id' => $userPackage->id,
+                                'package_code' => $userPackage->package_code,
+                                'package_name' => $userPackage->package->name ?? 'N/A',
+                                'classes_refunded' => 1,
+                                'remaining_classes' => $userPackage->remaining_classes
+                            ];
+                        }
+                    }
 
                     // Actualizar a disponible
                     $assignment->update([
                         'user_id' => null,
                         'status' => 'available',
                         'reserved_at' => null,
-                        'expires_at' => null
+                        'expires_at' => null,
+                        'user_package_id' => null
                     ]);
 
                     $releasedSeats[] = [
@@ -885,7 +903,8 @@ final class ClassScheduleController extends Controller
                         'column' => $assignment->seat->column,
                         'previous_status' => $previousStatus,
                         'new_status' => 'available',
-                        'released_at' => $releasedAt->toISOString()
+                        'released_at' => $releasedAt->toISOString(),
+                        'user_package_id' => $previousUserPackageId
                     ];
                 }
 
@@ -899,7 +918,8 @@ final class ClassScheduleController extends Controller
                             'total_released' => count($releasedSeats),
                             'user_id' => $userId,
                             'released_at' => $releasedAt->toISOString()
-                        ]
+                        ],
+                        'refunded_packages' => $refundedPackages
                     ]
                 ], 200);
             });

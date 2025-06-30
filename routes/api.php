@@ -64,6 +64,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     // Protected authentication routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me'])->name('me');
+        Route::post('/me/update', [AuthController::class, 'updateMe'])->name('me.update');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
         Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');

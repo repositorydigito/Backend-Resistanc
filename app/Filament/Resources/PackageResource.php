@@ -44,7 +44,7 @@ class PackageResource extends Resource
                     ->schema([
 
 
-                            Forms\Components\FileUpload::make('icon_url')
+                        Forms\Components\FileUpload::make('icon_url')
                             ->label('Icono')
                             ->disk('public')
                             ->directory('packages/icons')
@@ -188,12 +188,23 @@ class PackageResource extends Resource
                             ])
                             ->label('Modalidad')
                             ->required(),
+
+                        Forms\Components\TextInput::make('duration_in_months')
+                            ->label('Vigencia en meses')
+                            ->numeric()
+                            ->default(0)
+
+                            ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
+
+
                         Forms\Components\DatePicker::make('start_date')
+                            ->live()
                             ->visible(fn($get) => $get('type') !== 'fixed') // Visible cuando NO es fijo
                             ->label('Fecha de inicio')
                             ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
 
                         Forms\Components\DatePicker::make('end_date')
+                            ->live()
                             ->visible(fn($get) => $get('type') !== 'fixed') // Visible cuando NO es fijo
                             ->label('Fecha de fin')
                             ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
@@ -265,6 +276,10 @@ class PackageResource extends Resource
                     ->label('N° de Clases')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('duration_in_months')
+                    ->label('Vigencia en meses')
+                    ->numeric()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('buy_type')
                     ->label('Tipo de compra')
@@ -303,8 +318,7 @@ class PackageResource extends Resource
                             'style' => "background-color: {$record->discipline->color_hex}10; color:  {$record->discipline->color_hex}; border: 1px solid {$record->discipline->color_hex}; padding: 0; font-weight: bold; border-radius: 0.45rem; text-align: center; display: flex; width: 100%; justify-content: center; align-items: center;",
                             'class' => 'p-0 text-sm text-center' // Estilos adicionales para el badge
                         ];
-                    })
-                    ,
+                    }),
 
 
                 // Tables\Columns\TextColumn::make('price_soles')

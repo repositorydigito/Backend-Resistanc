@@ -31,7 +31,6 @@ final class StoreUserPackageRequest extends FormRequest
             'currency' => ['nullable', 'string', 'max:3', 'in:PEN,USD,EUR'],
             'purchase_date' => ['required', 'date'],
             'activation_date' => ['nullable', 'date', 'after_or_equal:purchase_date'],
-            'expiry_date' => ['required', 'date', 'after:purchase_date'],
             'status' => ['nullable', 'string', Rule::in(['pending', 'active', 'expired', 'cancelled', 'suspended'])],
             'auto_renew' => ['nullable', 'boolean'],
             'renewal_price' => ['nullable', 'numeric', 'min:0'],
@@ -58,8 +57,6 @@ final class StoreUserPackageRequest extends FormRequest
             'purchase_date.required' => 'La fecha de compra es obligatoria.',
 
             'activation_date.after_or_equal' => 'La fecha de activación debe ser posterior o igual a la fecha de compra.',
-            'expiry_date.required' => 'La fecha de expiración es obligatoria.',
-            'expiry_date.after' => 'La fecha de expiración debe ser posterior a la fecha de compra.',
             'currency.in' => 'La moneda debe ser PEN, USD o EUR.',
             'status.in' => 'El estado debe ser: pending, active, expired, cancelled o suspended.',
         ];

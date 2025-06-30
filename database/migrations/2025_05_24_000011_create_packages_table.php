@@ -20,7 +20,7 @@ return new class extends Migration
 
             // Datos principales
             $table->string('name', 100)->comment('Ej: 1CLASER, PAQUETE5R, RSISTANC360');
-            $table->string('slug', 100)->unique();
+            $table->string('slug', 100);
             $table->text('description');
             $table->string('short_description')->nullable();
             $table->unsignedInteger('classes_quantity');
@@ -57,6 +57,7 @@ return new class extends Migration
 
             // nuevo
             $table->string('icon_url')->nullable()->comment('URL de la imagen del paquete');
+            $table->integer('duration_in_months')->nullable();
 
             $table->timestamps();
 

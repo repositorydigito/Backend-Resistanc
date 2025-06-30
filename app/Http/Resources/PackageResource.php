@@ -26,6 +26,7 @@ class PackageResource extends JsonResource
             'validity_days' => $this->validity_days,
             'package_type' => $this->package_type,
             'billing_type' => $this->billing_type,
+            'duration_in_months' => $this->duration_in_months, // New field for duration in months
             'is_virtual_access' => $this->is_virtual_access,
             'priority_booking_days' => $this->priority_booking_days,
             'auto_renewal' => $this->auto_renewal,

@@ -13,22 +13,23 @@ final class OrderItem extends Model
     use HasFactory;
 
     protected $fillable = [
+
+
+        'quantity',
+        'unit_price',
+        'total_price',
+
+        // Relaciones
         'order_id',
         'product_id',
         'product_variant_id',
-        'quantity',
-        'unit_price_soles',
-        'total_price_soles',
-        'product_name',
-        'product_sku',
-        'product_image',
-        'notes',
+
     ];
 
     protected $casts = [
         'quantity' => 'integer',
-        'unit_price_soles' => 'decimal:2',
-        'total_price_soles' => 'decimal:2',
+        'unit_price' => 'decimal:2',
+        'total_price' => 'decimal:2',
     ];
 
     /**

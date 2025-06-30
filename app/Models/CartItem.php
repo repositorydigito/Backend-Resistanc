@@ -13,13 +13,13 @@ final class CartItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'shopping_cart_id',
+        // 'shopping_cart_id',
         'product_id',
         'product_variant_id',
         'quantity',
         'unit_price',
         'total_price',
-        'notes',
+        // 'notes',
     ];
 
     protected $casts = [
@@ -83,7 +83,7 @@ final class CartItem extends Model
     public function decreaseQuantity(int $amount = 1): void
     {
         $newQuantity = max(0, $this->quantity - $amount);
-        
+
         if ($newQuantity <= 0) {
             $this->delete();
         } else {

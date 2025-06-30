@@ -694,8 +694,8 @@ class InfoSeeder extends Seeder
         $packages = [
             // CYCLING PACKAGES
             [
-                'name' => 'Cycling - Prueba Gratis',
-                'slug' => 'cycling-prueba-gratis',
+                'name' => 'Prueba Gratis',
+                'slug' => 'prueba-gratis-cycling',
                 'description' => 'Prueba gratuita de cycling para nuevos usuarios',
                 'short_description' => '1 clase gratis para conocer nuestro cycling',
                 'classes_quantity' => 1,
@@ -707,6 +707,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 0, // 0 months for temporary packages
                 'start_date' => now(),
                 'end_date' => now()->addMonths(3),
                 'is_virtual_access' => false,
@@ -724,8 +725,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling - 1 Clase',
-                'slug' => 'cycling-1-clase',
+                'name' => '1 Clase',
+                'slug' => '1-clase',
                 'description' => 'Paquete básico de cycling con 1 clase',
                 'short_description' => '1 clase de cycling válida por 1 mes',
                 'classes_quantity' => 1,
@@ -737,6 +738,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -754,8 +756,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling - 5 Clases',
-                'slug' => 'cycling-5-clases',
+                'name' => '5 Clases',
+                'slug' => '5-clases',
                 'description' => 'Paquete mensual de cycling con 5 clases',
                 'short_description' => '5 clases de cycling válidas por 1 mes',
                 'classes_quantity' => 5,
@@ -767,6 +769,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -784,8 +787,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling - 12 Clases',
-                'slug' => 'cycling-12-clases',
+                'name' => '12 Clases',
+                'slug' => '12-clases',
                 'description' => 'Paquete bimestral de cycling con 12 clases',
                 'short_description' => '12 clases de cycling válidas por 2 meses',
                 'classes_quantity' => 12,
@@ -797,6 +800,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 2, // 2 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -814,8 +818,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling - 24 Clases',
-                'slug' => 'cycling-24-clases',
+                'name' => '24 Clases',
+                'slug' => '24-clases',
                 'description' => 'Paquete semestral de cycling con 24 clases',
                 'short_description' => '24 clases de cycling válidas por 6 meses',
                 'classes_quantity' => 24,
@@ -827,6 +831,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'offer',
+                'duration_in_months' => 6, // 6 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -844,8 +849,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling - 40 Clases',
-                'slug' => 'cycling-40-clases',
+                'name' => '40 Clases',
+                'slug' => '40-clases',
                 'description' => 'Paquete anual de cycling con 40 clases',
                 'short_description' => '40 clases de cycling válidas por 1 año',
                 'classes_quantity' => 40,
@@ -857,6 +862,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 12, // 12 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -876,8 +882,8 @@ class InfoSeeder extends Seeder
 
             // PILATES PACKAGES
             [
-                'name' => 'Pilates - Prueba Gratis',
-                'slug' => 'pilates-prueba-gratis',
+                'name' => 'Prueba Gratis',
+                'slug' => 'prueba-gratis-pilates',
                 'description' => 'Prueba gratuita de pilates para nuevos usuarios',
                 'short_description' => '1 clase gratis para conocer nuestro pilates',
                 'classes_quantity' => 1,
@@ -889,6 +895,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 0, // 1 months for temporary packages
                 'start_date' => now(),
                 'end_date' => now()->addMonths(3),
                 'is_virtual_access' => false,
@@ -906,8 +913,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Pilates - 1 Clase',
-                'slug' => 'pilates-1-clase',
+                'name' => '1 Clase',
+                'slug' => '1-clase',
                 'description' => 'Paquete básico de pilates con 1 clase',
                 'short_description' => '1 clase de pilates válida por 1 mes',
                 'classes_quantity' => 1,
@@ -919,6 +926,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -936,8 +944,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Pilates - 4 Clases',
-                'slug' => 'pilates-4-clases',
+                'name' => '4 Clases',
+                'slug' => '4-clases',
                 'description' => 'Paquete mensual de pilates con 4 clases',
                 'short_description' => '4 clases de pilates válidas por 1 mes',
                 'classes_quantity' => 4,
@@ -949,6 +957,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -966,8 +975,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Pilates - 8 Clases',
-                'slug' => 'pilates-8-clases',
+                'name' => '8 Clases',
+                'slug' => '8-clases',
                 'description' => 'Paquete bimestral de pilates con 8 clases',
                 'short_description' => '8 clases de pilates válidas por 2 meses',
                 'classes_quantity' => 8,
@@ -979,6 +988,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 2, // 2 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -996,8 +1006,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Pilates - 12 Clases',
-                'slug' => 'pilates-12-clases',
+                'name' => '12 Clases',
+                'slug' => '12-clases',
                 'description' => 'Paquete bimestral extendido de pilates con 12 clases',
                 'short_description' => '12 clases de pilates válidas por 2 meses',
                 'classes_quantity' => 12,
@@ -1009,6 +1019,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 2, // 2 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -1026,8 +1037,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Pilates - 20 Clases',
-                'slug' => 'pilates-20-clases',
+                'name' => '20 Clases',
+                'slug' => '20-clases',
                 'description' => 'Paquete semestral de pilates con 20 clases',
                 'short_description' => '20 clases de pilates válidas por 6 meses',
                 'classes_quantity' => 20,
@@ -1039,6 +1050,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'offer',
+                'duration_in_months' => 6, // 6 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -1056,8 +1068,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Pilates - 40 Clases',
-                'slug' => 'pilates-40-clases',
+                'name' => '40 Clases',
+                'slug' => '40-clases',
                 'description' => 'Paquete anual de pilates con 40 clases',
                 'short_description' => '40 clases de pilates válidas por 1 año',
                 'classes_quantity' => 40,
@@ -1069,6 +1081,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'fixed',
                 'commercial_type' => 'basic',
+                'duration_in_months' => 12, // 12 months for temporary packages
                 'start_date' => null,
                 'end_date' => null,
                 'is_virtual_access' => false,
@@ -1087,8 +1100,8 @@ class InfoSeeder extends Seeder
             ],
 
             [
-                'name' => 'San Valentín - Cycling para Parejas',
-                'slug' => 'san-valentin-cycling-parejas',
+                'name' => 'San Valentín',
+                'slug' => 'san-valentin',
                 'description' => 'Paquete especial de San Valentín para parejas que quieren entrenar juntas',
                 'short_description' => '8 clases de cycling para compartir en pareja',
                 'classes_quantity' => 8,
@@ -1100,6 +1113,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 2, 1),
                 'end_date' => Carbon::create($currentYear, 2, 20),
                 'is_virtual_access' => false,
@@ -1117,8 +1131,8 @@ class InfoSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'San Valentín - Pilates Duo',
-                'slug' => 'san-valentin-pilates-duo',
+                'name' => 'San Valentín',
+                'slug' => 'san-valentin',
                 'description' => 'Especial de San Valentín para fortalecer el vínculo a través del pilates',
                 'short_description' => '6 clases de pilates en pareja',
                 'classes_quantity' => 6,
@@ -1130,6 +1144,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 2, 1),
                 'end_date' => Carbon::create($currentYear, 2, 20),
                 'is_virtual_access' => false,
@@ -1149,8 +1164,8 @@ class InfoSeeder extends Seeder
 
             // DÍA DE LA MADRE - Segundo domingo de mayo
             [
-                'name' => 'Día de la Madre - Wellness Package',
-                'slug' => 'dia-madre-wellness-package',
+                'name' => 'Día de la Madre ',
+                'slug' => 'dia-madre',
                 'description' => 'Paquete especial para celebrar a mamá con bienestar y relajación',
                 'short_description' => '10 clases mixtas para el bienestar de mamá',
                 'classes_quantity' => 10,
@@ -1162,6 +1177,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 5, 1),
                 'end_date' => Carbon::create($currentYear, 5, 20),
                 'is_virtual_access' => false,
@@ -1181,8 +1197,8 @@ class InfoSeeder extends Seeder
 
             // DÍA DEL PADRE - Tercer domingo de junio
             [
-                'name' => 'Día del Padre - Power Training',
-                'slug' => 'dia-padre-power-training',
+                'name' => 'Día del Padre',
+                'slug' => 'dia-padre',
                 'description' => 'Paquete intensivo para papás que quieren mantenerse en forma',
                 'short_description' => '12 clases de cycling de alta intensidad',
                 'classes_quantity' => 12,
@@ -1194,6 +1210,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 6, 1),
                 'end_date' => Carbon::create($currentYear, 6, 25),
                 'is_virtual_access' => false,
@@ -1213,8 +1230,8 @@ class InfoSeeder extends Seeder
 
             // FIESTAS PATRIAS - 28 de Julio
             [
-                'name' => 'Fiestas Patrias - Perú Fuerte',
-                'slug' => 'fiestas-patrias-peru-fuerte',
+                'name' => 'Fiestas Patrias',
+                'slug' => 'fiestas-patrias',
                 'description' => 'Celebra la independencia con fuerza y energía peruana',
                 'short_description' => '15 clases para celebrar nuestro Perú',
                 'classes_quantity' => 15,
@@ -1226,6 +1243,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 7, 15),
                 'end_date' => Carbon::create($currentYear, 8, 5),
                 'is_virtual_access' => false,
@@ -1245,8 +1263,8 @@ class InfoSeeder extends Seeder
 
             // HALLOWEEN - 31 de octubre
             [
-                'name' => 'Halloween - Dark Training',
-                'slug' => 'halloween-dark-training',
+                'name' => 'Halloween',
+                'slug' => 'halloween',
                 'description' => 'Entrena en la oscuridad con música temática de Halloween',
                 'short_description' => '8 clases con ambiente Halloween',
                 'classes_quantity' => 8,
@@ -1258,6 +1276,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 10, 15),
                 'end_date' => Carbon::create($currentYear, 11, 5),
                 'is_virtual_access' => false,
@@ -1277,8 +1296,8 @@ class InfoSeeder extends Seeder
 
             // CYBER DAYS - 24 al 28 de marzo
             [
-                'name' => 'Cyber Days - Mega Pack Digital',
-                'slug' => 'cyber-days-mega-pack',
+                'name' => 'Cyber Days',
+                'slug' => 'cyber-days',
                 'description' => 'Aprovecha los Cyber Days con descuentos increíbles',
                 'short_description' => '20 clases con 40% de descuento',
                 'classes_quantity' => 20,
@@ -1290,6 +1309,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 3, 24),
                 'end_date' => Carbon::create($currentYear, 3, 28),
                 'is_virtual_access' => true,
@@ -1309,8 +1329,8 @@ class InfoSeeder extends Seeder
 
             // CYBER WOW ABRIL - 7 al 10 de abril
             [
-                'name' => 'Cyber Wow - Power Pack',
-                'slug' => 'cyber-wow-abril-power-pack',
+                'name' => 'Cyber Wow',
+                'slug' => 'cyber-wow',
                 'description' => 'Cyber Wow de abril con ofertas explosivas',
                 'short_description' => '16 clases con precio increíble',
                 'classes_quantity' => 16,
@@ -1322,6 +1342,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 4, 7),
                 'end_date' => Carbon::create($currentYear, 4, 10),
                 'is_virtual_access' => false,
@@ -1340,41 +1361,41 @@ class InfoSeeder extends Seeder
             ],
 
             // CYBER WOW JULIO - 14 al 17 de julio
-            [
-                'name' => 'Cyber Wow Julio - Summer Pack',
-                'slug' => 'cyber-wow-julio-summer-pack',
-                'description' => 'Prepárate para el verano con ofertas Cyber Wow',
-                'short_description' => '18 clases para el cuerpo de verano',
-                'classes_quantity' => 18,
-                'price_soles' => 540.00,
-                'original_price_soles' => 810.00,
-                'validity_days' => 100,
-                'buy_type' => 'affordable',
-                'mode_type' => 'presencial',
-                'billing_type' => 'one_time',
-                'type' => 'temporary',
-                'commercial_type' => 'offer',
-                'start_date' => Carbon::create($currentYear, 7, 14),
-                'end_date' => Carbon::create($currentYear, 7, 17),
-                'is_virtual_access' => false,
-                'priority_booking_days' => 5,
-                'auto_renewal' => false,
-                'is_featured' => true,
-                'is_popular' => false,
-                'status' => 'active',
-                'display_order' => 9,
-                'features' => json_encode(['18 clases mixtas', 'Operación bikini', 'Plan nutricional verano', 'Descuento 33%']),
-                'restrictions' => json_encode(['Solo del 14-17 julio', 'Edición verano']),
-                'target_audience' => 'intermediate',
-                'discipline_id' => 2, // PILATES
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            // [
+            //     'name' => 'Cyber Wow',
+            //     'slug' => 'cyber-wow',
+            //     'description' => 'Prepárate para el verano con ofertas Cyber Wow',
+            //     'short_description' => '18 clases para el cuerpo de verano',
+            //     'classes_quantity' => 18,
+            //     'price_soles' => 540.00,
+            //     'original_price_soles' => 810.00,
+            //     'validity_days' => 100,
+            //     'buy_type' => 'affordable',
+            //     'mode_type' => 'presencial',
+            //     'billing_type' => 'one_time',
+            //     'type' => 'temporary',
+            //     'commercial_type' => 'offer',
+            //     'start_date' => Carbon::create($currentYear, 7, 14),
+            //     'end_date' => Carbon::create($currentYear, 7, 17),
+            //     'is_virtual_access' => false,
+            //     'priority_booking_days' => 5,
+            //     'auto_renewal' => false,
+            //     'is_featured' => true,
+            //     'is_popular' => false,
+            //     'status' => 'active',
+            //     'display_order' => 9,
+            //     'features' => json_encode(['18 clases mixtas', 'Operación bikini', 'Plan nutricional verano', 'Descuento 33%']),
+            //     'restrictions' => json_encode(['Solo del 14-17 julio', 'Edición verano']),
+            //     'target_audience' => 'intermediate',
+            //     'discipline_id' => 2, // PILATES
+            //     'created_at' => now(),
+            //     'updated_at' => now(),
+            // ],
 
             // BLACK FRIDAY - Finales de noviembre
             [
-                'name' => 'Black Friday - Mega Pack Anual',
-                'slug' => 'black-friday-mega-pack-anual',
+                'name' => 'Black Friday',
+                'slug' => 'black-friday',
                 'description' => 'La mejor oferta del año en Black Friday',
                 'short_description' => '50 clases con descuento histórico',
                 'classes_quantity' => 50,
@@ -1386,6 +1407,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 11, 24),
                 'end_date' => Carbon::create($currentYear, 11, 27),
                 'is_virtual_access' => true,
@@ -1405,8 +1427,8 @@ class InfoSeeder extends Seeder
 
             // CYBER MONDAY
             [
-                'name' => 'Cyber Monday - Digital Boost',
-                'slug' => 'cyber-monday-digital-boost',
+                'name' => 'Cyber Monday',
+                'slug' => 'cyber-monday',
                 'description' => 'Cyber Monday con acceso digital premium',
                 'short_description' => '25 clases con acceso virtual premium',
                 'classes_quantity' => 25,
@@ -1418,6 +1440,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 11, 27),
                 'end_date' => Carbon::create($currentYear, 11, 27),
                 'is_virtual_access' => true,
@@ -1436,41 +1459,41 @@ class InfoSeeder extends Seeder
             ],
 
             // CYBER WOW NOVIEMBRE - 3 al 6 de noviembre
-            [
-                'name' => 'Cyber Wow Nov - Pre Black Friday',
-                'slug' => 'cyber-wow-noviembre-pre-black',
-                'description' => 'Anticípate al Black Friday con Cyber Wow de noviembre',
-                'short_description' => '22 clases antes del Black Friday',
-                'classes_quantity' => 22,
-                'price_soles' => 660.00,
-                'original_price_soles' => 990.00,
-                'validity_days' => 120,
-                'buy_type' => 'affordable',
-                'mode_type' => 'presencial',
-                'billing_type' => 'one_time',
-                'type' => 'temporary',
-                'commercial_type' => 'offer',
-                'start_date' => Carbon::create($currentYear, 11, 3),
-                'end_date' => Carbon::create($currentYear, 11, 6),
-                'is_virtual_access' => false,
-                'priority_booking_days' => 6,
-                'auto_renewal' => false,
-                'is_featured' => true,
-                'is_popular' => false,
-                'status' => 'active',
-                'display_order' => 12,
-                'features' => json_encode(['22 clases de cycling', 'Pre Black Friday', '33% de descuento', 'Preparación para fin de año']),
-                'restrictions' => json_encode(['Solo del 3-6 noviembre', 'Antes del Black Friday']),
-                'target_audience' => 'intermediate',
-                'discipline_id' => 1, // CYCLING
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            // [
+            //     'name' => 'Cyber Wow Nov - Pre Black Friday',
+            //     'slug' => 'cyber-wow-noviembre-pre-black',
+            //     'description' => 'Anticípate al Black Friday con Cyber Wow de noviembre',
+            //     'short_description' => '22 clases antes del Black Friday',
+            //     'classes_quantity' => 22,
+            //     'price_soles' => 660.00,
+            //     'original_price_soles' => 990.00,
+            //     'validity_days' => 120,
+            //     'buy_type' => 'affordable',
+            //     'mode_type' => 'presencial',
+            //     'billing_type' => 'one_time',
+            //     'type' => 'temporary',
+            //     'commercial_type' => 'offer',
+            //     'start_date' => Carbon::create($currentYear, 11, 3),
+            //     'end_date' => Carbon::create($currentYear, 11, 6),
+            //     'is_virtual_access' => false,
+            //     'priority_booking_days' => 6,
+            //     'auto_renewal' => false,
+            //     'is_featured' => true,
+            //     'is_popular' => false,
+            //     'status' => 'active',
+            //     'display_order' => 12,
+            //     'features' => json_encode(['22 clases de cycling', 'Pre Black Friday', '33% de descuento', 'Preparación para fin de año']),
+            //     'restrictions' => json_encode(['Solo del 3-6 noviembre', 'Antes del Black Friday']),
+            //     'target_audience' => 'intermediate',
+            //     'discipline_id' => 1, // CYCLING
+            //     'created_at' => now(),
+            //     'updated_at' => now(),
+            // ],
 
             // DÍA DEL CÁNCER DE MAMA - 19 de octubre
             [
-                'name' => 'Octubre Rosa - Lucha Contra el Cáncer',
-                'slug' => 'octubre-rosa-lucha-cancer',
+                'name' => 'Lucha Contra el Cáncer de Mama',
+                'slug' => 'lucha-cancer-mama',
                 'description' => 'Mes rosa dedicado a la lucha contra el cáncer de mama',
                 'short_description' => '10 clases especiales para la causa rosa',
                 'classes_quantity' => 10,
@@ -1482,6 +1505,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 10, 1),
                 'end_date' => Carbon::create($currentYear, 10, 31),
                 'is_virtual_access' => false,
@@ -1501,8 +1525,8 @@ class InfoSeeder extends Seeder
 
             // PRIDE MONTH - Junio completo
             [
-                'name' => 'Pride Month - Diversity Pack',
-                'slug' => 'pride-month-diversity-pack',
+                'name' => 'Mes Pride',
+                'slug' => 'mes-pride-cycling',
                 'description' => 'Celebra la diversidad durante todo el mes del orgullo',
                 'short_description' => '30 clases para celebrar la diversidad',
                 'classes_quantity' => 30,
@@ -1514,6 +1538,7 @@ class InfoSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
                 'start_date' => Carbon::create($currentYear, 6, 1),
                 'end_date' => Carbon::create($currentYear, 6, 30),
                 'is_virtual_access' => false,
@@ -1713,8 +1738,6 @@ class InfoSeeder extends Seeder
                         'status' => 'available',
                         'code' => $code,
                     ]);
-
-
                 }
             }
         }

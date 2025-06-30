@@ -76,7 +76,7 @@ class UserWaitingClassRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('user_id')
             ->columns([
-                Tables\Columns\TextColumn::make('classSchedule.name')
+                Tables\Columns\TextColumn::make('classSchedule.class.name')
                     ->label('Clase')
                     ->sortable()
                     ->searchable(),
@@ -86,13 +86,30 @@ class UserWaitingClassRelationManager extends RelationManager
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('userPackage.name')
+                Tables\Columns\TextColumn::make('userPackage.package.name')
                     ->label('Paquete')
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('status')
-
+                    ->label('Estado')
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'waiting' => 'En espera',
+                        'notified' => 'Notificado',
+                        'confirmed' => 'Confirmado',
+                        'expired' => 'Expirado',
+                        'cancelled' => 'Cancelado',
+                        default => $state,
+                    })
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'waiting' => 'warning',
+                        'notified' => 'info',
+                        'confirmed' => 'success',
+                        'expired' => 'danger',
+                        'cancelled' => 'secondary',
+                        default => 'primary',
+                    })
                     ->sortable(),
             ])
             ->filters([

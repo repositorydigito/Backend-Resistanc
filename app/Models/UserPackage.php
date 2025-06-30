@@ -46,6 +46,10 @@ final class UserPackage extends Model
         'auto_renew' => 'boolean',
     ];
 
+    protected $appends = [
+        'estimated_expiry_date',
+    ];
+
     /**
      * Get the user that owns this package.
      */
@@ -204,7 +208,16 @@ final class UserPackage extends Model
      */
     public function useClasses(int $classes = 1): bool
     {
-        if (!$this->is_valid || $this->remaining_classes < $classes) {
+        // Validar que el paquete esté activo y no expirado
+        if ($this->status !== 'active') {
+            return false;
+        }
+        
+        if ($this->expiry_date && $this->expiry_date->isPast()) {
+            return false;
+        }
+        
+        if ($this->remaining_classes < $classes) {
             return false;
         }
 
@@ -219,12 +232,13 @@ final class UserPackage extends Model
      */
     public function refundClasses(int $classes = 1): bool
     {
-        if ($this->used_classes < $classes) {
-            return false;
-        }
-
-        $this->decrement('used_classes', $classes);
+        // No validar used_classes, simplemente incrementar remaining_classes
         $this->increment('remaining_classes', $classes);
+        
+        // Solo decrementar used_classes si hay suficientes
+        if ($this->used_classes >= $classes) {
+            $this->decrement('used_classes', $classes);
+        }
 
         return true;
     }
@@ -307,5 +321,22 @@ final class UserPackage extends Model
         $this->update([
             'status' => 'expired',
         ]);
+    }
+
+    /**
+     * Obtener la fecha de expiración estimada (creado + duración del paquete).
+     */
+    public function getEstimatedExpiryDateAttribute()
+    {
+        // Cargar la relación del paquete si no está cargada
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+        if (!$this->package || !$this->purchase_date) {
+            return null;
+        }
+        // Si el paquete tiene duration_in_months, sumar a purchase_date
+        $months = $this->package->duration_in_months ?? 0;
+        return $this->purchase_date->copy()->addMonths($months);
     }
 }

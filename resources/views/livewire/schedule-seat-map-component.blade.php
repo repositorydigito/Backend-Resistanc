@@ -415,7 +415,59 @@
                 <div class="stat-number" style="color: #374151;">{{ $reservationStats['total_seats'] }}</div>
                 <div class="text-black dark:text-white">Total</div>
             </div>
+            
+            <!-- 🆕 Estadísticas de Lista de Espera -->
+            @if($waitingListStats['total_waiting'] > 0 || $waitingListStats['total_notified'] > 0)
+            <div class="stat-card dark:bg-gray-800" style="grid-column: span 2; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b;">
+                <div class="stat-number" style="color: #d97706;">{{ $waitingListStats['total_waiting'] + $waitingListStats['total_notified'] }}</div>
+                <div class="text-black dark:text-white">📋 Lista de Espera</div>
+                <div class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    {{ $waitingListStats['total_waiting'] }} esperando • {{ $waitingListStats['total_notified'] }} notificados
+                </div>
+            </div>
+            @endif
         </div>
+
+        <!-- 🆕 Información de Lista de Espera -->
+        @if($waitingListStats['total_waiting'] > 0 || $waitingListStats['total_notified'] > 0)
+        <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-900/20 dark:border-amber-800">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-amber-600 dark:text-amber-400 text-lg">📋</span>
+                    <span class="font-medium text-amber-800 dark:text-amber-200">Lista de Espera Activa</span>
+                </div>
+                <a href="{{ route('filament.admin.resources.class-schedules.edit', ['record' => $schedule->id, 'activeTab' => 'waitingUsers']) }}" 
+                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded-md hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 dark:text-amber-300 dark:bg-amber-800 dark:border-amber-600 dark:hover:bg-amber-700">
+                    📋 Gestionar Lista
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                @foreach($waitingListStats['waiting_users']->take(6) as $waitingUser)
+                <div class="flex items-center space-x-2 p-2 bg-amber-100 rounded-md dark:bg-amber-800/50">
+                    <span class="w-2 h-2 rounded-full {{ $waitingUser->status === 'waiting' ? 'bg-yellow-500' : 'bg-blue-500' }}"></span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-amber-800 dark:text-amber-200 truncate">
+                            {{ $waitingUser->user->name ?? 'Usuario' }}
+                        </div>
+                        @if($waitingUser->userPackage)
+                        <div class="text-xs text-amber-600 dark:text-amber-400">
+                            {{ $waitingUser->userPackage->package->name ?? 'Paquete' }} ({{ $waitingUser->userPackage->remaining_classes }} clases)
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+                @if($waitingListStats['waiting_users']->count() > 6)
+                <div class="flex items-center justify-center p-2 bg-amber-100 rounded-md dark:bg-amber-800/50">
+                    <span class="text-sm text-amber-700 dark:text-amber-300">
+                        +{{ $waitingListStats['waiting_users']->count() - 6 }} más en espera
+                    </span>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
 
         {{-- <div class="stage-indicator">
             <div class="stage-label dark:text-white">Sala</div>
@@ -453,6 +505,7 @@
                         @if ($seat && $seat['exists']) title="Asiento: {{ $seat['seat_identifier'] }}
 Estado: {{ ucfirst($seat['status']) }}
 @if ($seat['user_name'])Usuario: {{ $seat['user_name'] }} ({{ $seat['user_email'] }}) @endif
+@if ($seat['user_package_name'])Paquete: {{ $seat['user_package_name'] }} ({{ $seat['user_package_remaining'] }} clases restantes) @endif
                         @if ($seat['reserved_at']) Reservado: {{ \Carbon\Carbon::parse($seat['reserved_at'])->format('d/m/Y H:i') }} @endif
                         @if ($seat['expires_at']) Expira: {{ \Carbon\Carbon::parse($seat['expires_at'])->format('d/m/Y H:i') }} @endif"
                         @endif>
@@ -469,6 +522,11 @@ Estado: {{ ucfirst($seat['status']) }}
                                     <button class="action-btn btn-confirm"
                                         wire:click="confirmSeat({{ $seat['assignment_id'] }})"
                                         title="Confirmar">✅</button>
+                                    @if($waitingListStats['waiting_users']->count() > 0)
+                                        <button class="action-btn btn-reserve"
+                                            wire:click="openReassignModal({{ $seat['assignment_id'] }})"
+                                            title="Reasignar a lista de espera">📋</button>
+                                    @endif
                                 @endif
 
                                 @if (in_array($seat['status'], ['reserved', 'occupied']))
@@ -631,6 +689,28 @@ Estado: {{ ucfirst($seat['status']) }}
                             🪑 Reservar Asiento
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal de Reasignación --}}
+    @if($showReassignModal)
+        <div class="modal-overlay fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Reasignar asiento a usuario de lista de espera</h3>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Selecciona usuario de lista de espera:</label>
+                    <select wire:model="selectedWaitingUserId" class="w-full rounded border-gray-300 dark:bg-gray-800 dark:text-white">
+                        <option value="">-- Selecciona --</option>
+                        @foreach($waitingListForReassign as $w)
+                            <option value="{{ $w['id'] }}">{{ $w['name'] }} - {{ $w['package'] }} ({{ $w['remaining'] }} clases)</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button class="control-btn btn-release" wire:click="$set('showReassignModal', false)">Cancelar</button>
+                    <button class="control-btn btn-generate" wire:click="reassignSeatToWaitingUser">Reasignar</button>
                 </div>
             </div>
         </div>

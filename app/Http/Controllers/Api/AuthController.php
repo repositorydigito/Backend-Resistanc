@@ -452,17 +452,13 @@ final class AuthController extends Controller
         return 'Unknown';
     }
 
-
-
     // Logueo por Facebook
-
     public function redirectToFacebook()
     {
         return Socialite::driver('facebook')->redirect();
     }
     public function loginWithFacebookToken(Request $request)
     {
-
         $accessToken = $request->input('access_token');
 
         try {
@@ -492,7 +488,6 @@ final class AuthController extends Controller
             ], 500);
         }
     }
-
 
     // Logueo por Google
     public function redirectToGoogle()
@@ -529,5 +524,163 @@ final class AuthController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Actualizar información completa del usuario
+     *
+     * Actualiza la información completa de un usuario existente en el sistema RSISTANC.
+     * Permite modificar datos básicos, perfil y contactos.
+     *
+     * @summary Actualizar usuario completo
+     * @operationId updateMe
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \App\Http\Resources\AuthResource
+     *
+     * @bodyParam name string Nombre completo del usuario. Example: Mare Castillo
+     * @bodyParam email string Correo electrónico del usuario. Example: mare@gmail.com
+     * @bodyParam profile.first_name string Nombre del usuario. Example: Mare
+     * @bodyParam profile.last_name string Apellido del usuario. Example: Castillo
+     * @bodyParam profile.birth_date string Fecha de nacimiento (Y-m-d). Example: 1999-03-09
+     * @bodyParam profile.gender string Género (male/female/other). Example: male
+     * @bodyParam profile.shoe_size_eu integer Talla de zapato EU. Example: 42
+     * @bodyParam contacts array Array de contactos. Example: [{"phone": "936148456", "address_line": "cinco esquinas", "city": "Lima", "country": "PE", "is_primary": true}]
+     *
+     * @response 200 {
+     *   "user": {
+     *     "id": 9,
+     *     "name": "Mare Castillo",
+     *     "email": "mare@gmail.com",
+     *     "email_verified_at": null,
+     *     "created_at": "2025-06-30T16:27:28.000000Z",
+     *     "updated_at": "2025-06-30T16:27:28.000000Z",
+     *     "full_name": "Mare Castillo",
+     *     "has_complete_profile": true,
+     *     "profile": {
+     *       "id": 1,
+     *       "user_id": 9,
+     *       "first_name": "Mare",
+     *       "last_name": "Castillo",
+     *       "birth_date": "1999-03-09",
+     *       "gender": "male",
+     *       "shoe_size_eu": 42
+     *     },
+     *     "contacts": [...],
+     *     "primary_contact": {...}
+     *   },
+     *   "token": {
+     *     "access_token": "1|abc123def456...",
+     *     "token_type": "Bearer"
+     *   }
+     * }
+     *
+     * @response 422 {
+     *   "message": "Los datos proporcionados no son válidos.",
+     *   "errors": {
+     *     "email": ["Este correo electrónico ya está registrado."],
+     *     "profile.birth_date": ["La fecha de nacimiento debe ser una fecha válida."]
+     *   }
+     * }
+     *
+     * @response 401 {
+     *   "message": "Unauthenticated."
+     * }
+     */
+    public function updateMe(Request $request): AuthResource
+    {
+        $user = $request->user();
+
+        // Validar datos de entrada
+        $validated = $request->validate([
+            // Datos básicos del usuario
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            
+            // Datos del perfil
+            'profile.first_name' => 'sometimes|string|max:255',
+            'profile.last_name' => 'sometimes|string|max:255',
+            'profile.birth_date' => 'sometimes|date|before:today',
+            'profile.gender' => 'sometimes|in:male,female,other',
+            'profile.shoe_size_eu' => 'sometimes|integer|min:20|max:50',
+            
+            // Datos de contactos
+            'contacts' => 'sometimes|array',
+            'contacts.*.phone' => 'sometimes|string|max:20',
+            'contacts.*.address_line' => 'sometimes|string|max:255',
+            'contacts.*.city' => 'sometimes|string|max:100',
+            'contacts.*.country' => 'sometimes|string|size:2',
+            'contacts.*.is_primary' => 'sometimes|boolean',
+        ]);
+
+        $user = DB::transaction(function () use ($user, $validated) {
+            // Actualizar datos básicos del usuario
+            if (isset($validated['name'])) {
+                $user->name = $validated['name'];
+            }
+            
+            if (isset($validated['email'])) {
+                $user->email = $validated['email'];
+                // Reset email verification if email changed
+                $user->email_verified_at = null;
+            }
+
+            $user->save();
+
+            // Actualizar o crear perfil
+            if (isset($validated['profile'])) {
+                $profileData = $validated['profile'];
+                
+                if ($user->profile) {
+                    $user->profile->update($profileData);
+                } else {
+                    $user->profile()->create($profileData);
+                }
+            }
+
+            // Actualizar contactos
+            if (isset($validated['contacts'])) {
+                foreach ($validated['contacts'] as $contactData) {
+                    // Si es contacto primario, desactivar otros
+                    if (isset($contactData['is_primary']) && $contactData['is_primary']) {
+                        $user->contacts()->update(['is_primary' => false]);
+                    }
+                    
+                    // Si el contacto tiene ID, actualizar; si no, crear nuevo
+                    if (isset($contactData['id'])) {
+                        $contact = $user->contacts()->find($contactData['id']);
+                        if ($contact) {
+                            $contact->update($contactData);
+                        }
+                    } else {
+                        $user->contacts()->create($contactData);
+                    }
+                }
+            }
+
+            // Create update audit
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+            $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
+            $user->loginAudits()->create([
+                'ip' => $ipAddress,
+                'user_agent' => $userAgent,
+                'success' => true,
+                'created_at' => now(),
+            ]);
+
+            return $user;
+        });
+
+        // Generate new API token
+        $deviceName = $request->input('device_name', 'API Token Updated');
+        $token = $user->createToken($deviceName)->plainTextToken;
+
+        // Add token to user for resource
+        $user->token = $token;
+
+        // Load relationships for response
+        $user->load(['profile', 'contacts', 'primaryContact', 'loginAudits']);
+
+        return new AuthResource($user);
     }
 }

@@ -42,7 +42,7 @@ class WaitingUserClassRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('package.name')
+                Tables\Columns\TextColumn::make('UserPackage.package.name')
                     ->label('Paquete')
 
                     ->searchable()

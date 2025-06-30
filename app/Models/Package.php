@@ -47,6 +47,7 @@ final class Package extends Model
         'buy_type',
         'start_date',
         'end_date',
+        'duration_in_months',
 
 
         // Relaciones

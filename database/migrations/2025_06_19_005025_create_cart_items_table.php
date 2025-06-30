@@ -13,15 +13,20 @@ return new class extends Migration
     {
         Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cart_id')->constrained('shopping_carts')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products');
-            $table->foreignId('variant_id')->nullable()->constrained('product_variants');
+
             $table->unsignedInteger('quantity')->default(1);
-            $table->decimal('unit_price', 10, 2);
-            $table->decimal('subtotal', 10, 2);
-            $table->timestamp('added_at')->useCurrent();
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->decimal('unit_price', 8, 2);
+            $table->decimal('total_price', 8, 2);
+            // $table->timestamp('added_at')->useCurrent();
+
+
+
+            // Relaciones
+            $table->foreignId('cart_id')->constrained('shopping_carts')->onDelete('cascade');
+            $table->foreignId('product_id')->nullable()->constrained('products');
+            $table->foreignId('variant_id')->nullable()->constrained('product_variants');
+
+            $table->timestamps();
 
             // Índices
             $table->unique(['cart_id', 'product_id', 'variant_id']);

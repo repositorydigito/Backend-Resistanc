@@ -21,6 +21,8 @@ class ClassScheduleSeat extends Model
         'user_package_id',
         'seats_id',
         'user_id',
+        'user_waiting_id',
+
 
     ];
 
@@ -41,6 +43,11 @@ class ClassScheduleSeat extends Model
     }
 
     public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function userWaiting(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -120,6 +127,14 @@ class ClassScheduleSeat extends Model
 
     public function release(): bool
     {
+        // Si tenía un paquete asignado, devolver la clase
+        if ($this->user_package_id) {
+            $userPackage = \App\Models\UserPackage::find($this->user_package_id);
+            if ($userPackage && $userPackage->user_id === $this->user_id) {
+                $userPackage->refundClasses(1);
+            }
+        }
+
         $this->update([
             'user_id' => null,
             'status' => 'available',

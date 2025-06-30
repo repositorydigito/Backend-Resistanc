@@ -209,7 +209,20 @@ class UserPackageController extends Controller
             // Convert dates to proper format if they come with timezone
             $purchaseDate = Carbon::parse($validated['purchase_date'])->toDateString();
             $activationDate = $validated['activation_date'] ? Carbon::parse($validated['activation_date'])->toDateString() : null;
-            $expiryDate = Carbon::parse($validated['expiry_date'])->toDateString();
+
+            // SIEMPRE calcular expiry_date en el backend, ignorando el valor enviado
+            $package = \App\Models\Package::find($validated['package_id']);
+            if ($package) {
+                if ($package->duration_in_months) {
+                    $expiryDate = Carbon::parse($purchaseDate)->copy()->addMonths($package->duration_in_months)->toDateString();
+                } elseif ($package->validity_days) {
+                    $expiryDate = Carbon::parse($purchaseDate)->copy()->addDays($package->validity_days)->toDateString();
+                } else {
+                    $expiryDate = Carbon::parse($purchaseDate)->copy()->addDays(30)->toDateString();
+                }
+            } else {
+                $expiryDate = Carbon::parse($purchaseDate)->copy()->addDays(30)->toDateString();
+            }
 
             // Create user package for the authenticated user
             $userPackage = UserPackage::create([
