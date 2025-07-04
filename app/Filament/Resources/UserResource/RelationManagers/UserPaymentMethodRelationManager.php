@@ -78,6 +78,12 @@ class UserPaymentMethodRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('card_brand')
             ->columns([
+
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('payment_type')
                     ->label('Tipo de Pago')
                     ->formatStateUsing(fn($state) => UserPaymentMethod::PAYMENT_TYPES[$state] ?? $state)

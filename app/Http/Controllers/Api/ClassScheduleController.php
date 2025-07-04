@@ -468,6 +468,9 @@ final class ClassScheduleController extends Controller
      * El sistema validará automáticamente que el usuario tenga paquetes activos y con clases
      * disponibles para la disciplina específica antes de permitir la reserva.
      *
+     * **CONSUMO DE PAQUETES:** Los paquetes se consumen en orden de fecha de expiración,
+     * priorizando aquellos que están más cerca de vencer para maximizar su uso.
+     *
      * @summary Reservar asientos en horario
      * @operationId reserveSeatsInSchedule
      * @tags Reservas de Asientos
@@ -502,14 +505,17 @@ final class ClassScheduleController extends Controller
      *       "scheduled_date": "2025-01-15",
      *       "start_time": "08:00:00"
      *     },
-     *     "package_consumption": {
-     *       "id": 42,
-     *       "package_code": "PKG001-2024",
-     *       "package_name": "Paquete Yoga 10 Clases",
-     *       "classes_consumed": 1,
-     *       "remaining_classes": 9,
-     *       "used_classes": 1
-     *     }
+     *     "package_consumption": [
+     *       {
+     *         "package_id": 42,
+     *         "package_code": "PKG001-2024",
+     *         "package_name": "Paquete Yoga 10 Clases",
+     *         "classes_consumed": 1,
+     *         "remaining_classes": 9,
+     *         "expiry_date": "2025-02-15",
+     *         "days_remaining": 35
+     *       }
+     *     ]
      *   }
      * }
      *
@@ -628,6 +634,22 @@ final class ClassScheduleController extends Controller
                 $availablePackages = $packageValidationService->getUserAvailablePackagesForDiscipline($userId, $disciplineId);
                 $totalAvailableSeats = $availablePackages->sum('remaining_classes');
 
+                // Log del orden de consumo de paquetes
+                Log::info('Orden de consumo de paquetes (más cercanos a vencer primero)', [
+                    'user_id' => $userId,
+                    'schedule_id' => $classSchedule->id,
+                    'packages_order' => $availablePackages->map(function ($package) {
+                        return [
+                            'package_id' => $package->id,
+                            'package_code' => $package->package_code,
+                            'package_name' => $package->package->name ?? 'N/A',
+                            'remaining_classes' => $package->remaining_classes,
+                            'expiry_date' => $package->expiry_date?->toDateString(),
+                            'days_remaining' => $package->days_remaining
+                        ];
+                    })->toArray()
+                ]);
+
                 // Validar que el usuario no reserve más asientos de los que tiene disponibles
                 if (count($classScheduleSeatIds) > $totalAvailableSeats) {
                     return response()->json([
@@ -694,9 +716,10 @@ final class ClassScheduleController extends Controller
                 $reservedSeats = [];
                 $reservedAt = now();
                 $expiresAt = $reservedAt->copy()->addMinutes($minutesToExpire);
+                $packageConsumptionDetails = [];
 
                 // Consumir un asiento de un paquete por cada asiento reservado
-                $availablePackages = $availablePackages->sortBy('expiry_date')->values();
+                // Los paquetes ya están ordenados por fecha de expiración (más cercanos a vencer primero)
                 $packageIndex = 0;
                 foreach ($availableAssignments as $i => $assignment) {
                     // Buscar el siguiente paquete con clases disponibles
@@ -714,7 +737,10 @@ final class ClassScheduleController extends Controller
                         'package_id' => $package->id,
                         'package_code' => $package->package_code,
                         'package_name' => $package->package->name ?? 'N/A',
-                        'remaining_classes' => $package->remaining_classes
+                        'classes_consumed' => 1,
+                        'remaining_classes' => $package->remaining_classes,
+                        'expiry_date' => $package->expiry_date?->toDateString(),
+                        'days_remaining' => $package->days_remaining
                     ];
 
                     // Actualizar el asiento con el user_package_id

@@ -7,6 +7,7 @@ use App\Http\Resources\InstructorResource;
 use App\Models\Instructor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @tags Instructores
@@ -308,6 +309,7 @@ final class InstructorController extends Controller
      *     "certifications": ["Spinning Certified"],
      *     "hourly_rate_soles": 150.00,
      *     "hire_date": "2015-01-01",
+     *     "has_rated": false,
      *     "disciplines": [...],
      *     "class_schedules": [...],
      *     "created_at": "2024-01-15T10:30:00.000Z",
@@ -319,7 +321,7 @@ final class InstructorController extends Controller
     public function show(Instructor $instructor): InstructorResource
     {
         // Cargar relaciones necesarias
-        $instructor->load(['disciplines', 'classSchedules']);
+        $instructor->load(['disciplines', 'classSchedules', 'ratings']);
 
         return new InstructorResource($instructor);
     }
@@ -355,7 +357,7 @@ final class InstructorController extends Controller
      * }
      */
 
-    public function scoreInstructor(Request $request, Instructor $instructor): \Illuminate\Http\JsonResponse
+    public function scoreInstructor(Request $request, $id): \Illuminate\Http\JsonResponse
     {
         // Validar la puntuación
 
@@ -366,7 +368,8 @@ final class InstructorController extends Controller
                 'comment' => 'nullable|string|max:500',
             ]);
 
-            $userId = auth()->id();
+            $instructor = Instructor::findOrFail($id);
+            $userId = Auth::id();
 
             // Verificar si ya existe una calificación previa
             $alreadyRated = $instructor->ratings()

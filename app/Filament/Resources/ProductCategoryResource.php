@@ -45,7 +45,7 @@ class ProductCategoryResource extends Resource
                         Forms\Components\FileUpload::make('image_url')
                             ->label('Imagen')
                             ->disk('public')
-                            ->directory('drinks')
+                            ->directory('product/categories')
                             ->visibility('public')
                             ->acceptedFileTypes(['image/*'])
                             ->maxSize(1024 * 5) // 5 MB

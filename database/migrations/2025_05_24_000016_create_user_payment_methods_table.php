@@ -42,7 +42,7 @@ return new class extends Migration
             $table->json('metadata')->nullable()->comment('Datos adicionales específicos del proveedor');
 
             // Estado
-            $table->enum('status', ['active', 'expired', 'blocked', 'pending_verification'])->default('active');
+            $table->enum('status', ['active', 'expired', 'blocked', 'pending_verification', 'inactive'])->default('active');
             $table->enum('verification_status', ['pending', 'verified', 'failed'])->default('pending');
             $table->timestamp('last_used_at')->nullable();
 

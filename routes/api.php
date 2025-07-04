@@ -130,7 +130,7 @@ Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->
     Route::get('/', [InstructorController::class, 'index'])->name('index');
     Route::get('/week', [InstructorController::class, 'instructorsWeek'])->name('week');
     Route::get('/show/{instructor}', [InstructorController::class, 'show'])->name('show');
-    Route::post('/{instructor}/favorite', [InstructorController::class, 'scoreInstructor'])->name('favorite');
+    Route::post('/rate/{id}', [InstructorController::class, 'scoreInstructor'])->name('favorite');
 });
 // Fin instructores
 
@@ -220,6 +220,7 @@ Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(fun
     Route::get('/show/{card}', [PaymentController::class, 'show'])->name('show');
     Route::put('/update/{card}', [PaymentController::class, 'update'])->name('update');
     Route::delete('/destroy/{card}', [PaymentController::class, 'destroy'])->name('destroy');
+    Route::post('/select/{card}', [PaymentController::class, 'selectPayment'])->name('select');
 });
 
 // Fin tarjetas

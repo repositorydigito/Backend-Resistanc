@@ -48,6 +48,7 @@ final class UserPackage extends Model
 
     protected $appends = [
         'estimated_expiry_date',
+        'expiry_status',
     ];
 
     /**
@@ -145,11 +146,15 @@ final class UserPackage extends Model
      */
     public function getDaysRemainingAttribute(): int
     {
-        if (!$this->expiry_date || $this->is_expired) {
+        if (!$this->expiry_date) {
             return 0;
         }
 
-        return (int) $this->expiry_date->diffInDays(now());
+        if ($this->expiry_date->isPast()) {
+            return 0;
+        }
+
+        return (int) now()->diffInDays($this->expiry_date, false);
     }
 
     /**
@@ -212,11 +217,11 @@ final class UserPackage extends Model
         if ($this->status !== 'active') {
             return false;
         }
-        
+
         if ($this->expiry_date && $this->expiry_date->isPast()) {
             return false;
         }
-        
+
         if ($this->remaining_classes < $classes) {
             return false;
         }
@@ -234,7 +239,7 @@ final class UserPackage extends Model
     {
         // No validar used_classes, simplemente incrementar remaining_classes
         $this->increment('remaining_classes', $classes);
-        
+
         // Solo decrementar used_classes si hay suficientes
         if ($this->used_classes >= $classes) {
             $this->decrement('used_classes', $classes);
@@ -338,5 +343,32 @@ final class UserPackage extends Model
         // Si el paquete tiene duration_in_months, sumar a purchase_date
         $months = $this->package->duration_in_months ?? 0;
         return $this->purchase_date->copy()->addMonths($months);
+    }
+
+    /**
+     * Get the expiry status for display.
+     */
+    public function getExpiryStatusAttribute(): string
+    {
+        // Si no hay fecha de expiración
+        if (!$this->expiry_date) {
+            return 'Sin fecha de expiración';
+        }
+
+        // Si la fecha ya pasó
+        if ($this->expiry_date->isPast()) {
+            return 'Vencido';
+        }
+
+        // Calcular días restantes
+        $daysRemaining = now()->diffInDays($this->expiry_date, false);
+
+        // Si quedan 7 días o menos
+        if ($daysRemaining <= 7) {
+            return 'Por vencer';
+        }
+
+        // Si quedan más de 7 días
+        return 'Vigente';
     }
 }

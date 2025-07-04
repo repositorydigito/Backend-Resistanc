@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductCategoryResource;
 use App\Models\ProductCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,13 +39,10 @@ final class ProductCategoryController extends Controller
     public function index(): JsonResponse
     {
         $categories = ProductCategory::query()
-            ->select('id', 'name','sort_order')
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
-        return response()->json([
-            'data' => $categories,
-        ]);
+        return ProductCategoryResource::collection($categories)->response();
     }
 }

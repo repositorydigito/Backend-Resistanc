@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class InstructorResource extends JsonResource
 {
@@ -14,6 +15,11 @@ class InstructorResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Check if the authenticated user has rated this instructor
+        $hasRated = false;
+        if (Auth::check()) {
+            $hasRated = $this->ratings()->where('user_id', Auth::id())->exists();
+        }
 
         return [
             'id' => $this->id,
@@ -32,6 +38,7 @@ class InstructorResource extends JsonResource
             'hire_date' => $this->hire_date,
             'hourly_rate_soles' => $this->hourly_rate_soles,
             'status' => $this->status,
+            'has_rated' => $hasRated,
             // 'availability_schedule' => $this->availability_schedule,
             'disciplines' => $this->disciplines->map(function ($discipline) {
                 return [

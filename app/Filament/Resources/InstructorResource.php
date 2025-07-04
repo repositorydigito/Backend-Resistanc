@@ -208,6 +208,11 @@ class InstructorResource extends Resource
                 // Tables\Columns\TextColumn::make('user.name')
                 //     ->numeric()
                 //     ->sortable(),
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+,
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable(),

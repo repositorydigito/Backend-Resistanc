@@ -29,7 +29,6 @@ return new class extends Migration
 
             // Índices
             $table->index('user_id');
-            $table->unique('phone');
             $table->index(['user_id', 'is_primary']);
         });
     }

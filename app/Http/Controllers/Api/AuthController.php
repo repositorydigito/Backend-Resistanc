@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Dedoc\Scramble\Attributes\BodyParameter;
 use Laravel\Socialite\Facades\Socialite;
@@ -545,6 +546,7 @@ final class AuthController extends Controller
      * @bodyParam profile.birth_date string Fecha de nacimiento (Y-m-d). Example: 1999-03-09
      * @bodyParam profile.gender string Género (male/female/other). Example: male
      * @bodyParam profile.shoe_size_eu integer Talla de zapato EU. Example: 42
+     * @bodyParam profile.profile_image file Imagen de perfil (opcional, max 2MB). Example: image.jpg
      * @bodyParam contacts array Array de contactos. Example: [{"phone": "936148456", "address_line": "cinco esquinas", "city": "Lima", "country": "PE", "is_primary": true}]
      *
      * @response 200 {
@@ -564,7 +566,8 @@ final class AuthController extends Controller
      *       "last_name": "Castillo",
      *       "birth_date": "1999-03-09",
      *       "gender": "male",
-     *       "shoe_size_eu": 42
+     *       "shoe_size_eu": 42,
+     *       "profile_image": "http://localhost:8000/storage/user/profile/abc123.jpg"
      *     },
      *     "contacts": [...],
      *     "primary_contact": {...}
@@ -591,19 +594,20 @@ final class AuthController extends Controller
     {
         $user = $request->user();
 
-        // Validar datos de entrada
+                // Validar datos de entrada
         $validated = $request->validate([
             // Datos básicos del usuario
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
-            
+            'email' => 'sometimes|string|email|max:255',
+
             // Datos del perfil
             'profile.first_name' => 'sometimes|string|max:255',
             'profile.last_name' => 'sometimes|string|max:255',
             'profile.birth_date' => 'sometimes|date|before:today',
             'profile.gender' => 'sometimes|in:male,female,other',
             'profile.shoe_size_eu' => 'sometimes|integer|min:20|max:50',
-            
+            'profile.profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
+
             // Datos de contactos
             'contacts' => 'sometimes|array',
             'contacts.*.phone' => 'sometimes|string|max:20',
@@ -614,12 +618,12 @@ final class AuthController extends Controller
         ]);
 
         $user = DB::transaction(function () use ($user, $validated) {
-            // Actualizar datos básicos del usuario
+                        // Actualizar datos básicos del usuario
             if (isset($validated['name'])) {
                 $user->name = $validated['name'];
             }
-            
-            if (isset($validated['email'])) {
+
+            if (isset($validated['email']) && $validated['email'] !== $user->email) {
                 $user->email = $validated['email'];
                 // Reset email verification if email changed
                 $user->email_verified_at = null;
@@ -627,10 +631,22 @@ final class AuthController extends Controller
 
             $user->save();
 
-            // Actualizar o crear perfil
+                        // Actualizar o crear perfil
             if (isset($validated['profile'])) {
                 $profileData = $validated['profile'];
-                
+
+                // Manejar la subida de imagen de perfil
+                if (isset($profileData['profile_image']) && $profileData['profile_image'] instanceof \Illuminate\Http\UploadedFile) {
+                    // Eliminar imagen anterior si existe
+                    if ($user->profile && $user->profile->profile_image) {
+                        \Storage::disk('public')->delete($user->profile->profile_image);
+                    }
+
+                    // Guardar nueva imagen
+                    $imagePath = $profileData['profile_image']->store('user/profile', 'public');
+                    $profileData['profile_image'] = $imagePath;
+                }
+
                 if ($user->profile) {
                     $user->profile->update($profileData);
                 } else {
@@ -645,15 +661,28 @@ final class AuthController extends Controller
                     if (isset($contactData['is_primary']) && $contactData['is_primary']) {
                         $user->contacts()->update(['is_primary' => false]);
                     }
-                    
-                    // Si el contacto tiene ID, actualizar; si no, crear nuevo
+
+                    // Si el contacto tiene ID, actualizar
                     if (isset($contactData['id'])) {
                         $contact = $user->contacts()->find($contactData['id']);
                         if ($contact) {
                             $contact->update($contactData);
                         }
                     } else {
-                        $user->contacts()->create($contactData);
+                        // Si no tiene ID, verificar si ya existe un contacto con ese teléfono
+                        if (isset($contactData['phone'])) {
+                            $existingContact = $user->contacts()->where('phone', $contactData['phone'])->first();
+                            if ($existingContact) {
+                                // Actualizar el contacto existente
+                                $existingContact->update($contactData);
+                            } else {
+                                // Crear nuevo contacto
+                                $user->contacts()->create($contactData);
+                            }
+                        } else {
+                            // Si no hay teléfono, crear nuevo contacto
+                            $user->contacts()->create($contactData);
+                        }
                     }
                 }
             }

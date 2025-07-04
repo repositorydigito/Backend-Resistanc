@@ -56,7 +56,7 @@ class PaymentController extends Controller
 
             $query = UserPaymentMethod::where('user_id', $userId)
                 ->where('status', 'active')
-                ->orderBy('is_default', 'desc')
+                // ->orderBy('is_default', 'desc')
                 ->orderBy('created_at', 'desc');
 
             // Aplicar paginación si se especifican parámetros
@@ -97,7 +97,6 @@ class PaymentController extends Controller
                     'datoAdicional' => PaymentResource::collection($paymentMethods)
                 ], 200);
             }
-
         } catch (\Exception $e) {
             Log::error('Error al obtener métodos de pago', [
                 'user_id' => auth()->id(),
@@ -176,13 +175,13 @@ class PaymentController extends Controller
                 'billing_address' => 'nullable|array',
                 'metadata' => 'nullable|array'
             ]);
-//  return response()->json([
-//         'mensaje' => 'Petición recibida',
-//         'headers' => $request->headers->all(),
-//         'content_type' => $request->header('Content-Type'),
-//         'body_raw' => file_get_contents('php://input'),
-//         'body_parsed' => $request->all(),
-//     ], 200);
+            //  return response()->json([
+            //         'mensaje' => 'Petición recibida',
+            //         'headers' => $request->headers->all(),
+            //         'content_type' => $request->header('Content-Type'),
+            //         'body_raw' => file_get_contents('php://input'),
+            //         'body_parsed' => $request->all(),
+            //     ], 200);
             if ($validator->fails()) {
                 return response()->json([
                     'exito' => false,
@@ -213,7 +212,6 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago creado exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod)
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error al crear método de pago', [
                 'user_id' => auth()->id(),
@@ -281,7 +279,6 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago obtenido exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod)
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error al obtener método de pago', [
                 'user_id' => auth()->id(),
@@ -385,7 +382,6 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago actualizado exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod->fresh())
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error al actualizar método de pago', [
                 'user_id' => auth()->id(),
@@ -405,12 +401,12 @@ class PaymentController extends Controller
     }
 
     /**
-     * Elimina (desactiva) un método de pago específico del usuario autenticado
+     * Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado.
      *
-     * @summary Eliminar método de pago
+     * @summary Eliminar (desactivar) método de pago
+     * @description Cambia el estatus del método de pago a 'inactive' en vez de eliminarlo físicamente.
      * @operationId deletePaymentMethod
-     *
-     * @param  int  $id
+     * @param int $id ID del método de pago a eliminar
      * @return \Illuminate\Http\JsonResponse
      *
      * @response 200 {
@@ -422,9 +418,16 @@ class PaymentController extends Controller
      *     "status": "inactive"
      *   }
      * }
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 0,
+     *   "mensajeUsuario": "Método de pago no encontrado",
+     *   "datoAdicional": []
+     * }
      */
     public function destroy($id)
     {
+
         try {
             $userId = auth()->id();
 
@@ -454,7 +457,6 @@ class PaymentController extends Controller
                     'status' => 'inactive'
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error al eliminar método de pago', [
                 'user_id' => auth()->id(),
@@ -466,7 +468,102 @@ class PaymentController extends Controller
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Error al eliminar método de pago',
+                'mensajeUsuario' => $e->getMessage(),
+                'datoAdicional' => []
+            ], 200);
+        }
+    }
+
+
+    /**
+     * Selecciona un método de pago como predeterminado para el usuario autenticado
+     *
+     * @summary Seleccionar método de pago predeterminado
+     * @operationId selectDefaultPaymentMethod
+     *
+     * @param int $id ID del método de pago a seleccionar
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "exito": true,
+     *   "codMensaje": 1,
+     *   "mensajeUsuario": "Método de pago seleccionado exitosamente",
+     *   "datoAdicional": {
+     *     "id": 1,
+     *     "payment_type": "credit_card",
+     *     "provider": "visa",
+     *     "card_last_four": "****1234",
+     *     "display_name": "Visa ****1234",
+     *     "is_default": true,
+     *     "status": "active"
+     *   }
+     * }
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 0,
+     *   "mensajeUsuario": "Método de pago no encontrado",
+     *   "datoAdicional": []
+     * }
+     */
+    public function selectPayment($id)
+    {
+
+        try {
+            $userId = auth()->id();
+
+            if ($id == 0) {
+                UserPaymentMethod::where('user_id', $userId)
+                    ->update(['is_default' => false]);
+
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Método de pago deseleccionado exitosamente',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            $paymentMethod = UserPaymentMethod::where('id', $id)
+                ->where('user_id', $userId)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$paymentMethod) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Método de pago no encontrado',
+                    'datoAdicional' => []
+                ], 200);
+            }
+
+            // Marcar este método como predeterminado
+
+
+
+            UserPaymentMethod::where('user_id', $userId)
+                ->update(['is_default' => false]);
+
+            $paymentMethod->update(['is_default' => true]);
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Método de pago seleccionado exitosamente',
+                'datoAdicional' => new PaymentResource($paymentMethod)
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al seleccionar método de pago', [
+                'user_id' => auth()->id(),
+                'payment_method_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => $e->getMessage(),
                 'datoAdicional' => []
             ], 200);
         }

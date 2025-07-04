@@ -221,6 +221,19 @@ class UserPackagesRelationManager extends RelationManager
                     ->sortable()
                     ->description(fn($record) => $record->package->short_description ?? ''),
 
+                Tables\Columns\TextColumn::make('expiry_status')
+                    ->label('Estado de Expiración')
+                    ->badge()
+                    ->color(function ($state, $record) {
+                        return match ($state) {
+                            'Vencido' => 'danger',
+                            'Por vencer' => 'warning',
+                            'Vigente' => 'success',
+                            default => 'gray',
+                        };
+                    })
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('package.discipline.name')
                     ->label('Disciplina')
                     ->sortable()

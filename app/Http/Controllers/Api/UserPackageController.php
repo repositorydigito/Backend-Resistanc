@@ -96,7 +96,13 @@ class UserPackageController extends Controller
     {
         $query = UserPackage::query()
             ->where('user_id', Auth::id())
-            ->with(['package:id,name,slug,description,classes_quantity,price_soles,validity_days']);
+            ->where(function ($q) {
+                $q->where('status', 'active')
+                    ->orWhere('remaining_classes', 0)
+                    ->orWhere('expiry_date', '<', now());
+            })
+            ->orderBy('expiry_date', 'desc')
+            ->with(['package:id,name,slug,description,classes_quantity,price_soles,validity_days', 'package.discipline:id,name,slug']);
 
         // Filtros opcionales
         if ($request->filled('status')) {
@@ -107,7 +113,7 @@ class UserPackageController extends Controller
             $search = $request->string('search');
             $query->where(function ($q) use ($search) {
                 $q->where('package_code', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%");
+                    ->orWhere('notes', 'like', "%{$search}%");
             });
         }
 
@@ -118,6 +124,14 @@ class UserPackageController extends Controller
         if ($request->boolean('expired')) {
             $query->expired();
         }
+
+        // Filtro por disciplina (nuevo)
+        if ($request->filled('discipline_id')) {
+            $query->whereHas('package', function ($q) use ($request) {
+                $q->where('discipline_id', $request->integer('discipline_id'));
+            });
+        }
+
 
         // Si no se especifica un estado, mostrar solo activos por defecto
         if (!$request->filled('status') && !$request->boolean('expired')) {
@@ -317,7 +331,6 @@ class UserPackageController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
