@@ -12,6 +12,7 @@ use App\Models\Flavordrink;
 use App\Models\Instructor;
 use App\Models\Package;
 use App\Models\Product;
+use App\Models\ProductBrand;
 use App\Models\ProductCategory;
 use App\Models\ProductOptionType;
 use App\Models\ProductTag;
@@ -1907,6 +1908,21 @@ class InfoSeeder extends Seeder
 
         // Fin variantes de productos
 
+        // Marca de productos
+
+        ProductBrand::insert([
+            [
+                'name' => 'RSISTANCE'
+            ],
+            [
+                'name' => 'NIKE'
+            ],
+            [
+                'name' => 'Adidas'
+            ]
+        ]);
+
+        // Fin marca de productos
 
         // Productos
         $products = [

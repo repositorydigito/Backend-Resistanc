@@ -109,7 +109,7 @@ final class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        $products = Product::with('category')
+        $products = Product::with('category','productBrand')
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
             ->limit(10)

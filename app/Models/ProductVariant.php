@@ -68,7 +68,7 @@ final class ProductVariant extends Model
      */
     public function getFinalPriceAttribute(): float
     {
-        return $this->product->price_soles + $this->price_modifier;
+        return $this->price_soles;
     }
 
     /**

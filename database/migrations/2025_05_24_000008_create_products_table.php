@@ -71,19 +71,26 @@ return new class extends Migration
             $table->json('ingredients')->nullable();
             $table->json('allergens')->nullable();
 
-            $table->enum('product_type', ['shake', 'supplement', 'merchandise', 'service', 'gift_card']);
-            $table->boolean('requires_variants')->default(false);
-            $table->boolean('is_virtual')->default(false);
-            $table->boolean('is_featured')->default(false);
-            $table->boolean('is_available_for_booking')->default(false);
+            // $table->enum('product_type', ['shake', 'supplement', 'merchandise', 'service', 'gift_card']);
+
+            $table->boolean('requires_variants')->default(false)->comment('Si necesita variantes (tallas, colores)');
+            $table->boolean('is_virtual')->default(false)->comment('Si es un producto virtual (sin envío físico)');
+            $table->boolean('is_featured')->default(false)->comment('Si es un producto destacado');
+            $table->boolean('is_available_for_booking')->default(false)->comment('Si está disponible para reservas');
+
+            // Producto de cupon
+            $table->boolean('is_cupon')->default(false)->comment('Si es cupon de descuento');
+            $table->longText('url_cupon_code')->nullable()->comment('Url del cupón si es un producto.');
+            // Fin Producto de cupon
 
             $table->enum('status', ['active', 'inactive', 'out_of_stock', 'discontinued'])->default('active');
 
             $table->string('meta_title')->nullable();
             $table->string('meta_description', 500)->nullable();
 
+            // Relaciones
             $table->foreignId('category_id')->nullable()->constrained('product_categories')->onDelete('set null');
-
+            $table->foreignId('product_brand_id')->nullable()->constrained('product_brands')->onDelete('set null');
 
             $table->timestamps();
         });

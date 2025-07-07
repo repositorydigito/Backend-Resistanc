@@ -17,18 +17,12 @@ final class ShoppingCart extends Model
         'user_id',
         'session_id',
         'status',
-        'subtotal',
-        'tax_amount',
         'total_amount',
-        'currency',
-        'expires_at',
+        'item_count',
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'expires_at' => 'datetime',
     ];
 
     /**
@@ -56,14 +50,6 @@ final class ShoppingCart extends Model
     }
 
     /**
-     * Scope to get expired carts.
-     */
-    public function scopeExpired($query)
-    {
-        return $query->where('expires_at', '<', now());
-    }
-
-    /**
      * Get the total items count.
      */
     public function getTotalItemsAttribute(): int
@@ -77,14 +63,6 @@ final class ShoppingCart extends Model
     public function getIsEmptyAttribute(): bool
     {
         return $this->items->count() === 0;
-    }
-
-    /**
-     * Check if the cart is expired.
-     */
-    public function getIsExpiredAttribute(): bool
-    {
-        return $this->expires_at && $this->expires_at->isPast();
     }
 
     /**
@@ -142,14 +120,12 @@ final class ShoppingCart extends Model
      */
     public function recalculateTotals(): void
     {
-        $subtotal = $this->items->sum('total_price');
-        $taxAmount = $subtotal * 0.18; // IGV 18%
-        $totalAmount = $subtotal + $taxAmount;
+        $totalAmount = $this->items->sum('total_price');
+        $itemCount = $this->items->sum('quantity');
 
         $this->update([
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
             'total_amount' => $totalAmount,
+            'item_count' => $itemCount,
         ]);
     }
 
@@ -158,14 +134,18 @@ final class ShoppingCart extends Model
      */
     public function convertToOrder(): Order
     {
+        $subtotal = $this->items->sum('total_price');
+        $taxAmount = $subtotal * 0.18; // IGV 18%
+        $totalAmount = $subtotal + $taxAmount;
+
         $order = Order::create([
             'user_id' => $this->user_id,
             'order_number' => 'RST-' . date('Y') . '-' . str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT),
             'status' => 'pending',
-            'subtotal' => $this->subtotal,
-            'tax_amount' => $this->tax_amount,
-            'total_amount' => $this->total_amount,
-            'currency' => $this->currency,
+            'subtotal' => $subtotal,
+            'tax_amount' => $taxAmount,
+            'total_amount' => $totalAmount,
+            'currency' => 'PEN',
             'payment_status' => 'pending',
         ]);
 
@@ -189,11 +169,5 @@ final class ShoppingCart extends Model
         return $order;
     }
 
-    /**
-     * Extend cart expiration.
-     */
-    public function extend(int $hours = 24): void
-    {
-        $this->update(['expires_at' => now()->addHours($hours)]);
-    }
+
 }

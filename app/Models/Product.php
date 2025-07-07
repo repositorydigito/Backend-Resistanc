@@ -82,14 +82,16 @@ final class Product extends Model
         'nutritional_info',
         'ingredients',
         'allergens',
-        'product_type',
+        // 'product_type',
         'requires_variants',
         'is_virtual',
         'is_featured',
         'is_available_for_booking',
         'status',
         'meta_title',
-        'meta_description'
+        'meta_description',
+        'is_cupon',
+        'url_cupon_code',
     ];
 
     protected $casts = [
@@ -330,5 +332,10 @@ final class Product extends Model
         return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
             ->withPivot('notes', 'priority')
             ->withTimestamps();
+    }
+
+    public function productBrand(): BelongsTo
+    {
+        return $this->belongsTo(ProductBrand::class, 'product_brand_id');
     }
 }

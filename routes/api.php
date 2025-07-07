@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\WaitingController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PasarelaController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\StudioController;
 use App\Models\Instructor;
 use Illuminate\Http\Request;
@@ -235,13 +236,24 @@ Route::get('instructors-ten', [InstructorController::class, 'indexTen']);
 // Fin instructor1
 
 
-// Rutas de Pedidos
+// Carrito de compras
+Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ShoppingCartController::class, 'show'])->name('show');
+    Route::post('/add', [ShoppingCartController::class, 'add'])->name('add');
+    Route::post('/remove', [ShoppingCartController::class, 'remove'])->name('remove');
+    Route::put('/update-quantity', [ShoppingCartController::class, 'updateQuantity'])->name('update-quantity');
+    Route::delete('/clear', [ShoppingCartController::class, 'clear'])->name('clear');
+    Route::post('/confirm', [ShoppingCartController::class, 'confirm'])->name('confirm');
+});
+// Fin carrito
 
+// Rutas de Pedidos
 Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [OrderController::class, 'index'])->name('index');
+    Route::get('/', [OrderController::class, 'show'])->name('show');
     Route::get('/{order}', [OrderController::class, 'show'])->name('show');
     Route::post('/', [OrderController::class, 'store'])->name('store');
 });
+// Fin rutas de Pedidos
 
 
 // Pasarela de pago

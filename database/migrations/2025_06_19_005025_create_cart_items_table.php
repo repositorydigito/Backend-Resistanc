@@ -22,16 +22,17 @@ return new class extends Migration
 
 
             // Relaciones
-            $table->foreignId('cart_id')->constrained('shopping_carts')->onDelete('cascade');
+            $table->foreignId('shopping_cart_id')->constrained('shopping_carts')->onDelete('cascade');
+
             $table->foreignId('product_id')->nullable()->constrained('products');
-            $table->foreignId('variant_id')->nullable()->constrained('product_variants');
+            $table->foreignId('product_variant_id')->nullable()->constrained('product_variants');
 
             $table->timestamps();
 
             // Índices
-            $table->unique(['cart_id', 'product_id', 'variant_id']);
+            $table->unique(['shopping_cart_id', 'product_id', 'product_variant_id']);
             $table->index('product_id');
-            $table->index('variant_id');
+            $table->index('product_variant_id');
         });
     }
 

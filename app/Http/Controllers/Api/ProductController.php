@@ -54,7 +54,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::query()
-            ->with(['category', 'variants'])
+            ->with(['category', 'variants', 'productBrand'])
             ->where('status', 'active');
 
         // Búsqueda por nombre o descripción

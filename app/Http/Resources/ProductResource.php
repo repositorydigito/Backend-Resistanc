@@ -50,6 +50,8 @@ class ProductResource extends JsonResource
             'status' => $this->status,
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
+            'is_cupon' => $this->is_cupon,
+            'url_cupon_code' => $this->url_cupon_code,
             'url' => $this->url,
 
 
@@ -58,6 +60,10 @@ class ProductResource extends JsonResource
                 'id' => $this->category->id,
                 'name' => $this->category->name,
                 'slug' => $this->category->slug ?? null,
+            ]),
+            'product_brand' => $this->whenLoaded('productBrand', fn() => [
+                'id' => $this->productBrand->id,
+                'name' => $this->productBrand->name,
             ]),
 
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),

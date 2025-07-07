@@ -42,6 +42,7 @@ class ProductResource extends Resource
                             ->directory('products/main')
                             ->disk('public') // Usa el filesystem configurado como 'public'
                             ->preserveFilenames()
+                            ->columnSpanFull()
                             ->nullable(),
 
 
@@ -50,21 +51,38 @@ class ProductResource extends Resource
                             ->label('Nombre')
                             ->required(),
 
-                        Forms\Components\TextInput::make('slug')
-                            ->label('Slug')
-                            ->required(),
+                        // Forms\Components\TextInput::make('slug')
+                        //     ->label('Slug')
+                        //     ->required(),
 
                         Forms\Components\Select::make('category_id')
                             ->label('Categoría')
                             ->relationship('category', 'name'),
 
+                        Forms\Components\Select::make('product_brand_id')
+                            ->label('Marca')
+                            ->relationship('productBrand', 'name')
+                            ->nullable()
+                            ->searchable()
+                            ->preload(),
+
                         Forms\Components\TextInput::make('sku')
                             ->label('SKU')
                             ->required(),
 
-                        Forms\Components\TextInput::make('short_description')
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->options([
+                                'active' => 'Activo',
+                                'inactive' => 'Inactivo',
+                                'out_of_stock' => 'Sin stock',
+                                'discontinued' => 'Descontinuado',
+                            ])
+                            ->required(),
+
+                        Textarea::make('short_description')
                             ->label('Descripción corta')
-                            ->maxLength(500),
+                            ->columnSpanFull(),
 
                         Textarea::make('description')
                             ->label('Descripción larga')
@@ -99,26 +117,18 @@ class ProductResource extends Resource
                 Section::make('Opciones del Producto')
                     ->columns(2)
                     ->schema([
-                        Forms\Components\Select::make('product_type')
-                            ->label('Tipo de producto')
-                            ->options([
-                                'shake' => 'Batido',
-                                'supplement' => 'Suplemento',
-                                'merchandise' => 'Merchandising',
-                                'service' => 'Servicio',
-                                'gift_card' => 'Tarjeta de regalo',
-                            ])
-                            ->required(),
+                        // Forms\Components\Select::make('product_type')
+                        //     ->label('Tipo de producto')
+                        //     ->options([
+                        //         'shake' => 'Batido',
+                        //         'supplement' => 'Suplemento',
+                        //         'merchandise' => 'Merchandising',
+                        //         'service' => 'Servicio',
+                        //         'gift_card' => 'Tarjeta de regalo',
+                        //     ])
+                        //     ->required(),
 
-                        Forms\Components\Select::make('status')
-                            ->label('Estado')
-                            ->options([
-                                'active' => 'Activo',
-                                'inactive' => 'Inactivo',
-                                'out_of_stock' => 'Sin stock',
-                                'discontinued' => 'Descontinuado',
-                            ])
-                            ->required(),
+
 
                         Forms\Components\Toggle::make('requires_variants')
                             ->label('¿Requiere variantes?'),
@@ -131,6 +141,16 @@ class ProductResource extends Resource
 
                         Forms\Components\Toggle::make('is_available_for_booking')
                             ->label('¿Disponible para reservas?'),
+
+                        Forms\Components\Toggle::make('is_cupon')
+                            ->live()
+                            ->label('¿Es cupón de descuento?')
+                            ->helperText('Si es un producto de cupón, se debe ingresar la URL del cupón en el campo "URL del cupón"'),
+                        Forms\Components\TextInput::make('url_cupon_code')
+                            ->label('URL del cupón')
+                            ->helperText('URL del cupón si es un producto de cupón. Ejemplo: https://resistanc.com/cupones/12345')
+                            ->visible(fn(Forms\Get $get) => $get('is_cupon') === true)
+                            ->nullable(),
                     ]),
 
                 Section::make('Metadatos y SEO')
@@ -158,8 +178,7 @@ class ProductResource extends Resource
                                     ->label('Valor')
                                     ->required(),
                             ])
-                            ->createItemButtonLabel('Agregar dimensión')
-                            ,
+                            ->createItemButtonLabel('Agregar dimensión'),
 
                         Forms\Components\FileUpload::make('images')
                             ->label('Imágenes del producto')
@@ -167,15 +186,13 @@ class ProductResource extends Resource
                             ->reorderable()
                             ->image()
                             ->directory('products') // se guardará en storage/app/public/products
-                            ->preserveFilenames()
-                          ,
+                            ->preserveFilenames(),
 
                         Forms\Components\KeyValue::make('nutritional_info')
                             ->label('Características')
                             ->keyLabel('Nombre')
                             ->valueLabel('Valor')
-                            ->addButtonLabel('Agregar dato')
-                           ,
+                            ->addButtonLabel('Agregar dato'),
                     ])
 
 
@@ -204,8 +221,8 @@ class ProductResource extends Resource
                     ->label('¿Variantes?')
                     ->boolean(),
 
-                Tables\Columns\TextColumn::make('product_type')
-                    ->label('Tipo'),
+                // Tables\Columns\TextColumn::make('product_type')
+                //     ->label('Tipo'),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado'),
