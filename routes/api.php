@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\PasarelaController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\StudioController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Models\Instructor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -261,6 +262,11 @@ Route::prefix('payment-gateway')->name('payment-gateway.')->middleware('auth:san
     Route::post('/izipay/token', [PasarelaController::class, 'izipayToken'])->name('izipay.token');
 });
 // Fin Pasarela de pago
+
+// Facturación
+Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/generate', [InvoiceController::class, 'generarComprobante'])->name('generate');
+});
 
 
 

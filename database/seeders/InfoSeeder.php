@@ -6,6 +6,7 @@ use App\Models\Basedrink;
 use App\Models\ClassModel;
 use App\Models\ClassSchedule;
 use App\Models\ClassScheduleSeat;
+use App\Models\Company;
 use App\Models\Discipline;
 use App\Models\Drink;
 use App\Models\Flavordrink;
@@ -2234,6 +2235,28 @@ class InfoSeeder extends Seeder
         Product::insert($products);
 
         // Fin productos
+
+
+        Company::create([
+            'name' => 'RSISTANCE',
+            'legal_name' => 'RSISTANCE S.A.C.',
+            'tax_id' => '12345678901',
+            'address' => 'Av. Ejemplo 123, Lima, Perú',
+            'phone' => '+51 987654321',
+            'email' => 'info@rsistance.com',
+            'logo_path' => 'https://i.imgur.com/1234567.png',
+            'website' => 'https://www.rsistance.com',
+            'settings' => [
+                'default_currency' => 'PEN',
+                'default_locale' => 'es_PE',
+                'default_timezone' => 'America/Lima',
+            ],
+            'timezone' => 'America/Lima',
+            'currency' => 'PEN',
+            'locale' => 'es_PE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
     }
 }

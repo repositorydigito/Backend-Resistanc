@@ -23,7 +23,7 @@ class ShoppingCartController extends Controller
     private function getOrCreateActiveCart()
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             throw new Error('Usuario no autenticado');
         }
@@ -123,10 +123,10 @@ class ShoppingCartController extends Controller
     {
         try {
             $cart = $this->getOrCreateActiveCart();
-            
+
             // Cargar los items con sus relaciones
             $cart->load(['items.product', 'items.productVariant']);
-            
+
             // Recalcular totales por si acaso
             $cart->recalculateTotals();
 
@@ -147,6 +147,7 @@ class ShoppingCartController extends Controller
                         return [
                             'id' => $item->id,
                             'product_id' => $item->product_id,
+                            'product_brand' => $item->product->productBrand ?? null,
                             'product_variant_id' => $item->product_variant_id,
                             'quantity' => $item->quantity,
                             'unit_price' => $item->unit_price,
@@ -235,13 +236,13 @@ class ShoppingCartController extends Controller
             ]);
 
             $cart = $this->getOrCreateActiveCart();
-            
+
             $product = Product::findOrFail($request->product_id);
             $variant = null;
-            
+
             if ($request->product_variant_id) {
                 $variant = ProductVariant::findOrFail($request->product_variant_id);
-                
+
                 // Verificar que la variante pertenece al producto
                 if ($variant->product_id !== $product->id) {
                     throw new Error('La variante no pertenece al producto especificado');
@@ -329,10 +330,10 @@ class ShoppingCartController extends Controller
             ]);
 
             $cart = $this->getOrCreateActiveCart();
-            
+
             // Verificar que el item pertenece al carrito del usuario
             $cartItem = $cart->items()->where('id', $request->cart_item_id)->first();
-            
+
             if (!$cartItem) {
                 throw new Error('El item no pertenece a tu carrito');
             }
@@ -407,10 +408,10 @@ class ShoppingCartController extends Controller
             ]);
 
             $cart = $this->getOrCreateActiveCart();
-            
+
             // Verificar que el item pertenece al carrito del usuario
             $cartItem = $cart->items()->where('id', $request->cart_item_id)->first();
-            
+
             if (!$cartItem) {
                 throw new Error('El item no pertenece a tu carrito');
             }
@@ -418,7 +419,7 @@ class ShoppingCartController extends Controller
             // Verificar stock
             $product = $cartItem->product;
             $variant = $cartItem->productVariant;
-            
+
             if (!$product->requires_variants) {
                 if ($product->stock_quantity < $request->quantity) {
                     throw new Error('Stock insuficiente para este producto');
@@ -432,7 +433,7 @@ class ShoppingCartController extends Controller
             // Actualizar cantidad
             $cartItem->update(['quantity' => $request->quantity]);
             $cartItem->updateTotal();
-            
+
             // Recalcular totales del carrito
             $cart->recalculateTotals();
 
@@ -488,7 +489,7 @@ class ShoppingCartController extends Controller
     {
         try {
             $cart = $this->getOrCreateActiveCart();
-            
+
             // Limpiar todos los items
             $cart->clear();
 
@@ -556,17 +557,17 @@ class ShoppingCartController extends Controller
     {
         try {
             $cart = $this->getOrCreateActiveCart();
-            
+
             if ($cart->is_empty) {
                 throw new Error('No puedes confirmar un carrito vacío');
             }
 
             // Convertir carrito a orden
             $order = $cart->convertToOrder();
-            
+
             // El método convertToOrder ya marca el carrito como 'converted'
             // y limpia los items, pero necesitamos crear un nuevo carrito activo
-            
+
             // Crear nuevo carrito activo para el usuario
             $newCart = ShoppingCart::create([
                 'user_id' => Auth::user()->id,
