@@ -17,6 +17,8 @@ return new class extends Migration
             // $table->string('slug')->unique();
             // $table->string('description')->nullable();
             $table->string('image_url')->nullable();
+            $table->string('ico_url')->nullable();
+            $table->float('price')->default(0)->comment('Precio de la bebida');
             $table->timestamps();
         });
     }

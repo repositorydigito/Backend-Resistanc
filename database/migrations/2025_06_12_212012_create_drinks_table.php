@@ -18,8 +18,28 @@ return new class extends Migration
             $table->string('slug')->unique()->comment('Slug único para la bebida');
             $table->string('description')->nullable()->comment('Descripción de la bebida');
             $table->string('image_url')->nullable()->comment('URL de la imagen de la bebida');
-            $table->float('price')->default(0)->comment('Precio de la bebida');
 
+            // $table->float('price')->default(0)->comment('Precio de la bebida');
+
+            // Relaciones
+
+            $table->foreignId('typedrink_id')
+                ->nullable()
+                ->constrained('typedrinks')
+                ->onDelete('cascade')
+                ->comment('ID del tipo de bebida');
+
+            $table->foreignId('basedrink_id')
+                ->nullable()
+                ->constrained('basedrinks')
+                ->onDelete('cascade')
+                ->comment('ID de la base de bebida');
+
+            $table->foreignId('flavordrink_id')
+                ->nullable()
+                ->constrained('flavordrinks')
+                ->onDelete('cascade')
+                ->comment('ID del sabor de la bebida');
 
             $table->timestamps();
         });

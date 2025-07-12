@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\ProductCategoryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductTagController;
+use App\Http\Controllers\Api\RecoverPasswordController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserContactController;
@@ -62,6 +63,11 @@ Route::prefix('auth')->name('auth.')->group(function () {
     // Public authentication routes
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+    // Password recovery routes
+    Route::post('/send-reset-code', [RecoverPasswordController::class, 'sendResetCode'])->name('send-reset-code');
+    Route::post('/verify-reset-code', [RecoverPasswordController::class, 'verifyResetCode'])->name('verify-reset-code');
+    Route::post('/reset-password', [RecoverPasswordController::class, 'resetPassword'])->name('reset-password');
 
     // Protected authentication routes
     Route::middleware('auth:sanctum')->group(function () {
