@@ -37,19 +37,27 @@ final class RecoverPasswordController extends Controller
      * @bodyParam email string required Correo electrónico del usuario. Example: migelo5511@gmail.com
      *
      * @response 200 {
-     *   "message": "Se ha enviado un código de verificación a tu correo electrónico.",
-     *   "data": {
+     *   "exito": true,
+     *   "codMensaje": 200,
+     *   "mensajeUsuario": "Se ha enviado un código de verificación a tu correo electrónico.",
+     *   "datoAdicional": {
      *     "email": "migelo5511@gmail.com",
      *     "expires_in": 600
      *   }
      * }
      *
-     * @response 404 {
-     *   "message": "No se encontró un usuario con ese correo electrónico."
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 404,
+     *   "mensajeUsuario": "No se encontró un usuario con ese correo electrónico.",
+     *   "datoAdicional": null
      * }
      *
-     * @response 429 {
-     *   "message": "Demasiadas solicitudes. Intenta de nuevo en 60 segundos."
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 429,
+     *   "mensajeUsuario": "Demasiadas solicitudes. Intenta de nuevo en 60 segundos.",
+     *   "datoAdicional": null
      * }
      */
     #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'migelo5511@gmail.com')]
@@ -63,16 +71,22 @@ final class RecoverPasswordController extends Controller
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             return response()->json([
-                'message' => "Demasiadas solicitudes. Intenta de nuevo en {$seconds} segundos.",
-            ], 429);
+                'exito' => false,
+                'codMensaje' => 429,
+                'mensajeUsuario' => "Demasiadas solicitudes. Intenta de nuevo en {$seconds} segundos.",
+                'datoAdicional' => null
+            ], 200);
         }
 
         // Buscar usuario
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
-                'message' => 'No se encontró un usuario con ese correo electrónico.',
-            ], 404);
+                'exito' => false,
+                'codMensaje' => 404,
+                'mensajeUsuario' => 'No se encontró un usuario con ese correo electrónico.',
+                'datoAdicional' => null
+            ], 200);
         }
 
         // Crear código de recuperación
@@ -85,12 +99,14 @@ final class RecoverPasswordController extends Controller
         RateLimiter::hit($key, 60);
 
         return response()->json([
-            'message' => 'Se ha enviado un código de verificación a tu correo electrónico.',
-            'data' => [
+            'exito' => true,
+            'codMensaje' => 200,
+            'mensajeUsuario' => 'Se ha enviado un código de verificación a tu correo electrónico.',
+            'datoAdicional' => [
                 'email' => $email,
                 'expires_in' => 600, // 10 minutos en segundos
-            ],
-        ]);
+            ]
+        ], 200);
     }
 
     /**
@@ -108,19 +124,27 @@ final class RecoverPasswordController extends Controller
      * @bodyParam code string required Código de verificación de 4 dígitos. Example: 1234
      *
      * @response 200 {
-     *   "message": "Código verificado correctamente.",
-     *   "data": {
+     *   "exito": true,
+     *   "codMensaje": 200,
+     *   "mensajeUsuario": "Código verificado correctamente.",
+     *   "datoAdicional": {
      *     "email": "migelo5511@gmail.com",
      *     "verified": true
      *   }
      * }
      *
-     * @response 400 {
-     *   "message": "Código inválido o expirado."
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 400,
+     *   "mensajeUsuario": "Código inválido o expirado.",
+     *   "datoAdicional": null
      * }
      *
-     * @response 404 {
-     *   "message": "No se encontró un usuario con ese correo electrónico."
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 404,
+     *   "mensajeUsuario": "No se encontró un usuario con ese correo electrónico.",
+     *   "datoAdicional": null
      * }
      */
     #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'migelo5511@gmail.com')]
@@ -135,8 +159,11 @@ final class RecoverPasswordController extends Controller
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
-                'message' => 'No se encontró un usuario con ese correo electrónico.',
-            ], 404);
+                'exito' => false,
+                'codMensaje' => 404,
+                'mensajeUsuario' => 'No se encontró un usuario con ese correo electrónico.',
+                'datoAdicional' => null
+            ], 200);
         }
 
         // Buscar código válido
@@ -146,17 +173,22 @@ final class RecoverPasswordController extends Controller
 
         if (!$resetCode) {
             return response()->json([
-                'message' => 'Código inválido o expirado.',
-            ], 400);
+                'exito' => false,
+                'codMensaje' => 400,
+                'mensajeUsuario' => 'Código inválido o expirado.',
+                'datoAdicional' => null
+            ], 200);
         }
 
         return response()->json([
-            'message' => 'Código verificado correctamente.',
-            'data' => [
+            'exito' => true,
+            'codMensaje' => 200,
+            'mensajeUsuario' => 'Código verificado correctamente.',
+            'datoAdicional' => [
                 'email' => $email,
                 'verified' => true,
-            ],
-        ]);
+            ]
+        ], 200);
     }
 
     /**
@@ -176,19 +208,27 @@ final class RecoverPasswordController extends Controller
      * @bodyParam password_confirmation string required Confirmación de la nueva contraseña. Example: NuevaPassword123!
      *
      * @response 200 {
-     *   "message": "Contraseña restablecida correctamente.",
-     *   "data": {
+     *   "exito": true,
+     *   "codMensaje": 200,
+     *   "mensajeUsuario": "Contraseña restablecida correctamente.",
+     *   "datoAdicional": {
      *     "email": "migelo5511@gmail.com",
      *     "updated_at": "2024-01-15T10:30:00.000Z"
      *   }
      * }
      *
-     * @response 400 {
-     *   "message": "Código inválido o expirado."
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 400,
+     *   "mensajeUsuario": "Código inválido o expirado.",
+     *   "datoAdicional": null
      * }
      *
-     * @response 404 {
-     *   "message": "No se encontró un usuario con ese correo electrónico."
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 404,
+     *   "mensajeUsuario": "No se encontró un usuario con ese correo electrónico.",
+     *   "datoAdicional": null
      * }
      */
     #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'migelo5511@gmail.com')]
@@ -206,8 +246,11 @@ final class RecoverPasswordController extends Controller
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
-                'message' => 'No se encontró un usuario con ese correo electrónico.',
-            ], 404);
+                'exito' => false,
+                'codMensaje' => 404,
+                'mensajeUsuario' => 'No se encontró un usuario con ese correo electrónico.',
+                'datoAdicional' => null
+            ], 200);
         }
 
         // Buscar código válido
@@ -217,8 +260,11 @@ final class RecoverPasswordController extends Controller
 
         if (!$resetCode) {
             return response()->json([
-                'message' => 'Código inválido o expirado.',
-            ], 400);
+                'exito' => false,
+                'codMensaje' => 400,
+                'mensajeUsuario' => 'Código inválido o expirado.',
+                'datoAdicional' => null
+            ], 200);
         }
 
         // Actualizar contraseña
@@ -233,11 +279,13 @@ final class RecoverPasswordController extends Controller
         $user->tokens()->delete();
 
         return response()->json([
-            'message' => 'Contraseña restablecida correctamente.',
-            'data' => [
+            'exito' => true,
+            'codMensaje' => 200,
+            'mensajeUsuario' => 'Contraseña restablecida correctamente.',
+            'datoAdicional' => [
                 'email' => $email,
                 'updated_at' => $user->updated_at,
-            ],
-        ]);
+            ]
+        ], 200);
     }
 }

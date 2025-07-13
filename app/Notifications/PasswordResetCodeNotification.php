@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class PasswordResetCodeNotification extends Notification implements ShouldQueue
+class PasswordResetCodeNotification extends Notification
 {
     use Queueable;
 
@@ -49,14 +49,19 @@ class PasswordResetCodeNotification extends Notification implements ShouldQueue
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Código de Recuperación de Contraseña - ' . config('app.name'))
+            ->subject('🔐 Código de Recuperación - ' . config('app.name'))
             ->greeting('¡Hola ' . $this->getUserName() . '!')
-            ->line('Has solicitado restablecer tu contraseña.')
+            ->line('Has solicitado restablecer tu contraseña en **' . config('app.name') . '**.')
+            ->line('')
             ->line('Tu código de verificación es:')
+            ->line('')
             ->line('**' . $this->code . '**')
-            ->line('Este código expirará en 10 minutos.')
-            ->line('Si no solicitaste este código, puedes ignorar este mensaje.')
-            ->salutation('Saludos, ' . config('app.name'))
+            ->line('')
+            ->line('⏰ Este código expirará en 10 minutos.')
+            ->line('🔒 No compartas este código con nadie.')
+            ->line('')
+            ->line('Si no solicitaste este código, puedes ignorar este mensaje de forma segura.')
+            ->salutation('Saludos, el equipo de ' . config('app.name'))
             ->markdown('emails.password-reset-code', [
                 'code' => $this->code,
                 'userName' => $this->getUserName(),

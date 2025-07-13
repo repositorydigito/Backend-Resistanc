@@ -69,6 +69,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/verify-reset-code', [RecoverPasswordController::class, 'verifyResetCode'])->name('verify-reset-code');
     Route::post('/reset-password', [RecoverPasswordController::class, 'resetPassword'])->name('reset-password');
 
+
     // Protected authentication routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me'])->name('me');

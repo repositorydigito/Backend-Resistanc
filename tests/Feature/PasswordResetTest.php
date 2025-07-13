@@ -28,8 +28,10 @@ class PasswordResetTest extends TestCase
 
         $response->assertStatus(200)
                 ->assertJson([
-                    'message' => 'Se ha enviado un código de verificación a tu correo electrónico.',
-                    'data' => [
+                    'exito' => true,
+                    'codMensaje' => 200,
+                    'mensajeUsuario' => 'Se ha enviado un código de verificación a tu correo electrónico.',
+                    'datoAdicional' => [
                         'email' => 'test@example.com',
                         'expires_in' => 600,
                     ],
@@ -49,9 +51,12 @@ class PasswordResetTest extends TestCase
             'email' => 'nonexistent@example.com',
         ]);
 
-        $response->assertStatus(404)
+        $response->assertStatus(200)
                 ->assertJson([
-                    'message' => 'No se encontró un usuario con ese correo electrónico.',
+                    'exito' => false,
+                    'codMensaje' => 404,
+                    'mensajeUsuario' => 'No se encontró un usuario con ese correo electrónico.',
+                    'datoAdicional' => null,
                 ]);
     }
 
@@ -70,8 +75,10 @@ class PasswordResetTest extends TestCase
 
         $response->assertStatus(200)
                 ->assertJson([
-                    'message' => 'Código verificado correctamente.',
-                    'data' => [
+                    'exito' => true,
+                    'codMensaje' => 200,
+                    'mensajeUsuario' => 'Código verificado correctamente.',
+                    'datoAdicional' => [
                         'email' => 'test@example.com',
                         'verified' => true,
                     ],
@@ -89,9 +96,12 @@ class PasswordResetTest extends TestCase
             'code' => '9999',
         ]);
 
-        $response->assertStatus(400)
+        $response->assertStatus(200)
                 ->assertJson([
-                    'message' => 'Código inválido o expirado.',
+                    'exito' => false,
+                    'codMensaje' => 400,
+                    'mensajeUsuario' => 'Código inválido o expirado.',
+                    'datoAdicional' => null,
                 ]);
     }
 
@@ -113,8 +123,10 @@ class PasswordResetTest extends TestCase
 
         $response->assertStatus(200)
                 ->assertJson([
-                    'message' => 'Contraseña restablecida correctamente.',
-                    'data' => [
+                    'exito' => true,
+                    'codMensaje' => 200,
+                    'mensajeUsuario' => 'Contraseña restablecida correctamente.',
+                    'datoAdicional' => [
                         'email' => 'test@example.com',
                     ],
                 ]);
@@ -144,9 +156,12 @@ class PasswordResetTest extends TestCase
             'password_confirmation' => 'NewSecurePassword123!@#',
         ]);
 
-        $response->assertStatus(400)
+        $response->assertStatus(200)
                 ->assertJson([
-                    'message' => 'Código inválido o expirado.',
+                    'exito' => false,
+                    'codMensaje' => 400,
+                    'mensajeUsuario' => 'Código inválido o expirado.',
+                    'datoAdicional' => null,
                 ]);
     }
 

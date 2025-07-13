@@ -1634,7 +1634,7 @@ class InfoSeeder extends Seeder
             'description' => 'Delicioso batido de vainilla',
 
             'image_url' => 'https://i.imgur.com/1234567.png',
-            'price' => 10.00,
+            // // 'price' => 10.00,
             'created_at' => now(),
         ]);
         $drink_one->basesdrinks()->attach(1);
@@ -1648,7 +1648,7 @@ class InfoSeeder extends Seeder
             'description' => 'Delicioso batido de chocolate',
 
             'image_url' => 'https://i.imgur.com/1234567.png',
-            'price' => 12.00,
+            // 'price' => 12.00,
             'created_at' => now(),
         ]);
         $drink_two->basesdrinks()->attach(2);
