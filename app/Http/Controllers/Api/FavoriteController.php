@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassModel;
+use App\Models\ClassSchedule;
+use App\Models\Drink;
+use App\Models\Instructor;
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 /**
@@ -93,24 +98,66 @@ final class FavoriteController extends Controller
 
     public function storeProduct(Request $request)
     {
-
         $request->validate([
             'product' => 'required|integer|exists:products,id',
             'notes' => 'nullable|string|max:255',
             'priority' => 'nullable|integer|min:0',
         ]);
 
-        $user = $request->user();
-        $productId = $request->input('product');
+        try {
+            $user = $request->user();
+            $productId = $request->input('product');
+            $notes = $request->input('notes', '');
+            $priority = $request->input('priority', 0);
 
-        $user->favoriteProducts()->attach($productId, [
-            'notes' => $request->input('notes', ''),
-            'priority' => $request->input('priority', 0),
-        ]);
+            // Verificar si ya existe usando la tabla directa
+            $existingFavorite = $user->userFavorites()
+                ->where('favoritable_id', (string)$productId) // Cast a string para coincidir con la migración
+                ->where('favoritable_type', Product::class)
+                ->first();
 
-        return response()->json(['message' => 'Producto favorito agregado correctamente.']);
+            if ($existingFavorite) {
+                // Forma correcta para eliminar con tipo polimórfico
+                $user->userFavorites()
+                    ->where('favoritable_id', (string)$productId)
+                    ->where('favoritable_type', Product::class)
+                    ->delete();
+
+                $message = 'Producto removido de favoritos correctamente.';
+                $action = 'removed';
+            } else {
+                // Crear usando la relación directa para evitar problemas
+                $user->userFavorites()->create([
+                    'favoritable_id' => (string)$productId,
+                    'favoritable_type' => Product::class,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ]);
+
+                $message = 'Producto agregado a favoritos correctamente.';
+                $action = 'added';
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => [
+                    'action' => $action,
+                    'product_id' => $productId,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al procesar el favorito: ' . $e->getMessage(),
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
-
     /**
      * Agrega una bebida a los favoritos del usuario
      *
@@ -132,28 +179,72 @@ final class FavoriteController extends Controller
 
     public function storeDrink(Request $request)
     {
-
-        // return $request;
-
         $request->validate([
             'drink' => 'required|integer|exists:drinks,id',
             'notes' => 'nullable|string|max:255',
             'priority' => 'nullable|integer|min:0',
         ]);
 
+        try {
+            $user = $request->user();
+            $drinkId = $request->input('drink');
+            $notes = $request->input('notes', '');
+            $priority = $request->input('priority', 0);
 
+            // Verificar si ya existe usando la tabla directa
+            $existingFavorite = $user->userFavorites()
+                ->where('favoritable_id', (string)$drinkId)
+                ->where('favoritable_type', Drink::class)
+                ->first();
 
-        $user = $request->user();
-        $drinkId = $request->input('drink');
+            if ($existingFavorite) {
+                // Eliminar usando la relación directa
+                $user->userFavorites()
+                    ->where('favoritable_id', (string)$drinkId)
+                    ->where('favoritable_type', Drink::class)
+                    ->delete();
 
-        $user->favoriteDrinks()->syncWithoutDetaching([
-            $drinkId => [
-                'notes' => $request->input('notes', ''),
-                'priority' => $request->input('priority', 0),
-            ]
-        ]);
+                $message = 'Bebida removida de favoritos correctamente.';
+                $action = 'removed';
+            } else {
+                // Crear nuevo favorito
+                $user->userFavorites()->create([
+                    'favoritable_id' => (string)$drinkId,
+                    'favoritable_type' => Drink::class,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ]);
 
-        return response()->json(['message' => 'Bebida favorita agregada correctamente.']);
+                $message = 'Bebida agregada a favoritos correctamente.';
+                $action = 'added';
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => [
+                    'action' => $action,
+                    'drink_id' => $drinkId,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al procesar la bebida favorita',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al procesar la bebida favorita: ' . $e->getMessage(),
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
 
     /**
@@ -177,23 +268,72 @@ final class FavoriteController extends Controller
 
     public function storeClass(Request $request)
     {
-
         $request->validate([
             'class' => 'required|integer|exists:classes,id',
             'notes' => 'nullable|string|max:255',
             'priority' => 'nullable|integer|min:0',
         ]);
 
-        $user = $request->user();
-        $classId = $request->input('class');
+        try {
+            $user = $request->user();
+            $classId = $request->input('class');
+            $notes = $request->input('notes', '');
+            $priority = $request->input('priority', 0);
 
-        $user->favoriteClasses()->attach($classId, [
-            'notes' => $request->input('notes', ''),
-            'priority' => $request->input('priority', 0),
-        ]);
+            // Verificar si ya existe el favorito
+            $existingFavorite = $user->userFavorites()
+                ->where('favoritable_id', (string)$classId)
+                ->where('favoritable_type', ClassModel::class)
+                ->first();
 
+            if ($existingFavorite) {
+                // Eliminar el favorito existente
+                $user->userFavorites()
+                    ->where('favoritable_id', (string)$classId)
+                    ->where('favoritable_type', ClassModel::class)
+                    ->delete();
 
-        return response()->json(['message' => 'Clase favorita agregada correctamente.']);
+                $message = 'Clase removida de favoritos correctamente.';
+                $action = 'removed';
+            } else {
+                // Agregar nueva clase favorita
+                $user->userFavorites()->create([
+                    'favoritable_id' => (string)$classId,
+                    'favoritable_type' => ClassModel::class,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ]);
+
+                $message = 'Clase agregada a favoritos correctamente.';
+                $action = 'added';
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => [
+                    'action' => $action,
+                    'class_id' => $classId,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al procesar la clase favorita',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al procesar la clase favorita: ' . $e->getMessage(),
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
 
     /**
@@ -217,41 +357,193 @@ final class FavoriteController extends Controller
 
     public function storeInstructor(Request $request)
     {
-
         $request->validate([
             'instructor' => 'required|integer|exists:instructors,id',
             'notes' => 'nullable|string|max:255',
             'priority' => 'nullable|integer|min:0',
         ]);
 
-        $user = $request->user();
-        $instructorId = $request->input('instructor');
+        try {
+            $user = $request->user();
+            $instructorId = $request->input('instructor');
+            $notes = $request->input('notes', '');
+            $priority = $request->input('priority', 0);
 
-        $user->favoriteInstructors()->attach($instructorId, [
-            'notes' => $request->input('notes', ''),
-            'priority' => $request->input('priority', 0),
-        ]);
+            // Verificar si ya existe el favorito
+            $existingFavorite = $user->userFavorites()
+                ->where('favoritable_id', (string)$instructorId)
+                ->where('favoritable_type', Instructor::class)
+                ->first();
 
-        return response()->json(['message' => 'Instructor favorito agregado correctamente.']);
+            if ($existingFavorite) {
+                // Eliminar el favorito existente
+                $user->userFavorites()
+                    ->where('favoritable_id', (string)$instructorId)
+                    ->where('favoritable_type', Instructor::class)
+                    ->delete();
+
+                $message = 'Instructor removido de favoritos correctamente.';
+                $action = 'removed';
+            } else {
+                // Agregar nuevo instructor favorito
+                $user->userFavorites()->create([
+                    'favoritable_id' => (string)$instructorId,
+                    'favoritable_type' => Instructor::class,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ]);
+
+                $message = 'Instructor agregado a favoritos correctamente.';
+                $action = 'added';
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => [
+                    'action' => $action,
+                    'instructor_id' => $instructorId,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al procesar el instructor favorito',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al procesar el instructor favorito: ' . $e->getMessage(),
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
+
+    /**
+     * Agrega o remueve un horario de clase de los favoritos del usuario
+     *
+     * Alterna el estado de favorito para un horario de clase específico. Si ya está marcado como favorito, lo remueve.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Alternar horario de clase en favoritos
+     * @operationId toggleFavoriteClassSchedule
+     *
+     * @param \Illuminate\Http\Request $request
+     * @bodyParam favoritable_id integer required ID del horario de clase. Example: 5
+     * @bodyParam notes string Notas adicionales sobre el favorito. Example: "Me gusta el enfoque práctico"
+     * @bodyParam priority integer Nivel de prioridad del favorito (0-10). Example: 3
+     *
+     * @response 200 {
+     *   "exito": true,
+     *   "codMensaje": 1,
+     *   "mensajeUsuario": "Horario de clase agregado a favoritos correctamente.",
+     *   "datoAdicional": {
+     *     "action": "added",
+     *     "class_schedule_id": 5,
+     *     "notes": "Me gusta el enfoque práctico",
+     *     "priority": 3
+     *   }
+     * }
+     * @response 200 {
+     *   "exito": true,
+     *   "codMensaje": 1,
+     *   "mensajeUsuario": "Horario de clase removido de favoritos correctamente.",
+     *   "datoAdicional": {
+     *     "action": "removed",
+     *     "class_schedule_id": 5,
+     *     "notes": "Me gusta el enfoque práctico",
+     *     "priority": 3
+     *   }
+     * }
+     * @response 422 {
+     *   "exito": false,
+     *   "codMensaje": 2,
+     *   "mensajeUsuario": "Error al procesar el horario favorito",
+     *   "datoAdicional": {
+     *     "favoritable_id": ["El campo favoritable_id es obligatorio."]
+     *   }
+     * }
+     * @response 500 {
+     *   "exito": false,
+     *   "codMensaje": 0,
+     *   "mensajeUsuario": "Error inesperado al procesar el horario favorito",
+     *   "datoAdicional": null
+     * }
+     */
 
     public function storeClassSchedule(Request $request)
     {
-
         $request->validate([
             'favoritable_id' => 'required|integer|exists:class_schedules,id',
             'notes' => 'nullable|string|max:255',
             'priority' => 'nullable|integer|min:0',
         ]);
 
-        $user = $request->user();
-        $classScheduleId = $request->input('favoritable_id');
+        try {
+            $user = $request->user();
+            $classScheduleId = $request->input('favoritable_id');
+            $notes = $request->input('notes', '');
+            $priority = $request->input('priority', 0);
 
-        $user->favoriteClassSchedules()->attach($classScheduleId, [
-            'notes' => $request->input('notes', ''),
-            'priority' => $request->input('priority', 0),
-        ]);
+            // Verificar si ya existe el favorito
+            $existingFavorite = $user->userFavorites()
+                ->where('favoritable_id', (string)$classScheduleId)
+                ->where('favoritable_type', ClassSchedule::class)
+                ->first();
 
-        return response()->json(['message' => 'La clase con el horario favorito se agregó correctamente.']);
+            if ($existingFavorite) {
+                // Eliminar el favorito existente
+                $user->userFavorites()
+                    ->where('favoritable_id', (string)$classScheduleId)
+                    ->where('favoritable_type', ClassSchedule::class)
+                    ->delete();
+
+                $message = 'Horario de clase removido de favoritos correctamente.';
+                $action = 'removed';
+            } else {
+                // Agregar nuevo horario favorito
+                $user->userFavorites()->create([
+                    'favoritable_id' => (string)$classScheduleId,
+                    'favoritable_type' => ClassSchedule::class,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ]);
+
+                $message = 'Horario de clase agregado a favoritos correctamente.';
+                $action = 'added';
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => [
+                    'action' => $action,
+                    'class_schedule_id' => $classScheduleId,
+                    'notes' => $notes,
+                    'priority' => $priority
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al procesar el horario favorito',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al procesar el horario favorito: ' . $e->getMessage(),
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
 }

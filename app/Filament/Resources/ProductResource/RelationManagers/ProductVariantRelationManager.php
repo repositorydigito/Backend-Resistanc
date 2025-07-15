@@ -21,19 +21,22 @@ class ProductVariantRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
+        // IDs de los tipos de opción
+        $tallaType = \App\Models\ProductOptionType::where('slug', 'talla')->first();
+        $colorType = \App\Models\ProductOptionType::where('slug', 'color')->first();
+
+        $tallas = $tallaType
+            ? \App\Models\VariantOption::where('product_option_type_id', $tallaType->id)->pluck('name', 'id')
+            : collect();
+        $colores = $colorType
+            ? \App\Models\VariantOption::where('product_option_type_id', $colorType->id)->pluck('name', 'id')
+            : collect();
+
         return $form
             ->schema([
-
-                // Forms\Components\FileUpload::make('main_image')
-                //     ->label('Imagen principal')
-                //     ->image()
-                //     ->directory('products/main')
-                //     ->preserveFilenames()
-                //     ->nullable(),
-
                 Forms\Components\TextInput::make('sku')
                     ->label('SKU')
-                    ->unique(ignoreRecord: true) // Ignora el registro actual para evitar conflictos al editar
+                    ->unique(ignoreRecord: true)
                     ->required()
                     ->maxLength(255),
 
@@ -64,14 +67,26 @@ class ProductVariantRelationManager extends RelationManager
                     ->label('Está Activa')
                     ->default(true),
 
-
-                Forms\Components\Select::make('variant_option_ids')
-                    ->label('Opciones de Variante')
-                    ->multiple()
-                    ->relationship('variantOptions', 'name') // usa la relación belongsToMany
-                    ->preload()
-                    ->searchable()
-                    ->required()
+                Forms\Components\Section::make('Opciones de Variante')
+                    ->description('Selecciona las opciones para esta variante específica')
+                    ->schema([
+                        Forms\Components\Select::make('variant_option_talla')
+                            ->label('Talla')
+                            ->options($tallas)
+                            ->reactive()
+                            ->required(),
+                        Forms\Components\Select::make('variant_option_color')
+                            ->label('Color')
+                            ->options(function (callable $get) use ($colorType) {
+                                // Aquí podrías filtrar colores válidos según la talla seleccionada
+                                // Por simplicidad, mostramos todos los colores
+                                return $colorType
+                                    ? \App\Models\VariantOption::where('product_option_type_id', $colorType->id)->pluck('name', 'id')
+                                    : collect();
+                            })
+                            ->required()
+                            ->reactive(),
+                    ])
                     ->columnSpanFull(),
 
                 Forms\Components\FileUpload::make('images')
@@ -79,11 +94,43 @@ class ProductVariantRelationManager extends RelationManager
                     ->multiple()
                     ->reorderable()
                     ->image()
-                    ->directory('products/variants') // se guardará en storage/app/public/products/variants
+                    ->directory('products/variants')
                     ->preserveFilenames(),
-
-
             ]);
+    }
+
+    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    {
+        $variantOptionIds = [];
+        if (!empty($data['variant_option_talla'])) {
+            $variantOptionIds[] = $data['variant_option_talla'];
+        }
+        if (!empty($data['variant_option_color'])) {
+            $variantOptionIds[] = $data['variant_option_color'];
+        }
+        unset($data['variant_option_talla'], $data['variant_option_color']);
+        $variant = static::getModel()::create($data);
+        if (!empty($variantOptionIds)) {
+            $variant->variantOptions()->sync($variantOptionIds);
+        }
+        return $variant;
+    }
+
+    protected function handleRecordUpdate(\Illuminate\Database\Eloquent\Model $record, array $data): \Illuminate\Database\Eloquent\Model
+    {
+        $variantOptionIds = [];
+        if (!empty($data['variant_option_talla'])) {
+            $variantOptionIds[] = $data['variant_option_talla'];
+        }
+        if (!empty($data['variant_option_color'])) {
+            $variantOptionIds[] = $data['variant_option_color'];
+        }
+        unset($data['variant_option_talla'], $data['variant_option_color']);
+        $record->update($data);
+        if (!empty($variantOptionIds)) {
+            $record->variantOptions()->sync($variantOptionIds);
+        }
+        return $record;
     }
 
     public function table(Table $table): Table
@@ -91,6 +138,12 @@ class ProductVariantRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('sku')
             ->columns([
+
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('sku')
                     ->label('SKU'),
 
@@ -128,3 +181,4 @@ class ProductVariantRelationManager extends RelationManager
             ]);
     }
 }
+

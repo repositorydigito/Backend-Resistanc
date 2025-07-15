@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\StudioController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\ProductVariantApiController;
 use App\Models\Instructor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -170,6 +171,9 @@ Route::prefix('waiting-list')->name('waiting-list.')->middleware('auth:sanctum')
 Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [DrinkController::class, 'index'])->name('index');
     Route::get('/{id}', [DrinkController::class, 'show'])->name('show');
+    Route::get('/base-drinks', [DrinkController::class, 'baseDrinks'])->name('base-drinks');
+    Route::get('/flavor-drinks', [DrinkController::class, 'flavorDrinks'])->name('flavor-drinks');
+    Route::get('/type-drinks', [DrinkController::class, 'typeDrinks'])->name('type-drinks');
 });
 // Fin bebidas
 
@@ -201,10 +205,10 @@ Route::prefix('products')->name('products.')->middleware('auth:sanctum')->group(
 // Favoritos
 Route::prefix('favorites')->name('favorites.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [FavoriteController::class, 'index'])->name('index');
-    Route::post('/drinks/{drink}', [FavoriteController::class, 'storeDrink'])->name('favorite-drink');
-    Route::post('/products/{product}', [FavoriteController::class, 'storeProduct'])->name('favorite-product');
-    Route::post('/classes/{class}', [FavoriteController::class, 'storeClass'])->name('favorite-class');
-    Route::post('/instructors/{instructor}', [FavoriteController::class, 'storeInstructor'])->name('favorite-instructor');
+    Route::post('/drinks/add', [FavoriteController::class, 'storeDrink'])->name('favorite-drink-add');
+    Route::post('/products/add', [FavoriteController::class, 'storeProduct'])->name('favorite-product-add');
+    Route::post('/classes/add', [FavoriteController::class, 'storeClass'])->name('favorite-class-add');
+    Route::post('/instructors/add', [FavoriteController::class, 'storeInstructor'])->name('favorite-instructor-add');
 
 });
 // Fin Favoritos
@@ -274,6 +278,8 @@ Route::prefix('payment-gateway')->name('payment-gateway.')->middleware('auth:san
 Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(function () {
     Route::post('/generate', [InvoiceController::class, 'generarComprobante'])->name('generate');
 });
+
+Route::post('/product-variants', [ProductVariantApiController::class, 'store']);
 
 
 

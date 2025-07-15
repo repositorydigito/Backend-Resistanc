@@ -31,6 +31,7 @@ class ProductVariantResource extends JsonResource
             'variant_options' => $this->variantOptions->map(function ($option) {
                 return [
                     'id' => $option->id,
+                    'type' => $option->productOptionType->name,
                     'name' => $option->name,
                     'is_color' => (bool) $option->productOptionType->is_color, // Asumiendo que tienes un campo 'type' en la opción
                     'value' => $option->value, // Asumiendo que tienes un pivot con el valor de la opción

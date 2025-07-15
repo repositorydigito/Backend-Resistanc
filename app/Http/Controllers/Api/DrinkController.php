@@ -3,8 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BasedrinkResource;
 use App\Http\Resources\DrinkResource;
+use App\Http\Resources\FlavordrinkResource;
+use App\Http\Resources\TypedrinkResource;
+use App\Models\Basedrink;
 use App\Models\Drink;
+use App\Models\Flavordrink;
+use App\Models\Typedrink;
+use Dedoc\Scramble\Support\Generator\Types\Type;
+use Error;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -89,52 +97,6 @@ final class DrinkController extends Controller
 
         $query = Drink::query();
 
-        // // Incluir relaciones si se solicita
-        // if ($request->boolean('include_relations', false)) {
-        //     $query->with(['basesdrinks', 'flavordrinks', 'typesdrinks']);
-        // }
-
-        // // Búsqueda por texto
-        // if ($request->filled('search')) {
-        //     $search = $request->string('search');
-        //     $query->where(function ($q) use ($search) {
-        //         $q->where('name', 'like', "%{$search}%")
-        //             ->orWhere('description', 'like', "%{$search}%");
-        //     });
-        // }
-
-        // // Filtrar por base de bebida
-        // if ($request->filled('base_id')) {
-        //     $query->whereHas('basesdrinks', function ($q) use ($request) {
-        //         $q->where('basedrink_id', $request->integer('base_id'));
-        //     });
-        // }
-
-        // // Filtrar por sabor
-        // if ($request->filled('flavor_id')) {
-        //     $query->whereHas('flavordrinks', function ($q) use ($request) {
-        //         $q->where('flavordrink_id', $request->integer('flavor_id'));
-        //     });
-        // }
-
-        // // Filtrar por tipo
-        // if ($request->filled('type_id')) {
-        //     $query->whereHas('typesdrinks', function ($q) use ($request) {
-        //         $q->where('typedrink_id', $request->integer('type_id'));
-        //     });
-        // }
-
-        // // Filtrar por rango de precio
-        // if ($request->filled('min_price')) {
-        //     $query->where('price', '>=', $request->float('min_price'));
-        // }
-
-        // if ($request->filled('max_price')) {
-        //     $query->where('price', '<=', $request->float('max_price'));
-        // }
-
-
-
         // Paginación o lista completa
         if ($request->has('per_page')) {
             $drinks = $query->paginate(
@@ -204,5 +166,189 @@ final class DrinkController extends Controller
             ->findOrFail($id);
 
         return new DrinkResource($drink);
+    }
+
+    /**
+     * Lista todas las bases de bebidas disponibles
+     *
+     * Obtiene un listado completo de las bases de bebidas registradas en el sistema.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar bases de bebidas
+     * @operationId getDrinkBases
+     *
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Café Espresso",
+     *       "description": "Base de café espresso de alta calidad",
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     },
+     *     {
+     *       "id": 2,
+     *       "name": "Té Negro",
+     *       "description": "Base de té negro orgánico",
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     }
+     *   ]
+     * }
+     */
+    public function baseDrinks()
+    {
+
+        try {
+            $bases = Basedrink::all();
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Bases de bebidas listadas exitosamente',
+                'datoAdicional' => BasedrinkResource::collection($bases),
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al listar las bases de bebidas',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al listar las bases de bebidas',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+    }
+
+    /**
+     * Lista todos los sabores de bebidas disponibles
+     *
+     * Obtiene un listado completo de los sabores registrados para bebidas.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar sabores de bebidas
+     * @operationId getDrinkFlavors
+     *
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Vainilla",
+     *       "description": "Esencia natural de vainilla",
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     },
+     *     {
+     *       "id": 2,
+     *       "name": "Caramelo",
+     *       "description": "Sabor a caramelo artesanal",
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     }
+     *   ]
+     * }
+     */
+
+    public function flavorDrinks()
+    {
+
+        try {
+            $flavors = Flavordrink::all();
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Sabores de bebidas listados exitosamente',
+                'datoAdicional' => FlavordrinkResource::collection($flavors),
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al listar los sabores de bebidas',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al listar los sabores de bebidas',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+
+    }
+
+    /**
+     * Lista todos los tipos de bebidas disponibles
+     *
+     * Obtiene un listado completo de los tipos de preparación de bebidas.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Listar tipos de bebidas
+     * @operationId getDrinkTypes
+     *
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Fría",
+     *       "description": "Bebida servida con hielo",
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     },
+     *     {
+     *       "id": 2,
+     *       "name": "Caliente",
+     *       "description": "Bebida servida caliente",
+     *       "created_at": "2024-01-15T10:30:00.000Z",
+     *       "updated_at": "2024-01-15T10:30:00.000Z"
+     *     }
+     *   ]
+     * }
+     */
+
+    public function typeDrinks()
+    {
+
+          try {
+            $types = Typedrink::all();
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Tipos de bebidas listados exitosamente',
+                'datoAdicional' => TypedrinkResource::collection($types),
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Error al listar los tipos de bebidas',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error inesperado al listar los tipos de bebidas',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+
     }
 }

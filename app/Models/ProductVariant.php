@@ -23,13 +23,11 @@ final class ProductVariant extends Model
         'images',
         'main_image',
         'is_active'
-
     ];
 
     protected $casts = [
         'images' => 'array',
     ];
-
 
     /**
      * Get the product that owns this variant.
@@ -68,7 +66,7 @@ final class ProductVariant extends Model
      */
     public function getFinalPriceAttribute(): float
     {
-        return $this->price_soles;
+        return (float) $this->price_soles;
     }
 
     /**
