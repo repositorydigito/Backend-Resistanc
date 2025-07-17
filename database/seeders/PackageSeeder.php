@@ -35,7 +35,7 @@ class PackageSeeder extends Seeder
                 'billing_type' => 'one_time',
                 'type' => 'temporary',
                 'commercial_type' => 'promotion',
-                'duration_in_months' => 0, // 0 months for temporary packages
+                'duration_in_months' => 0,
                 'start_date' => now(),
                 'end_date' => now()->addMonths(3),
                 'is_virtual_access' => false,
@@ -49,8 +49,10 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo para nuevos usuarios', 'Una vez por persona']),
                 'target_audience' => 'beginner',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
+
             ],
             [
                 'name' => '1 Clase',
@@ -80,8 +82,10 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 30 días']),
                 'target_audience' => 'beginner',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
+
             ],
             [
                 'name' => '5 Clases',
@@ -111,6 +115,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 30 días']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -142,6 +147,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 60 días']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -173,6 +179,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 6 meses']),
                 'target_audience' => 'advanced',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => 2, // RSISTANC GOLD
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -204,6 +211,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 1 año']),
                 'target_audience' => 'advanced',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => 3, // RSISTANC BLACK
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -237,6 +245,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo para nuevos usuarios', 'Una vez por persona']),
                 'target_audience' => 'beginner',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -268,6 +277,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 30 días']),
                 'target_audience' => 'beginner',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -299,6 +309,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 30 días']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -330,6 +341,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 60 días']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -361,6 +373,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 60 días']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => 1, // RSISTANC
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -392,6 +405,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 6 meses']),
                 'target_audience' => 'advanced',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => 2, // RSISTANC GOLD
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -423,6 +437,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido por 6 meses']),
                 'target_audience' => 'advanced',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => 3, // RSISTANC BLACK
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -455,6 +470,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido solo en febrero', 'Para 2 personas', 'Debe reservar en pareja']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -486,6 +502,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido solo en febrero', 'Para 2 personas']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -519,6 +536,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido en mayo', 'Promoción especial mamás']),
                 'target_audience' => 'beginner',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -552,6 +570,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido en junio', 'Promoción especial papás']),
                 'target_audience' => 'advanced',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -585,6 +604,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido julio-agosto', 'Edición limitada Fiestas Patrias']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -618,6 +638,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Válido octubre-noviembre', 'Temática Halloween']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -651,6 +672,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo del 24-28 marzo', 'Cantidad limitada', 'No acumulable']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -684,6 +706,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo del 7-10 abril', 'Oferta limitada']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -749,6 +772,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo Black Friday', 'Cantidad muy limitada', 'Oferta histórica']),
                 'target_audience' => 'advanced',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -782,6 +806,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo Cyber Monday', 'Modalidad virtual únicamente']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -847,6 +872,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo octubre', 'Parte de donación incluida']),
                 'target_audience' => 'beginner',
                 'discipline_id' => 2, // PILATES
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -880,6 +906,7 @@ class PackageSeeder extends Seeder
                 'restrictions' => json_encode(['Solo junio', 'Mes completo Pride']),
                 'target_audience' => 'intermediate',
                 'discipline_id' => 1, // CYCLING
+                'membership_id' => null, // No membership required for trial
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

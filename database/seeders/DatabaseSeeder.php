@@ -26,34 +26,46 @@ class DatabaseSeeder extends Seeder
 
         // Disciplinas
         $this->call(DisciplineSeeder::class);
+
+        // Membresías
+        $this->call(MembershipSeeder::class);
+
         // Instructor
         $this->call(InstructorSeeder::class);
 
         // Clases
         $this->call(ClassModelSeeder::class);
+
         // Salas o estudios
         $this->call(StudioSeeder::class);
+
         // Paquetes
         $this->call(PackageSeeder::class);
+
         // Clientes
         $this->call(ClientSeeder::class);
 
         // Tipos de shake
         $this->call(TypeDrinkSeeder::class);
+
         // Sabores de shake
         $this->call(FlavorDrinkSeeder::class);
+
         // Base del shake
         $this->call(BaseDrinkSeeder::class);
+
         // Shake
         $this->call(DrinkSeeder::class);
 
         // Horarios
         $this->call(ClassScheduleSeeder::class);
 
-         // Marcas de los productos
+        // Marcas de los productos
         $this->call(ProductBrandSeeder::class);
+
         // Categoria del producto
         $this->call(ProductCategorySeeder::class);
+
         // Etiquetas del producto
         $this->call(ProductTagSeeder::class);
 
@@ -62,13 +74,12 @@ class DatabaseSeeder extends Seeder
 
         // Opciones de variacion del producto
         $this->call(ProductOptionTypeSeeder::class);
+
         // Variaciones del producto
         $this->call(VariantOptionSeeder::class);
 
-
         //Informacion de la empresa
         $this->call(CompanySeeder::class);
-
 
         $this->command->info('🎉 Database seeding completed!');
     }

@@ -55,25 +55,7 @@ final class ClassModel extends Model
         return $this->belongsTo(Discipline::class);
     }
 
-    /**
-     * Get the instructor for this class.
-     */
-    // public function instructor(): BelongsTo
-    // {
-    //     return $this->belongsTo(Instructor::class);
-    // }
 
-    /**
-     * Get the studio where this class is held.
-     */
-    // public function studio(): BelongsTo
-    // {
-    //     return $this->belongsTo(Studio::class);
-    // }
-
-    /**
-     * Get the schedules for this class.
-     */
     public function schedules(): HasMany
     {
         return $this->hasMany(ClassSchedule::class, 'class_id');
