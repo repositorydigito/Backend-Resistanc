@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('flavordrinks', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            // $table->string('slug')->unique();
-            // $table->string('description')->nullable();
-            $table->string('image_url')->nullable();
+
+            $table->string('name')->unique()->comment('Nombre del sabor de la bebida');
+            $table->string('image_url')->nullable()->comment('URL de la imagen del sabor de la bebida');
 
             $table->timestamps();
         });

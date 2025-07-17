@@ -14,25 +14,22 @@ return new class extends Migration
         Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedInteger('quantity')->default(1);
-            $table->decimal('unit_price', 8, 2);
-            $table->decimal('total_price', 8, 2);
+            $table->unsignedInteger('quantity')->default(1)->comment('Cantidad del producto en el carrito');
+            $table->decimal('unit_price', 8, 2)->comment('Precio unitario del producto');
+            $table->decimal('total_price', 8, 2)->comment('Precio total del producto');
             // $table->timestamp('added_at')->useCurrent();
-
-
 
             // Relaciones
             $table->foreignId('shopping_cart_id')->constrained('shopping_carts')->onDelete('cascade');
-
             $table->foreignId('product_id')->nullable()->constrained('products');
             $table->foreignId('product_variant_id')->nullable()->constrained('product_variants');
-
-            $table->timestamps();
 
             // Índices
             $table->unique(['shopping_cart_id', 'product_id', 'product_variant_id']);
             $table->index('product_id');
             $table->index('product_variant_id');
+
+            $table->timestamps();
         });
     }
 

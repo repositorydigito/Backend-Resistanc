@@ -13,22 +13,26 @@ class Membership extends Model
         'slug',
         'level',
         'description',
-        'benefits',
-        'color_hex',
+        'classes_before',
+        'duration',
+        'colors',
+        'icon',
+        'is_benefit_shake',
+        'typeDrink_id',
+        'shake_quantity',
+        'is_benefit_discipline',
+        'discipline_id',
+        'discipline_quantity',
         'is_active',
-        'display_order'
     ];
 
-
     protected $casts = [
-        'benefits' => 'array',      // Para campo JSON - REQUERIDO
-        'features' => 'array',      // Para campo JSON
-        'restrictions' => 'array',  // Para campo JSON
-        'is_active' => 'boolean',   // Para el campo is_active
-        'is_virtual_access' => 'boolean',
-        'auto_renewal' => 'boolean',
-        'is_featured' => 'boolean',
-        'is_popular' => 'boolean',
+        'colors' => 'array',
+        'is_active' => 'boolean',
+        'is_benefit_shake' => 'boolean',
+        'is_benefit_discipline' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -67,10 +71,21 @@ class Membership extends Model
         });
     }
 
-    // Relacion uno a uno
-
+    // Relacion uno a muchos
     public function packages()
     {
         return $this->hasMany(Package::class);
+    }
+
+    // Relación con TypeDrink
+    // public function typeDrink()
+    // {
+    //     return $this->belongsTo(TypeDrink::class, 'typeDrink_id');
+    // }
+
+    // Relación con Discipline
+    public function discipline()
+    {
+        return $this->belongsTo(Discipline::class, 'discipline_id');
     }
 }

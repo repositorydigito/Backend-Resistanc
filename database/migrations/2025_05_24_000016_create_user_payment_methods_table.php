@@ -11,47 +11,50 @@ return new class extends Migration
      */
     public function up(): void
     {
+
+        // no utilizado
         Schema::create('user_payment_methods', function (Blueprint $table) {
-
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
-            $table->enum('payment_type', ['credit_card', 'debit_card', 'bank_transfer', 'digital_wallet', 'crypto']);
+            $table->enum('payment_type', ['credit_card', 'debit_card', 'bank_transfer', 'digital_wallet', 'crypto'])->comment('Tipo de método de pago');
             $table->enum('provider', [
                 'visa', 'mastercard', 'amex', 'bcp', 'interbank',
                 'scotiabank', 'bbva', 'yape', 'plin', 'paypal'
-            ])->nullable();
+            ])->nullable()->comment('Proveedor del método de pago');
 
             // Datos tarjeta
-            $table->char('card_last_four', 4)->nullable();
-            $table->string('card_brand', 20)->nullable();
-            $table->string('card_holder_name')->nullable();
-            $table->tinyInteger('card_expiry_month')->unsigned()->nullable();
-            $table->smallInteger('card_expiry_year')->unsigned()->nullable();
+            $table->char('card_last_four', 4)->nullable()->comment('Últimos 4 dígitos de la tarjeta');
+            $table->string('card_brand', 20)->nullable()->comment('Marca de la tarjeta');
+            $table->string('card_holder_name')->nullable()->comment('Nombre del titular de la tarjeta');
+            $table->tinyInteger('card_expiry_month')->unsigned()->nullable()->comment('Mes de expiración de la tarjeta');
+            $table->smallInteger('card_expiry_year')->unsigned()->nullable()->comment('Año de expiración de la tarjeta');
 
             // Cuenta bancaria
-            $table->string('bank_name', 100)->nullable();
-            $table->string('account_number_masked', 50)->nullable();
+            $table->string('bank_name', 100)->nullable()->comment('Nombre del banco');
+            $table->string('account_number_masked', 50)->nullable()->comment('Número de cuenta enmascarado');
 
             // Configuración y gateway
-            $table->boolean('is_default')->default(false);
-            $table->boolean('is_saved_for_future')->default(true);
-            $table->string('gateway_token', 500)->nullable();
-            $table->string('gateway_customer_id')->nullable();
-            $table->json('billing_address')->nullable();
+            $table->boolean('is_default')->default(false)->comment('Indica si es el método de pago por defecto');
+            $table->boolean('is_saved_for_future')->default(true)->comment('Indica si se guarda para futuros pagos');
+            $table->string('gateway_token', 500)->nullable()->comment('Token del gateway de pago');
+            $table->string('gateway_customer_id')->nullable()->comment('ID del cliente en el gateway de pago');
+            $table->json('billing_address')->nullable()->comment('Dirección de facturación');
             $table->json('metadata')->nullable()->comment('Datos adicionales específicos del proveedor');
 
             // Estado
-            $table->enum('status', ['active', 'expired', 'blocked', 'pending_verification', 'inactive'])->default('active');
-            $table->enum('verification_status', ['pending', 'verified', 'failed'])->default('pending');
-            $table->timestamp('last_used_at')->nullable();
+            $table->enum('status', ['active', 'expired', 'blocked', 'pending_verification', 'inactive'])->default('active')->comment('Estado del método de pago');
+            $table->enum('verification_status', ['pending', 'verified', 'failed'])->default('pending')->comment('Estado de verificación del método de pago');
+            $table->timestamp('last_used_at')->nullable()->comment('Última vez que se utilizó el método de pago');
 
-            $table->timestamps();
+            // Relaciones
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             // Índices
             $table->index(['user_id', 'status'], 'idx_payment_methods_user');
             $table->index(['user_id', 'is_default'], 'idx_payment_methods_default');
             $table->index(['payment_type', 'status'], 'idx_payment_methods_type');
+
+            $table->timestamps();
         });
     }
 

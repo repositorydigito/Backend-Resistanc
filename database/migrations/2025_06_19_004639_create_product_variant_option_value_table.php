@@ -22,9 +22,9 @@ return new class extends Migration
                 ->constrained('variant_option')
                 ->onDelete('cascade');
 
-            $table->timestamps();
 
             $table->unique(['product_variant_id', 'variant_option_id'], 'variant_option_unique');
+            $table->timestamps();
         });
     }
 

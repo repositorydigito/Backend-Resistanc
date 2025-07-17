@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\Company;
+use App\Models\Discipline;
+use App\Models\Product;
+use App\Models\ProductBrand;
+use App\Models\Studio;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -16,51 +21,55 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('🌱 Starting RSISTANC database seeding...');
 
-        // Create admin/test user first
-        // $this->createAdminUser();
+        // Usuarios
+        $this->call(UserSeeder::class);
 
-        // Run the main RSISTANC user seeder
-        // $this->call(RsistancSeeder::class);
+        // Disciplinas
+        $this->call(DisciplineSeeder::class);
+        // Instructor
+        $this->call(InstructorSeeder::class);
 
-        // Run the complete system seeder
-        // $this->call(RsistancCompleteSeeder::class);
+        // Clases
+        $this->call(ClassModelSeeder::class);
+        // Salas o estudios
+        $this->call(StudioSeeder::class);
+        // Paquetes
+        $this->call(PackageSeeder::class);
+        // Clientes
+        $this->call(ClientSeeder::class);
 
-        // Run the info seeder
-        $this->call(InfoSeeder::class);
+        // Tipos de shake
+        $this->call(TypeDrinkSeeder::class);
+        // Sabores de shake
+        $this->call(FlavorDrinkSeeder::class);
+        // Base del shake
+        $this->call(BaseDrinkSeeder::class);
+        // Shake
+        $this->call(DrinkSeeder::class);
+
+        // Horarios
+        $this->call(ClassScheduleSeeder::class);
+
+         // Marcas de los productos
+        $this->call(ProductBrandSeeder::class);
+        // Categoria del producto
+        $this->call(ProductCategorySeeder::class);
+        // Etiquetas del producto
+        $this->call(ProductTagSeeder::class);
+
+        // Productos
+        $this->call(ProductSeeder::class);
+
+        // Opciones de variacion del producto
+        $this->call(ProductOptionTypeSeeder::class);
+        // Variaciones del producto
+        $this->call(VariantOptionSeeder::class);
+
+
+        //Informacion de la empresa
+        $this->call(CompanySeeder::class);
+
 
         $this->command->info('🎉 Database seeding completed!');
-    }
-
-    /**
-     * Create the main admin/test user.
-     */
-    private function createAdminUser(): void
-    {
-        $this->command->info('👑 Creating admin user...');
-
-        $adminUser = User::factory()->create([
-            'name' => 'Admin RSISTANC',
-            'email' => 'admin@rsistanc.com',
-        ]);
-
-        // Create complete profile for admin
-        $adminUser->profile()->create([
-            'first_name' => 'Admin',
-            'last_name' => 'RSISTANC',
-            'birth_date' => now()->subYears(30),
-            'gender' => 'male',
-            'shoe_size_eu' => 42,
-        ]);
-
-        // Create primary contact for admin
-        $adminUser->contacts()->create([
-            'phone' => '987654321',
-            'address_line' => 'Av. Javier Prado Este 123',
-            'city' => 'Lima',
-            'country' => 'PE',
-            'is_primary' => true,
-        ]);
-
-        $this->command->line("✅ Admin user created: {$adminUser->email}");
     }
 }

@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('variant_option', function (Blueprint $table) {
             $table->id();
 
-            $table->string('name'); // Ej: azul, rojo, S, M, L
-            $table->foreignId('product_option_type_id')->constrained('product_option_types')->onDelete('cascade');
+            $table->string('name')->comment('Nombre de la opción de variante');
+            $table->string('value')->comment('Valor de la opción de variante'); // Ej: S, M, L, Negro
 
-            $table->string('value'); // Ej: S, M, L, Negro
+            // Relaciones
+            $table->foreignId('product_option_type_id')->constrained('product_option_types')->onDelete('cascade');
 
             $table->timestamps();
         });

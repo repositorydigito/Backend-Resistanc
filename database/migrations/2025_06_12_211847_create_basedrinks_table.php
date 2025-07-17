@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('basedrinks', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            // $table->string('slug')->unique();
-            // $table->string('description')->nullable();
-            $table->string('image_url')->nullable();
-            $table->string('ico_url')->nullable();
+
+            $table->string('name')->unique()->comment('Nombre de la bebida base');
+            $table->string('image_url')->nullable()->comment('URL de la imagen de la bebida base');
+            $table->string('ico_url')->nullable()->comment('URL del ícono de la bebida base');
+
             $table->timestamps();
         });
     }

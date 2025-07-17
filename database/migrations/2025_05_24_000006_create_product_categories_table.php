@@ -13,18 +13,19 @@ return new class extends Migration
     {
         Schema::create('product_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 100);
-            $table->string('slug', 100)->unique();
-            $table->text('description')->nullable();
-            $table->foreignId('parent_id')->nullable()->constrained('product_categories')->onDelete('set null');
-            $table->string('image_url')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->unsignedTinyInteger('sort_order')->default(0);
-            $table->timestamps();
+            $table->string('name', 100)->comment('Nombre de la categoría del producto');
+            $table->string('slug', 100)->unique()->comment('Slug de la categoría del producto');
+            $table->text('description')->nullable()->comment('Descripción de la categoría del producto');
+            $table->foreignId('parent_id')->nullable()->constrained('product_categories')->onDelete('set null')->comment('Categoría padre');
+            $table->string('image_url')->nullable()->comment('URL de la imagen de la categoría del producto');
+            $table->boolean('is_active')->default(true)->comment('Indica si la categoría está activa');
+            $table->unsignedTinyInteger('sort_order')->default(0)->comment('Orden de clasificación de la categoría');
 
             // Índices
             $table->index(['parent_id', 'is_active']);
             $table->index('slug');
+
+            $table->timestamps();
         });
     }
 

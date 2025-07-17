@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+
+        // no utilizado
         Schema::create('promocodes', function (Blueprint $table) {
             $table->id();
             $table->string('code', 50)->unique();

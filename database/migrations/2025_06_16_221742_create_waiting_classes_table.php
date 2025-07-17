@@ -14,7 +14,15 @@ return new class extends Migration
         Schema::create('waiting_classes', function (Blueprint $table) {
             $table->id();
 
-            // 🔗 Claves foránea
+            $table->enum('status', [
+                'waiting',    // En espera
+                'notified',   // Notificado
+                'confirmed',  // Confirmado
+                'expired',    // Expirado
+                'cancelled'   // Cancelado
+            ])->default('waiting')->comment('Estado de la clase en espera');
+
+            // Relaciones
             $table->foreignId('class_schedules_id')
                 ->constrained('class_schedules')
                 ->onDelete('cascade');
@@ -27,16 +35,6 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('user_packages')
                 ->onDelete('set null');
-
-            $table->enum('status', [
-                'waiting',    // En espera
-                'notified',   // Notificado
-                'confirmed',  // Confirmado
-                'expired',    // Expirado
-                'cancelled'   // Cancelado
-            ])->default('waiting');
-
-
 
             $table->timestamps();
         });

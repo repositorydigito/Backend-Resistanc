@@ -13,17 +13,19 @@ return new class extends Migration
     {
         Schema::create('password_reset_codes', function (Blueprint $table) {
             $table->id();
-            $table->string('email')->index();
-            $table->string('code', 4);
-            $table->timestamp('expires_at');
-            $table->boolean('used')->default(false);
-            $table->timestamp('used_at')->nullable();
-            $table->timestamps();
+
+            $table->string('email')->index()->comment('Correo electrónico del usuario que solicita el restablecimiento de contraseña');
+            $table->string('code', 4)->comment('Código de restablecimiento de contraseña');
+            $table->timestamp('expires_at')->comment('Fecha y hora de expiración del código');
+            $table->boolean('used')->default(false)->comment('Indica si el código ha sido utilizado');
+            $table->timestamp('used_at')->nullable()->comment('Fecha y hora en que se utilizó el código');
 
             // Índices para optimizar consultas
             $table->index(['email', 'code']);
             $table->index(['email', 'used']);
             $table->index('expires_at');
+
+            $table->timestamps();
         });
     }
 

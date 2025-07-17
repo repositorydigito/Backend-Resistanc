@@ -14,6 +14,12 @@ return new class extends Migration
         Schema::create('drink_user', function (Blueprint $table) {
             $table->id();
 
+            $table->enum('status', ['pending', 'completed', 'cancelled'])
+                ->default('pending')->comment('Estado de la bebida para el usuario');
+
+            $table->integer('quantity')->default(1)->comment('Cantidad de bebidas pedidas por el usuario');
+
+            // Relaciones
             $table->foreignId('drink_id')
                 ->constrained()
                 ->onDelete('cascade');
@@ -24,12 +30,6 @@ return new class extends Migration
             $table->foreignId('classschedule_id')->nullable()
                 ->constrained('class_schedules')
                 ->onDelete('cascade');
-
-            $table->enum('status', ['pending', 'completed', 'cancelled'])
-                ->default('pending');
-
-            $table->integer('quantity')->default(1);
-
 
             // Índices para performance
             $table->index(['user_id', 'drink_id']);

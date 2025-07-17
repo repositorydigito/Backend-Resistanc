@@ -17,6 +17,7 @@ use Spatie\Permission\Traits\HasRoles;
  * Usuario principal del sistema RSISTANC
  *
  * @property int $id ID único del usuario
+ * @property string $code Código único del usuario (formato tipo tarjeta de crédito)
  * @property string $name Nombre completo del usuario
  * @property string $email Correo electrónico único
  * @property \Illuminate\Support\Carbon|null $email_verified_at Fecha de verificación del email
@@ -49,6 +50,7 @@ final class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'code',
         'name',
         'email',
         'password',
@@ -64,7 +66,114 @@ final class User extends Authenticatable
         'remember_token',
     ];
 
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
 
+        static::creating(function ($user) {
+            if (empty($user->code)) {
+                $user->code = static::generateUniqueCode();
+            }
+        });
+    }
+
+    /**
+     * Generate a unique code similar to a credit card number.
+     * Format: XXXX-XXXX-XXXX-XXXX (16 digits with hyphens)
+     */
+    public static function generateUniqueCode(): string
+    {
+        $maxAttempts = 100; // Prevent infinite loops
+        $attempts = 0;
+
+        do {
+            // Generate 16 random digits
+            $digits = '';
+            for ($i = 0; $i < 16; $i++) {
+                $digits .= mt_rand(0, 9);
+            }
+
+            // Format as XXXX-XXXX-XXXX-XXXX
+            $code = substr($digits, 0, 4) . '-' .
+                   substr($digits, 4, 4) . '-' .
+                   substr($digits, 8, 4) . '-' .
+                   substr($digits, 12, 4);
+
+            $attempts++;
+
+                        // If we've tried too many times, add a timestamp to ensure uniqueness
+            if ($attempts >= $maxAttempts) {
+                $timestamp = (string) time();
+                $code = substr($digits, 0, 4) . '-' .
+                       substr($digits, 4, 4) . '-' .
+                       substr($digits, 8, 4) . '-' .
+                       substr($timestamp, -4);
+                break;
+            }
+
+        } while (static::where('code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Validate if a code has the correct format.
+     * Format: XXXX-XXXX-XXXX-XXXX (16 digits with hyphens)
+     */
+    public static function isValidCodeFormat(string $code): bool
+    {
+        return preg_match('/^\d{4}-\d{4}-\d{4}-\d{4}$/', $code) === 1;
+    }
+
+    /**
+     * Get the code without hyphens (raw digits only).
+     */
+    public function getCodeDigitsAttribute(): string
+    {
+        return str_replace('-', '', $this->code);
+    }
+
+    /**
+     * Get the masked code for display (shows only first and last 4 digits).
+     * Format: XXXX-****-****-XXXX
+     */
+    public function getMaskedCodeAttribute(): string
+    {
+        if (!$this->code) {
+            return '';
+        }
+
+        $parts = explode('-', $this->code);
+        if (count($parts) !== 4) {
+            return $this->code;
+        }
+
+        return $parts[0] . '-****-****-' . $parts[3];
+    }
+
+    /**
+     * Regenerate the user's code.
+     * Useful when a code needs to be changed.
+     */
+    public function regenerateCode(): bool
+    {
+        $this->code = static::generateUniqueCode();
+        return $this->save();
+    }
+
+    /**
+     * Scope to find users by code (with or without hyphens).
+     */
+    public function scopeByCode($query, string $code)
+    {
+        // Remove hyphens for comparison
+        $cleanCode = str_replace('-', '', $code);
+
+        return $query->whereRaw('REPLACE(code, "-", "") = ?', [$cleanCode]);
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -348,7 +457,7 @@ final class User extends Authenticatable
             ->where('expiry_date', '>', now())
             ->where('remaining_classes', '>', 0)
             ->sum('remaining_classes');
-        
+
         return (int) $count;
     }
 
@@ -361,7 +470,7 @@ final class User extends Authenticatable
             ->where('status', 'active')
             ->where('expiry_date', '>', now())
             ->count();
-        
+
         return (int) $count;
     }
 

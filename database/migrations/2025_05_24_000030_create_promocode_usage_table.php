@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // No utilizado
         Schema::create('promocode_usage', function (Blueprint $table) {
             $table->id();
             $table->foreignId('promocode_id')->constrained('promocodes')->onDelete('cascade');

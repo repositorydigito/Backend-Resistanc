@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('product_tags', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 40)->unique();
+            $table->string('name', 40)->unique()->comment('Nombre de la etiqueta del producto');
             $table->timestamps();
         });
     }

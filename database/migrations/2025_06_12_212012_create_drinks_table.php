@@ -19,10 +19,7 @@ return new class extends Migration
             $table->string('description')->nullable()->comment('Descripción de la bebida');
             $table->string('image_url')->nullable()->comment('URL de la imagen de la bebida');
 
-            // $table->float('price')->default(0)->comment('Precio de la bebida');
-
             // Relaciones
-
             $table->foreignId('typedrink_id')
                 ->nullable()
                 ->constrained('typedrinks')

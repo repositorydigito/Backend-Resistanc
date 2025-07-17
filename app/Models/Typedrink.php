@@ -22,4 +22,9 @@ class Typedrink extends Model
             ->withTimestamps()
             ->withPivot('id');
     }
+
+    // public function memberships()
+    // {
+    //     return $this->belongsTo(Membership::class);
+    // }
 }

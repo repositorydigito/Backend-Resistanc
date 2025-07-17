@@ -13,22 +13,18 @@ return new class extends Migration
     {
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
-            // Cambiar row y column a integer
-            $table->integer('seat_number')->nullable(); // Asiento único
-            $table->integer('row');
-            $table->integer('column');
 
-            // Agregar campo is_active
-            $table->boolean('is_active')->default(true);
+            $table->integer('seat_number')->nullable()->comment('Asiento único');
+            $table->integer('row')->comment('Fila del asiento');
+            $table->integer('column')->comment('Columna del asiento');
+            $table->boolean('is_active')->default(true)->comment('Estado del asiento');
 
+            // Relaciones
             $table->foreignId('studio_id')->constrained('studios')->onDelete('cascade');
 
-            // Agregar índice único para evitar duplicados
-            $table->unique(['studio_id', 'row', 'column'], 'unique_seat_position');
-
-            // Agregar índice para is_active
+            // Índices y restricciones
             $table->index('is_active');
-
+            $table->unique(['studio_id', 'row', 'column'], 'unique_seat_position');
 
             $table->timestamps();
         });

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // no utilizado
         Schema::create('booking_seats', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_schedule_id')->constrained('class_schedules')->onDelete('cascade');

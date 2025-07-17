@@ -72,4 +72,17 @@ final class Discipline extends Model
     {
         return $this->hasMany(Package::class, 'discipline_id');
     }
+
+    // Tablas polimórficas
+    public function membresiables(): BelongsToMany
+    {
+        return $this->morphToMany(Membership::class, 'membresiable')
+            ->withPivot('quantity', 'is_active', 'has_image', 'image_path', 'unlimited')
+            ->withTimestamps();
+    }
+
+    public function memberships()
+    {
+        return $this->belongsTo(Membership::class);
+    }
 }

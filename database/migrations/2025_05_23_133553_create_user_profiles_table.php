@@ -13,23 +13,24 @@ return new class extends Migration
     {
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('first_name', 60);
-            $table->string('last_name', 60);
-            $table->date('birth_date')->nullable();
-            $table->enum('gender', ['female', 'male', 'other', 'na'])->default('na');
+            $table->string('first_name', 60)->comment('Nombre de la persona');
+            $table->string('last_name', 60)->comment('Apellido de la persona');
+            $table->date('birth_date')->nullable()->comment('Fecha de nacimiento');
+            $table->enum('gender', ['female', 'male', 'other', 'na'])->default('na')->comment('Género');
 
             // Modificar campo existente
-            $table->unsignedTinyInteger('shoe_size_eu')->nullable();
+            $table->unsignedTinyInteger('shoe_size_eu')->nullable()->comment('Talla de calzado');
 
             // Agregar nuevos campos
-            $table->string('profile_image')->nullable();
-            $table->text('bio')->nullable();
-            $table->string('emergency_contact_name', 100)->nullable();
-            $table->string('emergency_contact_phone', 15)->nullable();
-            $table->text('medical_conditions')->nullable();
-            $table->text('fitness_goals')->nullable();
+            $table->string('profile_image')->nullable()->comment('Imagen de perfil');
+            $table->text('bio')->nullable()->comment('Biografía');
+            $table->string('emergency_contact_name', 100)->nullable()->comment('Nombre del contacto de emergencia');
+            $table->string('emergency_contact_phone', 15)->nullable()->comment('Teléfono del contacto de emergencia');
+            $table->text('medical_conditions')->nullable()->comment('Condiciones médicas');
+            $table->text('fitness_goals')->nullable()->comment('Objetivos de fitness');
 
+            // RELACIONES
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             // Índices
             $table->unique('user_id');

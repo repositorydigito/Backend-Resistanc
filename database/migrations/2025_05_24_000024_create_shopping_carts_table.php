@@ -13,17 +13,22 @@ return new class extends Migration
     {
         Schema::create('shopping_carts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('session_id', 100)->nullable();
-            $table->decimal('total_amount', 10, 2)->default(0.00);
-            $table->unsignedInteger('item_count')->default(0);
 
-            $table->enum('status', ['active', 'completed', 'abandoned', 'converted'])->default('active');
-            $table->timestamps();
+            $table->string('session_id', 100)->nullable()->comment('ID de sesión del carrito de compras');
+            $table->decimal('total_amount', 10, 2)->default(0.00)->comment('Monto total del carrito de compras');
+            $table->unsignedInteger('item_count')->default(0)->comment('Cantidad total de artículos en el carrito de compras');
+
+            $table->enum('status', ['active', 'completed', 'abandoned', 'converted'])->default('active')->comment('Estado del carrito de compras');
+
+            // Relaciones
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+
             // Índices
             $table->index('user_id');
             $table->index('session_id');
             $table->index('status');
+
+            $table->timestamps();
         });
     }
 

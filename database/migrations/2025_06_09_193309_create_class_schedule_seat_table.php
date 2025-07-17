@@ -13,9 +13,26 @@ return new class extends Migration
     {
         Schema::create('class_schedule_seat', function (Blueprint $table) {
             $table->id();
-            // 🔗 Claves foráneas
-            $table->string('code')->unique();
 
+            $table->string('code')->unique()->comment('Código único del asiento en la clase');
+
+
+
+            // 📊 Estados del asiento
+            $table->enum('status', [
+                'available',    // Disponible
+                'reserved',     // Reservado
+                'occupied',     // Ocupado
+                'Completed',    // Completado
+                'blocked'       // Bloqueado
+            ])->default('available')->comment('Estado del asiento en la clase');
+
+            // 📅 Timestamps
+            $table->timestamp('reserved_at')->nullable();
+            $table->timestamp('expires_at')->nullable(); // Para reservas temporales
+
+
+            // Relaciones
             $table->foreignId('class_schedules_id')
                 ->constrained('class_schedules')
                 ->onDelete('cascade');
@@ -39,17 +56,6 @@ return new class extends Migration
                 ->constrained('user_packages')
                 ->onDelete('set null');
 
-            // 📊 Estados del asiento
-            $table->enum('status', [
-                'available',    // Disponible
-                'reserved',     // Reservado
-                'occupied',     // Ocupado
-                'Completed',    // Completado
-                'blocked'       // Bloqueado
-            ])->default('available');
-
-
-
 
             // 🔒 Índices únicos y compuestos
             $table->unique(['class_schedules_id', 'seats_id'], 'unique_schedule_seat');
@@ -57,9 +63,6 @@ return new class extends Migration
             $table->index(['user_id', 'status']);
             $table->index('expires_at');
 
-            // 📅 Timestamps
-            $table->timestamp('reserved_at')->nullable();
-            $table->timestamp('expires_at')->nullable(); // Para reservas temporales
             $table->timestamps();
         });
     }

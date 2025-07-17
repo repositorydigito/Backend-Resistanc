@@ -31,7 +31,6 @@ return new class extends Migration
             $table->text('url_facturacion')->nullable()->comment('Proveedor de facturación');
             $table->text('token_facturacion')->nullable()->comment('Token de acceso para la API de facturación');
 
-
             $table->timestamps();
         });
     }
