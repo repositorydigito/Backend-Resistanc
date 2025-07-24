@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Carbon\Carbon;
@@ -12,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Booking extends Model
 {
+
+    // No utilizado
     use HasFactory;
 
     protected $fillable = [
@@ -197,7 +197,7 @@ final class Booking extends Model
             'yape' => 'Yape',
             'plin' => 'Plin',
             default => ucfirst($this->payment_method),
-        ];
+        };
     }
 
     /**
@@ -206,7 +206,7 @@ final class Booking extends Model
     public function confirm(): void
     {
         $this->update(['status' => 'confirmed']);
-        
+
         // Book the spot in the schedule
         $this->classSchedule->bookSpot();
     }

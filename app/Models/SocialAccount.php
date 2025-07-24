@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use App\Enums\AuthProvider;
@@ -29,6 +27,8 @@ use Illuminate\Support\Facades\Crypt;
  */
 final class SocialAccount extends Model
 {
+
+    // No utilizado
     use HasFactory;
 
     /**

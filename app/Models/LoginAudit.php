@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class LoginAudit extends Model
 {
+
+    // No utilizado
     use HasFactory;
 
     /**

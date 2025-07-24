@@ -41,118 +41,136 @@ class StudioResource extends Resource
                 Section::make('Información de la sala')
                     ->columns(2)
                     ->schema([
+                        // Sección 1: Información básica
+                        Section::make('Datos principales')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Nombre')
+                                    ->required()
+                                    ->maxLength(100),
 
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->maxLength(100),
-                        Forms\Components\TextInput::make('location')
-                            ->label('Ubicación')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\Select::make('studio_type')
-                            ->label('Tipo de Sala')
-                            ->options([
-                                'cycling' => 'Ciclo',
-                                'reformer' => 'Reformer',
-                                'mat' => 'Mat',
-                                'multipurpose' => 'Multipropósito',
-                            ])
-                            ->required(),
-                        Forms\Components\TextInput::make('max_capacity')
-                            ->label('Capacidad Máxima')
-                            ->required()
-                            ->numeric(),
+                                Forms\Components\Select::make('studio_type')
+                                    ->label('Tipo de Sala')
+                                    ->options([
+                                        'cycling' => 'Ciclo',
+                                        'reformer' => 'Reformer',
+                                        'mat' => 'Mat',
+                                        'multipurpose' => 'Multipropósito',
+                                    ])
+                                    ->required(),
 
-                        // En lugar de TextInput, usar:
-                        Forms\Components\TagsInput::make('equipment_available')
-                            ->dehydrated(true)
-                            ->label('Equipamiento Disponible')
-                            ->placeholder('Presiona Enter después de cada equipo')
-                            ->columnSpanFull(),
+                                Forms\Components\TextInput::make('location')
+                                    ->label('Ubicación')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->columnSpanFull(),
+                            ]),
 
-                        Forms\Components\Select::make('addressing')
-                            ->label('Dirección')
-                            ->options([
-                                'right_to_left' => 'Derecha a Izquierda',
-                                'left_to_right' => 'Izquierda a Derecha',
-                                'center' => 'Centro',
-                            ])
-                            ->required(),
+                        // Sección 2: Capacidad y distribución
+                        Section::make('Capacidad y distribución')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('max_capacity')
+                                    ->label('Capacidad Máxima')
+                                    ->required()
+                                    ->numeric(),
 
-                        Forms\Components\TextInput::make('row')
-                            ->label('Filas')
-                            ->required()
-                            ->numeric()
-                            ->minValue(1)
-                            ->maxValue(20)
-                            ->helperText('Número de filas para distribuir los asientos'),
+                                Forms\Components\TextInput::make('capacity_per_seat')
+                                    ->label('Capacidad por Asiento')
+                                    ->required()
+                                    ->numeric(),
 
-                        Forms\Components\TextInput::make('column')
-                            ->label('Columnas')
-                            ->required()
-                            ->numeric()
-                            ->minValue(1)
-                            ->maxValue(20)
-                            ->helperText('Número de columnas para distribuir los asientos')
-                            ->live()
-                            ->afterStateUpdated(function ($state, $get, $set) {
-                                $rows = (int) $get('row');
-                                $columns = (int) $state;
-                                $maxCapacity = (int) $get('max_capacity');
+                                Forms\Components\Select::make('addressing')
+                                    ->label('Direccionamiento')
+                                    ->options([
+                                        'right_to_left' => 'Derecha a Izquierda',
+                                        'left_to_right' => 'Izquierda a Derecha',
+                                        'center' => 'Centro',
+                                    ])
+                                    ->required(),
+                            ]),
 
-                                if ($rows > 0 && $columns > 0 && $maxCapacity > 0) {
-                                    $maxPossible = $rows * $columns;
-                                    if ($maxPossible < $maxCapacity) {
-                                        // Optionally adjust max_capacity or show warning
-                                        // $set('max_capacity', $maxPossible);
-                                    }
-                                }
-                            }),
+                        // Sección 3: Configuración de asientos
+                        Section::make('Configuración de asientos')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('row')
+                                    ->label('Filas')
+                                    ->required()
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(20)
+                                    ->helperText('Número de filas para distribuir los asientos'),
 
-                        Forms\Components\TextInput::make('capacity_per_seat')
-                            ->label('Capacidad por Asiento')
-                            ->required()
-                            ->numeric(),
+                                Forms\Components\TextInput::make('column')
+                                    ->label('Columnas')
+                                    ->required()
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(20)
+                                    ->helperText('Número de columnas para distribuir los asientos')
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, $get, $set) {
+                                        $rows = (int) $get('row');
+                                        $columns = (int) $state;
+                                        $maxCapacity = (int) $get('max_capacity');
 
-                        Forms\Components\Placeholder::make('seats_info')
-                            ->label('Información de Asientos')
-                            ->content(function ($record) {
-                                if (!$record) {
-                                    return 'Los asientos se generarán automáticamente al crear la sala. Se crearán según la "Capacidad por Asiento" especificada, distribuidos fila por fila según las filas y columnas configuradas.';
-                                }
+                                        if ($rows > 0 && $columns > 0 && $maxCapacity > 0) {
+                                            $maxPossible = $rows * $columns;
+                                            if ($maxPossible < $maxCapacity) {
+                                                // Opcional: ajustar max_capacity o mostrar advertencia
+                                                // $set('max_capacity', $maxPossible);
+                                            }
+                                        }
+                                    }),
 
-                                $seatsCount = $record->seats()->count();
-                                $seatCapacity = $record->capacity_per_seat ?? 0;
-                                $maxPossible = ($record->row ?? 0) * ($record->column ?? 0);
+                                Forms\Components\Placeholder::make('seats_info')
+                                    ->label('Información de Asientos')
+                                    ->content(function ($record) {
+                                        if (!$record) {
+                                            return 'Los asientos se generarán automáticamente al crear la sala. Se crearán según la "Capacidad por Asiento" especificada, distribuidos fila por fila según las filas y columnas configuradas.';
+                                        }
 
-                                $info = "Asientos generados: {$seatsCount} de {$seatCapacity} (capacidad por asiento)";
+                                        $seatsCount = $record->seats()->count();
+                                        $seatCapacity = $record->capacity_per_seat ?? 0;
+                                        $maxPossible = ($record->row ?? 0) * ($record->column ?? 0);
 
-                                if ($maxPossible < $seatCapacity) {
-                                    $info .= " | ⚠️ Configuración: {$record->row}×{$record->column} = {$maxPossible} posiciones (menor que capacidad por asiento)";
-                                } else {
-                                    $info .= " | Configuración: {$record->row}×{$record->column} posiciones disponibles";
-                                }
+                                        $info = "Asientos generados: {$seatsCount} de {$seatCapacity} (capacidad por asiento)";
 
-                                $info .= " | Direccionamiento: " . match($record->addressing) {
-                                    'left_to_right' => 'Izquierda a Derecha',
-                                    'right_to_left' => 'Derecha a Izquierda',
-                                    'center' => 'Centro',
-                                    default => 'No definido'
-                                };
+                                        if ($maxPossible < $seatCapacity) {
+                                            $info .= " | ⚠️ Configuración: {$record->row}×{$record->column} = {$maxPossible} posiciones (menor que capacidad por asiento)";
+                                        } else {
+                                            $info .= " | Configuración: {$record->row}×{$record->column} posiciones disponibles";
+                                        }
 
-                                return $info;
-                            })
-                            ->columnSpanFull(),
+                                        $info .= " | Direccionamiento: " . match ($record->addressing) {
+                                            'left_to_right' => 'Izquierda a Derecha',
+                                            'right_to_left' => 'Derecha a Izquierda',
+                                            'center' => 'Centro',
+                                            default => 'No definido'
+                                        };
 
-                        // En lugar de TextInput, usar:
-                        Forms\Components\TagsInput::make('amenities')
-                            ->dehydrated(true)
-                            ->label('Servicios')
-                            ->placeholder('Presiona Enter después de cada servicio. Ejemplo: vestuarios, duchas, casilleros, agua_fría, etc.')
-                            ->columnSpanFull(),
+                                        return $info;
+                                    })
+                                    ->columnSpanFull(),
+                            ]),
 
+                        // Sección 4: Equipamiento y servicios
+                        Section::make('Equipamiento y servicios')
+                            ->schema([
+                                Forms\Components\TagsInput::make('equipment_available')
+                                    ->dehydrated(true)
+                                    ->label('Equipamiento Disponible')
+                                    ->placeholder('Presiona Enter después de cada equipo')
+                                    ->columnSpanFull(),
 
+                                Forms\Components\TagsInput::make('amenities')
+                                    ->dehydrated(true)
+                                    ->label('Servicios')
+                                    ->placeholder('Presiona Enter después de cada servicio. Ejemplo: vestuarios, duchas, casilleros, agua_fría, etc.')
+                                    ->columnSpanFull(),
+                            ]),
                     ])
             ]);
     }

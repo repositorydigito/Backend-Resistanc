@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,8 +11,6 @@ final class OrderItem extends Model
     use HasFactory;
 
     protected $fillable = [
-
-
         'quantity',
         'unit_price',
         'total_price',
@@ -23,7 +19,6 @@ final class OrderItem extends Model
         'order_id',
         'product_id',
         'product_variant_id',
-
     ];
 
     protected $casts = [

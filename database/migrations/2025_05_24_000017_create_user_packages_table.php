@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('package_code', 20)->unique()->comment('Código único del paquete de clases');
-            $table->unsignedInteger('total_classes')->comment('Número total de clases incluidas en el paquete');
+            // $table->unsignedInteger('total_classes')->comment('Número total de clases incluidas en el paquete');
             $table->unsignedInteger('used_classes')->default(0)->comment('Número de clases utilizadas');
             $table->unsignedInteger('remaining_classes')->default(0)->comment('Número de clases restantes');
             $table->decimal('amount_paid_soles', 8, 2)->comment('Monto pagado en soles');
@@ -24,9 +24,9 @@ return new class extends Migration
             $table->date('activation_date')->nullable()->comment('Fecha de activación');
             $table->date('expiry_date')->comment('Fecha de expiración');
             $table->enum('status', ['pending', 'active', 'expired', 'cancelled', 'suspended'])->default('pending')->comment('Estado del paquete');
-            $table->boolean('auto_renew')->default(false)->comment('Indica si la renovación es automática');
+            // $table->boolean('auto_renew')->default(false)->comment('Indica si la renovación es automática');
             $table->decimal('renewal_price', 8, 2)->nullable()->comment('Precio de renovación');
-            $table->json('benefits_included')->nullable()->comment('Beneficios específicos incluidos');
+            // $table->json('benefits_included')->nullable()->comment('Beneficios específicos incluidos');
             $table->text('notes')->nullable()->comment('Notas adicionales sobre el paquete');
 
             // Relaciones

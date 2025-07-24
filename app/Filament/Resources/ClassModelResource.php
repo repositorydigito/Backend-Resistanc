@@ -209,9 +209,9 @@ class ClassModelResource extends Resource
                         default => 'gray',
                     })
                     ->label('Nivel de Dificultad'),
-                Tables\Columns\TextColumn::make('music_genre')
-                    ->label('Género Musical')
-                    ->searchable(),
+                // Tables\Columns\TextColumn::make('music_genre')
+                //     ->label('Género Musical')
+                //     ->searchable(),
                 Tables\Columns\IconColumn::make('is_featured')
                     ->label('Destacada')
                     ->boolean(),

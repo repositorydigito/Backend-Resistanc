@@ -36,199 +36,198 @@ class PackageResource extends Resource
                 Forms\Components\Toggle::make('is_featured')
                     ->label('Destacado')
                     ->required(),
-                // Forms\Components\Toggle::make('is_popular')
-                //     ->label('Popular')
-                //     ->required(),
+
                 Section::make('Información del paquete')
                     ->columns(2)
                     ->schema([
+                        // Sección 1: Información básica
+                        Section::make('Datos básicos')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Nombre')
+                                    ->required()
+                                    ->maxLength(100),
 
+                                Forms\Components\Select::make('discipline_id')
+                                    ->label('Disciplina')
+                                    ->relationship('discipline', 'name')
+                                    ->required(),
 
-                        Forms\Components\FileUpload::make('icon_url')
-                            ->label('Icono')
-                            ->disk('public')
-                            ->directory('packages/icons')
-                            ->visibility('public')
-                            ->acceptedFileTypes(['image/*'])
-                            ->maxSize(1024 * 5) // 5 MB
-                            ->imageResizeMode('crop')
-                            ->imageResizeTargetWidth(800)
-                            ->imageResizeTargetHeight(600)
-                            ->image()
-                            ->columnSpanFull(),
+                                Forms\Components\Select::make('status')
+                                    ->options([
+                                        'active' => 'Activo',
+                                        'inactive' => 'Inactivo',
+                                        'coming_soon' => 'Próximamente',
+                                        'discontinued' => 'Descontinuado',
+                                    ])
+                                    ->default('active')
+                                    ->label('Estado')
+                                    ->required(),
 
+                                Forms\Components\TextInput::make('display_order')
+                                    ->label('Orden de visualización')
+                                    ->unique(ignoreRecord: true)
+                                    ->required()
+                                    ->numeric()
+                                    ->helperText(function () {
+                                        $existingOrders = \App\Models\Package::orderBy('display_order')
+                                            ->pluck('display_order')
+                                            ->filter()
+                                            ->unique()
+                                            ->values()
+                                            ->toArray();
 
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->maxLength(100),
+                                        $nextAvailable = (max($existingOrders) ?? 0) + 1;
 
-                        Forms\Components\TextInput::make('classes_quantity')
-                            ->label('Cantidad de clases')
-                            ->required()
-                            ->numeric(),
+                                        return "Órdenes ya usados: " . implode(', ', $existingOrders) .
+                                            ". Siguiente disponible: {$nextAvailable}";
+                                    })
+                                    ->default(function () {
+                                        return (\App\Models\Package::max('display_order') ?? 0) + 1;
+                                    }),
+                            ]),
 
+                        // Sección 2: Precios y duración
+                        Section::make('Precios y validez')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('price_soles')
+                                    ->label('Precio con descuento')
+                                    ->required()
+                                    ->numeric(),
 
-                        Forms\Components\Select::make('discipline_id')
-                            ->label('Disciplina')
-                            ->relationship('discipline', 'name')
-                            ->required(),
+                                Forms\Components\TextInput::make('original_price_soles')
+                                    ->label('Precio base')
+                                    ->numeric(),
 
-                        Forms\Components\TextInput::make('price_soles')
-                            ->label('Precio con descuento')
-                            ->required()
-                            ->numeric(),
-                        Forms\Components\TextInput::make('original_price_soles')
-                            ->label('Precio base')
-                            ->numeric(),
-                        Forms\Components\TextInput::make('validity_days')
-                            ->label('Días validos')
-                            ->required()
-                            ->numeric(),
+                                Forms\Components\TextInput::make('validity_days')
+                                    ->label('Días válidos')
+                                    ->required()
+                                    ->numeric(),
 
-                        Forms\Components\Select::make('buy_type')
-                            ->options([
-                                'affordable' => 'Comprable',
-                                'assignable' => 'Asignable',
-                            ])
-                            ->label('Tipo de compra')
-                            ->default('assignable')
-                            ->required(),
+                                Forms\Components\TextInput::make('duration_in_months')
+                                    ->label('Vigencia en meses')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->required(fn($get) => $get('type') !== 'fixed'),
+                            ]),
 
+                        // Sección 3: Configuración comercial
+                        Section::make('Configuración comercial')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\Select::make('buy_type')
+                                    ->options([
+                                        'affordable' => 'Comprable',
+                                        'assignable' => 'Asignable',
+                                    ])
+                                    ->label('Tipo de compra')
+                                    ->default('assignable')
+                                    ->required(),
 
-                        Forms\Components\ColorPicker::make('color_hex')
-                            ->label('Color')
-                            ->required()
-                            ->default('#000000'),
-                        Forms\Components\Select::make('billing_type')
-                            ->options([
-                                'one_time' => 'Pago único',
-                                'monthly' => 'Mensual',
-                                'quarterly' => 'Trimestral',
-                                'yearly' => 'Anual',
-                            ])
-                            ->label('Tipo de pago')
-                            ->required(),
-                        // Forms\Components\Toggle::make('is_virtual_access')
-                        //     ->required(),
-                        // Forms\Components\TextInput::make('priority_booking_days')
-                        //     ->required()
-                        //     ->numeric()
-                        //     ->default(0),
-                        // Forms\Components\Toggle::make('auto_renewal')
-                        //     ->required(),
+                                Forms\Components\Select::make('billing_type')
+                                    ->options([
+                                        'one_time' => 'Pago único',
+                                        'monthly' => 'Mensual',
+                                        'quarterly' => 'Trimestral',
+                                        'yearly' => 'Anual',
+                                    ])
+                                    ->label('Tipo de pago')
+                                    ->required(),
 
+                                Forms\Components\Select::make('commercial_type')
+                                    ->options([
+                                        'promotion' => 'Promoción',
+                                        'offer' => 'Oferta',
+                                        'basic' => 'Básico',
+                                    ])
+                                    ->label('Tipo comercial')
+                                    ->required(),
 
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'active' => 'Activo',
-                                'inactive' => 'Inactivo',
-                                'coming_soon' => 'Próximamente',
-                                'discontinued' => 'Descontinuado',
-                            ])
-                            ->default('active')
-                            ->label('Estado')
-                            ->required(),
+                                Forms\Components\Select::make('target_audience')
+                                    ->label('Audiencia objetivo')
+                                    ->options([
+                                        'beginner' => 'Principiantes',
+                                        'intermediate' => 'Intermedios',
+                                        'advanced' => 'Avanzados',
+                                        'all' => 'Todos',
+                                    ])
+                                    ->required(),
+                            ]),
 
+                        // Sección 4: Configuración de fechas
+                        Section::make('Configuración de fechas (para paquetes temporales)')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\Select::make('type')
+                                    ->live()
+                                    ->options([
+                                        'fixed' => 'Fijo',
+                                        'temporary' => 'Temporal',
+                                    ])
+                                    ->label('Tipo de paquete')
+                                    ->required(),
 
-                        Forms\Components\TextInput::make('display_order')
-                            ->label('Orden de visualización')
-                            ->unique(ignoreRecord: true)
-                            ->required()
-                            ->numeric()
-                            ->helperText(function () {
-                                $existingOrders = \App\Models\Package::orderBy('display_order')
-                                    ->pluck('display_order')
-                                    ->filter()
-                                    ->unique()
-                                    ->values()
-                                    ->toArray();
+                                Forms\Components\DatePicker::make('start_date')
+                                    ->live()
+                                    ->visible(fn($get) => $get('type') !== 'fixed')
+                                    ->label('Fecha de inicio')
+                                    ->required(fn($get) => $get('type') !== 'fixed'),
 
-                                $nextAvailable = (max($existingOrders) ?? 0) + 1;
+                                Forms\Components\DatePicker::make('end_date')
+                                    ->live()
+                                    ->visible(fn($get) => $get('type') !== 'fixed')
+                                    ->label('Fecha de fin')
+                                    ->required(fn($get) => $get('type') !== 'fixed'),
+                            ]),
 
-                                return "Órdenes ya usados: " . implode(', ', $existingOrders) .
-                                    ". Siguiente disponible: {$nextAvailable}";
-                            })
-                            ->default(function () {
-                                return (\App\Models\Package::max('display_order') ?? 0) + 1;
-                            }),
-                        // Forms\Components\TextInput::make('features'),
-                        // Forms\Components\TextInput::make('restrictions'),
-                        Forms\Components\Select::make('target_audience')
-                            ->label('Audiencia objetivo')
-                            ->options([
-                                'beginner' => 'Principiantes',
-                                'intermediate' => 'Intermedios',
-                                'advanced' => 'Avanzados',
-                                'all' => 'Todos',
-                            ])
-                            ->required(),
-                        Forms\Components\Select::make('type')
-                            ->live() // Hace que el campo sea reactivo
-                            ->options([
-                                'fixed' => 'Fijo',
-                                'temporary' => 'Temporal',
-                            ])
-                            ->label('Tipo de paquete')
-                            ->required(),
+                        // Sección 5: Multimedia y diseño
+                        Section::make('Multimedia y diseño')
+                            ->schema([
+                                Forms\Components\FileUpload::make('icon_url')
+                                    ->label('Icono')
+                                    ->disk('public')
+                                    ->directory('packages/icons')
+                                    ->visibility('public')
+                                    ->acceptedFileTypes(['image/*'])
+                                    ->maxSize(1024 * 5)
+                                    ->imageResizeMode('crop')
+                                    ->imageResizeTargetWidth(800)
+                                    ->imageResizeTargetHeight(600)
+                                    ->image()
+                                    ->columnSpanFull(),
 
-                        Forms\Components\Select::make('commercial_type')
-                            ->options([
-                                'promotion' => 'Promoción',
-                                'offer' => 'Oferta',
-                                'basic' => 'Básico',
-                            ])
-                            ->label('Comercial')
-                            ->required(),
-                        Forms\Components\Select::make('mode_type')
-                            ->options([
-                                'presencial' => 'Presencial',
-                                'virtual' => 'Virtual',
-                                'mixto' => 'Mixto',
-                            ])
-                            ->label('Modalidad')
-                            ->required(),
+                                Forms\Components\ColorPicker::make('color_hex')
+                                    ->label('Color')
+                                    ->required()
+                                    ->default('#000000'),
+                            ]),
 
-                        Forms\Components\TextInput::make('duration_in_months')
-                            ->label('Vigencia en meses')
-                            ->numeric()
-                            ->default(0)
+                        // Sección 6: Descripciones
+                        Section::make('Descripciones')
+                            ->schema([
+                                Forms\Components\TextArea::make('short_description')
+                                    ->label('Descripción corta')
+                                    ->columnSpanFull()
+                                    ->maxLength(255),
 
-                            ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
+                                Forms\Components\Textarea::make('description')
+                                    ->label('Descripción')
+                                    ->required()
+                                    ->columnSpanFull(),
+                            ]),
 
-
-                        Forms\Components\DatePicker::make('start_date')
-                            ->live()
-                            ->visible(fn($get) => $get('type') !== 'fixed') // Visible cuando NO es fijo
-                            ->label('Fecha de inicio')
-                            ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
-
-                        Forms\Components\DatePicker::make('end_date')
-                            ->live()
-                            ->visible(fn($get) => $get('type') !== 'fixed') // Visible cuando NO es fijo
-                            ->label('Fecha de fin')
-                            ->required(fn($get) => $get('type') !== 'fixed'), // Requerido cuando NO es fijo
-
-
-                        Forms\Components\TextArea::make('short_description')
-                            ->label('Descripción corta')
-                            ->columnSpanFull()
-                            ->maxLength(255),
-                        Forms\Components\Textarea::make('description')
-                            ->label('Descripción')
-                            ->required()
-                            ->columnSpanFull(),
-                        Forms\Components\Section::make('Membresía')
+                        // Sección 7: Membresía
+                        Section::make('Configuración de membresía')
                             ->schema([
                                 Forms\Components\Toggle::make('membreship')
-                                    ->label('¿Tiene membresia?')
+                                    ->label('¿Incluye membresía?')
                                     ->live()
                                     ->default(function ($record) {
-                                        // Si estamos editando y hay membership_id, marcar como true
                                         return $record ? !empty($record->membership_id) : false;
                                     })
                                     ->afterStateHydrated(function ($set, $get, $record) {
-                                        // Al cargar el formulario, marcar si hay membership_id
                                         if ($record && $record->membership_id) {
                                             $set('membreship', true);
                                         }
@@ -237,11 +236,10 @@ class PackageResource extends Resource
                                 Forms\Components\Select::make('membership_id')
                                     ->visible(fn($get) => $get('membreship'))
                                     ->live()
-                                    ->label('Membresía')
+                                    ->label('Membresía asociada')
                                     ->relationship('membership', 'name')
                                     ->columnSpanFull(),
                             ]),
-
                     ])
             ]);
     }

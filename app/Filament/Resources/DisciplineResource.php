@@ -6,6 +6,7 @@ use App\Filament\Resources\DisciplineResource\Pages;
 use App\Filament\Resources\DisciplineResource\RelationManagers;
 use App\Models\Discipline;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -37,70 +38,74 @@ class DisciplineResource extends Resource
                     ->label('¿Está activa?')
                     ->default(true)
                     ->required(),
-                Forms\Components\Section::make('Información de la disciplina')
+
+                Section::make('Información de la disciplina')
                     ->columns(2)
                     ->schema([
+                        // Sección 1: Imagen y colores
+                        Section::make('Identificación visual')
+                            ->schema([
+                                Forms\Components\FileUpload::make('icon_url')
+                                    ->label('Icono')
+                                    ->columnSpanFull()
+                                    ->image()
+                                    ->directory('disciplines/icons')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->extraAttributes(['class' => 'h-64 w-64'])
+                                    ->preserveFilenames()
+                                    ->maxSize(2048),
 
-                        Forms\Components\FileUpload::make('icon_url')
-                            ->label('Icono')
-                            ->columnSpan(2)
-                            ->image()
-                            ->directory('disciplines/icons') // Carpeta dentro de storage/app/public
-                            ->disk('public')    // Usa el filesystem configurado como 'public'
-                            ->visibility('public') // Permisos (opcional)
-                            ->extraAttributes(['class' => 'h-64 w-64'])
-                            ->preserveFilenames() // Opcional: mantiene el nombre original
-                            ->maxSize(2048), // Tamaño máximo en KB (opcional)
+                                Forms\Components\ColorPicker::make('color_hex')
+                                    ->label('Color principal')
+                                    ->required()
+                                    ->default('#000000'),
+                            ]),
 
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->maxLength(100),
-                        Forms\Components\TextInput::make('display_name')
-                            ->label('Nombre para Mostrar')
-                            ->required()
-                            ->maxLength(100),
+                        // Sección 2: Información básica
+                        Section::make('Datos principales')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Nombre técnico')
+                                    ->required()
+                                    ->maxLength(100),
 
-                        Forms\Components\Select::make('difficulty_level')
-                            ->label('Nivel de Dificultad')
-                            ->options([
-                                'beginner' => 'Principiante',
-                                'intermediate' => 'Intermedio',
-                                'advanced' => 'Avanzado',
-                                'all_levels' => 'Todos los Niveles',
-                            ])
-                            ->required(),
+                                Forms\Components\TextInput::make('display_name')
+                                    ->label('Nombre para mostrar')
+                                    ->required()
+                                    ->maxLength(100),
 
+                                Forms\Components\Select::make('difficulty_level')
+                                    ->label('Nivel de dificultad')
+                                    ->options([
+                                        'beginner' => 'Principiante',
+                                        'intermediate' => 'Intermedio',
+                                        'advanced' => 'Avanzado',
+                                        'all_levels' => 'Todos los niveles',
+                                    ])
+                                    ->required(),
 
-                        Forms\Components\TextInput::make('calories_per_hour_avg')
-                            ->label('Calorías por Hora Promedio')
-                            ->numeric(),
+                                Forms\Components\TextInput::make('calories_per_hour_avg')
+                                    ->label('Calorías por hora (promedio)')
+                                    ->numeric()
+                                    ->suffix('cal/h'),
+                            ]),
 
-                        // Forms\Components\TextInput::make('sort_order')
-                        //     ->label('Orden de Visualización')
-                        //     ->required()
-                        //     ->numeric()
-                        //     ->default(0),
-                        Forms\Components\ColorPicker::make('color_hex')
-                            ->label('Color')
-                            ->required()
-                            ->default('#000000'),
+                        // Sección 3: Descripción y equipamiento
+                        Section::make('Detalles adicionales')
+                            ->schema([
+                                Forms\Components\Textarea::make('description')
+                                    ->label('Descripción')
+                                    ->columnSpanFull()
+                                    ->maxLength(500),
 
-                        Forms\Components\Textarea::make('description')
-                            ->label('Descripción')
-                            ->columnSpanFull(),
-
-
-
-                        // En lugar de TextInput, usar:
-                        Forms\Components\TagsInput::make('equipment_required')
-                            ->dehydrated(true)
-                            ->label('Equipos Requeridos')
-
-                            ->placeholder('Presiona Enter después de cada equipo')
-                            ->columnSpanFull(),
-
-
+                                Forms\Components\TagsInput::make('equipment_required')
+                                    ->dehydrated(true)
+                                    ->label('Equipamiento necesario')
+                                    ->placeholder('Presiona Enter después de cada equipo')
+                                    ->columnSpanFull(),
+                            ]),
                     ])
             ]);
     }
@@ -112,54 +117,74 @@ class DisciplineResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('display_name')
-                    ->label('Nombre para Mostrar')
+                    ->label('Nombre para mostrar')
                     ->searchable(),
+
                 Tables\Columns\ImageColumn::make('icon_url')
-                    ->label('Icono'),
+                    ->label('Icono')
+                    ->size(40),
+
                 Tables\Columns\ColorColumn::make('color_hex')
                     ->label('Color'),
+
                 Tables\Columns\TextColumn::make('difficulty_level')
-                    ->label('Nivel de Dificultad')
-                    ->formatStateUsing(function ($state) {
-                        $levels = [
-                            'beginner' => 'Principiante',
-                            'intermediate' => 'Intermedio',
-                            'advanced' => 'Avanzado',
-                            'all_levels' => 'Todos los Niveles'
-                        ];
-                        return $levels[$state] ?? $state; // Si no encuentra coincidencia, muestra el valor original
+                    ->label('Dificultad')
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'beginner' => 'Principiante',
+                        'intermediate' => 'Intermedio',
+                        'advanced' => 'Avanzado',
+                        'all_levels' => 'Todos',
+                        default => $state
+                    })
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'beginner' => 'success',
+                        'intermediate' => 'primary',
+                        'advanced' => 'danger',
+                        'all_levels' => 'gray',
+                        default => 'secondary'
                     }),
 
                 Tables\Columns\TextColumn::make('calories_per_hour_avg')
-                    ->label('Calorías por Hora Promedio')
+                    ->label('Calorías/h')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->suffix(' cal'),
+
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label('¿Está activa?')
-                    ->boolean(),
-                // Tables\Columns\TextColumn::make('sort_order')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Activa')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
             ])
             ->defaultSort('id', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('difficulty_level')
+                    ->label('Nivel de dificultad')
+                    ->options([
+                        'beginner' => 'Principiante',
+                        'intermediate' => 'Intermedio',
+                        'advanced' => 'Avanzado',
+                        'all_levels' => 'Todos los niveles',
+                    ]),
+
+                // Tables\Filters\SelectFilter::make('is_active')
+                //     ->label('Estado activo')
+                //     ->trueLabel('Solo activas')
+                //     ->falseLabel('Solo inactivas')
+                //     ->nullableLabel('Todas'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->icon('heroicon-o-trash'),
                 ]),
             ]);
     }

@@ -6,6 +6,7 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -29,82 +30,123 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label('Nombre')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->label('Correo Electrónico')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
+                // Sección 1: Credenciales básicas
+                Section::make('Credenciales de acceso')
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre de usuario')
+                            ->required()
+                            ->maxLength(255),
 
-                Forms\Components\Select::make('roles')
-                    ->label('Roles')
-                    ->multiple()
-                    ->relationship('roles', 'name')
-                    ->options(function () {
-                        $user = auth()->user();
+                        Forms\Components\TextInput::make('email')
+                            ->label('Correo electrónico')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
 
-                        // Si el usuario logueado es super_admin, mostrar todos los roles
-                        if ($user && $user->hasRole('super_admin')) {
-                            return \Spatie\Permission\Models\Role::pluck('name', 'id');
-                        }
+                        Forms\Components\TextInput::make('password')
+                            ->password()
+                            ->label('Contraseña')
+                            ->helperText('Dejar vacío para mantener la contraseña actual')
+                            ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
+                            ->dehydrated(fn($state) => filled($state))
+                            ->dehydrateStateUsing(fn($state) => filled($state) ? bcrypt($state) : null)
+                            ->maxLength(255),
 
-                        // Si no es super_admin, excluir ese rol
-                        return \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name', 'id');
-                    })
-                    ->preload()
-                    ->searchable(),
+                        Forms\Components\Select::make('roles')
+                            ->label('Roles')
+                            ->multiple()
+                            ->relationship('roles', 'name')
+                            ->options(function () {
+                                $user = auth()->user();
 
-                // Forms\Components\DateTimePicker::make('email_verified_at'),
-                // ✅ SOLUCIÓN 1: Campo password con dehydrated condicional
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->label('Contraseña')
-                    ->helperText('Dejar vacío para mantener la contraseña actual')
-                    ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
-                    ->dehydrated(fn($state) => filled($state))
-                    ->dehydrateStateUsing(fn($state) => filled($state) ? bcrypt($state) : null)
-                    ->maxLength(255),
+                                if ($user && $user->hasRole('super_admin')) {
+                                    return \Spatie\Permission\Models\Role::pluck('name', 'id');
+                                }
 
-                // --- CAMPOS DEL PERFIL ---
-                Forms\Components\Section::make('Perfil')
+                                return \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name', 'id');
+                            })
+                            ->preload()
+                            ->searchable(),
+                    ]),
+
+                // Sección 2: Perfil personal
+                Section::make('Información personal')
                     ->schema([
                         Forms\Components\FileUpload::make('profile.profile_image')
                             ->label('Imagen de perfil')
-                            ->columnSpan(2)
+                            ->columnSpanFull()
                             ->image()
-                            ->directory('user/profile') // Carpeta dentro de storage/app/public
-                            ->disk('public')    // Usa el filesystem configurado como 'public'
-                            ->visibility('public') // Permisos (opcional)
+                            ->directory('user/profile')
+                            ->disk('public')
+                            ->visibility('public')
                             ->extraAttributes(['class' => 'h-64 w-64'])
-                            ->preserveFilenames(), // Opcional: mantiene el nombre original
-                        Forms\Components\TextInput::make('profile.first_name')->label('Nombre')->maxLength(60)->required(),
-                        Forms\Components\TextInput::make('profile.last_name')->label('Apellido')->maxLength(60)->required(),
-                        Forms\Components\DatePicker::make('profile.birth_date')->label('Fecha de nacimiento')->required(),
-                        Forms\Components\Select::make('profile.gender')
-                            ->label('Género')
-                            ->options([
-                                'female' => 'Femenino',
-                                'male' => 'Masculino',
-                                'other' => 'Otro',
-                                'na' => 'Prefiero no decirlo',
-                            ])->required(),
-                        Forms\Components\TextInput::make('profile.shoe_size_eu')->label('Talla de calzado (EU)')->numeric(),
+                            ->preserveFilenames(),
 
-                        Forms\Components\TextInput::make('profile.emergency_contact_name')->label('Nombre contacto emergencia')->maxLength(100),
-                        Forms\Components\TextInput::make('profile.emergency_contact_phone')->label('Teléfono emergencia')->maxLength(15),
-                        Forms\Components\Textarea::make('profile.medical_conditions')->label('Condiciones médicas')->columnSpanFull(),
-                        Forms\Components\Textarea::make('profile.fitness_goals')->label('Objetivos fitness')->columnSpanFull(),
-                        Forms\Components\Textarea::make('profile.bio')->label('Biografía')->columnSpanFull(),
-                    ])
-                    ->columns(2),
+                        Section::make('Datos personales')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('profile.first_name')
+                                    ->label('Nombre')
+                                    ->maxLength(60)
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('profile.last_name')
+                                    ->label('Apellido')
+                                    ->maxLength(60)
+                                    ->required(),
+
+                                Forms\Components\DatePicker::make('profile.birth_date')
+                                    ->label('Fecha de nacimiento')
+                                    ->required(),
+
+                                Forms\Components\Select::make('profile.gender')
+                                    ->label('Género')
+                                    ->options([
+                                        'female' => 'Femenino',
+                                        'male' => 'Masculino',
+                                        'other' => 'Otro',
+                                        'na' => 'Prefiero no decirlo',
+                                    ])
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('profile.shoe_size_eu')
+                                    ->label('Talla de calzado (EU)')
+                                    ->numeric(),
+                            ]),
+
+                        Section::make('Información adicional')
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('profile.emergency_contact_name')
+                                    ->label('Contacto de emergencia')
+                                    ->maxLength(100),
+
+                                Forms\Components\TextInput::make('profile.emergency_contact_phone')
+                                    ->label('Teléfono emergencia')
+                                    ->maxLength(15),
+                            ]),
+
+                        Section::make('Detalles médicos y objetivos')
+                            ->schema([
+                                Forms\Components\Textarea::make('profile.medical_conditions')
+                                    ->label('Condiciones médicas')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Textarea::make('profile.fitness_goals')
+                                    ->label('Objetivos fitness')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Textarea::make('profile.bio')
+                                    ->label('Biografía')
+                                    ->columnSpanFull(),
+                            ]),
+                    ]),
             ]);
     }
 
@@ -112,26 +154,31 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('profile.profile_image')
+                    ->label('')
+                    ->circular()
+                    ->defaultImageUrl(fn($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=111827'),
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('email')
-                    ->label('Correo Electrónico')
-                    ->searchable(),
+                    ->label('Correo')
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('roles.name')
-                    ->label('Roles'),
-                // Tables\Columns\TextColumn::make('email_verified_at')
-                //     ->dateTime()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Roles')
+                    ->badge()
+                    ->color('primary')
+                    ->formatStateUsing(fn($state) => ucfirst($state)),
+
+                Tables\Columns\TextColumn::make('profile.first_name')
+                    ->label('Nombre completo')
+                    ->formatStateUsing(fn($state, $record) => $record->profile?->first_name . ' ' . $record->profile?->last_name)
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('id', 'desc')
             ->filters([
@@ -142,23 +189,30 @@ class UserResource extends Resource
                     ->relationship('roles', 'name')
                     ->options(function () {
                         $user = auth()->user();
-
-                        // Si el usuario logueado es super_admin, mostrar todos los roles
                         if ($user && $user->hasRole('super_admin')) {
                             return \Spatie\Permission\Models\Role::pluck('name', 'id');
                         }
-
-                        // Si no es super_admin, excluir ese rol
                         return \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name', 'id');
                     }),
+
+                Tables\Filters\Filter::make('verified')
+                    ->label('Solo verificados')
+                    ->query(fn($query) => $query->whereNotNull('email_verified_at'))
+                    ->toggle(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->icon('heroicon-o-pencil'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->icon('heroicon-o-trash')
+                        ->requiresConfirmation(),
                 ]),
+            ])
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make(),
             ]);
     }
 

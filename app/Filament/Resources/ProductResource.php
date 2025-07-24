@@ -133,14 +133,14 @@ class ProductResource extends Resource
                         Forms\Components\Toggle::make('requires_variants')
                             ->label('¿Requiere variantes?'),
 
-                        Forms\Components\Toggle::make('is_virtual')
-                            ->label('¿Es virtual?'),
+                        // Forms\Components\Toggle::make('is_virtual')
+                        //     ->label('¿Es virtual?'),
 
                         Forms\Components\Toggle::make('is_featured')
                             ->label('¿Es destacado?'),
 
-                        Forms\Components\Toggle::make('is_available_for_booking')
-                            ->label('¿Disponible para reservas?'),
+                        // Forms\Components\Toggle::make('is_available_for_booking')
+                        //     ->label('¿Disponible para reservas?'),
 
                         Forms\Components\Toggle::make('is_cupon')
                             ->live()
@@ -258,7 +258,6 @@ class ProductResource extends Resource
     {
         return [
             RelationManagers\ProductVariantRelationManager::class,
-
         ];
     }
 

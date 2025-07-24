@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\ProductResource\RelationManagers;
 
+use App\Models\ProductOptionType;
+use App\Models\VariantOption;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
@@ -19,119 +21,105 @@ class ProductVariantRelationManager extends RelationManager
     protected static ?string $modelLabel = 'Variante de Producto';
     protected static ?string $pluralModelLabel = 'Variantes de Producto';
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        if (isset($this->record)) {
+            // Agrupa las opciones por tipo y toma solo la primera por tipo
+            $variantOptions = $this->record->variantOptions()->get();
+            $byType = [];
+            foreach ($variantOptions as $option) {
+                $key = 'variant_option_' . $option->product_option_type_id;
+                if (!isset($byType[$key])) {
+                    $byType[$key] = $option->id;
+                }
+            }
+            $data = array_merge($data, $byType);
+        }
+        return $data;
+    }
+
     public function form(Form $form): Form
     {
-        // IDs de los tipos de opción
-        $tallaType = \App\Models\ProductOptionType::where('slug', 'talla')->first();
-        $colorType = \App\Models\ProductOptionType::where('slug', 'color')->first();
+        $optionTypes = ProductOptionType::where('is_active', true)->get();
+        $fields = [
+            Forms\Components\TextInput::make('sku')
+                ->label('SKU')
+                ->unique(ignoreRecord: true)
+                ->required()
+                ->maxLength(255),
+            Forms\Components\TextInput::make('price_soles')
+                ->label('Precio')
+                ->numeric()
+                ->required(),
+            Forms\Components\TextInput::make('cost_price_soles')
+                ->label('Precio de Costo')
+                ->numeric(),
+            Forms\Components\TextInput::make('compare_price_soles')
+                ->label('Precio Comparado')
+                ->numeric(),
+            Forms\Components\TextInput::make('stock_quantity')
+                ->label('Cantidad en Stock')
+                ->numeric()
+                ->default(0),
+            Forms\Components\TextInput::make('min_stock_alert')
+                ->label('Alerta Mínima de Stock')
+                ->numeric()
+                ->default(5),
+            Forms\Components\Toggle::make('is_active')
+                ->label('Está Activa')
+                ->default(true),
+        ];
 
-        $tallas = $tallaType
-            ? \App\Models\VariantOption::where('product_option_type_id', $tallaType->id)->pluck('name', 'id')
-            : collect();
-        $colores = $colorType
-            ? \App\Models\VariantOption::where('product_option_type_id', $colorType->id)->pluck('name', 'id')
-            : collect();
+        // Obtener los IDs seleccionados por tipo si estamos editando
+        $selectedOptionsByType = [];
+        $editingRecord = $this->getMountedTableActionRecord();
+        if ($editingRecord) {
+            foreach ($editingRecord->variantOptions as $option) {
+                $selectedOptionsByType[$option->product_option_type_id] = $option->id;
+            }
+        }
 
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('sku')
-                    ->label('SKU')
-                    ->unique(ignoreRecord: true)
-                    ->required()
-                    ->maxLength(255),
+        $variantOptionSelects = [];
+        foreach ($optionTypes as $type) {
+            $options = VariantOption::where('product_option_type_id', $type->id)->pluck('name', 'id');
+            if ($options->isNotEmpty()) {
+                $currentValue = null;
+                if ($editingRecord) {
+                    $currentOption = $editingRecord->variantOptions
+                        ->where('product_option_type_id', $type->id)
+                        ->first();
+                    $currentValue = $currentOption ? $currentOption->name : null;
+                }
+                $variantOptionSelects[] = Forms\Components\Select::make('variant_option_' . $type->id)
+                    ->label($type->name)
+                    ->options($options)
+                    ->required($type->is_required)
+                    ->searchable()
+                    ->preload()
+                    ->dehydrated(true)
+                    ->hint($currentValue ? 'Actual: ' . $currentValue : null);
+            }
+        }
+        if (!empty($variantOptionSelects)) {
+            $fields[] = Forms\Components\Section::make('Opciones de Variante')
+                ->description('Selecciona las opciones para esta variante específica. Si no seleccionas una opción, se mantendrá la opción actual de la variante.')
+                ->schema($variantOptionSelects)
+                ->columnSpanFull();
+        }
 
-                Forms\Components\TextInput::make('price_soles')
-                    ->label('Precio')
-                    ->numeric()
-                    ->required(),
-
-                Forms\Components\TextInput::make('cost_price_soles')
-                    ->label('Precio de Costo')
-                    ->numeric(),
-
-                Forms\Components\TextInput::make('compare_price_soles')
-                    ->label('Precio Comparado')
-                    ->numeric(),
-
-                Forms\Components\TextInput::make('stock_quantity')
-                    ->label('Cantidad en Stock')
-                    ->numeric()
-                    ->default(0),
-
-                Forms\Components\TextInput::make('min_stock_alert')
-                    ->label('Alerta Mínima de Stock')
-                    ->numeric()
-                    ->default(5),
-
-                Forms\Components\Toggle::make('is_active')
-                    ->label('Está Activa')
-                    ->default(true),
-
-                Forms\Components\Section::make('Opciones de Variante')
-                    ->description('Selecciona las opciones para esta variante específica')
-                    ->schema([
-                        Forms\Components\Select::make('variant_option_talla')
-                            ->label('Talla')
-                            ->options($tallas)
-                            ->reactive()
-                            ->required(),
-                        Forms\Components\Select::make('variant_option_color')
-                            ->label('Color')
-                            ->options(function (callable $get) use ($colorType) {
-                                // Aquí podrías filtrar colores válidos según la talla seleccionada
-                                // Por simplicidad, mostramos todos los colores
-                                return $colorType
-                                    ? \App\Models\VariantOption::where('product_option_type_id', $colorType->id)->pluck('name', 'id')
-                                    : collect();
-                            })
-                            ->required()
-                            ->reactive(),
-                    ])
-                    ->columnSpanFull(),
-
-                Forms\Components\FileUpload::make('images')
-                    ->label('Imágenes del producto')
-                    ->multiple()
-                    ->reorderable()
-                    ->image()
-                    ->directory('products/variants')
-                    ->preserveFilenames(),
-            ]);
+        $fields[] = Forms\Components\FileUpload::make('images')
+            ->label('Imágenes del producto')
+            ->multiple()
+            ->reorderable()
+            ->image()
+            ->directory('products/variants')
+            ->preserveFilenames();
+        return $form->schema($fields);
     }
 
-    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
-    {
-        $variantOptionIds = [];
-        if (!empty($data['variant_option_talla'])) {
-            $variantOptionIds[] = $data['variant_option_talla'];
-        }
-        if (!empty($data['variant_option_color'])) {
-            $variantOptionIds[] = $data['variant_option_color'];
-        }
-        unset($data['variant_option_talla'], $data['variant_option_color']);
-        $variant = static::getModel()::create($data);
-        if (!empty($variantOptionIds)) {
-            $variant->variantOptions()->sync($variantOptionIds);
-        }
-        return $variant;
-    }
 
-    protected function handleRecordUpdate(\Illuminate\Database\Eloquent\Model $record, array $data): \Illuminate\Database\Eloquent\Model
-    {
-        $variantOptionIds = [];
-        if (!empty($data['variant_option_talla'])) {
-            $variantOptionIds[] = $data['variant_option_talla'];
-        }
-        if (!empty($data['variant_option_color'])) {
-            $variantOptionIds[] = $data['variant_option_color'];
-        }
-        unset($data['variant_option_talla'], $data['variant_option_color']);
-        $record->update($data);
-        if (!empty($variantOptionIds)) {
-            $record->variantOptions()->sync($variantOptionIds);
-        }
-        return $record;
-    }
+
+
 
     public function table(Table $table): Table
     {
@@ -139,10 +127,10 @@ class ProductVariantRelationManager extends RelationManager
             ->recordTitleAttribute('sku')
             ->columns([
 
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable()
-                    ->searchable(),
+                // Tables\Columns\TextColumn::make('id')
+                //     ->label('ID')
+                //     ->sortable()
+                //     ->searchable(),
 
                 Tables\Columns\TextColumn::make('sku')
                     ->label('SKU'),
@@ -151,9 +139,9 @@ class ProductVariantRelationManager extends RelationManager
                     ->label('Precio')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('stock_quantity')
-                    ->label('Stock')
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('stock_quantity')
+                //     ->label('Stock')
+                //     ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Activa')
@@ -168,10 +156,55 @@ class ProductVariantRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->label('Agregar Variante')
+                    ->using(function (array $data, RelationManager $livewire) {
+                        // Recoger los IDs de las opciones seleccionadas
+                        $variantOptionIds = [];
+                        foreach ($data as $key => $value) {
+                            if (str_starts_with($key, 'variant_option_') && $value) {
+                                $variantOptionIds[] = $value;
+                                unset($data[$key]);
+                            }
+                        }
+                        // Crear la variante
+                        $variant = $livewire->getOwnerRecord()->variants()->create($data);
+                        // Sincronizar la relación en la tabla pivote
+                        if (!empty($variantOptionIds)) {
+                            $variant->variantOptions()->sync($variantOptionIds);
+                        }
+                        return $variant;
+                    }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->beforeFormFilled(function (RelationManager $livewire, array $data) {
+                        $record = $livewire->getMountedTableActionRecord();
+                        if ($record) {
+                            $variantOptions = $record->variantOptions()->get();
+                            foreach ($variantOptions as $option) {
+                                $data['variant_option_' . $option->product_option_type_id] = $option->id;
+                            }
+                        }
+                        return $data;
+                    })
+                    ->using(function (\Illuminate\Database\Eloquent\Model $record, array $data, RelationManager $livewire) {
+                        // Recoger los IDs de las opciones seleccionadas
+                        $variantOptionIds = [];
+                        foreach ($data as $key => $value) {
+                            if (str_starts_with($key, 'variant_option_') && $value) {
+                                $variantOptionIds[] = $value;
+                                unset($data[$key]);
+                            }
+                        }
+                        // Actualizar la variante
+                        $record->update($data);
+                        // Sincronizar la relación en la tabla pivote
+                        if (!empty($variantOptionIds)) {
+                            $record->variantOptions()->sync($variantOptionIds);
+                        }
+                        return $record;
+                    }),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -181,4 +214,3 @@ class ProductVariantRelationManager extends RelationManager
             ]);
     }
 }
-

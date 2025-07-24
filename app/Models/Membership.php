@@ -77,12 +77,6 @@ class Membership extends Model
         return $this->hasMany(Package::class);
     }
 
-    // Relación con TypeDrink
-    // public function typeDrink()
-    // {
-    //     return $this->belongsTo(TypeDrink::class, 'typeDrink_id');
-    // }
-
     // Relación con Discipline
     public function discipline()
     {

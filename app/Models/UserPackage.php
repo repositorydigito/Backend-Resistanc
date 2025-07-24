@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Carbon\Carbon;
@@ -9,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use Illuminate\Support\Str;
 
 final class UserPackage extends Model
 {
@@ -18,7 +18,7 @@ final class UserPackage extends Model
         'user_id',
         'package_id',
         'package_code',
-        'total_classes',
+        // 'total_classes',
         'used_classes',
         'remaining_classes',
         'amount_paid_soles',
@@ -27,9 +27,9 @@ final class UserPackage extends Model
         'activation_date',
         'expiry_date',
         'status',
-        'auto_renew',
+        // 'auto_renew',
         'renewal_price',
-        'benefits_included',
+        // 'benefits_included',
         'notes',
     ];
 
@@ -37,19 +37,47 @@ final class UserPackage extends Model
         'purchase_date' => 'date',
         'activation_date' => 'date',
         'expiry_date' => 'date',
-        'total_classes' => 'integer',
+        // 'total_classes' => 'integer',
         'used_classes' => 'integer',
         'remaining_classes' => 'integer',
         'amount_paid_soles' => 'decimal:2',
         'renewal_price' => 'decimal:2',
-        'benefits_included' => 'array',
-        'auto_renew' => 'boolean',
+        // 'benefits_included' => 'array',
+        // 'auto_renew' => 'boolean',
     ];
 
     protected $appends = [
         'estimated_expiry_date',
         'expiry_status',
     ];
+
+
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (UserPackage $userPackage) {
+            // Generar código único si no se proporcionó uno
+            if (empty($userPackage->package_code)) {
+                $userPackage->package_code = static::generateUniquePackageCode();
+            }
+        });
+    }
+
+    /**
+     * Genera un código de paquete único
+     */
+    public static function generateUniquePackageCode(): string
+    {
+        do {
+            $code = strtoupper(Str::random(12)); // Ejemplo: "A1B2C3D4E5F6"
+        } while (static::where('package_code', $code)->exists());
+
+        return $code;
+    }
+
 
     /**
      * Get the user that owns this package.
@@ -121,8 +149,8 @@ final class UserPackage extends Model
     public function getIsValidAttribute(): bool
     {
         return $this->status === 'active' &&
-               $this->activation_date && $this->activation_date->isPast() &&
-               $this->expiry_date && $this->expiry_date->isFuture();
+            $this->activation_date && $this->activation_date->isPast() &&
+            $this->expiry_date && $this->expiry_date->isFuture();
     }
 
     /**

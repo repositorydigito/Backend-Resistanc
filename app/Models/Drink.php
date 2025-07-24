@@ -78,7 +78,7 @@ class Drink extends Model
             ->withPivot('id');
     }
 
-    // ✅ Relación correcta con usuarios
+
     public function users()
     {
         return $this->belongsToMany(User::class, 'drink_user', 'drink_id', 'user_id')

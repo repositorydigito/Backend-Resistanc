@@ -41,6 +41,7 @@
 
     @include('layouts.partials.footerapp')
 
+    @livewire('product-variant-create-modal')
 
 </body>
 

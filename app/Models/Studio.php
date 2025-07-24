@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -210,7 +208,7 @@ final class Studio extends Model
         if (!empty($seats)) {
             Seat::insert($seats);
             Log::info("Asientos generados exitosamente", ['total_seats' => count($seats)]);
-            
+
             // Reordenar los números para asegurar secuencia correlativa
             $this->reorderSeatNumbers();
             Log::info("Números de asientos reordenados después de la generación");
@@ -393,7 +391,7 @@ final class Studio extends Model
     public function deleteSeat(int $seatId): bool
     {
         $seat = $this->seats()->find($seatId);
-        
+
         if (!$seat) {
             Log::warning("Asiento no encontrado para eliminar", ['seat_id' => $seatId]);
             return false;

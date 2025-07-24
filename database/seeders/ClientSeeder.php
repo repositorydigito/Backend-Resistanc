@@ -87,7 +87,6 @@ class ClientSeeder extends Seeder
             'user_id' => $user_cliente->id,
             'package_id' => $package1->id,
             'package_code' => 'PCK-001',
-            'total_classes' => $package1->classes_quantity,
             'used_classes' => 0,
             'remaining_classes' => $package1->classes_quantity,
             'amount_paid_soles' => $package1->price_soles,
@@ -102,7 +101,7 @@ class ClientSeeder extends Seeder
             'user_id' => $user_cliente->id,
             'package_id' => $package2->id,
             'package_code' => 'PCK-002',
-            'total_classes' => $package2->classes_quantity,
+
             'used_classes' => 0,
             'remaining_classes' => $package2->classes_quantity,
             'amount_paid_soles' => $package2->price_soles,

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -497,5 +495,15 @@ final class User extends Authenticatable
             })
             ->values()
             ->toArray();
+    }
+
+    public function footwearLoansAsClient(): HasMany
+    {
+        return $this->hasMany(FootwearLoan::class, 'user_client_id');
+    }
+
+    public function footwearLoansAsManager(): HasMany
+    {
+        return $this->hasMany(FootwearLoan::class, 'user_id');
     }
 }

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,6 +26,14 @@ final class ProductVariant extends Model
     protected $casts = [
         'images' => 'array',
     ];
+
+
+    // protected static function booted(): void
+    // {
+    //     static::creating(function ($variant) {
+    //         dd($variant->toArray());
+    //     });
+    // }
 
     /**
      * Get the product that owns this variant.

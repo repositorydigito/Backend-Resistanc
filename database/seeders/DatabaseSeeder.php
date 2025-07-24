@@ -81,6 +81,9 @@ class DatabaseSeeder extends Seeder
         //Informacion de la empresa
         $this->call(CompanySeeder::class);
 
+        // Calzado
+        $this->call(FootwearSeeder::class);
+
         $this->command->info('🎉 Database seeding completed!');
     }
 }

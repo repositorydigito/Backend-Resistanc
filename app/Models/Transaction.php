@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class Transaction extends Model
 {
+
+    // No utilizado
     use HasFactory;
 
     protected $fillable = [
@@ -78,7 +80,7 @@ final class Transaction extends Model
             'cancelled' => 'Cancelado',
             'refunded' => 'Reembolsado',
             default => ucfirst($this->status),
-        ];
+        };
     }
 
     /**
@@ -91,6 +93,6 @@ final class Transaction extends Model
             'refund' => 'Reembolso',
             'partial_refund' => 'Reembolso Parcial',
             default => ucfirst($this->type),
-        ];
+        };
     }
 }
