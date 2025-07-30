@@ -84,6 +84,9 @@ class DatabaseSeeder extends Seeder
         // Calzado
         $this->call(FootwearSeeder::class);
 
+        // Toallas
+        $this->call(TowelSeeder::class);
+
         $this->command->info('🎉 Database seeding completed!');
     }
 }

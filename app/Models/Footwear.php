@@ -54,6 +54,11 @@ class Footwear extends Model
         return $query->where('code', $code);
     }
 
+    public function reservations()
+    {
+        return $this->hasMany(FootwearReservation::class);
+    }
+
     public function loans()
     {
         return $this->hasMany(FootwearLoan::class);
@@ -62,5 +67,10 @@ class Footwear extends Model
     public function activeLoan()
     {
         return $this->hasOne(FootwearLoan::class)->where('status', 'in_use');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
     }
 }

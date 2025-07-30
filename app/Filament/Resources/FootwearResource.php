@@ -173,21 +173,20 @@ class FootwearResource extends Resource
 
                 Tables\Columns\TextColumn::make('size')
                     ->label('Talla')
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'available' => 'success',
-                        'out_of_stock' => 'gray',
                         'maintenance' => 'warning',
                         'in_use' => 'primary',
                         'lost' => 'danger'
                     })
                     ->formatStateUsing(fn(string $state): string => match ($state) {
                         'available' => 'Disponible',
-                        'out_of_stock' => 'Agotado',
                         'maintenance' => 'Mantenimiento',
                         'in_use' => 'En uso',
                         'lost' => 'Perdido'

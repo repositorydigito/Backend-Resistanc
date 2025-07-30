@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ClassScheduleController;
 use App\Http\Controllers\Api\DisciplineController;
 use App\Http\Controllers\Api\DrinkController;
 use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\FootwearController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\PackageController;
@@ -280,6 +281,12 @@ Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(
 });
 
 Route::post('/product-variants', [ProductVariantApiController::class, 'store']);
+
+
+// Reservas de calzado
+Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/reserve', [FootwearController::class, 'reserve'])->name('reserve');
+});
 
 
 

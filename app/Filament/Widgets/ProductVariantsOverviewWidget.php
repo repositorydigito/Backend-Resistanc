@@ -22,7 +22,7 @@ class ProductVariantsOverviewWidget extends BaseWidget
 
         // Calcular variantes sin stock
         $variantsWithoutStock = ProductVariant::where('stock_quantity', 0)->count();
-        
+
         // Calcular variantes con stock bajo
         $variantsLowStock = ProductVariant::whereRaw('stock_quantity <= min_stock_alert')
             ->where('stock_quantity', '>', 0)
@@ -70,4 +70,4 @@ class ProductVariantsOverviewWidget extends BaseWidget
                 ->color('warning'),
         ];
     }
-} 
+}

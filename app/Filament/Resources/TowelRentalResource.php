@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\FootwearRentalResource\Pages;
-use App\Filament\Resources\FootwearRentalResource\RelationManagers;
-use App\Models\Footwear;
+use App\Filament\Resources\TowelRentalResource\Pages;
+use App\Filament\Resources\TowelRentalResource\RelationManagers;
+use App\Models\Towel;
 use App\Models\User;
 
 use Filament\Forms;
@@ -15,23 +15,22 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Log;
 
-class FootwearRentalResource extends Resource
+class TowelRentalResource extends Resource
 {
-    protected static ?string $model = Footwear::class;
+    protected static ?string $model = Towel::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-on-square';
 
+    protected static ?string $navigationGroup = 'Toallas';
 
-    protected static ?string $navigationGroup = 'Calzados'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Préstamos de toallas';
 
-    protected static ?string $navigationLabel = 'Préstamos de calzados'; // Nombre del grupo de navegación
+    protected static ?string $label = 'Préstamo de toalla';
 
-    protected static ?string $label = 'Préstamo de calzado'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Préstamos de calzado'; // Nombre en plural
+    protected static ?string $pluralLabel = 'Préstamos de toalla';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     public static function form(Form $form): Form
     {
@@ -88,13 +87,18 @@ class FootwearRentalResource extends Resource
                     ->circular()
                     ->size(50),
 
-                Tables\Columns\TextColumn::make('model')
-                    ->label('Modelo')
+                Tables\Columns\TextColumn::make('size')
+                    ->label('Tamaño')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('brand')
-                    ->label('Marca')
+                Tables\Columns\TextColumn::make('color')
+                    ->label('Color')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('gender')
+                    ->label('Género')
                     ->searchable()
                     ->sortable(),
 
@@ -116,33 +120,6 @@ class FootwearRentalResource extends Resource
                         'lost' => 'Perdido'
                     }),
 
-                Tables\Columns\TextColumn::make('size')
-                    ->label('Talla')
-                    ->sortable()
-                    ->searchable(),
-
-                Tables\Columns\TextColumn::make('proxima_reserva')
-                    ->label('Próxima reserva')
-                    ->formatStateUsing(function ($state, $record) {
-                        $reserva = $record->reservations()
-                            ->where('status', 'pending')
-                            ->orderBy('scheduled_date')
-                            ->first();
-                        Log::info('DEBUG PROXIMA RESERVA', [
-                            'footwear_id' => $record->id,
-                            'reserva_id' => $reserva?->id,
-                            'reserva_status' => $reserva?->status,
-                            'reserva_fecha' => $reserva?->scheduled_date,
-                            'reserva_user' => $reserva?->userClient?->name,
-                        ]);
-                        if ($reserva) {
-                            $fecha = $reserva->scheduled_date ? \Carbon\Carbon::parse($reserva->scheduled_date)->format('d/m/Y H:i') : '-';
-                            $nombre = $reserva->userClient?->name ?? '-';
-                            return "$fecha ($nombre)";
-                        }
-                        return '-';
-                    }),
-
                 Tables\Columns\TextColumn::make('activeLoan.userClient.name')
                     ->label('Usuario actual')
                     ->default('-')
@@ -159,8 +136,8 @@ class FootwearRentalResource extends Resource
                         'maintenance' => 'En mantenimiento',
                         'lost' => 'Perdido'
                     ])
-                    ->default(['available', 'in_use']) // Estados mostrados por defecto
-                    ->multiple(), // Permite selección múltiple
+                    ->default(['available', 'in_use'])
+                    ->multiple(),
             ])
             ->actions([
                 Tables\Actions\Action::make('marcar_danado_perdido')
@@ -180,8 +157,8 @@ class FootwearRentalResource extends Resource
                             ->label('Motivo o nota')
                             ->required(),
                     ])
-                    ->action(function (array $data, Footwear $record) {
-                        // Cambia el estado del calzado
+                    ->action(function (array $data, Towel $record) {
+                        // Cambia el estado de la toalla
                         $record->update(['status' => $data['nuevo_estado']]);
                         // Cambia el estado del préstamo activo y agrega la nota
                         $activeLoan = $record->activeLoan()->first();
@@ -207,7 +184,7 @@ class FootwearRentalResource extends Resource
                             ->label('Notas')
                             ->rows(2),
                     ])
-                    ->action(function (array $data, Footwear $record) {
+                    ->action(function (array $data, Towel $record) {
                         $record->loans()->create([
                             'user_client_id' => $data['user_client_id'],
                             'loan_date' => now(),
@@ -221,7 +198,7 @@ class FootwearRentalResource extends Resource
                     ->icon('heroicon-o-arrow-down-on-square')
                     ->color('success')
                     ->visible(fn($record) => $record && $record->status === 'in_use')
-                    ->action(function (Footwear $record) {
+                    ->action(function (Towel $record) {
                         $activeLoan = $record->activeLoan()->first();
                         if ($activeLoan) {
                             $activeLoan->update([
@@ -231,35 +208,12 @@ class FootwearRentalResource extends Resource
                         }
                         $record->update(['status' => 'available']);
                     }),
-                Tables\Actions\Action::make('aceptar_reserva')
-                    ->label('Aceptar próxima reserva')
-                    ->icon('heroicon-o-check')
-                    ->color('success')
-                    ->visible(fn($record) =>
-                        $record->status === 'available' &&
-                        $record->reservations()
-                            ->where('status', 'pending')
-                            ->orderBy('scheduled_date')
-                            ->exists()
-                    )
-                    ->action(function (Footwear $record) {
-                        $reserva = $record->reservations()
-                            ->where('status', 'pending')
-                            ->orderBy('scheduled_date')
-                            ->first();
-                        if ($reserva) {
-                            $reserva->update(['status' => 'confirmed']);
-                            $record->update(['status' => 'in_use']);
-                        }
-                    }),
-                // Tables\Actions\EditAction::make()
-                //     ->visible(fn($record) => $record && $record->status === 'in_use'),
                 Tables\Actions\Action::make('eliminar_historial')
                     ->label('Eliminar historial actual')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->visible(fn($record) => $record && $record->status === 'in_use')
-                    ->action(function (Footwear $record) {
+                    ->action(function (Towel $record) {
                         $activeLoan = $record->activeLoan()->first();
                         if ($activeLoan) {
                             $activeLoan->delete();
@@ -296,9 +250,7 @@ class FootwearRentalResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListFootwearRentals::route('/'),
-            // 'create' => Pages\CreateFootwearRental::route('/create'),
-            // 'edit' => Pages\EditFootwearRental::route('/{record}/edit'),
+            'index' => Pages\ListTowelRentals::route('/'),
         ];
     }
 }

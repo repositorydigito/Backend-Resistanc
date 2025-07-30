@@ -24,7 +24,7 @@ return new class extends Migration
 
             $table->string('description')->nullable()->comment('Descripción del calzado');
             $table->text('observations')->nullable()->comment('Observaciones sobre el calzado');
-            $table->enum('status', ['available', 'out_of_stock', 'maintenance', 'in_use', 'lost'])->default('available')->comment('Estado del calzado');
+            $table->enum('status', ['available', 'maintenance', 'in_use', 'lost'])->default('available')->comment('Estado del calzado');
             $table->string('image')->nullable()->comment('Imagen del calzado');
             $table->json('images_gallery')->nullable()->comment('Galería de imágenes del calzado');
 

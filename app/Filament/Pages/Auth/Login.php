@@ -13,7 +13,7 @@ class Login extends BaseLogin
     {
         return $form
             ->schema([
-                View::make('filament.pages.auth.partials.login-header'),
+                // View::make('filament.pages.auth.partials.login-header'),
                 TextInput::make('email')
                     ->label('Usuario')
                     ->placeholder('Ingresa tu usuario o correo electrónico')

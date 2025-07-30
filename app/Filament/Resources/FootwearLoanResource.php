@@ -31,31 +31,32 @@ class FootwearLoanResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $isEdit = request()->routeIs('filament.resources.footwear-loans.edit');
         return $form
             ->schema([
                 Forms\Components\Select::make('footwear_id')
                     ->label('Calzado')
                     ->relationship('footwear', 'code')
                     ->required()
-                    ->searchable(),
+                    ->searchable()
+                    ->disabled($isEdit),
 
                 Forms\Components\Select::make('user_id')
                     ->label('Socio')
                     ->relationship('user', 'name')
                     ->required()
-                    ->searchable(),
+                    ->searchable()
+                    ->disabled($isEdit),
 
                 Forms\Components\DateTimePicker::make('loan_date')
                     ->label('Fecha préstamo')
                     ->default(now())
-                    ->required(),
-
-                Forms\Components\DateTimePicker::make('estimated_return_date')
-                    ->label('Fecha devolución estimada')
-                    ->required(),
+                    ->required()
+                    ->disabled($isEdit),
 
                 Forms\Components\DateTimePicker::make('return_date')
-                    ->label('Fecha devolución real'),
+                    ->label('Fecha devolución')
+                    ->disabled($isEdit),
 
                 Forms\Components\Select::make('status')
                     ->options([
@@ -65,11 +66,12 @@ class FootwearLoanResource extends Resource
                         'lost' => 'Perdido'
                     ])
                     ->default('in_use')
-                    ->required(),
+                    ->required()
+                    ->disabled($isEdit),
 
                 Forms\Components\Textarea::make('notes')
                     ->label('Observaciones')
-                    ->columnSpanFull()
+                    ->columnSpanFull(), // <-- este campo sí es editable siempre
             ]);
     }
 
@@ -88,11 +90,11 @@ class FootwearLoanResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('loan_date')
-                    ->label('Préstamo')
+                    ->label('F. Préstamo')
                     ->dateTime(),
 
-                Tables\Columns\TextColumn::make('estimated_return_date')
-                    ->label('Devolución estimada')
+                Tables\Columns\TextColumn::make('return_date')
+                    ->label('F. Devolución')
                     ->dateTime(),
 
                 Tables\Columns\TextColumn::make('status')

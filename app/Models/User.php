@@ -506,4 +506,54 @@ final class User extends Authenticatable
     {
         return $this->hasMany(FootwearLoan::class, 'user_id');
     }
+
+    public function footwearReservations()
+    {
+        // Reservas hechas por el cliente
+        return $this->hasMany(FootwearReservation::class, 'user_client_id');
+    }
+
+    public function footwearLoans()
+    {
+        // Préstamos recibidos por el cliente
+        return $this->hasMany(FootwearLoan::class, 'user_client_id');
+    }
+
+    public function footwearReservationsCreated()
+    {
+        // Reservas registradas por el usuario (admin/empleado)
+        return $this->hasMany(FootwearReservation::class, 'user_id');
+    }
+
+    public function footwearLoansManaged()
+    {
+        // Préstamos gestionados por el usuario (admin/empleado)
+        return $this->hasMany(FootwearLoan::class, 'user_id');
+    }
+
+    /**
+     * Get all towels created by this user.
+     */
+
+    public function towels(): HasMany
+    {
+        return $this->hasMany(Towel::class, 'user_id');
+    }
+
+    public function towelsUpdated(): HasMany
+    {
+        return $this->hasMany(Towel::class, 'user_updated_id');
+    }
+
+    // Relaciones para préstamos de toallas
+    public function towelLoans(): HasMany
+    {
+        return $this->hasMany(TowelLoan::class, 'user_client_id');
+    }
+
+    public function towelLoansManaged(): HasMany
+    {
+        return $this->hasMany(TowelLoan::class, 'user_id');
+    }
+
 }
