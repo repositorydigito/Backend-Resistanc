@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ClassScheduleController;
 use App\Http\Controllers\Api\DisciplineController;
 use App\Http\Controllers\Api\DrinkController;
@@ -27,7 +28,9 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\StudioController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductVariantApiController;
+use App\Http\Controllers\Api\TagController;
 use App\Models\Instructor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -287,6 +290,26 @@ Route::post('/product-variants', [ProductVariantApiController::class, 'store']);
 Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(function () {
     Route::post('/reserve', [FootwearController::class, 'reserve'])->name('reserve');
 });
+
+// Articulos
+// Categorias de Productos
+Route::prefix('posts/category')->name('posts.category.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/list', [CategoryController::class, 'index'])->name('index');
+});
+// Fin categorias
+
+// Etiquetas
+Route::prefix('posts/tags')->name('posts.tags.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/list', [TagController::class, 'index'])->name('index');
+});
+// Fin etiquetas
+
+// Artículos
+Route::prefix('posts')->name('posts.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/list', [PostController::class, 'index'])->name('index');
+});
+// Fin articulos
+
 
 
 

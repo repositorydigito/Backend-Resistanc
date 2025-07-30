@@ -87,6 +87,15 @@ class DatabaseSeeder extends Seeder
         // Toallas
         $this->call(TowelSeeder::class);
 
+        // Etiquetas
+        $this->call(TagSeeder::class);
+
+        // Categorías
+        $this->call(CategorySeeder::class);
+
+        // Posts
+        $this->call(PostSeeder::class);
+
         $this->command->info('🎉 Database seeding completed!');
     }
 }

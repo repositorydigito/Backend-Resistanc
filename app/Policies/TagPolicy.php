@@ -3,10 +3,10 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\Towel;
+use App\Models\Tag;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
-class TowelPolicy
+class TagPolicy
 {
     use HandlesAuthorization;
 
@@ -15,15 +15,15 @@ class TowelPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_towel::rental');
+        return $user->can('view_any_tag');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Towel $towel): bool
+    public function view(User $user, Tag $tag): bool
     {
-        return $user->can('view_towel::rental');
+        return $user->can('view_tag');
     }
 
     /**
@@ -31,23 +31,23 @@ class TowelPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_towel::rental');
+        return $user->can('create_tag');
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Towel $towel): bool
+    public function update(User $user, Tag $tag): bool
     {
-        return $user->can('update_towel::rental');
+        return $user->can('update_tag');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Towel $towel): bool
+    public function delete(User $user, Tag $tag): bool
     {
-        return $user->can('delete_towel::rental');
+        return $user->can('delete_tag');
     }
 
     /**
@@ -55,13 +55,13 @@ class TowelPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_towel::rental');
+        return $user->can('delete_any_tag');
     }
 
     /**
      * Determine whether the user can permanently delete.
      */
-    public function forceDelete(User $user, Towel $towel): bool
+    public function forceDelete(User $user, Tag $tag): bool
     {
         return $user->can('{{ ForceDelete }}');
     }
@@ -77,7 +77,7 @@ class TowelPolicy
     /**
      * Determine whether the user can restore.
      */
-    public function restore(User $user, Towel $towel): bool
+    public function restore(User $user, Tag $tag): bool
     {
         return $user->can('{{ Restore }}');
     }
@@ -93,7 +93,7 @@ class TowelPolicy
     /**
      * Determine whether the user can replicate.
      */
-    public function replicate(User $user, Towel $towel): bool
+    public function replicate(User $user, Tag $tag): bool
     {
         return $user->can('{{ Replicate }}');
     }
