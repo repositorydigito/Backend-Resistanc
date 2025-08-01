@@ -12,7 +12,9 @@ use App\Models\Drink;
 use App\Models\Flavordrink;
 use App\Models\Typedrink;
 use Dedoc\Scramble\Support\Generator\Types\Type;
+use DragonCode\PrettyArray\Services\Formatters\Json;
 use Error;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -91,23 +93,36 @@ final class DrinkController extends Controller
      *   }
      * }
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
 
+        try {
+            $query = Drink::query();
 
-        $query = Drink::query();
+            // Paginación o lista completa
+            if ($request->has('per_page')) {
+                $drinks = $query->paginate(
+                    perPage: $request->integer('per_page', 15),
+                    page: $request->integer('page', 1)
+                );
+            } else {
+                $drinks = $query->get();
+            }
 
-        // Paginación o lista completa
-        if ($request->has('per_page')) {
-            $drinks = $query->paginate(
-                perPage: $request->integer('per_page', 15),
-                page: $request->integer('page', 1)
-            );
-        } else {
-            $drinks = $query->get();
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Bebidas listadas exitosamente',
+                'datoAdicional' => DrinkResource::collection($drinks),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al listar bebidas',
+                'datoAdicional' => null,
+            ], 200);
         }
-
-        return DrinkResource::collection($drinks);
     }
 
     /**
@@ -160,12 +175,31 @@ final class DrinkController extends Controller
      *   "message": "Bebida no encontrada"
      * }
      */
-    public function show(int $id): DrinkResource
+    public function show(Request $request): JsonResponse
     {
-        $drink = Drink::with(['basesdrinks', 'flavordrinks', 'typesdrinks'])
-            ->findOrFail($id);
+        try {
 
-        return new DrinkResource($drink);
+            $request->validate([
+                'drink_id' => 'required|integer|exists:drinks,id',
+            ]);
+
+            $drink = Drink::with(['basesdrinks', 'flavordrinks', 'typesdrinks'])
+                ->findOrFail($request->input('drink_id'));
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Bebida obtenida exitosamente',
+                'datoAdicional' => new DrinkResource($drink),
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener bebida',
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
 
     /**
@@ -287,7 +321,6 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->getMessage(),
             ], 200);
         }
-
     }
 
     /**
@@ -324,7 +357,7 @@ final class DrinkController extends Controller
     public function typeDrinks()
     {
 
-          try {
+        try {
             $types = Typedrink::all();
 
             return response()->json([
@@ -349,6 +382,5 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->getMessage(),
             ], 200);
         }
-
     }
 }

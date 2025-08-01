@@ -35,7 +35,7 @@ class TypedrinkResource extends Resource
         return $form
             ->schema([
             Section::make('Información del tipo de bebida')
-                    ->columns(1)
+                    ->columns(2)
                     ->schema([
 
                         Forms\Components\FileUpload::make('image_url')
@@ -49,6 +49,25 @@ class TypedrinkResource extends Resource
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
                             ->image(),
+                        Forms\Components\FileUpload::make('ico_url')
+                            ->label('Icono')
+                            ->disk('public')
+                            ->directory('typedrinks/icons')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 2) // 2 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(100)
+                            ->imageResizeTargetHeight(100)
+                            ->image(),
+                        Forms\Components\TextInput::make('price')
+                            ->label('Precio')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0)
+                            ->maxValue(9999)
+                            ->default(0)
+                            ->step(0.01),
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
                             ->required()

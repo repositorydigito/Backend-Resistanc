@@ -93,4 +93,10 @@ class Drink extends Model
             ->withTimestamps();
     }
 
+    public function juiceCartCodes(): BelongsToMany
+    {
+        return $this->belongsToMany(JuiceCartCodes::class, 'juice_cart_drink', 'drink_id', 'juice_cart_code_id')
+            ->withTimestamps();
+    }
+
 }

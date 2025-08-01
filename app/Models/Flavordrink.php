@@ -9,6 +9,7 @@ class Flavordrink extends Model
     protected $fillable = [
         'name',
         'image_url',
+        'ico_url'
     ];
 
     protected $casts = [

@@ -173,11 +173,11 @@ Route::prefix('waiting-list')->name('waiting-list.')->middleware('auth:sanctum')
 
 // Bebidas
 Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [DrinkController::class, 'index'])->name('index');
-    Route::get('/{id}', [DrinkController::class, 'show'])->name('show');
-    Route::get('/base-drinks', [DrinkController::class, 'baseDrinks'])->name('base-drinks');
-    Route::get('/flavor-drinks', [DrinkController::class, 'flavorDrinks'])->name('flavor-drinks');
-    Route::get('/type-drinks', [DrinkController::class, 'typeDrinks'])->name('type-drinks');
+    Route::post('/', [DrinkController::class, 'index'])->name('index');
+    Route::post('/show', [DrinkController::class, 'show'])->name('show');
+    Route::post('/base-drinks', [DrinkController::class, 'baseDrinks'])->name('base-drinks');
+    Route::post('/flavor-drinks', [DrinkController::class, 'flavorDrinks'])->name('flavor-drinks');
+    Route::post('/type-drinks', [DrinkController::class, 'typeDrinks'])->name('type-drinks');
 });
 // Fin bebidas
 

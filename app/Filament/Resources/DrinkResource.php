@@ -68,7 +68,7 @@ class DrinkResource extends Resource
                             )
                             ->searchable()
                             ->required()
-                            ->multiple()
+                            // ->multiple()
                             ->preload(),
                         Forms\Components\Select::make('flavordrinks')
                             ->label('Sabor de la bebida')
@@ -78,7 +78,7 @@ class DrinkResource extends Resource
                             )
                             ->searchable()
                             ->required()
-                            ->multiple()
+                            // ->multiple()
                             ->preload(),
 
                         Forms\Components\Select::make('typesdrinks')
@@ -90,20 +90,20 @@ class DrinkResource extends Resource
 
                             ->searchable()
                             ->required()
-                            ->multiple()
+                            // ->multiple()
                             ->preload(),
 
 
 
-                        Forms\Components\TextInput::make('price')
-                            ->label('Precio')
-                            ->required()
-                            ->minValue(0)
-                            ->maxValue(1000000)
-                            ->step(0.01)
-                            ->numeric()
-                            ->default(0)
-                            ->prefix('S/'),
+                        // Forms\Components\TextInput::make('price')
+                        //     ->label('Precio')
+                        //     ->required()
+                        //     ->minValue(0)
+                        //     ->maxValue(1000000)
+                        //     ->step(0.01)
+                        //     ->numeric()
+                        //     ->default(0)
+                        //     ->prefix('S/'),
 
                         Forms\Components\Textarea::make('description')
                             ->columnSpanFull()

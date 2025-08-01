@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('flavordrinks', function (Blueprint $table) {
+        Schema::create('juice_cart_codes', function (Blueprint $table) {
             $table->id();
 
-            $table->string('name')->unique()->comment('Nombre del sabor de la bebida');
-            $table->string('image_url')->nullable()->comment('URL de la imagen del sabor de la bebida');
-            $table->string('ico_url')->nullable()->comment('URL del ícono del sabor de la bebida');
+            $table->string('code')->unique();
 
             $table->timestamps();
         });
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('flavordrinks');
+        Schema::dropIfExists('juice_cart_codes');
     }
 };

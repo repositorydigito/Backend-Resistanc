@@ -32,7 +32,7 @@ class FlavordrinkResource extends Resource
         return $form
             ->schema([
                 Section::make('Información del sabor de bebida')
-                    ->columns(1)
+                    ->columns(2)
                     ->schema([
 
                         Forms\Components\FileUpload::make('image_url')
@@ -45,6 +45,17 @@ class FlavordrinkResource extends Resource
                             ->imageResizeMode('crop')
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
+                            ->image(),
+                        Forms\Components\FileUpload::make('ico_url')
+                            ->label('Ícono')
+                            ->disk('public')
+                            ->directory('flavordrinks/icons')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 2) // 2 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(100)
+                            ->imageResizeTargetHeight(100)
                             ->image(),
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
