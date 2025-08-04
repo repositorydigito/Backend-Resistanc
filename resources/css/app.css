@@ -56,3 +56,16 @@
     transition: color 0.3s ease;
     text-transform: uppercase;
 }
+
+.footer {
+    /* padding: 20px; */
+    background: linear-gradient(
+        94deg,
+        #cdd6d7 0%,
+        #d9d9d2 30.29%,
+        #e7dfe9 49.52%,
+        #e5d7ea 71.15%,
+        #e7d4d8 100%
+    );
+    border-top: 1px solid #fff;
+}

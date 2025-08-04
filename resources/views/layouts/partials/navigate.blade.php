@@ -1,4 +1,4 @@
-<nav class=" dark:bg-gray-900 fixed top-0 left-0 right-0 z-50 border-b border-white">
+<nav class=" dark:bg-gray-900 ">
     <div class="container flex flex-wrap items-center justify-between p-4">
         <img src="{{ asset('image/logos/resistance-logo-two-white.png') }}" alt="Resistance Logo">
         <button data-collapse-toggle="navbar-default" type="button"
