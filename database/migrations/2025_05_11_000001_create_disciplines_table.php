@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('display_name', 100)->comment('Nombre que sera visual para el usuario');
             $table->text('description')->nullable()->comment('Descripcion de la disciplina');
             $table->string('icon_url')->nullable()->comment('icono de la disciplina');
+            $table->string('image_url')->nullable()->comment('Imagen de fondo de la disciplina');
             $table->string('color_hex', 7)->nullable()->comment('Color para UI (#FF5733)');
             $table->json('equipment_required')->nullable()->comment('Equipos necesarios');
             $table->enum('difficulty_level', ['beginner', 'intermediate', 'advanced', 'all_levels'])->default('all_levels')->comment('Nivel de la disciplina');

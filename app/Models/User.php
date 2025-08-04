@@ -556,4 +556,9 @@ final class User extends Authenticatable
         return $this->hasMany(TowelLoan::class, 'user_id');
     }
 
+    public function juiceCartCodes(): HasMany
+    {
+        return $this->hasMany(JuiceCartCodes::class);
+    }
+
 }

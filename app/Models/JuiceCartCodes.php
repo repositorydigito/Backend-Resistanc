@@ -15,4 +15,10 @@ class JuiceCartCodes extends Model
     {
         return $this->belongsToMany(Drink::class, 'juice_cart_drink', 'juice_cart_code_id', 'drink_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
 }

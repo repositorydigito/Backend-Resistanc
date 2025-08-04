@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\StudioController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\JuiceCartCodeController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductVariantApiController;
 use App\Http\Controllers\Api\TagController;
@@ -262,6 +263,20 @@ Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum
     Route::post('/confirm', [ShoppingCartController::class, 'confirm'])->name('confirm');
 });
 // Fin carrito
+
+// Carrito shake
+
+Route::prefix('juice-cart')->name('juice-cart.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [JuiceCartCodeController::class, 'show'])->name('show');
+    Route::post('/add', [JuiceCartCodeController::class, 'add'])->name('add');
+    Route::post('/remove', [JuiceCartCodeController::class, 'remove'])->name('remove');
+    Route::post('/update-quantity', [JuiceCartCodeController::class, 'updateQuantity'])->name('update-quantity');
+    Route::post('/clear', [JuiceCartCodeController::class, 'clear'])->name('clear');
+    Route::post('/confirm', [JuiceCartCodeController::class, 'confirm'])->name('confirm');
+});
+
+// Fin carrito shake
+
 
 // Rutas de Pedidos
 Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function () {

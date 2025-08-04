@@ -30,6 +30,8 @@
 
 </head>
 
+@stack('css')
+
 <body class="">
 
     @include('layouts.partials.navigate')
@@ -41,7 +43,8 @@
 
     @include('layouts.partials.footerapp')
 
-    @livewire('product-variant-create-modal')
+
+    @stack('js')
 
 </body>
 

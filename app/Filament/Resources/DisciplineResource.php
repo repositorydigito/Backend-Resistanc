@@ -55,6 +55,16 @@ class DisciplineResource extends Resource
                                     ->extraAttributes(['class' => 'h-64 w-64'])
                                     ->preserveFilenames()
                                     ->maxSize(2048),
+                                Forms\Components\FileUpload::make('image_url')
+                                    ->label('Imagen de fondo')
+                                    ->columnSpanFull()
+                                    ->image()
+                                    ->directory('disciplines/images')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->extraAttributes(['class' => 'h-64 w-full object-cover'])
+                                    ->preserveFilenames()
+                                    ->maxSize(2048),
 
                                 Forms\Components\ColorPicker::make('color_hex')
                                     ->label('Color principal')

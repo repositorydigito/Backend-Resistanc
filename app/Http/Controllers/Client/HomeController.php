@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Discipline;
 use App\Models\Membership;
 use Illuminate\Http\Request;
 
@@ -14,8 +15,9 @@ class HomeController extends Controller
     {
 
         $membresias = Membership::all();
+        $disciplines = Discipline::all();
 
-        return view('client.home', compact('membresias'));
+        return view('client.home', compact('membresias', 'disciplines'));
     }
 
 }

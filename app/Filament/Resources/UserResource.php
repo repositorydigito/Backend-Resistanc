@@ -76,77 +76,77 @@ class UserResource extends Resource
                     ]),
 
                 // Sección 2: Perfil personal
-                Section::make('Información personal')
-                    ->schema([
-                        Forms\Components\FileUpload::make('profile.profile_image')
-                            ->label('Imagen de perfil')
-                            ->columnSpanFull()
-                            ->image()
-                            ->directory('user/profile')
-                            ->disk('public')
-                            ->visibility('public')
-                            ->extraAttributes(['class' => 'h-64 w-64'])
-                            ->preserveFilenames(),
+                // Section::make('Información personal')
+                //     ->schema([
+                //         Forms\Components\FileUpload::make('profile.profile_image')
+                //             ->label('Imagen de perfil')
+                //             ->columnSpanFull()
+                //             ->image()
+                //             ->directory('user/profile')
+                //             ->disk('public')
+                //             ->visibility('public')
+                //             ->extraAttributes(['class' => 'h-64 w-64'])
+                //             ->preserveFilenames(),
 
-                        Section::make('Datos personales')
-                            ->columns(2)
-                            ->schema([
-                                Forms\Components\TextInput::make('profile.first_name')
-                                    ->label('Nombre')
-                                    ->maxLength(60)
-                                    ->required(),
+                //         Section::make('Datos personales')
+                //             ->columns(2)
+                //             ->schema([
+                //                 Forms\Components\TextInput::make('profile.first_name')
+                //                     ->label('Nombre')
+                //                     ->maxLength(60)
+                //                     ->required(),
 
-                                Forms\Components\TextInput::make('profile.last_name')
-                                    ->label('Apellido')
-                                    ->maxLength(60)
-                                    ->required(),
+                //                 Forms\Components\TextInput::make('profile.last_name')
+                //                     ->label('Apellido')
+                //                     ->maxLength(60)
+                //                     ->required(),
 
-                                Forms\Components\DatePicker::make('profile.birth_date')
-                                    ->label('Fecha de nacimiento')
-                                    ->required(),
+                //                 Forms\Components\DatePicker::make('profile.birth_date')
+                //                     ->label('Fecha de nacimiento')
+                //                     ->required(),
 
-                                Forms\Components\Select::make('profile.gender')
-                                    ->label('Género')
-                                    ->options([
-                                        'female' => 'Femenino',
-                                        'male' => 'Masculino',
-                                        'other' => 'Otro',
-                                        'na' => 'Prefiero no decirlo',
-                                    ])
-                                    ->required(),
+                //                 Forms\Components\Select::make('profile.gender')
+                //                     ->label('Género')
+                //                     ->options([
+                //                         'female' => 'Femenino',
+                //                         'male' => 'Masculino',
+                //                         'other' => 'Otro',
+                //                         'na' => 'Prefiero no decirlo',
+                //                     ])
+                //                     ->required(),
 
-                                Forms\Components\TextInput::make('profile.shoe_size_eu')
-                                    ->label('Talla de calzado (EU)')
-                                    ->numeric(),
-                            ]),
+                //                 Forms\Components\TextInput::make('profile.shoe_size_eu')
+                //                     ->label('Talla de calzado (EU)')
+                //                     ->numeric(),
+                //             ]),
 
-                        Section::make('Información adicional')
-                            ->columns(2)
-                            ->schema([
-                                Forms\Components\TextInput::make('profile.emergency_contact_name')
-                                    ->label('Contacto de emergencia')
-                                    ->maxLength(100),
+                //         Section::make('Información adicional')
+                //             ->columns(2)
+                //             ->schema([
+                //                 Forms\Components\TextInput::make('profile.emergency_contact_name')
+                //                     ->label('Contacto de emergencia')
+                //                     ->maxLength(100),
 
-                                Forms\Components\TextInput::make('profile.emergency_contact_phone')
-                                    ->label('Teléfono emergencia')
-                                    ->maxLength(15),
-                            ]),
+                //                 Forms\Components\TextInput::make('profile.emergency_contact_phone')
+                //                     ->label('Teléfono emergencia')
+                //                     ->maxLength(15),
+                //             ]),
 
-                        Section::make('Detalles médicos y objetivos')
-                            ->schema([
-                                Forms\Components\Textarea::make('profile.medical_conditions')
-                                    ->label('Condiciones médicas')
-                                    ->columnSpanFull(),
+                //         Section::make('Detalles médicos y objetivos')
+                //             ->schema([
+                //                 Forms\Components\Textarea::make('profile.medical_conditions')
+                //                     ->label('Condiciones médicas')
+                //                     ->columnSpanFull(),
 
-                                Forms\Components\Textarea::make('profile.fitness_goals')
-                                    ->label('Objetivos fitness')
-                                    ->columnSpanFull(),
+                //                 Forms\Components\Textarea::make('profile.fitness_goals')
+                //                     ->label('Objetivos fitness')
+                //                     ->columnSpanFull(),
 
-                                Forms\Components\Textarea::make('profile.bio')
-                                    ->label('Biografía')
-                                    ->columnSpanFull(),
-                            ]),
-                    ]),
+                //                 Forms\Components\Textarea::make('profile.bio')
+                //                     ->label('Biografía')
+                //                     ->columnSpanFull(),
+                //             ]),
+                //     ]),
             ]);
     }
 
