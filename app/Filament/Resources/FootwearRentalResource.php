@@ -73,30 +73,30 @@ class FootwearRentalResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable()
-                    ->searchable(),
+                // Tables\Columns\TextColumn::make('id')
+                //     ->label('ID')
+                //     ->sortable()
+                //     ->searchable(),
 
                 Tables\Columns\TextColumn::make('code')
                     ->label('Código')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\ImageColumn::make('image')
-                    ->label('Imagen')
-                    ->circular()
-                    ->size(50),
+                // Tables\Columns\ImageColumn::make('image')
+                //     ->label('Imagen')
+                //     ->circular()
+                //     ->size(50),
 
-                Tables\Columns\TextColumn::make('model')
-                    ->label('Modelo')
-                    ->searchable()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('model')
+                //     ->label('Modelo')
+                //     ->searchable()
+                //     ->sortable(),
 
-                Tables\Columns\TextColumn::make('brand')
-                    ->label('Marca')
-                    ->searchable()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('brand')
+                //     ->label('Marca')
+                //     ->searchable()
+                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')

@@ -3,7 +3,7 @@
     @push('css')
         <style>
             * {
-                outline: 1px solid red
+                /* outline: 1px solid red */
             }
 
             .header__content {
@@ -171,8 +171,8 @@
                 gap: 2rem;
                 padding: 1.5rem 1.5rem 0 1.5rem;
                 /* padding-top:1rem;
-                    padding-left: 1rem;
-                    padding-right: 1rem; */
+                        padding-left: 1rem;
+                        padding-right: 1rem; */
                 background: #fff;
                 border-radius: 10px;
             }
@@ -232,14 +232,14 @@
                 font-weight: 400;
                 text-transform: uppercase;
                 font-family: var(--font-one);
-                margin-bottom: 2rem;
+                margin-bottom: 1rem;
                 color: #5D6D7A;
                 text-align: center;
             }
 
             .preguntas__accordion {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                /* grid-template-columns: 1fr 1fr; */
                 gap: 1rem;
                 /* max-width: 800px; */
                 /* margin: 0 auto; */
@@ -262,7 +262,7 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 1.5rem 0;
+                /* padding: 1.5rem 0; */
                 background: none;
                 border: none;
                 cursor: pointer;
@@ -433,13 +433,16 @@
         <div class="preguntas">
             <div class="preguntas__container container">
                 <div class="preguntas__content">
-                    <h2 class="preguntas__title">Preguntas <strong>Frecuentes</strong></h2>
+                    <div class="mb-5 text-center">
+                        <h2 class="preguntas__title"><strong>FAQs</strong></h2>
+                        <p class="text-gray-600 text-lg">¿Tienes dudas? Resolvemos todo.</p>
+                    </div>
 
                     <div class="preguntas__accordion" id="faqAccordion">
 
                         <div class="pregunta__item" data-faq-item="1">
                             <button class="pregunta__button" data-faq-button="1">
-                                <span>¿Cómo funciona el sistema de reservas?</span>
+                                <span>¿Qué incluye mi membresía RSISTANC?</span>
                                 <svg class="pregunta__icon" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none">
                                     <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
@@ -447,15 +450,15 @@
                                 </svg>
                             </button>
                             <div class="pregunta__content" data-faq-content="1">
-                                <p>Puedes reservar tus clases a través de nuestra app o en la web. Simplemente
-                                    selecciona la disciplina, el horario que prefieras y confirma tu reserva. Recibirás
-                                    una confirmación inmediata.</p>
+                                <p>Tu membresía te da acceso a nuestras cuatro disciplinas: Cycling, Reformer, Pilates y
+                                    Box. Además, acumulas puntos con cada clase que puedes canjear por recompensas
+                                    exclusivas. Gestiona todo desde nuestra app.</p>
                             </div>
                         </div>
 
                         <div class="pregunta__item" data-faq-item="2">
                             <button class="pregunta__button" data-faq-button="2">
-                                <span>¿Qué incluyen los paquetes de clases?</span>
+                                <span>¿Dónde se encuentran los estudios de RSISTANC?</span>
                                 <svg class="pregunta__icon" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none">
                                     <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
@@ -471,7 +474,7 @@
 
                         <div class="pregunta__item" data-faq-item="3">
                             <button class="pregunta__button" data-faq-button="3">
-                                <span>¿Puedo cancelar o reprogramar una clase?</span>
+                                <span>¿Puedo combinar diferentes clases en mi paquete?</span>
                                 <svg class="pregunta__icon" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none">
                                     <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
@@ -486,7 +489,7 @@
 
                         <div class="pregunta__item" data-faq-item="4">
                             <button class="pregunta__button" data-faq-button="4">
-                                <span>¿Necesito experiencia previa para tomar las clases?</span>
+                                <span>¿Ofrecen clases de prueba para nuevos miembros?</span>
                                 <svg class="pregunta__icon" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none">
                                     <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
@@ -502,7 +505,7 @@
 
                         <div class="pregunta__item" data-faq-item="5">
                             <button class="pregunta__button" data-faq-button="5">
-                                <span>¿Cómo funciona el sistema de puntos y niveles?</span>
+                                <span>¿Cómo puedo reservar una clase?</span>
                                 <svg class="pregunta__icon" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none">
                                     <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
