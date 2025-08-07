@@ -105,10 +105,7 @@ class TowelResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('image')
-                    ->label('Imagen')
-                    ->circular()
-                    ->defaultImageUrl(url('/images/default-towel.png')),
+
 
                 Tables\Columns\TextColumn::make('code')
                     ->label('Código')
@@ -184,7 +181,7 @@ class TowelResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->emptyStateActions([

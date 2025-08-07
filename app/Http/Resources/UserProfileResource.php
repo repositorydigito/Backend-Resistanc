@@ -22,24 +22,16 @@ final class UserProfileResource extends JsonResource
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'birth_date' => $this->birth_date?->toDateString(),
-            'gender' => $this->gender?->value,
+            'gender' => $this->gender,
             'shoe_size_eu' => $this->shoe_size_eu,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
-            'profile_image' => $this->when(
-                $this->profile_image,
-                fn () => asset($this->profile_image)
-            ),
+            'profile_image' => $this->profile_image ? asset($this->profile_image) : null,
 
             // Computed attributes
             'full_name' => $this->full_name,
             'age' => $this->when($this->birth_date, function () {
                 return $this->age;
-            }),
-
-            // Related user (if loaded and requested)
-            'user' => $this->whenLoaded('user', function () {
-                return new UserResource($this->user);
             }),
         ];
     }

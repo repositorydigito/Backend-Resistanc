@@ -9,13 +9,14 @@ use App\Models\User;
 
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Collection;
+
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Collection; // Asegúrate de importar la clase correcta
 
 class FootwearRentalResource extends Resource
 {
@@ -235,9 +236,10 @@ class FootwearRentalResource extends Resource
                     ->label('Aceptar próxima reserva')
                     ->icon('heroicon-o-check')
                     ->color('success')
-                    ->visible(fn($record) =>
+                    ->visible(
+                        fn($record) =>
                         $record->status === 'available' &&
-                        $record->reservations()
+                            $record->reservations()
                             ->where('status', 'pending')
                             ->orderBy('scheduled_date')
                             ->exists()
@@ -269,19 +271,22 @@ class FootwearRentalResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('markAsAvailable')
-                        ->label('Marcar como disponible')
-                        ->icon('heroicon-o-check-circle')
+                    Tables\Actions\BulkAction::make('returnAll')
+                        ->label('Devolver todos')
+                        ->icon('heroicon-o-arrow-down-on-square')
+                        ->color('success')
                         ->action(function (Collection $records) {
-                            $records->each->update(['status' => 'available']);
+                            $records->each(function ($record) {
+                                $activeLoan = $record->activeLoan()->first();
+                                if ($activeLoan) {
+                                    $activeLoan->update([
+                                        'status' => 'returned',
+                                        'return_date' => now(),
+                                    ]);
+                                }
+                                $record->update(['status' => 'available']);
+                            });
                         }),
-                    Tables\Actions\BulkAction::make('markAsInUse')
-                        ->label('Marcar como en uso')
-                        ->icon('heroicon-o-arrow-up-on-square')
-                        ->action(function (Collection $records) {
-                            $records->each->update(['status' => 'in_use']);
-                        }),
-                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

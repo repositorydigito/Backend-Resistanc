@@ -115,7 +115,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => true,
                     'experience_years' => 10,
@@ -138,7 +138,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/danna_cervantes_quispe.jpg',
+
                     'instagram_handle' => '@danna_cervantes_quispe',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -161,7 +161,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -184,7 +184,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -207,7 +207,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -230,7 +230,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -253,7 +253,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -276,7 +276,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -300,7 +300,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -323,7 +323,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -346,7 +346,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,
@@ -370,7 +370,7 @@ class InstructorSeeder extends Seeder
                     'specialties' => json_encode([1, 2, 3, 4, 5]),
                     'bio' => 'Instructor con más de 10 años de experiencia en Cycling, Reforma, Pilates, Yoga y Barre. Certificado en Spinning, Pilates Reformer, Mat Pilates, Yoga Alliance y Barre Method. Apasionado por ayudar a los estudiantes a alcanzar sus objetivos de fitness y bienestar.',
                     'certifications' => json_encode(['Spinning Certified', 'Pilates Reformer Certified', 'Mat Pilates Certified', 'Yoga Alliance RYT-200', 'Barre Method Certified']),
-                    'profile_image' => '/images/instructors/diego_miguel_saravia.jpg',
+
                     'instagram_handle' => '@diego_miguel_saravia',
                     'is_head_coach' => false,
                     'experience_years' => 10,

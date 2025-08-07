@@ -6,6 +6,7 @@ use App\Models\Package;
 
 use App\Models\User;
 use App\Models\UserPackage;
+use App\Models\UserProfile;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
@@ -18,14 +19,16 @@ class ClientSeeder extends Seeder
     public function run(): void
     {
         $this->command->info('🌱 Seeders de Clientes');
-
         $clienteRole = Role::firstOrCreate(['name' => 'Cliente']);
+
         // Clientes
         $user_cliente = User::create([
             'name' => 'Melany Mercedes',
-            'email' => 'melany@gmail.com',
+            'email' => 'aizencode@gmail.com',
             'password' => bcrypt('123456789'),
+            'email_verified_at' => now(),
         ]);
+        $this->createUserProfile($user_cliente, 'Melany', 'Mercedes');
         $user_cliente->assignRole($clienteRole);
 
         $user_cliente_two = User::create([
@@ -33,6 +36,7 @@ class ClientSeeder extends Seeder
             'email' => 'maryory@gmail.com',
             'password' => bcrypt('123456789'),
         ]);
+        $this->createUserProfile($user_cliente_two, 'Maryory', 'Martines');
         $user_cliente_two->assignRole($clienteRole);
 
         $user_cliente_three = User::create([
@@ -40,6 +44,7 @@ class ClientSeeder extends Seeder
             'email' => 'ana@gmail.com',
             'password' => bcrypt('123456789'),
         ]);
+        $this->createUserProfile($user_cliente_three, 'Ana Lucía', 'Torres');
         $user_cliente_three->assignRole($clienteRole);
 
         $user_cliente_four = User::create([
@@ -47,14 +52,11 @@ class ClientSeeder extends Seeder
             'email' => 'maria@gmail.com',
             'password' => bcrypt('123456789'),
         ]);
+        $this->createUserProfile($user_cliente_four, 'Maria', 'Molina');
         $user_cliente_four->assignRole($clienteRole);
-
         // Fin clientes
 
-
-
         // cliente con metodo de pago
-
         $method = $user_cliente->paymentMethods()->create([
             'payment_type' => 'credit_card',
             'card_brand' => 'visa',
@@ -76,13 +78,11 @@ class ClientSeeder extends Seeder
             'gateway_token' => 'tok_test123456',
             'gateway_customer_id' => 'cus_fake123',
         ]);
-
         // Fin cliente con metodo de pago
 
         // cliente paquete
         $package1 = Package::firstWhere('id', 1); // o el id si lo conoces
         $package2 = Package::firstWhere('id', 2);
-
         UserPackage::create([
             'user_id' => $user_cliente->id,
             'package_id' => $package1->id,
@@ -96,12 +96,10 @@ class ClientSeeder extends Seeder
             'expiry_date' => now()->addDays($package1->validity_days),
             'status' => 'active',
         ]);
-
         UserPackage::create([
             'user_id' => $user_cliente->id,
             'package_id' => $package2->id,
             'package_code' => 'PCK-002',
-
             'used_classes' => 0,
             'remaining_classes' => $package2->classes_quantity,
             'amount_paid_soles' => $package2->price_soles,
@@ -112,9 +110,24 @@ class ClientSeeder extends Seeder
             'status' => 'active',
         ]);
         // Fin cliente paquete
+    }
 
-
-
-
+    protected function createUserProfile($user, $first_name, $last_name)
+    {
+        UserProfile::create([
+            'user_id' => $user->id,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            // 'email' => $email,
+            'birth_date' => '1990-01-01',
+            'gender' => 'female',
+            'shoe_size_eu' => 38,
+            'profile_image' => 'default_profile_image.jpg',
+            'bio' => 'Una breve biografía del usuario.',
+            'emergency_contact_name' => 'Contacto de Emergencia',
+            'emergency_contact_phone' => '123456789',
+            'medical_conditions' => 'Ninguna',
+            'fitness_goals' => 'Mantenerse en forma y saludable.'
+        ]);
     }
 }

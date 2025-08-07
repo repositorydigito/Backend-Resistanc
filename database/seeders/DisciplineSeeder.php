@@ -24,7 +24,7 @@ class DisciplineSeeder extends Seeder
                 'name' => 'Cycling',
                 'display_name' => 'Cycling',
                 'description' => 'Entrenamiento cardiovascular intenso en bicicletas estáticas con música energizante y luces dinámicas. Quema calorías mientras te diviertes en un ambiente motivador.',
-                'icon_url' => '/images/disciplines/cycling.svg',
+
                 'color_hex' => '#945527',
                 'equipment_required' => json_encode(['bicicleta_estática', 'toalla', 'botella_agua', 'zapatillas_deportivas']),
                 'difficulty_level' => 'all_levels',
@@ -38,7 +38,7 @@ class DisciplineSeeder extends Seeder
                 'name' => 'Reformer',
                 'display_name' => 'Reformer',
                 'description' => 'Entrenamiento de fuerza y flexibilidad en una reforma de Pilates. Fortalece todo el cuerpo y mejora la postura.',
-                'icon_url' => '/images/disciplines/reformer.svg',
+
                 'color_hex' => '#9D5AA9',
                 'equipment_required' => json_encode(['reformer', 'mat', 'props', 'calcetines_antideslizantes']),
                 'difficulty_level' => 'intermediate',
@@ -52,7 +52,7 @@ class DisciplineSeeder extends Seeder
                 'name' => 'Pilates',
                 'display_name' => 'Pilates',
                 'description' => 'Clases de Pilates en colchoneta para tonificar y fortalecer el core. Ideal para principiantes.',
-                'icon_url' => '/images/disciplines/pilates.svg',
+
                 'color_hex' => '#2F59A6',
                 'equipment_required' => json_encode(['mat', 'pelota', 'banda_elastica', 'bloque']),
                 'difficulty_level' => 'beginner',
@@ -67,7 +67,7 @@ class DisciplineSeeder extends Seeder
                 'name' => 'Box',
                 'display_name' => 'Box',
                 'description' => 'Clases de Box para mejorar la resistencia y la fuerza. Ideal para todos los niveles.',
-                'icon_url' => '/images/disciplines/box.svg',
+
                 'color_hex' => '#FF5733',
                 'equipment_required' => json_encode(['guantes', 'saco_de_boxeo', 'cuerda', 'botella_agua']),
                 'difficulty_level' => 'intermediate',

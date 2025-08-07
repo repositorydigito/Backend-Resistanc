@@ -21,7 +21,7 @@ class DisciplineResource extends JsonResource
             'name' => $this->name,
             // 'display_name' => $this->display_name,
             // 'description' => $this->description,
-            'icon_url' => asset('storage/') . '/' . $this->icon_url,
+            'icon_url' => $this->icon_url ? asset('storage/') . '/' . $this->icon_url : null,
             'color_hex' => $this->color_hex,
             // 'equipment_required' => $this->equipment_required,
             // 'difficulty_level' => $this->difficulty_level,

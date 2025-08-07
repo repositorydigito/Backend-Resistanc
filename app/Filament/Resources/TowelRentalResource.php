@@ -9,11 +9,12 @@ use App\Models\User;
 
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Collection;
+
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TowelRentalResource extends Resource
@@ -223,19 +224,22 @@ class TowelRentalResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('markAsAvailable')
-                        ->label('Marcar como disponible')
-                        ->icon('heroicon-o-check-circle')
+                   Tables\Actions\BulkAction::make('returnAll')
+                        ->label('Devolver todos')
+                        ->icon('heroicon-o-arrow-down-on-square')
+                        ->color('success')
                         ->action(function (Collection $records) {
-                            $records->each->update(['status' => 'available']);
+                            $records->each(function ($record) {
+                                $activeLoan = $record->activeLoan()->first();
+                                if ($activeLoan) {
+                                    $activeLoan->update([
+                                        'status' => 'returned',
+                                        'return_date' => now(),
+                                    ]);
+                                }
+                                $record->update(['status' => 'available']);
+                            });
                         }),
-                    Tables\Actions\BulkAction::make('markAsInUse')
-                        ->label('Marcar como en uso')
-                        ->icon('heroicon-o-arrow-up-on-square')
-                        ->action(function (Collection $records) {
-                            $records->each->update(['status' => 'in_use']);
-                        }),
-                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

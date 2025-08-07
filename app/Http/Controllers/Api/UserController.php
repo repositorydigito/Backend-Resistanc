@@ -9,11 +9,11 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\LoginAuditResource;
 use App\Http\Resources\SocialAccountResource;
-use App\Http\Resources\UserContactResource;
+
 use App\Http\Resources\UserDetailResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Enums\Gender;
+
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -95,7 +95,7 @@ final class UserController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $users = User::query()
-            ->with(['profile', 'primaryContact'])
+            ->with(['profile'])
             ->withCount(['contacts', 'socialAccounts', 'loginAudits'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
@@ -188,7 +188,7 @@ final class UserController extends Controller
         $user->load([
             'profile',
             'contacts',
-            'primaryContact',
+
             'socialAccounts',
             'loginAudits' => function ($query) {
                 $query->latest()->limit(10);
@@ -239,51 +239,6 @@ final class UserController extends Controller
         return new UserDetailResource($user);
     }
 
-    /**
-     * Obtiene todos los contactos de un usuario
-     *
-     * Lista todos los contactos asociados al usuario con opciones de filtrado
-     * por contacto principal y código de país.
-     *
-     * @summary Obtener contactos de usuario
-     * @operationId getUserContacts
-     *
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @queryParam primary_only boolean Filtrar solo contactos principales. Example: true
-     * @queryParam country string Filtrar por código de país (2 caracteres). Example: PE
-     *
-     * @response 200 [
-     *   {
-     *     "id": 1,
-     *     "phone": "+51 987 654 321",
-     *     "address_line": "Av. El Sol 567, San Isidro",
-     *     "city": "Lima",
-     *     "country": "PE",
-     *     "is_primary": true,
-     *     "created_at": "2024-01-15T10:30:00.000Z",
-     *     "updated_at": "2024-01-15T10:30:00.000Z"
-     *   }
-     * ]
-     *
-     * @response 404 {
-     *   "message": "No query results for model [App\\Models\\User] 1"
-     * }
-     */
-    public function contacts(User $user): AnonymousResourceCollection
-    {
-        $contacts = $user->contacts()
-            ->when(request()->filled('primary_only'), function ($query) {
-                $query->where('is_primary', true);
-            })
-            ->when(request()->filled('country'), function ($query) {
-                $query->where('country', request()->string('country'));
-            })
-            ->get();
-
-        return UserContactResource::collection($contacts);
-    }
 
     /**
      * Obtiene las cuentas sociales de un usuario
@@ -535,9 +490,7 @@ final class UserController extends Controller
             // Create profile if provided
             if (isset($validated['profile'])) {
                 $profileData = $validated['profile'];
-                if (isset($profileData['gender'])) {
-                    $profileData['gender'] = Gender::from($profileData['gender']);
-                }
+                // Gender is stored as a simple string value
                 $user->profile()->create($profileData);
             }
 
@@ -549,7 +502,7 @@ final class UserController extends Controller
             }
 
             // Load relationships for response
-            $user->load(['profile', 'contacts', 'primaryContact']);
+            $user->load(['profile', 'contacts']);
             $user->loadCount(['contacts', 'socialAccounts', 'loginAudits']);
 
             return new UserDetailResource($user);
@@ -656,9 +609,7 @@ final class UserController extends Controller
             // Update profile if provided
             if (isset($validated['profile'])) {
                 $profileData = $validated['profile'];
-                if (isset($profileData['gender'])) {
-                    $profileData['gender'] = Gender::from($profileData['gender']);
-                }
+                // Gender is stored as a simple string value
 
                 if ($user->profile) {
                     $user->profile->update($profileData);
@@ -668,7 +619,7 @@ final class UserController extends Controller
             }
 
             // Load relationships for response
-            $user->load(['profile', 'contacts', 'primaryContact', 'socialAccounts']);
+            $user->load(['profile', 'socialAccounts']);
             $user->loadCount(['contacts', 'socialAccounts', 'loginAudits']);
 
             return new UserDetailResource($user);

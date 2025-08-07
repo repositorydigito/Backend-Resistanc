@@ -46,7 +46,7 @@ class ProductResource extends JsonResource
             'is_favorite' => $isFavorite,
             'img_url' => $this->img_url
                 ? asset('storage/' . $this->img_url)
-                : 'https://www.mytheresa.com/media/1094/1238/100/2c/P00727373.jpg',
+                : null,
 
             'images' => collect($this->images)->map(fn($path) => url('storage/' . ltrim($path, '/'))),
 

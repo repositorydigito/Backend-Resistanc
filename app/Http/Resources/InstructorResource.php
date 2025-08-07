@@ -26,7 +26,7 @@ class InstructorResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'profile_image' =>  asset('storage/') . '/' . $this->profile_image,
+            'profile_image' => $this->profile_image ? asset('storage/') . '/' . $this->profile_image : null,
             'specialties' => $this->specialties,
             'bio' => $this->bio,
             'certifications' => $this->certifications,
@@ -44,7 +44,7 @@ class InstructorResource extends JsonResource
                 return [
                     'id' => $discipline->id,
                     'name' => $discipline->name,
-                    'icon_url' => asset('storage/') . '/' . $discipline->icon_url,
+                    'icon_url' => $discipline->icon_url ? asset('storage/') . '/' . $discipline->icon_url : null,
                 ];
             }),
             'ratings_summary' => [

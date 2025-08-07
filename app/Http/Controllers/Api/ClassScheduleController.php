@@ -420,7 +420,7 @@ final class ClassScheduleController extends Controller
                 'instructor' => [
                     'id' => $classSchedule->instructor->id,
                     'name' => $classSchedule->instructor->name,
-                    'profile_image' => asset('storage/') . '/' . $classSchedule->instructor->profile_image ?? null,
+                    'profile_image' => $classSchedule->instructor->profile_image ? asset('storage/') . '/' . $classSchedule->instructor->profile_image : null,
                 ],
                 'seat_map' => $seatMapData['seat_grid'] ?? [],
                 'summary' => [

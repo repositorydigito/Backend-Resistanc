@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name', 60)->comment('Nombre de la persona');
-            $table->string('last_name', 60)->comment('Apellido de la persona');
+            $table->string('first_name')->comment('Nombre de la persona');
+            $table->string('last_name')->comment('Apellido de la persona');
+            // $table->string('email', 100)->unique()->comment('Correo electrónico');
+
             $table->date('birth_date')->nullable()->comment('Fecha de nacimiento');
             $table->enum('gender', ['female', 'male', 'other', 'na'])->default('na')->comment('Género');
 
-            // Modificar campo existente
             $table->unsignedTinyInteger('shoe_size_eu')->nullable()->comment('Talla de calzado');
 
             // Agregar nuevos campos
@@ -29,6 +30,10 @@ return new class extends Migration
             $table->text('medical_conditions')->nullable()->comment('Condiciones médicas');
             $table->text('fitness_goals')->nullable()->comment('Objetivos de fitness');
 
+            $table->boolean('is_active')->default(true)->comment('Indica si el perfil está activo');
+            $table->string('observations')->nullable()->comment('Observaciones adicionales');
+
+
             // RELACIONES
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
@@ -36,6 +41,7 @@ return new class extends Migration
             $table->unique('user_id');
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

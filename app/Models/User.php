@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -26,7 +26,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @property-read \App\Models\UserProfile|null $profile Perfil del usuario
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserContact> $contacts Contactos del usuario
- * @property-read \App\Models\UserContact|null $primaryContact Contacto principal
+
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialAccount> $socialAccounts Cuentas sociales
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LoginAudit> $loginAudits Auditoría de logins
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserPackage> $userPackages Paquetes del usuario
@@ -37,7 +37,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read string $full_name Nombre completo calculado
  * @property-read bool $has_complete_profile Si tiene perfil completo
  */
-final class User extends Authenticatable
+final class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
@@ -194,21 +194,6 @@ final class User extends Authenticatable
         return $this->hasOne(UserProfile::class);
     }
 
-    /**
-     * Get the user's contacts.
-     */
-    public function contacts(): HasMany
-    {
-        return $this->hasMany(UserContact::class);
-    }
-
-    /**
-     * Get the user's primary contact.
-     */
-    public function primaryContact(): HasOne
-    {
-        return $this->hasOne(UserContact::class)->where('is_primary', true);
-    }
 
     /**
      * Get the user's social accounts.
@@ -559,6 +544,16 @@ final class User extends Authenticatable
     public function juiceCartCodes(): HasMany
     {
         return $this->hasMany(JuiceCartCodes::class);
+    }
+
+    /**
+     * Send the email verification notification.
+     *
+     * @return void
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
     }
 
 }

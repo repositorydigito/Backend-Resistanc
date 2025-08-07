@@ -18,7 +18,7 @@ use App\Http\Controllers\Api\ProductTagController;
 use App\Http\Controllers\Api\RecoverPasswordController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\UserContactController;
+
 use App\Http\Controllers\Api\UserPackageController;
 use App\Http\Controllers\Api\UserPayMethodController;
 use App\Http\Controllers\Api\WaitingController;
@@ -70,6 +70,11 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
 
+    // Email verification routes
+    Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
+        ->middleware(['auth:sanctum', 'throttle:6,1'])
+        ->name('verification.send');
+
     // Password recovery routes
     Route::post('/send-reset-code', [RecoverPasswordController::class, 'sendResetCode'])->name('send-reset-code');
     Route::post('/verify-reset-code', [RecoverPasswordController::class, 'verifyResetCode'])->name('verify-reset-code');
@@ -78,7 +83,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
     // Protected authentication routes
     Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/me', [AuthController::class, 'me'])->name('me');
+        Route::post('/me', [AuthController::class, 'me'])->name('me');
         Route::post('/me/update', [AuthController::class, 'updateMe'])->name('me.update');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
@@ -102,20 +107,13 @@ Route::prefix('users')->name('users.')->group(function () {
 
         // User relationships
         Route::get('/{user}/profile', [UserController::class, 'profile'])->name('profile');
-        Route::get('/{user}/contacts', [UserController::class, 'contacts'])->name('contacts');
+
         Route::get('/{user}/social-accounts', [UserController::class, 'socialAccounts'])->name('social-accounts');
         Route::get('/{user}/login-audits', [UserController::class, 'loginAudits'])->name('login-audits');
     });
 
-    // User contacts CRUD
-    Route::prefix('/{user}/contacts')->name('contacts.')->group(function () {
-        Route::get('/', [UserContactController::class, 'index'])->name('index');
-        Route::post('/', [UserContactController::class, 'store'])->name('store');
-        Route::get('/{contact}', [UserContactController::class, 'show'])->name('show');
-        Route::put('/{contact}', [UserContactController::class, 'update'])->name('update');
-        Route::patch('/{contact}', [UserContactController::class, 'update'])->name('patch');
-        Route::delete('/{contact}', [UserContactController::class, 'destroy'])->name('destroy');
-    });
+    // User contacts CRUDW
+
 });
 
 

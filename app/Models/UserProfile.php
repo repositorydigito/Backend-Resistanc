@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-use App\Enums\Gender;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Perfil detallado del usuario
@@ -26,13 +27,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class UserProfile extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'user_id',
         'first_name',
         'last_name',
         'birth_date',
@@ -44,6 +44,11 @@ final class UserProfile extends Model
         'emergency_contact_phone',
         'medical_conditions',
         'fitness_goals',
+
+        'is_active',
+        'observations',
+        // Relaciones
+        'user_id',
     ];
 
     /**
@@ -53,7 +58,6 @@ final class UserProfile extends Model
     {
         return [
             'birth_date' => 'date',
-            'gender' => Gender::class,
             'shoe_size_eu' => 'integer',
         ];
     }
@@ -66,19 +70,21 @@ final class UserProfile extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the user's full name.
-     */
-    public function getFullNameAttribute(): string
+    // En el modelo UserProfile
+    public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
     }
 
     /**
-     * Get the user's age.
+     * Get the user's age in years.
      */
-    public function getAgeAttribute(): int
+    public function getAgeAttribute(): ?int
     {
+        if (!$this->birth_date) {
+            return null;
+        }
+
         return $this->birth_date->age;
     }
 }

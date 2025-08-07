@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Filament\Pages\Auth\Login;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\AuthResource;
 use App\Http\Resources\UserDetailResource;
+use App\Http\Resources\LoginResource;
+use App\Http\Resources\UserResource;
+use App\Http\Resources\SimpleUserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Dedoc\Scramble\Attributes\BodyParameter;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
 
@@ -85,6 +90,12 @@ final class AuthController extends Controller
                 'password' => $validated['password'], // Auto-hashed by model
             ]);
 
+            // Asignar rol de Cliente por defecto
+            $user->assignRole('Cliente');
+
+            // Enviar email de verificación
+            $user->sendEmailVerificationNotification();
+
             // Create login audit for registration
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
             $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
@@ -106,7 +117,7 @@ final class AuthController extends Controller
         $user->token = $token;
 
         // Load relationships for response
-        $user->load(['profile', 'primaryContact', 'loginAudits']);
+        $user->load(['profile', 'loginAudits']);
 
         return new AuthResource($user);
     }
@@ -124,64 +135,78 @@ final class AuthController extends Controller
      * @return \App\Http\Resources\AuthResource
      *
      * @response 200 {
-     *   "user": {
+     *   "exito": true,
+     *   "codMensaje": 1,
+     *   "mensajeUsuario": "Login Exitoso",
+     *   "datoAdicional": {
      *     "id": 1,
-     *     "name": "Ana Lucía Torres",
-     *     "email": "ana.torres@ejemplo.com",
-     *     "email_verified_at": "2024-01-15T10:30:00.000Z",
-     *     "created_at": "2024-01-15T10:30:00.000Z",
-     *     "updated_at": "2024-01-15T10:30:00.000Z",
-     *     "full_name": "Ana Lucía Torres Mendoza",
-     *     "has_complete_profile": true,
-     *     "profile": {
-     *       "id": 1,
-     *       "first_name": "Ana Lucía",
-     *       "last_name": "Torres Mendoza",
-     *       "gender": "female",
-     *       "birth_date": "1990-05-15",
-     *       "bio": "Desarrolladora Full Stack especializada en Laravel y Vue.js"
-     *     },
-     *     "primary_contact": {
-     *       "id": 1,
-     *       "phone": "+51 987 654 321",
-     *       "address_line": "Av. Javier Prado Este 4200, Surco",
-     *       "city": "Lima",
-     *       "country": "PE",
-     *       "is_primary": true
-     *     }
-     *   },
-     *   "token": {
-     *     "access_token": "1|abc123def456...",
-     *     "token_type": "Bearer"
-     *   },
-     *   "meta": {
-     *     "login_count": 15,
-     *     "last_login": "2024-01-14T08:20:00.000Z"
+     *     "nombre": "Ana Lucía Torres",
+     *     "correo": "ana.torres@ejemplo.com",
+     *     "roles": [
+     *       {
+     *         "id": 1,
+     *         "nombre": "Cliente"
+     *       }
+     *     ],
+     *     "token": "1|abc123def456..."
      *   }
      * }
      *
-     * @response 422 {
-     *   "message": "Las credenciales proporcionadas son incorrectas.",
-     *   "errors": {
-     *     "email": ["Las credenciales proporcionadas son incorrectas."]
-     *   }
+     * @responseHeaders {
+     *   "Authorization": "Bearer 1|abc123def456..."
+     * }
+     *
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 0,
+     *   "mensajeUsuario": "Las credenciales proporcionadas son incorrectas.",
+     *   "datoAdicional": null
+     * }
+     *
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 0,
+     *   "mensajeUsuario": "Tu dirección de correo electrónico no ha sido verificada. Por favor, verifica tu email antes de iniciar sesión.",
+     *   "datoAdicional": null
      * }
      */
-    #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'migelo5511@gmail.com')]
+    #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'aizencode@gmail.com')]
     #[BodyParameter('password', description: 'Contraseña del usuario', type: 'string', example: '123456789')]
     #[BodyParameter('remember', description: 'Recordar sesión por más tiempo', type: 'boolean', example: true)]
     #[BodyParameter('device_name', description: 'Nombre del dispositivo para el token', type: 'string', example: 'Mi Dispositivo')]
-    public function login(LoginRequest $request): AuthResource
+    public function login(LoginRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        try {
+            $validated = $request->validated();
 
-        // Find user by email
-        $user = User::where('email', $validated['email'])->first();
+            // Find user by email
+            $user = User::where('email', $validated['email'])->first();
 
-        // Check credentials
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
-            // Log failed attempt if user exists
-            if ($user) {
+            // Check credentials
+            if (!$user || !Hash::check($validated['password'], $user->password)) {
+                // Log failed attempt if user exists
+                if ($user) {
+                    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                    $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
+                    $user->loginAudits()->create([
+                        'ip' => $ipAddress,
+                        'user_agent' => $userAgent,
+                        'success' => false,
+                        'created_at' => now(),
+                    ]);
+                }
+
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Las credenciales proporcionadas son incorrectas.',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            // Verificar si el usuario tiene el rol de "Cliente" (sin exponer esta información)
+            if (!$user->hasRole('Cliente')) {
+                // Log failed attempt for non-client users
                 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
                 $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
                 $user->loginAudits()->create([
@@ -190,34 +215,163 @@ final class AuthController extends Controller
                     'success' => false,
                     'created_at' => now(),
                 ]);
+
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Las credenciales proporcionadas son incorrectas.',
+                    'datoAdicional' => null,
+                ], 200);
             }
 
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales proporcionadas son incorrectas.'],
+
+            // Verificar email para todos los usuarios
+            if (!$user->hasVerifiedEmail()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Tu dirección de correo electrónico no ha sido verificada. Por favor, verifica tu email antes de iniciar sesión.',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+
+
+            // Log successful login
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+            $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
+            $user->loginAudits()->create([
+                'ip' => $ipAddress,
+                'user_agent' => $userAgent,
+                'success' => true,
+                'created_at' => now(),
             ]);
+
+            // Generate API token
+            $deviceName = $validated['device_name'] ?? 'API Token';
+            $token = $user->createToken($deviceName)->plainTextToken;
+
+            // Obtener todos los roles del usuario con sus detalles
+            $roles = $user->roles->map(function ($role) {
+                return [
+                    'id' => $role->id,
+                    'nombre' => $role->name,
+                ];
+            });
+
+            // Load relationships for response
+            $user->load(['roles', 'profile', 'loginAudits']);
+            $user->token = $token;
+
+            // Return JSON response
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Login Exitoso',
+                'datoAdicional' => LoginResource::make($user)->toArray(request()),
+            ])->header('Authorization', 'Bearer ' . $token);
+        } catch (ValidationException $e) {
+            Log::error('Error en Atención [login]', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'url' => request()->fullUrl(),
+                'input' => request()->all()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error de validación',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Error en Atención [login]', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'url' => request()->fullUrl(),
+                'input' => request()->all()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
         }
+    }
 
-        // Log successful login
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-        $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
-        $user->loginAudits()->create([
-            'ip' => $ipAddress,
-            'user_agent' => $userAgent,
-            'success' => true,
-            'created_at' => now(),
-        ]);
 
-        // Generate API token
-        $deviceName = $validated['device_name'] ?? 'API Token';
-        $token = $user->createToken($deviceName)->plainTextToken;
+    /**
+     * Obtener usuario autenticado
+     *
+     * Retorna la información del usuario actualmente autenticado.
+     *
+     * @summary Obtener usuario autenticado
+     * @operationId getMe
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "exito": true,
+     *   "codMensaje": 1,
+     *   "mensajeUsuario": "Usuario autenticado",
+     *   "datoAdicional": {
+     *     "id": 1,
+     *     "nombre": "Ana Lucía Torres",
+     *     "correo": "ana.torres@ejemplo.com",
+     *     "email_verified_at": "2024-01-15T10:30:00.000Z",
+     *     "created_at": "2024-01-15T10:30:00.000Z",
+     *     "updated_at": "2024-01-15T10:30:00.000Z"
+     *   }
+     * }
+     *
+     * @response 401 {
+     *   "exito": false,
+     *   "codMensaje": 0,
+     *   "mensajeUsuario": "Usuario no autenticado",
+     *   "datoAdicional": null
+     * }
+     */
+    public function me(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
 
-        // Add token to user for resource
-        $user->token = $token;
+            if (!$user) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => null,
+                ], 200);
+            }
 
-        // Load relationships for response
-        $user->load(['profile', 'primaryContact', 'loginAudits']);
+            // Load relationships for response
+            $user->load(['roles', 'profile']);
 
-        return new AuthResource($user);
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Usuario autenticado',
+                'datoAdicional' => UserResource::make($user)->toArray($request),
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Error en Atención [me]', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'url' => request()->fullUrl(),
+                'input' => request()->all()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
     }
 
     /**
@@ -261,26 +415,49 @@ final class AuthController extends Controller
      *   "message": "Unauthenticated."
      * }
      */
-    public function me(Request $request): UserDetailResource
+    /**
+     * Reenviar email de verificación
+     *
+     * Reenvía el email de verificación al usuario autenticado.
+     *
+     * @summary Reenviar email de verificación
+     * @operationId resendVerificationEmail
+     *
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @response 200 {
+     *   "message": "Email de verificación enviado correctamente."
+     * }
+     *
+     * @response 400 {
+     *   "message": "Tu email ya ha sido verificado."
+     * }
+     */
+    public function resendVerificationEmail(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        $user->load([
-            'profile',
-            'contacts',
-            'primaryContact',
-            'socialAccounts',
-            'loginAudits' => function ($query) {
-                $query->orderBy('created_at', 'desc')->limit(10);
-            }
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Tu email ya ha sido verificado.',
+                'datoAdicional' => null,
+            ], 200);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json([
+            'exito' => true,
+            'codMensaje' => 1,
+            'mensajeUsuario' => 'Email de verificación enviado correctamente.',
+            'datoAdicional' => null,
         ]);
-
-        $user->loadCount(['contacts', 'socialAccounts', 'loginAudits']);
-
-        return new UserDetailResource($user);
     }
 
     /**
+     * Obtener usuario autenticado
      * Cerrar sesión
      *
      * Revoca el token de acceso actual del usuario autenticado.
@@ -594,7 +771,7 @@ final class AuthController extends Controller
     {
         $user = $request->user();
 
-                // Validar datos de entrada
+        // Validar datos de entrada
         $validated = $request->validate([
             // Datos básicos del usuario
             'name' => 'sometimes|string|max:255',
@@ -618,7 +795,7 @@ final class AuthController extends Controller
         ]);
 
         $user = DB::transaction(function () use ($user, $validated) {
-                        // Actualizar datos básicos del usuario
+            // Actualizar datos básicos del usuario
             if (isset($validated['name'])) {
                 $user->name = $validated['name'];
             }
@@ -631,7 +808,7 @@ final class AuthController extends Controller
 
             $user->save();
 
-                        // Actualizar o crear perfil
+            // Actualizar o crear perfil
             if (isset($validated['profile'])) {
                 $profileData = $validated['profile'];
 
@@ -708,7 +885,7 @@ final class AuthController extends Controller
         $user->token = $token;
 
         // Load relationships for response
-        $user->load(['profile', 'contacts', 'primaryContact', 'loginAudits']);
+        $user->load(['profile', 'loginAudits']);
 
         return new AuthResource($user);
     }

@@ -26,6 +26,7 @@ class Towel extends Model
     ];
 
     protected $casts = [
+
         'images_gallery' => 'array', // Convierte automáticamente JSON ↔ array
     ];
 

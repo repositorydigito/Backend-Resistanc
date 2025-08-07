@@ -99,31 +99,5 @@ class OrderController extends Controller
         return new OrderDetailResource($order);
     }
 
-    /**
-     * Muestra los detalles de un pedido específico
-     *
-     * Obtiene la información completa de un pedido, si le pertenece al usuario.
-     *
-     * @summary Ver detalle de mi pedido
-     * @operationId getOrderDetails
-     *
-     * @param  \App\Models\Order  $order
-     * @return \App\Http\Resources\OrderDetailResource
-     */
-    public function show(Order $order): OrderDetailResource
-    {
 
-        try {
-            if (auth()->id() !== $order->user_id) {
-               return response()->json(['error' => 'Error al obtener el pedido'], 200);
-            }
-
-            $order->load('orderItems.product', 'user');
-
-            return new OrderDetailResource($order);
-        } catch (Error $e) {
-            // Manejo de errores
-            return response()->json(['error' => 'Error al obtener el pedido'], 200);
-        }
-    }
 }

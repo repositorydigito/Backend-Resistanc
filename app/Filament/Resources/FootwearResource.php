@@ -155,21 +155,7 @@ class FootwearResource extends Resource
                     ->label('Modelo')
                     ->searchable(),
 
-                // Tables\Columns\TextColumn::make('type')
-                //     ->label('Tipo')
-                //     ->formatStateUsing(fn(string $state): string => match ($state) {
-                //         'sneakers' => 'Tenis',
-                //         'boots' => 'Botas',
-                //         'sandals' => 'Sandalias',
-                //         'formal' => 'Formal'
-                //     })
-                //     ->badge()
-                //     ->color(fn(string $state): string => match ($state) {
-                //         'sneakers' => 'info',
-                //         'boots' => 'warning',
-                //         'sandals' => 'success',
-                //         'formal' => 'gray'
-                //     }),
+
 
                 Tables\Columns\TextColumn::make('size')
                     ->label('Talla')
@@ -192,9 +178,7 @@ class FootwearResource extends Resource
                         'lost' => 'Perdido'
                     }),
 
-                Tables\Columns\ImageColumn::make('image')
-                    ->label('Imagen')
-                    ->circular(),
+
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')

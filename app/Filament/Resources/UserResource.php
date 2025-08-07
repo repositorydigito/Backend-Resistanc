@@ -63,13 +63,20 @@ class UserResource extends Resource
                             ->multiple()
                             ->relationship('roles', 'name')
                             ->options(function () {
+                                // Obtenemos el usuario autenticado una sola vez
                                 $user = auth()->user();
 
+                                // Consulta base excluyendo siempre ciertos roles
+                                $query = \Spatie\Permission\Models\Role::query()
+                                    ->whereNotIn('name', ['cliente', 'instructor']);
+
+                                // Solo super_admin puede ver y asignar el rol super_admin
                                 if ($user && $user->hasRole('super_admin')) {
-                                    return \Spatie\Permission\Models\Role::pluck('name', 'id');
+                                    return $query->orWhere('name', 'super_admin')
+                                        ->pluck('name', 'id');
                                 }
 
-                                return \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name', 'id');
+                                return $query->pluck('name', 'id');
                             })
                             ->preload()
                             ->searchable(),
@@ -154,10 +161,10 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('profile.profile_image')
-                    ->label('')
-                    ->circular()
-                    ->defaultImageUrl(fn($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=111827'),
+                // Tables\Columns\ImageColumn::make('profile.profile_image')
+                //     ->label('')
+                //     ->circular()
+                //     ->defaultImageUrl(fn($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=111827'),
 
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
@@ -220,8 +227,14 @@ class UserResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
+        // Todos los usuarios (incluyendo super_admin) no ven los clientes
+        $query->whereDoesntHave('roles', function ($q) {
+            $q->where('name', 'cliente')
+                ->orWhere('name', 'instructor');
+        });
+
+        // Solo los no super_admin no ven otros super_admin
         if (!auth()->user()?->hasRole('super_admin')) {
-            // Ocultar usuarios que tengan el rol super_admin
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'super_admin');
             });
@@ -229,7 +242,6 @@ class UserResource extends Resource
 
         return $query;
     }
-
 
 
     public static function getRelations(): array
