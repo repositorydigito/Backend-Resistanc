@@ -21,7 +21,7 @@ class DrinkSeeder extends Seeder
             'slug' => 'batido-de-vainilla',
             'description' => 'Delicioso batido de vainilla',
 
-            'image_url' => 'https://i.imgur.com/1234567.png',
+            // 'image_url' => 'https://i.imgur.com/1234567.png',
             // // 'price' => 10.00,
             'created_at' => now(),
         ]);
@@ -35,7 +35,7 @@ class DrinkSeeder extends Seeder
             'slug' => 'batido-de-chocolate',
             'description' => 'Delicioso batido de chocolate',
 
-            'image_url' => 'https://i.imgur.com/1234567.png',
+            // 'image_url' => 'https://i.imgur.com/1234567.png',
             // 'price' => 12.00,
             'created_at' => now(),
         ]);

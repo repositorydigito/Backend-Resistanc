@@ -19,6 +19,8 @@ class InstructorResource extends JsonResource
         $hasRated = false;
         if (Auth::check()) {
             $hasRated = $this->ratings()->where('user_id', Auth::id())->exists();
+            $userRating = $this->ratings()->where('user_id', Auth::id())->first();
+            $hasRated = $userRating !== null;
         }
 
         return [
@@ -39,12 +41,13 @@ class InstructorResource extends JsonResource
             'hourly_rate_soles' => $this->hourly_rate_soles,
             'status' => $this->status,
             'has_rated' => $hasRated,
-            // 'availability_schedule' => $this->availability_schedule,
+            'user_rating' => $userRating ?? null, // Include the user's rating score
             'disciplines' => $this->disciplines->map(function ($discipline) {
                 return [
                     'id' => $discipline->id,
                     'name' => $discipline->name,
                     'icon_url' => $discipline->icon_url ? asset('storage/') . '/' . $discipline->icon_url : null,
+                    'color_hex' => $discipline->color_hex,
                 ];
             }),
             'ratings_summary' => [

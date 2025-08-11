@@ -19,19 +19,19 @@ class BaseDrinkSeeder extends Seeder
         Basedrink::insert([
             [
                 'name' => 'Avena',
-                'image_url' => 'https://i.imgur.com/1234567.png',
+                // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'name' => 'Almendra',
-                'image_url' => 'https://i.imgur.com/1234567.png',
+                // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'name' => 'Agua',
-                'image_url' => 'https://i.imgur.com/1234567.png',
+                // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

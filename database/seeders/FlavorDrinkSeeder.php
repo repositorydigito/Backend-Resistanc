@@ -19,19 +19,19 @@ class FlavorDrinkSeeder extends Seeder
         Flavordrink::insert([
             [
                 'name' => 'Vainilla',
-                'image_url' => 'https://i.imgur.com/1234567.png',
+                // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'name' => 'Chocolate',
-                'image_url' => 'https://i.imgur.com/1234567.png',
+                // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'name' => 'Fresa',
-                'image_url' => 'https://i.imgur.com/1234567.png',
+                // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

@@ -1,4 +1,4 @@
-<x-app>
+{{-- <x-app> --}}
 
     @push('css')
         <style>
@@ -577,4 +577,4 @@
         </script>
     @endpush
 
-</x-app>
+{{-- </x-app> --}}
