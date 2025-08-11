@@ -6,8 +6,9 @@ use App\Filament\Resources\PackageResource\Pages;
 use App\Filament\Resources\PackageResource\RelationManagers;
 use App\Models\Package;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -207,12 +208,12 @@ class PackageResource extends Resource
                         // Sección 6: Descripciones
                         Section::make('Descripciones')
                             ->schema([
-                                Forms\Components\TextArea::make('short_description')
+                               Textarea::make('short_description')
                                     ->label('Descripción corta')
                                     ->columnSpanFull()
                                     ->maxLength(255),
 
-                                Forms\Components\Textarea::make('description')
+                                Textarea::make('description')
                                     ->label('Descripción')
                                     ->required()
                                     ->columnSpanFull(),
