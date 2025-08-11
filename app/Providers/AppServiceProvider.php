@@ -12,6 +12,7 @@ use App\Observers\FootwearLoanObserver;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,7 +32,6 @@ class AppServiceProvider extends ServiceProvider
     {
         // ProductVariant::observe(ProductVariantObserver::class);
         FootwearLoan::observe(FootwearLoanObserver::class);
-
 
         // Scramble::configure()
         //     ->withDocumentTransformers(function (OpenApi $openApi) {
