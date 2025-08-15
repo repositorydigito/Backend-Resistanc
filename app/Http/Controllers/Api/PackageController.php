@@ -76,7 +76,7 @@ final class PackageController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $packages = Package::query()
-            ->with(['discipline'])
+            ->with(['discipline', 'membership'])
 
             ->withCount(['userPackages'])
             ->where('buy_type', 'affordable')

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ClassScheduleIndexRequest;
 use App\Http\Requests\ReserveSeatsRequest;
 use App\Http\Resources\ClassScheduleResource;
+use App\Http\Resources\ClassScheduleSeatResource;
 use App\Models\ClassSchedule;
 use App\Models\ClassScheduleSeat;
 use App\Models\WaitingClass;
 use App\Services\PackageValidationService;
 use Error;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
@@ -1815,6 +1817,173 @@ final class ClassScheduleController extends Controller
                     'next' => null
                 ]
             ], 500);
+        }
+    }
+
+
+    /**
+     * Obtiene los asientos reservados por el usuario autenticado en un horario específico
+     *
+     * Devuelve todos los asientos que el usuario autenticado tiene reservados en el horario de clase especificado.
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Obtener asientos reservados del usuario en horario específico
+     * @operationId getUserReservedSeatsInSchedule
+     * @tags Mis Reservas
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @bodyParam class_schedule_id integer required ID del horario de clase. Example: 5
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Asientos reservados obtenidos exitosamente",
+     *   "data": {
+     *     "schedule_info": {
+     *       "id": 5,
+     *       "class_name": "Yoga Matutino",
+     *       "instructor_name": "María García",
+     *       "studio_name": "Sala Principal",
+     *       "scheduled_date": "2025-01-15",
+     *       "start_time": "08:00:00",
+     *       "end_time": "09:00:00"
+     *     },
+     *     "user_seats": [
+     *       {
+     *         "class_schedule_seat_id": 267,
+     *         "seat_id": 1,
+     *         "seat_number": "1.1",
+     *         "row": 1,
+     *         "column": 1,
+     *         "status": "reserved",
+     *         "reserved_at": "2025-01-11T20:30:00.000000Z",
+     *         "expires_at": "2025-01-11T20:45:00.000000Z",
+     *         "user_package_info": {
+     *           "package_id": 42,
+     *           "package_code": "PKG001-2024",
+     *           "package_name": "Paquete Yoga 10 Clases"
+     *         }
+     *       }
+     *     ],
+     *     "summary": {
+     *       "total_seats_reserved": 2,
+     *       "user_id": 10,
+     *       "schedule_id": 5
+     *     }
+     *   }
+     * }
+     *
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Horario de clase no encontrado"
+     * }
+     *
+     * @response 404 {
+     *   "success": false,
+     *   "message": "No tienes asientos reservados en este horario"
+     * }
+     */
+    public function reservedShow(Request $request): JsonResponse
+    {
+        try {
+            // Validar datos de entrada
+            $request->validate([
+                'class_schedule_id' => 'required|integer|exists:class_schedules,id'
+            ]);
+
+            $userId = Auth::id();
+            $classScheduleId = $request->integer('class_schedule_id');
+
+            // Obtener el horario de clase con sus relaciones
+            $classSchedule = ClassSchedule::with(['class', 'instructor', 'studio'])
+                ->findOrFail($classScheduleId);
+
+            // Obtener todos los asientos reservados por el usuario en este horario
+            $userSeats = ClassScheduleSeat::with(['seat', 'userPackage.package'])
+                ->where('class_schedules_id', $classScheduleId)
+                ->where('user_id', $userId)
+                ->get();
+
+            if ($userSeats->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes asientos reservados en este horario',
+                    'datoAdicional' => null
+                ], 404);
+            }
+
+            // Preparar información del horario
+            $scheduleInfo = [
+                'id' => $classSchedule->id,
+                'class_name' => $classSchedule->class->name ?? 'N/A',
+                'instructor_name' => $classSchedule->instructor->name ?? 'N/A',
+                'studio_name' => $classSchedule->studio->name ?? 'N/A',
+                'scheduled_date' => $classSchedule->scheduled_date,
+                'start_time' => $classSchedule->start_time,
+                'end_time' => $classSchedule->end_time,
+                'status' => $classSchedule->status
+            ];
+
+            // Preparar información de los asientos del usuario
+            $formattedUserSeats = $userSeats->map(function ($seatAssignment) {
+                $seatData = [
+                    'class_schedule_seat_id' => $seatAssignment->id,
+                    'seat_id' => $seatAssignment->seats_id,
+                    'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
+                    'row' => $seatAssignment->seat->row,
+                    'column' => $seatAssignment->seat->column,
+                    'status' => $seatAssignment->status,
+                    'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                    'expires_at' => $seatAssignment->expires_at?->toISOString()
+                ];
+
+                // Agregar información del paquete si existe
+                if ($seatAssignment->userPackage) {
+                    $seatData['user_package_info'] = [
+                        'package_id' => $seatAssignment->userPackage->id,
+                        'package_code' => $seatAssignment->userPackage->package_code,
+                        'package_name' => $seatAssignment->userPackage->package->name ?? 'N/A'
+                    ];
+                }
+
+                return $seatData;
+            });
+
+            // Preparar resumen
+            $summary = [
+                'total_seats_reserved' => $userSeats->count(),
+                'user_id' => $userId,
+                'schedule_id' => $classScheduleId
+            ];
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Asientos reservados obtenidos exitosamente',
+                'datoAdicional' => [
+                    'schedule_info' => $scheduleInfo,
+                    'user_seats' => $formattedUserSeats,
+                    'summary' => $summary
+                ]
+            ], 200);
+
+        } catch (\Throwable $e) {
+            // Log del error para debugging
+            Log::error('Error al obtener asientos reservados del usuario', [
+                'user_id' => Auth::id(),
+                'class_schedule_id' => $request->input('class_schedule_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al obtener asientos reservados',
+                'datoAdicional' => null
+            ], 200);
         }
     }
 }

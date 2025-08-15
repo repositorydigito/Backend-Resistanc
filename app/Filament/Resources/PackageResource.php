@@ -118,6 +118,12 @@ class PackageResource extends Resource
                         Section::make('Configuración comercial')
                             ->columns(2)
                             ->schema([
+
+                                Forms\Components\TextInput::make('classes_quantity')
+                                    ->label('Cantidad de clases')
+                                    ->required()
+                                    ->numeric(),
+
                                 Forms\Components\Select::make('buy_type')
                                     ->options([
                                         'affordable' => 'Comprable',

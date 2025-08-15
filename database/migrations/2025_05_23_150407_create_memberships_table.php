@@ -23,6 +23,8 @@ return new class extends Migration
 
             $table->integer('duration')->default(3)->comment('Duración de la membresía en meses');
 
+
+            $table->string('color_hex')->nullable()->comment('Color hexadecimal asociado a la membresía');
             $table->json('colors')->nullable()->comment('Colores asociados a la membresía');
             $table->string('icon')->nullable()->comment('Ícono asociado a la membresía');
 

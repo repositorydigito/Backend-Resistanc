@@ -159,6 +159,7 @@ Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:san
     Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
     Route::get('/class-schedulesUser', [ClassScheduleController::class, 'classScheduleUser'])->name('class-schedules');
     Route::get('/class-schedulesUserPending', [ClassScheduleController::class, 'classScheduleUserPending'])->name('class-schedules-pending');
+    Route::post('/reserved-show', [ClassScheduleController::class, 'reservedShow'])->name('reserved-show');
 
 });
 // Fin Horarios

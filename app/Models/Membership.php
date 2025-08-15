@@ -24,6 +24,7 @@ class Membership extends Model
         'discipline_id',
         'discipline_quantity',
         'is_active',
+        'color_hex',
     ];
 
     protected $casts = [

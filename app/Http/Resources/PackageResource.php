@@ -67,9 +67,22 @@ class PackageResource extends JsonResource
                     'slug' => $this->membership->slug,
                     'level' => $this->membership->level,
                     'color_hex' => $this->membership->color_hex,
+                    'colors' => $this->membership->colors,
                     'benefits' => $this->membership->benefits,
                     'is_active' => $this->membership->is_active,
                     'display_order' => $this->membership->display_order,
+                    'classes_before' => $this->membership->classes_before ?? 0,
+                    'is_benefit_shake' => $this->membership->is_benefit_shake ? true : false,
+                    'shake_quantity' => $this->membership->shake_quantity ?? 0,
+                    'is_benefit_discipline' => $this->membership->is_benefit_discipline ? true : false,
+                    'discipline' => [
+                        'id' => $this->membership->discipline->id ?? null,
+                        'name' => $this->membership->discipline->name ?? null,
+                        'icon_url' => $this->membership->discipline && $this->membership->discipline->icon_url
+                            ? asset('storage/' . $this->membership->discipline->icon_url)
+                            : null,
+                        'quantity' => $this->membership->discipline_quantity ?? 0
+                    ]
                 ];
             }),
 

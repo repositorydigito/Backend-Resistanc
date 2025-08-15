@@ -34,6 +34,7 @@ class ClassScheduleResource extends JsonResource
             'studio' => [
                 'id' => $this->studio->id,
                 'name' => $this->studio->name,
+                'location' => $this->studio->location,
             ],
             'scheduled_date' => $this->scheduled_date->format('d/m/Y'),
             'start_time' => $this->start_time,
