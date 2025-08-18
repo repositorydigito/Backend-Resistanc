@@ -547,6 +547,14 @@ final class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the instructor profile associated with this user.
+     */
+    public function instructor(): HasOne
+    {
+        return $this->hasOne(Instructor::class);
+    }
+
+    /**
      * Send the email verification notification.
      *
      * @return void

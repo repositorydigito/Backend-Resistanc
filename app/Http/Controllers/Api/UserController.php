@@ -96,7 +96,7 @@ final class UserController extends Controller
     {
         $users = User::query()
             ->with(['profile'])
-            ->withCount(['contacts', 'socialAccounts', 'loginAudits'])
+            ->withCount(['socialAccounts', 'loginAudits'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
                 $query->where('name', 'like', "%{$search}%")
@@ -187,7 +187,7 @@ final class UserController extends Controller
     {
         $user->load([
             'profile',
-            'contacts',
+
 
             'socialAccounts',
             'loginAudits' => function ($query) {
@@ -195,7 +195,7 @@ final class UserController extends Controller
             }
         ]);
 
-        $user->loadCount(['contacts', 'socialAccounts', 'loginAudits']);
+        $user->loadCount(['socialAccounts', 'loginAudits']);
 
         return new UserDetailResource($user);
     }
@@ -494,16 +494,14 @@ final class UserController extends Controller
                 $user->profile()->create($profileData);
             }
 
-            // Create contact if provided
-            if (isset($validated['contact'])) {
-                $contactData = $validated['contact'];
-                $contactData['is_primary'] = $contactData['is_primary'] ?? true;
-                $user->contacts()->create($contactData);
-            }
+
 
             // Load relationships for response
-            $user->load(['profile', 'contacts']);
-            $user->loadCount(['contacts', 'socialAccounts', 'loginAudits']);
+            $user->load(['profile']);
+
+            $user->sendEmailVerificationNotification();
+
+            $user->loadCount(['socialAccounts', 'loginAudits']);
 
             return new UserDetailResource($user);
         });
@@ -620,7 +618,7 @@ final class UserController extends Controller
 
             // Load relationships for response
             $user->load(['profile', 'socialAccounts']);
-            $user->loadCount(['contacts', 'socialAccounts', 'loginAudits']);
+            $user->loadCount(['socialAccounts', 'loginAudits']);
 
             return new UserDetailResource($user);
         });
@@ -653,7 +651,7 @@ final class UserController extends Controller
         return DB::transaction(function () use ($user) {
             // Delete related records (cascade should handle this, but being explicit)
             $user->profile()?->delete();
-            $user->contacts()->delete();
+
             $user->socialAccounts()->delete();
             $user->loginAudits()->delete();
 

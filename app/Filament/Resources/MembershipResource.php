@@ -87,7 +87,12 @@ class MembershipResource extends Resource
                             ->label('Descripción')
                             ->columnSpanFull(),
 
+                        Forms\Components\ColorPicker::make('color_hex')
+                            ->label('Color representativo')
+                            ->required()
                     ]),
+
+
 
                 Section::make('Beneficios')
                     ->schema([

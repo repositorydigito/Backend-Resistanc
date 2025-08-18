@@ -178,13 +178,13 @@ class PackageResource extends Resource
 
                                 Forms\Components\DatePicker::make('start_date')
                                     ->live()
-                                    ->visible(fn($get) => $get('type') !== 'fixed')
+                                    ->visible(fn($get) => $get('type') == 'temporary')
                                     ->label('Fecha de inicio')
                                     ->required(fn($get) => $get('type') !== 'fixed'),
 
                                 Forms\Components\DatePicker::make('end_date')
                                     ->live()
-                                    ->visible(fn($get) => $get('type') !== 'fixed')
+                                    ->visible(fn($get) => $get('type') == 'temporary')
                                     ->label('Fecha de fin')
                                     ->required(fn($get) => $get('type') !== 'fixed'),
                             ]),
@@ -237,6 +237,17 @@ class PackageResource extends Resource
                                     ->afterStateHydrated(function ($set, $get, $record) {
                                         if ($record && $record->membership_id) {
                                             $set('membreship', true);
+                                        }
+                                    })
+                                    ->afterStateUpdated(function ($set, $state, $record) {
+                                        // Si se desmarca el toggle, limpiar la membresía
+                                        if (!$state) {
+                                            $set('membership_id', null);
+                                            
+                                            // Si estamos editando un registro existente, actualizar el modelo
+                                            if ($record && $record->exists) {
+                                                $record->update(['membership_id' => null]);
+                                            }
                                         }
                                     }),
 

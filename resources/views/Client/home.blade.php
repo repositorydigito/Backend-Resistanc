@@ -1,10 +1,73 @@
 <x-app>
 
     @push('css')
+        <!-- Link Swiper's CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
         <style>
             * {
                 /* outline: 1px solid red */
             }
+
+
+            .disciplina__card {
+                width: 100%;
+                height: 300px;
+                border-radius: 10px;
+                overflow: hidden;
+                display: grid;
+                align-content: flex-end;
+                color: white;
+                padding: 1rem;
+                background-size: cover;
+                background-position: center;
+                position: relative;
+            }
+
+            .disciplina__card--title {
+                font-size: 1.5rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                margin: 0;
+            }
+
+
+
+            /* Estilos para la navegación del slider */
+            .swiper-button-next,
+            .swiper-button-prev {
+                color: #B66F37;
+                background: rgba(255, 255, 255, 0.9);
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                transition: all 0.3s ease;
+            }
+
+            .swiper-button-next:hover,
+            .swiper-button-prev:hover {
+                background: #B66F37;
+                color: white;
+            }
+
+            .swiper-button-next::after,
+            .swiper-button-prev::after {
+                font-size: 18px;
+                font-weight: bold;
+            }
+
+            /* Estilos para la paginación */
+            .swiper-pagination-bullet {
+                background: #B66F37;
+                opacity: 0.5;
+                transition: all 0.3s ease;
+            }
+
+            .swiper-pagination-bullet-active {
+                opacity: 1;
+                background: #B66F37;
+            }
+
 
             .header__content {
                 padding-top: 70px;
@@ -103,6 +166,20 @@
                 color: white;
                 padding: 1rem;
             }
+            .disciplina__card::before{
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.205);
+                z-index: 1;
+            }
+            .disciplina__card > * {
+                position: relative;
+                z-index: 2;
+            }
 
             .disciplina__card--cycling {
                 background: url('');
@@ -121,6 +198,18 @@
             .disciplina__card--paragrahp {
                 font-size: 1rem;
                 font-weight: 400;
+                line-height: 1.5;
+                height: 75px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                /* Limita a 3 líneas */
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                /* Oculta el contenido que excede */
+                text-overflow: ellipsis;
+                /* Añade los tres puntos suspensivos */
+
             }
 
             .banner__content {
@@ -171,8 +260,8 @@
                 gap: 2rem;
                 padding: 1.5rem 1.5rem 0 1.5rem;
                 /* padding-top:1rem;
-                        padding-left: 1rem;
-                        padding-right: 1rem; */
+                                                        padding-left: 1rem;
+                                                        padding-right: 1rem; */
                 background: #fff;
                 border-radius: 10px;
             }
@@ -350,7 +439,7 @@
                     <h2 class="disciplinas__title">
                         Elige cómo quieres <strong>moverte.</strong>
                     </h2>
-                    <div class="disciplinas__cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {{-- <div class="disciplinas__cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 
 
 
@@ -366,7 +455,37 @@
                             </div>
                         @endforeach
 
+                    </div> --}}
+
+                    <!-- Swiper -->
+                    <div class="swiper mySwiper" style="width: 100%;">
+                        <div class="swiper-wrapper">
+                            @foreach ($disciplines as $item)
+                                <div class="swiper-slide">
+                                    <div class="disciplina__card"
+                                        style="background-image: url('{{ $item->image_url ?? asset('image/pages/cycling.png') }}');">
+                                        <div class="flex gap-2 items-center">
+                                            <img class="w-5 h-5" src="{{ asset('image/pages/logo.png') }}"
+                                                alt="Indoor Cycling">
+                                            <h3 class="disciplina__card--title">{{ $item->name }}</h3>
+                                        </div>
+                                        <p class="disciplina__card--paragrahp">{{ $item->description }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <!-- Navegación -->
+                        <div class="swiper-button-next"></div>
+                        <div class="swiper-button-prev"></div>
+
+                        <!-- Paginación -->
+                        <div class="swiper-pagination"></div>
                     </div>
+
+
+
+
                 </div>
 
             </div>
@@ -526,6 +645,42 @@
     </main>
 
     @push('js')
+        <!-- Swiper JS -->
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+        <!-- Initialize Swiper -->
+        <script>
+            var swiper = new Swiper(".mySwiper", {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                loop: false,
+
+                // pagination: {
+                //     el: ".swiper-pagination",
+                //     clickable: true,
+                // },
+
+                navigation: {
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev",
+                },
+
+                breakpoints: {
+                    640: {
+                        slidesPerView: 2,
+                        spaceBetween: 20,
+                    },
+                    768: {
+                        slidesPerView: 3,
+                        spaceBetween: 20,
+                    },
+                    1024: {
+                        slidesPerView: 4,
+                        spaceBetween: 20,
+                    },
+                },
+            });
+        </script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const accordion = document.getElementById('faqAccordion');

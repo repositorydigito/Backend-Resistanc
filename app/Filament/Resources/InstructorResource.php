@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InstructorResource\Pages;
 use App\Filament\Resources\InstructorResource\RelationManagers;
 use App\Models\Instructor;
+use App\Models\User;
+use App\Models\Role;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
@@ -13,6 +15,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class InstructorResource extends Resource
 {
@@ -37,10 +41,57 @@ class InstructorResource extends Resource
                     ->label('¿Es Head Coach?')
                     ->required(),
 
+                // Sección 1: Información de usuario
+                Forms\Components\Section::make('Información de Usuario')
+                    ->icon('heroicon-o-user')
+                    ->description('Datos de acceso al sistema')
+                    ->schema([
+                        Forms\Components\TextInput::make('user_email')
+                            ->label('Correo electrónico')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('ejemplo@correo.com')
+                            ->helperText('Este será el correo de acceso al sistema')
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('user_password')
+                            ->label('Contraseña')
+                            ->password()
+                            ->minLength(8)
+                            ->confirmed()
+                            ->helperText('Mínimo 8 caracteres')
+                            ->required()
+                            ->columnSpanFull()
+                            ->visibleOn('create'),
+
+                        Forms\Components\TextInput::make('user_password_confirmation')
+                            ->label('Confirmar contraseña')
+                            ->password()
+                            ->required()
+                            ->columnSpanFull()
+                            ->visibleOn('create'),
+
+                        Forms\Components\TextInput::make('user_password_edit')
+                            ->label('Contraseña')
+                            ->password()
+                            ->minLength(8)
+                            ->confirmed()
+                            ->helperText('Deja vacío para mantener la contraseña actual')
+                            ->columnSpanFull()
+                            ->visibleOn('edit'),
+
+                        Forms\Components\TextInput::make('user_password_confirmation_edit')
+                            ->label('Confirmar contraseña')
+                            ->password()
+                            ->columnSpanFull()
+                            ->visibleOn('edit'),
+                    ]),
+
                 Section::make('Información del instructor')
                     ->columns(2)
                     ->schema([
-                        // Sección 1: Información personal
+                        // Sección 2: Información personal
                         Section::make('Datos personales')
                             ->columns(2)
                             ->schema([
@@ -64,7 +115,9 @@ class InstructorResource extends Resource
                                     ->label('Correo Electrónico')
                                     ->email()
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->disabled()
+                                    ->helperText('El email se gestiona desde la sección de usuario'),
 
                                 Forms\Components\TextInput::make('phone')
                                     ->label('Teléfono')
@@ -160,6 +213,10 @@ class InstructorResource extends Resource
                                     }),
                             ]),
 
+                        // Campo oculto para la relación con el usuario
+                        Forms\Components\Hidden::make('user_id')
+                            ->visibleOn('edit'),
+
                         // Sección 4: Biografía y redes sociales
                         Section::make('Biografía y redes')
                             ->schema([
@@ -220,9 +277,20 @@ class InstructorResource extends Resource
                     ->label('Nombre')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('email')
+                Tables\Columns\TextColumn::make('user.email')
                     ->label('Correo Electrónico')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\IconColumn::make('user.email_verified_at')
+                    ->label('Email Verificado')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->getStateUsing(fn($record) => $record->user?->hasVerifiedEmail())
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('document_number')
                     ->label('Número de Documento')
@@ -263,15 +331,86 @@ class InstructorResource extends Resource
             ])
             ->defaultSort('id', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'active' => 'Activo',
+                        'inactive' => 'Inactivo',
+                        'on_leave' => 'En Licencia',
+                        'terminated' => 'Terminado',
+                    ]),
+
+                Tables\Filters\TernaryFilter::make('email_verified')
+                    ->label('Email Verificado')
+                    ->placeholder('Todos los instructores')
+                    ->trueLabel('Email verificado')
+                    ->falseLabel('Email no verificado')
+                    ->queries(
+                        true: fn(Builder $query) => $query->whereHas('user', fn($q) => $q->whereNotNull('email_verified_at')),
+                        false: fn(Builder $query) => $query->whereHas('user', fn($q) => $q->whereNull('email_verified_at')),
+                        blank: fn(Builder $query) => $query,
+                    ),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+
+                Tables\Actions\Action::make('resend_verification')
+                    ->label('Reenviar verificación')
+                    ->icon('heroicon-o-envelope')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reenviar email de verificación')
+                    ->modalDescription('¿Estás seguro de que quieres reenviar el email de verificación a este instructor?')
+                    ->modalSubmitActionLabel('Sí, reenviar')
+                    ->action(function (Instructor $record) {
+                        try {
+                            if (!$record->user) {
+                                return 'No se encontró el usuario asociado.';
+                            }
+
+                            if ($record->user->hasVerifiedEmail()) {
+                                return 'El email ya está verificado.';
+                            }
+
+                            $record->user->sendEmailVerificationNotification();
+                            return 'Email de verificación enviado correctamente.';
+                        } catch (\Exception $e) {
+                            return 'Error al enviar el email: ' . $e->getMessage();
+                        }
+                    })
+                    ->visible(fn(Instructor $record) => $record->user && !$record->user->hasVerifiedEmail()),
+
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation()
+                    ->modalHeading('Eliminar instructor')
+                    ->modalDescription('¿Estás seguro de que quieres eliminar este instructor? Esta acción también eliminará el usuario asociado y no se puede deshacer.')
+                    ->modalSubmitActionLabel('Sí, eliminar')
+                    ->action(function (Instructor $record) {
+                        // Eliminar el usuario relacionado primero
+                        if ($record->user) {
+                            $record->user->delete();
+                        }
+                        // Luego eliminar el instructor
+                        $record->delete();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->requiresConfirmation()
+                        ->modalHeading('Eliminar instructores seleccionados')
+                        ->modalDescription('¿Estás seguro de que quieres eliminar estos instructores? Esta acción también eliminará los usuarios asociados y no se puede deshacer.')
+                        ->modalSubmitActionLabel('Sí, eliminar')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                // Eliminar el usuario relacionado primero
+                                if ($record->user) {
+                                    $record->user->delete();
+                                }
+                                // Luego eliminar el instructor
+                                $record->delete();
+                            }
+                        }),
                 ]),
             ]);
     }
@@ -282,6 +421,11 @@ class InstructorResource extends Resource
             RelationManagers\CoachRatingsRelationManager::class,
             RelationManagers\ClassScheduleRelationManager::class,
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('user');
     }
 
     public static function getPages(): array

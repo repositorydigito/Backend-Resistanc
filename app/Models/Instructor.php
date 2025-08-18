@@ -299,5 +299,12 @@ final class Instructor extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get the user associated with this instructor.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
 }

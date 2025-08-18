@@ -101,15 +101,12 @@ final class PackageController extends Controller
             ->when($request->filled('commercial_type'), function ($query) use ($request) {
                 $query->where('commercial_type', $request->string('commercial_type'));
             })
-            ->orderBy(DB::raw("
-                CASE commercial_type
-                    WHEN 'promotion' THEN 1
-                    WHEN 'offer' THEN 2
-                    WHEN 'basic' THEN 3
-                    ELSE 4
-                END
-            "))
-            ->orderBy('display_order', 'asc')
+            ->orderByRaw("
+            CASE WHEN commercial_type = 'promotion' THEN 0
+                 ELSE 1
+            END ASC"
+        )
+            // ->orderBy('display_order', 'asc')
             ->orderBy('price_soles', 'asc')
             ->paginate(
                 perPage: $request->integer('per_page', 15),
