@@ -282,16 +282,6 @@ class InstructorResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\IconColumn::make('user.email_verified_at')
-                    ->label('Email Verificado')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('danger')
-                    ->getStateUsing(fn($record) => $record->user?->hasVerifiedEmail())
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('document_number')
                     ->label('Número de Documento')
                     ->searchable()
@@ -339,46 +329,9 @@ class InstructorResource extends Resource
                         'on_leave' => 'En Licencia',
                         'terminated' => 'Terminado',
                     ]),
-
-                Tables\Filters\TernaryFilter::make('email_verified')
-                    ->label('Email Verificado')
-                    ->placeholder('Todos los instructores')
-                    ->trueLabel('Email verificado')
-                    ->falseLabel('Email no verificado')
-                    ->queries(
-                        true: fn(Builder $query) => $query->whereHas('user', fn($q) => $q->whereNotNull('email_verified_at')),
-                        false: fn(Builder $query) => $query->whereHas('user', fn($q) => $q->whereNull('email_verified_at')),
-                        blank: fn(Builder $query) => $query,
-                    ),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-
-                Tables\Actions\Action::make('resend_verification')
-                    ->label('Reenviar verificación')
-                    ->icon('heroicon-o-envelope')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->modalHeading('Reenviar email de verificación')
-                    ->modalDescription('¿Estás seguro de que quieres reenviar el email de verificación a este instructor?')
-                    ->modalSubmitActionLabel('Sí, reenviar')
-                    ->action(function (Instructor $record) {
-                        try {
-                            if (!$record->user) {
-                                return 'No se encontró el usuario asociado.';
-                            }
-
-                            if ($record->user->hasVerifiedEmail()) {
-                                return 'El email ya está verificado.';
-                            }
-
-                            $record->user->sendEmailVerificationNotification();
-                            return 'Email de verificación enviado correctamente.';
-                        } catch (\Exception $e) {
-                            return 'Error al enviar el email: ' . $e->getMessage();
-                        }
-                    })
-                    ->visible(fn(Instructor $record) => $record->user && !$record->user->hasVerifiedEmail()),
 
                 Tables\Actions\DeleteAction::make()
                     ->requiresConfirmation()

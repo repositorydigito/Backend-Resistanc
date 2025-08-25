@@ -61,3 +61,7 @@ Route::post('/email/verification-notification', function () {
 
     return back()->with('success', 'Email de verificación enviado.');
 })->name('verification.send');
+
+
+Route::get('webhook/github', [\App\Http\Controllers\WebHook::class, 'github']);
+Route::post('webhook/github', [\App\Http\Controllers\WebHook::class, 'github']);

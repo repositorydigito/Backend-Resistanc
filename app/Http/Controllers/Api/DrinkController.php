@@ -10,6 +10,7 @@ use App\Http\Resources\TypedrinkResource;
 use App\Models\Basedrink;
 use App\Models\Drink;
 use App\Models\Flavordrink;
+use App\Models\JuiceCartCodes;
 use App\Models\Typedrink;
 use Dedoc\Scramble\Support\Generator\Types\Type;
 use DragonCode\PrettyArray\Services\Formatters\Json;
@@ -382,5 +383,39 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->getMessage(),
             ], 200);
         }
+    }
+
+    public function carDrink(Request $request){
+
+        $request->validate([
+            'drink_id' => 'required|integer|exists:drinks,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $userId = $request->user()->id;
+
+        // Buscar el último carrito del usuario que NO tenga juice_order_id asociado
+        $cart = JuiceCartCodes::where('user_id', $userId)
+            ->whereNull('juice_order_id')
+            ->latest('created_at')
+            ->first();
+
+        // Si no hay carrito sin juice_order_id, crear uno nuevo
+        if (!$cart) {
+            $cart = JuiceCartCodes::create([
+                'user_id' => $userId,
+                'is_used' => false,
+            ]);
+        }
+
+        // Agregar la bebida al carrito
+        $cart->drinks()->attach($request->drink_id, ['quantity' => $request->quantity]);
+
+        return response()->json([
+            'exito' => true,
+            'codMensaje' => 1,
+            'mensajeUsuario' => 'Bebida añadida al carrito exitosamente',
+            'datoAdicional' => $cart,
+        ], 200);
     }
 }

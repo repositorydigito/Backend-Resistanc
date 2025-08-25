@@ -9,7 +9,12 @@ class JuiceCartCodes extends Model
 
     protected $table = 'juice_cart_codes';
 
-    protected $fillable = ['code'];
+    protected $fillable = [
+        'code',
+        'user_id',
+        'is_used',
+        'juice_order_id',
+    ];
 
     public function drinks()
     {
@@ -20,5 +25,10 @@ class JuiceCartCodes extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function juiceOrder()
+    {
+        return $this->belongsTo(JuiceOrder::class, 'juice_order_id');
+    }
+
 
 }

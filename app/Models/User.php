@@ -564,4 +564,9 @@ final class User extends Authenticatable implements MustVerifyEmail
         $this->notify(new \App\Notifications\VerifyEmailNotification);
     }
 
+    public function juiceOrders(): HasMany
+    {
+        return $this->hasMany(JuiceOrder::class);
+    }
+
 }

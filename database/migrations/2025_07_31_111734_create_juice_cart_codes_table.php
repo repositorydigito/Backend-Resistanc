@@ -18,6 +18,13 @@ return new class extends Migration
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->onDelete('cascade');
+            $table->boolean('is_used')->default(false);
+
+            $table->foreignId('juice_order_id')
+                ->nullable()
+                ->constrained('juice_orders')
+                ->onDelete('cascade')
+                ->comment('ID del pedido asociado, si existe');
 
             $table->timestamps();
         });

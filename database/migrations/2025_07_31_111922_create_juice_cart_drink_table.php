@@ -17,9 +17,12 @@ return new class extends Migration
             $table->foreignId('juice_cart_code_id')
                 ->constrained('juice_cart_codes')
                 ->onDelete('cascade');
+
             $table->foreignId('drink_id')
                 ->constrained('drinks')
                 ->onDelete('cascade');
+
+            $table->integer('quantity');
 
             $table->timestamps();
         });
