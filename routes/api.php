@@ -37,15 +37,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Two\FacebookProvider;
 
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-
+// Ruta de testeo
 Route::get('/test', [TestController::class, 'status'])->name('test.status');
-
-
 
 // Logueo con redes sociales
 // Socials
@@ -61,9 +54,6 @@ Route::prefix('social-login')->name('social-login.')->group(function () {
 });
 // Fin socials
 // Fin logueo con redes sociales
-
-
-
 
 Route::prefix('auth')->name('auth.')->group(function () {
     // Public authentication routes
@@ -92,11 +82,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 
-
+// Rutas de usuario
 Route::prefix('users')->name('users.')->group(function () {
-    // Basic CRUD
-
     Route::post('/', [UserController::class, 'store'])->name('store');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
 
@@ -107,27 +96,21 @@ Route::prefix('users')->name('users.')->group(function () {
 
         // User relationships
         Route::get('/{user}/profile', [UserController::class, 'profile'])->name('profile');
-
         Route::get('/{user}/social-accounts', [UserController::class, 'socialAccounts'])->name('social-accounts');
         Route::get('/{user}/login-audits', [UserController::class, 'loginAudits'])->name('login-audits');
     });
-
-    // User contacts CRUDW
-
 });
 
-
-
-
+// Mis paquetes
 Route::prefix('me/packages')->name('my-packages.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [UserPackageController::class, 'index'])->name('index');
     Route::post('/', [UserPackageController::class, 'store'])->name('store');
     Route::get('/summary-by-discipline', [UserPackageController::class, 'getPackagesSummaryByDiscipline'])->name('summary-by-discipline');
 });
 
-
+// Paquetes
 Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(function () {
-    // Basic CRUD
+
     Route::get('/', [PackageController::class, 'index'])->name('index');
 });
 
@@ -160,7 +143,6 @@ Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:san
     Route::get('/class-schedulesUser', [ClassScheduleController::class, 'classScheduleUser'])->name('class-schedules');
     Route::get('/class-schedulesUserPending', [ClassScheduleController::class, 'classScheduleUserPending'])->name('class-schedules-pending');
     Route::post('/reserved-show', [ClassScheduleController::class, 'reservedShow'])->name('reserved-show');
-
 });
 // Fin Horarios
 
@@ -178,6 +160,9 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
     Route::post('/base-drinks', [DrinkController::class, 'baseDrinks'])->name('base-drinks');
     Route::post('/flavor-drinks', [DrinkController::class, 'flavorDrinks'])->name('flavor-drinks');
     Route::post('/type-drinks', [DrinkController::class, 'typeDrinks'])->name('type-drinks');
+    Route::post('/cart/add', [DrinkController::class, 'addToCart'])->name('add-to-cart');
+    Route::post('/cart/show', [DrinkController::class, 'showToCart'])->name('show-to-cart');
+    Route::post('/cart/remove', [DrinkController::class, 'removeFromCart'])->name('remove-from-cart');
 });
 // Fin bebidas
 
@@ -213,7 +198,6 @@ Route::prefix('favorites')->name('favorites.')->middleware('auth:sanctum')->grou
     Route::post('/products/add', [FavoriteController::class, 'storeProduct'])->name('favorite-product-add');
     Route::post('/classes/add', [FavoriteController::class, 'storeClass'])->name('favorite-class-add');
     Route::post('/instructors/add', [FavoriteController::class, 'storeInstructor'])->name('favorite-instructor-add');
-
 });
 // Fin Favoritos
 
@@ -323,8 +307,3 @@ Route::prefix('posts')->name('posts.')->middleware('auth:sanctum')->group(functi
     Route::post('/list', [PostController::class, 'index'])->name('index');
 });
 // Fin articulos
-
-
-
-
-

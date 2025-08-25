@@ -9,46 +9,13 @@ use Illuminate\Support\Str;
 class Drink extends Model
 {
      protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'image_url',
-        'price',
+        // 'name',
+        // 'slug',
+        // 'description',
+        // 'image_url',
+        // 'price',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        // ✅ Cambiar $membership por $drink
-        static::creating(function ($drink) {
-            if (empty($drink->slug)) {
-                $drink->slug = Str::slug($drink->name);
-
-                // Asegurar que el slug sea único
-                $originalSlug = $drink->slug;
-                $counter = 1;
-                while (static::where('slug', $drink->slug)->exists()) {
-                    $drink->slug = $originalSlug . '-' . $counter;
-                    $counter++;
-                }
-            }
-        });
-
-        static::updating(function ($drink) {
-            if ($drink->isDirty('name') && empty($drink->slug)) {
-                $drink->slug = Str::slug($drink->name);
-
-                // Asegurar que el slug sea único
-                $originalSlug = $drink->slug;
-                $counter = 1;
-                while (static::where('slug', $drink->slug)->where('id', '!=', $drink->id)->exists()) {
-                    $drink->slug = $originalSlug . '-' . $counter;
-                    $counter++;
-                }
-            }
-        });
-    }
 
     protected $casts = [
         'price' => 'decimal:2',

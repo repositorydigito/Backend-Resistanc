@@ -82,15 +82,12 @@ class TypedrinkResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('image_url'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('price')
+                    ->label('Precio')
+                    ->money('PEN', true)
+                    ->sortable(),
+
+
             ])
             ->filters([
                 //

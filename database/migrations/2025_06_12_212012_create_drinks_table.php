@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('drinks', function (Blueprint $table) {
             $table->id();
 
-            $table->string('name')->comment('Nombre de la bebida');
-            $table->string('slug')->unique()->comment('Slug único para la bebida');
-            $table->string('description')->nullable()->comment('Descripción de la bebida');
-            $table->string('image_url')->nullable()->comment('URL de la imagen de la bebida');
+            // $table->string('name')->comment('Nombre de la bebida');
+            // $table->string('slug')->unique()->comment('Slug único para la bebida');
+            // $table->string('description')->nullable()->comment('Descripción de la bebida');
+            // $table->string('image_url')->nullable()->comment('URL de la imagen de la bebida');
 
             // Relaciones
             $table->foreignId('typedrink_id')

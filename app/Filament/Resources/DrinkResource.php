@@ -23,10 +23,10 @@ class DrinkResource extends Resource
 
     protected static ?string $navigationGroup = 'Bebidas';
 
-    protected static ?string $navigationLabel = 'Jugos y Bebidas'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Combinaciones'; // Nombre del grupo de navegación
 
-    protected static ?string $label = 'Bebida'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Jugos y Bebidas'; // Nombre en plural
+    protected static ?string $label = 'Combinación'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Combinaciones'; // Nombre en plural
 
     protected static ?int $navigationSort = 5;
 
@@ -38,24 +38,7 @@ class DrinkResource extends Resource
                     ->columns(2)
                     ->schema([
 
-                        Forms\Components\FileUpload::make('image_url')
-                            ->label('Imagen')
-                            ->disk('public')
-                            ->directory('drinks')
-                            ->visibility('public')
-                            ->acceptedFileTypes(['image/*'])
-                            ->maxSize(1024 * 5) // 5 MB
-                            ->imageResizeMode('crop')
-                            ->imageResizeTargetWidth(800)
-                            ->imageResizeTargetHeight(600)
-                            ->image()
-                            ->columnSpanFull()
-                            ->required(),
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(255),
+
                         // Forms\Components\TextInput::make('slug')
                         //     ->required()
                         //     ->maxLength(255),
@@ -117,30 +100,46 @@ class DrinkResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                // Tables\Columns\TextColumn::make('slug')
-                //     ->searchable(),
-                Tables\Columns\TextColumn::make('description')
-                    ->searchable(),
-                Tables\Columns\ImageColumn::make('image_url'),
-                Tables\Columns\TextColumn::make('price')
+                Tables\Columns\TextColumn::make('basesdrinks.name')
+                    ->label('Base')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('flavordrinks.name')
+                    ->label('Sabor')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('typesdrinks.name')
+                    ->label('Tipo')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('typesdrinks.price')
+                    ->label('Precio')
                     ->money('PEN', true)
                     ->sortable(),
+                // Tables\Columns\TextColumn::make('description')
+                //     ->label('Descripción')
+                //     ->searchable()
+                //     ->limit(50),
                 // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
+                //     ->label('Creado')
+                //     ->dateTime('d/m/Y H:i')
                 //     ->sortable()
                 //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('basesdrinks')
+                    ->label('Filtrar por Base')
+                    ->relationship('basesdrinks', 'name'),
+                Tables\Filters\SelectFilter::make('flavordrinks')
+                    ->label('Filtrar por Sabor')
+                    ->relationship('flavordrinks', 'name'),
+                Tables\Filters\SelectFilter::make('typesdrinks')
+                    ->label('Filtrar por Tipo')
+                    ->relationship('typesdrinks', 'name'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
+                // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -160,8 +159,8 @@ class DrinkResource extends Resource
     {
         return [
             'index' => Pages\ListDrinks::route('/'),
-            'create' => Pages\CreateDrink::route('/create'),
-            'edit' => Pages\EditDrink::route('/{record}/edit'),
+            // 'create' => Pages\CreateDrink::route('/create'),
+            // 'edit' => Pages\EditDrink::route('/{record}/edit'),
         ];
     }
 }

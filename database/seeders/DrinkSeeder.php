@@ -17,9 +17,9 @@ class DrinkSeeder extends Seeder
         // Bebidas
 
         $drink_one = Drink::create([
-            'name' => 'Batido de Vainilla',
-            'slug' => 'batido-de-vainilla',
-            'description' => 'Delicioso batido de vainilla',
+            // 'name' => 'Batido de Vainilla',
+            // 'slug' => 'batido-de-vainilla',
+            // 'description' => 'Delicioso batido de vainilla',
 
             // 'image_url' => 'https://i.imgur.com/1234567.png',
             // // 'price' => 10.00,
@@ -31,9 +31,9 @@ class DrinkSeeder extends Seeder
         $drink_one->save();
 
         $drink_two = Drink::create([
-            'name' => 'Batido de Chocolate',
-            'slug' => 'batido-de-chocolate',
-            'description' => 'Delicioso batido de chocolate',
+            // 'name' => 'Batido de Chocolate',
+            // 'slug' => 'batido-de-chocolate',
+            // 'description' => 'Delicioso batido de chocolate',
 
             // 'image_url' => 'https://i.imgur.com/1234567.png',
             // 'price' => 12.00,
