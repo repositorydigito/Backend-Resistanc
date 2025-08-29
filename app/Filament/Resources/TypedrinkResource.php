@@ -28,15 +28,19 @@ class TypedrinkResource extends Resource
     protected static ?string $label = 'Tipo de Bebida'; // Nombre en singular
     protected static ?string $pluralLabel = 'Tipos de Bebidas'; // Nombre en plural
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-            Section::make('Información del tipo de bebida')
+                Forms\Components\Toggle::make('is_active')
+                    ->label('¿Está activa?')
+                    ->default(true),
+                Section::make('Información del tipo de bebida')
                     ->columns(2)
                     ->schema([
+
 
                         Forms\Components\FileUpload::make('image_url')
                             ->label('Imagen')
@@ -60,6 +64,11 @@ class TypedrinkResource extends Resource
                             ->imageResizeTargetWidth(100)
                             ->imageResizeTargetHeight(100)
                             ->image(),
+
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required()
+                            ->maxLength(255),
                         Forms\Components\TextInput::make('price')
                             ->label('Precio')
                             ->numeric()
@@ -68,10 +77,7 @@ class TypedrinkResource extends Resource
                             ->maxValue(9999)
                             ->default(0)
                             ->step(0.01),
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->maxLength(255),
+
                     ])
             ]);
     }
@@ -80,12 +86,22 @@ class TypedrinkResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Precio')
                     ->money('PEN', true)
                     ->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('¿Está activa?')
+                    ->boolean(),
 
 
             ])

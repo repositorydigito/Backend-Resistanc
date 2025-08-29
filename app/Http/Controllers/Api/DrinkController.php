@@ -191,7 +191,7 @@ final class DrinkController extends Controller
     {
 
         try {
-            $bases = Basedrink::all();
+            $bases = Basedrink::where('is_active', true)->get();
 
             return response()->json([
                 'exito' => true,
@@ -252,7 +252,7 @@ final class DrinkController extends Controller
     {
 
         try {
-            $flavors = Flavordrink::all();
+            $flavors = Flavordrink::where('is_active', true)->get();
 
             return response()->json([
                 'exito' => true,
@@ -313,7 +313,7 @@ final class DrinkController extends Controller
     {
 
         try {
-            $types = Typedrink::all();
+            $types = Typedrink::where('is_active', true)->get();
 
             return response()->json([
                 'exito' => true,
@@ -362,34 +362,114 @@ final class DrinkController extends Controller
 
             $userId = $request->user()->id;
 
-            // Buscar la bebida que tenga las relaciones correctas
-            $drink = Drink::whereHas('basesdrinks', function ($query) use ($request) {
-                if ($request->base_id) {
-                    $query->where('basedrink_id', $request->base_id);
+            // Validar que todos los ingredientes especificados estén activos
+            $validationErrors = [];
+
+            if ($request->filled('base_id')) {
+                $base = Basedrink::find($request->base_id);
+                if (!$base || !$base->is_active) {
+                    $validationErrors[] = 'La base de bebida seleccionada no está disponible';
                 }
-            })
-                ->whereHas('flavordrinks', function ($query) use ($request) {
-                    if ($request->flavor_id) {
-                        $query->where('flavordrink_id', $request->flavor_id);
-                    }
-                })
-                ->whereHas('typesdrinks', function ($query) use ($request) {
-                    if ($request->type_id) {
-                        $query->where('typedrink_id', $request->type_id);
-                    }
-                })
-                ->first();
+            }
+
+            if ($request->filled('flavor_id')) {
+                $flavor = Flavordrink::find($request->flavor_id);
+                if (!$flavor || !$flavor->is_active) {
+                    $validationErrors[] = 'El sabor seleccionado no está disponible';
+                }
+            }
+
+            if ($request->filled('type_id')) {
+                $type = Typedrink::find($request->type_id);
+                if (!$type || !$type->is_active) {
+                    $validationErrors[] = 'El tipo de bebida seleccionado no está disponible';
+                }
+            }
+
+            // Si hay ingredientes inactivos, retornar error
+            if (!empty($validationErrors)) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'No se puede agregar la bebida al carrito',
+                    'datoAdicional' => [
+                        'errors' => $validationErrors,
+                        'message' => 'Uno o más ingredientes no están disponibles actualmente'
+                    ]
+                ], 200);
+            }
+
+            // Buscar bebida existente con EXACTAMENTE las combinaciones especificadas
+            $drink = null;
+
+            if ($request->filled('base_id') || $request->filled('flavor_id') || $request->filled('type_id')) {
+                $query = Drink::query();
+
+                // Aplicar filtros para los parámetros enviados
+                if ($request->filled('base_id')) {
+                    $query->whereHas('basesdrinks', function ($q) use ($request) {
+                        $q->where('basedrink_id', $request->base_id);
+                    });
+                }
+
+                if ($request->filled('flavor_id')) {
+                    $query->whereHas('flavordrinks', function ($q) use ($request) {
+                        $q->where('flavordrink_id', $request->flavor_id);
+                    });
+                }
+
+                if ($request->filled('type_id')) {
+                    $query->whereHas('typesdrinks', function ($q) use ($request) {
+                        $q->where('typedrink_id', $request->type_id);
+                    });
+                }
+
+                // Filtrar para que NO tenga relaciones adicionales no especificadas
+                if ($request->filled('base_id')) {
+                    // Si se especifica base_id, la bebida NO debe tener otras bases
+                    $query->whereDoesntHave('basesdrinks', function ($q) use ($request) {
+                        $q->where('basedrink_id', '!=', $request->base_id);
+                    });
+                } else {
+                    // Si NO se especifica base_id, la bebida NO debe tener ninguna base
+                    $query->whereDoesntHave('basesdrinks');
+                }
+
+                if ($request->filled('flavor_id')) {
+                    // Si se especifica flavor_id, la bebida NO debe tener otros flavors
+                    $query->whereDoesntHave('flavordrinks', function ($q) use ($request) {
+                        $q->where('flavordrink_id', '!=', $request->flavor_id);
+                    });
+                } else {
+                    // Si NO se especifica flavor_id, la bebida NO debe tener ningún flavor
+                    $query->whereDoesntHave('flavordrinks');
+                }
+
+                if ($request->filled('type_id')) {
+                    // Si se especifica type_id, la bebida NO debe tener otros types
+                    $query->whereDoesntHave('typesdrinks', function ($q) use ($request) {
+                        $q->where('typedrink_id', '!=', $request->type_id);
+                    });
+                } else {
+                    // Si NO se especifica type_id, la bebida NO debe tener ningún type
+                    $query->whereDoesntHave('typesdrinks');
+                }
+
+                $drink = $query->first();
+            }
 
             // Si no existe, crear la bebida y sus relaciones
             if (!$drink) {
                 $drink = Drink::create();
-                if ($request->base_id) {
+
+                // Solo crear relaciones si se proporcionan los parámetros
+                if ($request->filled('base_id')) {
                     $drink->basesdrinks()->attach($request->base_id);
                 }
-                if ($request->flavor_id) {
+                if ($request->filled('flavor_id')) {
                     $drink->flavordrinks()->attach($request->flavor_id);
                 }
-                if ($request->type_id) {
+                if ($request->filled('type_id')) {
                     $drink->typesdrinks()->attach($request->type_id);
                 }
             }
@@ -410,7 +490,7 @@ final class DrinkController extends Controller
 
             // Verificar si la bebida ya existe en el carrito
             $existingDrink = $cart->drinks()->where('drink_id', $drink->id)->first();
-            
+
             if ($existingDrink) {
                 // Si ya existe, actualizar la cantidad
                 $cart->drinks()->updateExistingPivot($drink->id, [
@@ -486,6 +566,183 @@ final class DrinkController extends Controller
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener el carrito',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+    }
+
+    /**
+     * Actualiza la cantidad de una o varias bebidas en el carrito del usuario autenticado
+     *
+     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
+     *
+     * @summary Actualizar cantidad de bebida(s) en el carrito
+     * @operationId updateCartQuantity
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @bodyParam drink_id integer sometimes ID de la bebida en el carrito (para actualización individual). Example: 3
+     * @bodyParam quantity integer sometimes Nueva cantidad (mínimo 1, para actualización individual). Example: 2
+     * @bodyParam drinks array sometimes Array de bebidas para actualización masiva. Example: [{"drink_id": 1, "quantity": 2}, {"drink_id": 3, "quantity": 5}]
+     * @bodyParam drinks.*.drink_id integer required ID de la bebida en el carrito. Example: 1
+     * @bodyParam drinks.*.quantity integer required Nueva cantidad (mínimo 1). Example: 2
+     *
+     * @response 200 {
+     *   "exito": true,
+     *   "codMensaje": 1,
+     *   "mensajeUsuario": "Cantidades actualizadas exitosamente",
+     *   "datoAdicional": {
+     *     "id": 1,
+     *     "code": "NWHLD7DJ",
+     *     "drinks": [...],
+     *     "total_items": 3,
+     *     "total_price": 0,
+     *     "updated_drinks": [1, 3],
+     *     "not_found_drinks": []
+     *   }
+     * }
+     *
+     * @response 200 {
+     *   "exito": false,
+     *   "codMensaje": 2,
+     *   "mensajeUsuario": "La bebida no está en el carrito",
+     *   "datoAdicional": null
+     * }
+     */
+    public function updateCartQuantity(Request $request)
+    {
+        try {
+            // Validar si es actualización individual o masiva
+            if ($request->has('drinks')) {
+                // Validación para actualización masiva
+                $request->validate([
+                    'drinks' => 'required|array|min:1|max:50',
+                    'drinks.*.drink_id' => 'required|integer|exists:drinks,id',
+                    'drinks.*.quantity' => 'required|integer|min:1',
+                ]);
+            } else {
+                // Validación para actualización individual
+                $request->validate([
+                    'drink_id' => 'required|integer|exists:drinks,id',
+                    'quantity' => 'required|integer|min:1',
+                ]);
+            }
+
+            $userId = $request->user()->id;
+
+            // Buscar el carrito activo del usuario
+            $cart = JuiceCartCodes::where('user_id', $userId)
+                ->whereNull('juice_order_id')
+                ->where('is_used', false)
+                ->latest('created_at')
+                ->first();
+
+            if (!$cart) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'No hay carrito activo',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            $updatedDrinks = [];
+            $notFoundDrinks = [];
+            $errors = [];
+
+            if ($request->has('drinks')) {
+                // Actualización masiva
+                foreach ($request->input('drinks') as $drinkData) {
+                    $drinkId = $drinkData['drink_id'];
+                    $newQuantity = $drinkData['quantity'];
+
+                    // Verificar si la bebida existe en el carrito
+                    $existingDrink = $cart->drinks()->where('drink_id', $drinkId)->first();
+
+                    if (!$existingDrink) {
+                        $notFoundDrinks[] = $drinkId;
+                        continue;
+                    }
+
+                    try {
+                        // Actualizar la cantidad
+                        $cart->drinks()->updateExistingPivot($drinkId, [
+                            'quantity' => $newQuantity
+                        ]);
+                        $updatedDrinks[] = $drinkId;
+                    } catch (\Exception $e) {
+                        $errors[] = "Error actualizando bebida ID {$drinkId}: " . $e->getMessage();
+                    }
+                }
+
+                $message = 'Cantidades actualizadas exitosamente';
+                if (!empty($notFoundDrinks)) {
+                    $message .= '. Algunas bebidas no fueron encontradas en el carrito';
+                }
+                if (!empty($errors)) {
+                    $message .= '. Algunos elementos tuvieron errores';
+                }
+            } else {
+                // Actualización individual
+                $drinkId = $request->integer('drink_id');
+                $newQuantity = $request->integer('quantity');
+
+                // Verificar si la bebida existe en el carrito
+                $existingDrink = $cart->drinks()->where('drink_id', $drinkId)->first();
+
+                if (!$existingDrink) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 2,
+                        'mensajeUsuario' => 'La bebida no está en el carrito',
+                        'datoAdicional' => null,
+                    ], 200);
+                }
+
+                // Actualizar la cantidad
+                $cart->drinks()->updateExistingPivot($drinkId, [
+                    'quantity' => $newQuantity
+                ]);
+
+                $updatedDrinks[] = $drinkId;
+                $message = 'Cantidad actualizada exitosamente';
+            }
+
+            // Recargar el carrito con las relaciones para usar el resource
+            $cart->load('drinks.basesdrinks', 'drinks.flavordrinks', 'drinks.typesdrinks');
+
+            $responseData = new JuiceCartCodesResource($cart);
+
+            // Agregar información adicional para actualizaciones masivas
+            if ($request->has('drinks')) {
+                $responseData = $responseData->toArray($request);
+                $responseData['updated_drinks'] = $updatedDrinks;
+                $responseData['not_found_drinks'] = $notFoundDrinks;
+                if (!empty($errors)) {
+                    $responseData['errors'] = $errors;
+                }
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => $responseData,
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al actualizar cantidad en el carrito',
                 'datoAdicional' => $e->getMessage(),
             ], 200);
         }

@@ -163,6 +163,7 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
     Route::post('/cart/add', [DrinkController::class, 'addToCart'])->name('add-to-cart');
     Route::post('/cart/show', [DrinkController::class, 'showToCart'])->name('show-to-cart');
     Route::post('/cart/remove', [DrinkController::class, 'removeFromCart'])->name('remove-from-cart');
+    Route::post('/cart/update-quantity', [DrinkController::class, 'updateCartQuantity'])->name('update-quantity');
 });
 // Fin bebidas
 
@@ -248,7 +249,6 @@ Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum
 // Fin carrito
 
 // Carrito shake
-
 Route::prefix('juice-cart')->name('juice-cart.')->middleware('auth:sanctum')->group(function () {
     Route::post('/', [JuiceCartCodeController::class, 'show'])->name('show');
     Route::post('/add', [JuiceCartCodeController::class, 'add'])->name('add');

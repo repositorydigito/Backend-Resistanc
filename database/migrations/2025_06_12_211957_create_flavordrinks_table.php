@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('image_url')->nullable()->comment('URL de la imagen del sabor de la bebida');
             $table->string('ico_url')->nullable()->comment('URL del ícono del sabor de la bebida');
 
+            $table->boolean('is_active')->default(true)->comment('Indica si la bebida base está activa');
+
             $table->timestamps();
         });
     }

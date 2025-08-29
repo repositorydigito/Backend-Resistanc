@@ -31,9 +31,14 @@ class BasedrinkResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Toggle::make('is_active')
+                    ->label('¿Está activa?')
+                    ->default(true),
                 Section::make('Información de la bebida base')
                     ->columns(1)
                     ->schema([
+
+
 
                         Forms\Components\FileUpload::make('image_url')
                             ->label('Imagen')
@@ -59,16 +64,12 @@ class BasedrinkResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('image_url'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\ImageColumn::make('image_url'),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('¿Está activa?')
+                    ->boolean(),
             ])
             ->filters([
                 //

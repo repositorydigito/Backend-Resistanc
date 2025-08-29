@@ -11,6 +11,7 @@ class Typedrink extends Model
         'image_url',
         'ico_url',
         'price',
+        'is_active'
     ];
 
     protected $casts = [

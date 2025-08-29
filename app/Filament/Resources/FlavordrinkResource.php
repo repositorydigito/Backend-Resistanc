@@ -18,19 +18,23 @@ class FlavordrinkResource extends Resource
 {
     protected static ?string $model = Flavordrink::class;
 
-     protected static ?string $navigationGroup = 'Bebidas';
+    protected static ?string $navigationGroup = 'Bebidas';
 
     protected static ?string $navigationLabel = 'Sabor de bebidas'; // Nombre del grupo de navegación
 
     protected static ?string $label = 'Sabor de Bebida'; // Nombre en singular
     protected static ?string $pluralLabel = 'Sabores de Bebidas'; // Nombre en plural
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+                Forms\Components\Toggle::make('is_active')
+                    ->label('¿Está activa?')
+                    ->default(true),
+
                 Section::make('Información del sabor de bebida')
                     ->columns(2)
                     ->schema([
@@ -70,16 +74,12 @@ class FlavordrinkResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('image_url'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\ImageColumn::make('image_url'),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('¿Está activa?')
+                    ->boolean(),
             ])
             ->filters([
                 //

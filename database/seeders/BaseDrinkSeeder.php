@@ -30,6 +30,16 @@ class BaseDrinkSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'name' => 'Soja',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Sin Lactosa',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'name' => 'Agua',
                 // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
