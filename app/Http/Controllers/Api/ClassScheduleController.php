@@ -316,6 +316,28 @@ final class ClassScheduleController extends Controller
      *       "rows": 4,
      *       "columns": 5
      *     },
+     *     "class": {
+     *       "id": 1,
+     *       "name": "Hatha Yoga",
+     *       "discipline": "Yoga",
+     *       "discipline_img": "/storage/images/disciplines/yoga.svg"
+     *     },
+     *     "instructor": {
+     *       "id": 2,
+     *       "name": "Ana López",
+     *       "profile_image": "/storage/images/instructors/ana.jpg"
+     *     },
+     *     "schedule_info": {
+     *       "id": 5,
+     *       "scheduled_date": "2025-01-15",
+     *       "start_time": "08:00:00",
+     *       "end_time": "09:00:00",
+     *       "status": "scheduled",
+     *       "max_capacity": 20,
+     *       "available_spots": 15,
+     *       "booked_spots": 5,
+     *       "waitlist_spots": 0
+     *     },
      *     "seat_map": [
      *       [
      *         {
@@ -344,7 +366,9 @@ final class ClassScheduleController extends Controller
      *       "available": 15,
      *       "reserved": 4,
      *       "occupied": 1,
-     *       "blocked": 0
+     *       "blocked": 0,
+     *       "occupancy_percentage": 25.0,
+     *       "available_percentage": 75.0
      *     }
      *   }
      * }
@@ -417,7 +441,7 @@ final class ClassScheduleController extends Controller
                     'id' => $classSchedule->class->id,
                     'name' => $classSchedule->class->name,
                     'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
-                    'discipline_img' => asset('storage/') . '/' . $classSchedule->class->discipline->icon_url ?? null,
+                    'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : null,
                 ],
                 'instructor' => [
                     'id' => $classSchedule->instructor->id,
@@ -810,7 +834,7 @@ final class ClassScheduleController extends Controller
                 'success' => false,
                 'message' => 'Error interno al reservar asientos',
                 'data' => $e->getMessage()
-            ], 500);
+            ], 200);
         }
     }
 
@@ -856,7 +880,7 @@ final class ClassScheduleController extends Controller
         try {
             // Validar datos de entrada
             $request->validate([
-                'class_schedule_seat_ids' => 'required|array|min:1|max:10',
+                'class_schedule_seat_ids' => 'required|array|min:1|max:50',
                 'class_schedule_seat_ids.*' => 'required|integer|exists:class_schedule_seat,id'
             ]);
 
@@ -1231,7 +1255,7 @@ final class ClassScheduleController extends Controller
         try {
             // Validar datos de entrada
             $request->validate([
-                'class_schedule_seat_ids' => 'required|array|min:1|max:10',
+                'class_schedule_seat_ids' => 'required|array|min:1|max:50',
                 'class_schedule_seat_ids.*' => 'required|integer|exists:class_schedule_seat,id'
             ]);
 
@@ -1747,13 +1771,13 @@ final class ClassScheduleController extends Controller
                         'id' => $schedule->class->id,
                         'name' => $schedule->class->name,
                         'discipline' => $schedule->class->discipline->name ?? 'N/A',
-                        'img_url' => asset($schedule->class->img_url) ?? null,
-                        'discipline_img' => asset($schedule->class->discipline->icon_url) ?? null,
+                        'img_url' => $schedule->class->img_url ? asset($schedule->class->img_url) : null,
+                        'discipline_img' => $schedule->class->discipline->icon_url ? asset($schedule->class->discipline->icon_url) : null,
                     ],
                     'instructor' => [
                         'id' => $schedule->instructor->id,
                         'name' => $schedule->instructor->name,
-                        'profile_image' => asset($schedule->instructor->profile_image) ?? null,
+                        'profile_image' => $schedule->instructor->profile_image ? asset($schedule->instructor->profile_image) : null,
                         'rating_average' => $schedule->instructor->rating_average ?? null,
                         'is_head_coach' => $schedule->instructor->is_head_coach ?? false,
                     ],

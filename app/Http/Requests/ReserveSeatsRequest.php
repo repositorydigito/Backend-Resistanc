@@ -33,7 +33,7 @@ class ReserveSeatsRequest extends FormRequest
                 'required',
                 'array',
                 'min:1',
-                'max:10' // Máximo 10 asientos por reserva
+                'max:50' // Máximo 50 asientos por reserva (permite reservar toda la capacidad del estudio)
             ],
             'class_schedule_seat_ids.*' => [
                 'required',
@@ -60,7 +60,7 @@ class ReserveSeatsRequest extends FormRequest
             'class_schedule_seat_ids.required' => 'Debe especificar al menos un asiento para reservar',
             'class_schedule_seat_ids.array' => 'Los IDs de asientos deben ser un array',
             'class_schedule_seat_ids.min' => 'Debe reservar al menos 1 asiento',
-            'class_schedule_seat_ids.max' => 'No puede reservar más de 10 asientos a la vez',
+            'class_schedule_seat_ids.max' => 'No puede reservar más de 50 asientos a la vez',
             'class_schedule_seat_ids.*.required' => 'Cada ID de asiento es requerido',
             'class_schedule_seat_ids.*.integer' => 'Los IDs de asientos deben ser números enteros',
             'class_schedule_seat_ids.*.exists' => 'Uno o más asientos especificados no existen',
