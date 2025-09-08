@@ -17,8 +17,10 @@ class WaitingResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user->id,
+            'status' => $this->status,
+            'created_at' => $this->created_at->toISOString(),
+            'updated_at' => $this->updated_at->toISOString(),
             'classSchedule' => new ClassScheduleResource($this->classSchedule),
-
         ];
     }
 }

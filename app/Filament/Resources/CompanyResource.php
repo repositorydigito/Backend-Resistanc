@@ -138,7 +138,7 @@ class CompanyResource extends Resource
                     ])
                     ->collapsible(),
 
-                  Forms\Components\Section::make('Información de Facturación')
+                Forms\Components\Section::make('Información de Facturación')
                     ->description('Datos de facturación de la empresa')
                     ->schema([
                         Forms\Components\TextInput::make('url_facturacion')
@@ -166,6 +166,21 @@ class CompanyResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->collapsible(),
+
+                Forms\Components\Section::make('Información de correos')
+                    ->description('Informacion correos de la empresa')
+                    ->schema([
+                          Forms\Components\FileUpload::make('signature_image')
+                            ->label('Imagen de la Firma')
+                            ->image()
+                            ->imageEditor()
+                            ->imageCropAspectRatio('16:9')
+                            ->imageResizeTargetWidth('1920')
+                            ->imageResizeTargetHeight('1080')
+                            ->directory('company-logos')
+                            ->visibility('public')
+                            ->helperText('Formatos: PNG, JPG, SVG. Tamaño máximo: 2MB'),
+                    ])
             ]);
     }
 

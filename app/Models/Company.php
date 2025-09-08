@@ -19,6 +19,7 @@ class Company extends Model
         'timezone',
         'currency',
         'locale',
+        'signature_image', // Ruta de la imagen de la firma
 
         // Facturacion con nube Fac
         'url_facturacion',

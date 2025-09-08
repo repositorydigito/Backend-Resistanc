@@ -96,6 +96,9 @@ class DatabaseSeeder extends Seeder
         // Posts
         $this->call(PostSeeder::class);
 
+        // Plantillas de email
+        $this->call(TemplateEmailSeeder::class);
+
         $this->command->info('🎉 Database seeding completed!');
     }
 }

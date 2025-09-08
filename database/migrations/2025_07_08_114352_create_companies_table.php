@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('currency', 3)->default('SOL')->comment('Moneda de la empresa');
             $table->string('locale', 5)->default('es_PE')->comment('Idioma de la empresa');
 
+            $table->string('signature_image')->nullable()->comment('Ruta de la imagen de la firma');
+
             // Facturacion con nube Fac
             $table->text('url_facturacion')->nullable()->comment('Proveedor de facturación');
             $table->text('token_facturacion')->nullable()->comment('Token de acceso para la API de facturación');
