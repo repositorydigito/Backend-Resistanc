@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use Dedoc\Scramble\Attributes\BodyParameter;
 use Error;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,13 @@ class CategoryController extends Controller
      * @queryParam per_page integer Número de categorías por página (máximo 100). Example: 15
      * @queryParam page integer Número de página para la paginación. Example: 1
      * @return JsonResponse
+     *
+     *
+     *
      */
+
+    #[BodyParameter('per_page', description: 'Número de categorías por página', type: 'integer', example: 15)]
+    #[BodyParameter('page', description: 'Número de página para la paginación', type: 'integer', example: 1)]
 
     public function index(Request $request): JsonResponse
     {
@@ -42,7 +49,9 @@ class CategoryController extends Controller
         ]);
 
         try {
-            $query = Category::query()->orderBy('name', 'asc');
+            $query = Category::query()
+                ->whereHas('posts') // Solo categorías con al menos un post
+                ->orderBy('name', 'asc');
 
             // Paginación o lista completa
             if ($request->has('per_page')) {

@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 class Category extends Model
 {
 
-    protected $fillable = ['name', 'slug', 'description'];
+    protected $fillable = ['name', 'image_path', 'slug', 'description'];
 
 
     protected static function boot()

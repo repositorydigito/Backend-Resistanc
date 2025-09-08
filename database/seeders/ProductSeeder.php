@@ -25,7 +25,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Camiseta transpirable y cómoda',
                 'price_soles' => 49.99,
                 'compare_price_soles' => 69.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 100,
                 'status' => 'active',
                 'category_id' => 1,
@@ -40,7 +40,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Botella de agua de acero inoxidable',
                 'price_soles' => 29.99,
                 'compare_price_soles' => 39.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 200,
                 'status' => 'active',
                 'category_id' => 2,
@@ -55,7 +55,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Malla cómoda y elástica',
                 'price_soles' => 59.99,
                 'compare_price_soles' => 79.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 150,
                 'status' => 'active',
                 'category_id' => 1,
@@ -70,7 +70,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Zapatillas con amortiguación avanzada',
                 'price_soles' => 129.99,
                 'compare_price_soles' => 159.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 80,
                 'status' => 'active',
                 'category_id' => 1,
@@ -86,7 +86,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Toalla suave y absorbente',
                 'price_soles' => 19.99,
                 'compare_price_soles' => 24.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 300,
                 'status' => 'active',
                 'category_id' => 2,
@@ -101,7 +101,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Mancuernas versátiles y prácticas',
                 'price_soles' => 89.99,
                 'compare_price_soles' => 119.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 50,
                 'status' => 'active',
                 'category_id' => 2,
@@ -116,7 +116,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Bandas de resistencia para todo el cuerpo',
                 'price_soles' => 39.99,
                 'compare_price_soles' => 49.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 120,
                 'status' => 'active',
                 'category_id' => 2,
@@ -131,7 +131,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Gorra con protección UV',
                 'price_soles' => 24.99,
                 'compare_price_soles' => 34.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 150,
                 'status' => 'active',
                 'category_id' => 1,
@@ -146,7 +146,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Mochila con múltiples compartimentos',
                 'price_soles' => 59.99,
                 'compare_price_soles' => 79.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 70,
                 'status' => 'active',
                 'category_id' => 2,
@@ -161,7 +161,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Reloj con GPS y seguimiento de salud',
                 'price_soles' => 199.99,
                 'compare_price_soles' => 249.99,
-                'images' => json_encode(['https://i.imgur.com/1234567.png']),
+
                 'stock_quantity' => 30, // Stock limitado
                 'status' => 'active',
                 'category_id' => 1,
@@ -177,7 +177,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Guantes cómodos y seguros',
                 'price_soles' => 34.99,
                 'compare_price_soles' => 44.99,
-                'images' => json_encode(['https://i.imgur.com/abc1234.png']),
+
                 'stock_quantity' => 120,
                 'status' => 'active',
                 'category_id' => 2,
@@ -192,7 +192,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Soporte para rodillas',
                 'price_soles' => 44.99,
                 'compare_price_soles' => 59.99,
-                'images' => json_encode(['https://i.imgur.com/def5678.png']),
+
                 'stock_quantity' => 90,
                 'status' => 'active',
                 'category_id' => 2,
@@ -207,7 +207,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Proteína sabor chocolate',
                 'price_soles' => 139.90,
                 'compare_price_soles' => 169.90,
-                'images' => json_encode(['https://i.imgur.com/ghi9012.png']),
+
                 'stock_quantity' => 60,
                 'status' => 'active',
                 'category_id' => 2,
@@ -222,7 +222,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Cinturón de seguridad',
                 'price_soles' => 79.99,
                 'compare_price_soles' => 99.99,
-                'images' => json_encode(['https://i.imgur.com/jkl3456.png']),
+
                 'stock_quantity' => 40,
                 'status' => 'active',
                 'category_id' => 2,
@@ -237,7 +237,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Esterilla premium 6mm',
                 'price_soles' => 69.99,
                 'compare_price_soles' => 89.99,
-                'images' => json_encode(['https://i.imgur.com/mno7890.png']),
+
                 'stock_quantity' => 100,
                 'status' => 'active',
                 'category_id' => 1,
@@ -252,7 +252,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Shaker con compartimientos',
                 'price_soles' => 24.99,
                 'compare_price_soles' => 34.99,
-                'images' => json_encode(['https://i.imgur.com/pqr5678.png']),
+
                 'stock_quantity' => 150,
                 'status' => 'active',
                 'category_id' => 2,
@@ -267,7 +267,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Chaqueta running impermeable',
                 'price_soles' => 149.99,
                 'compare_price_soles' => 179.99,
-                'images' => json_encode(['https://i.imgur.com/stu8901.png']),
+
                 'stock_quantity' => 45,
                 'status' => 'active',
                 'category_id' => 1,
@@ -282,7 +282,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'BCAA sabor mango',
                 'price_soles' => 89.90,
                 'compare_price_soles' => 109.90,
-                'images' => json_encode(['https://i.imgur.com/vwx2345.png']),
+
                 'stock_quantity' => 70,
                 'status' => 'active',
                 'category_id' => 2,
@@ -297,7 +297,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Faja térmica para entrenar',
                 'price_soles' => 59.99,
                 'compare_price_soles' => 69.99,
-                'images' => json_encode(['https://i.imgur.com/yz01234.png']),
+
                 'stock_quantity' => 85,
                 'status' => 'active',
                 'category_id' => 2,
@@ -312,7 +312,7 @@ class ProductSeeder extends Seeder
                 'short_description' => 'Cuerda profesional de velocidad',
                 'price_soles' => 34.99,
                 'compare_price_soles' => 44.99,
-                'images' => json_encode(['https://i.imgur.com/zxc5678.png']),
+
                 'stock_quantity' => 130,
                 'status' => 'active',
                 'category_id' => 2,

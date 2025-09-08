@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\PostCategoryResource;
 use App\Http\Resources\PostResource;
+use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -97,6 +100,52 @@ class PostController extends Controller
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener los artículos',
                 'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
+    }
+    /**
+     * Lista todas las categorías de artículos
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+
+    /**
+     * Muestra los detalles de un artículo específico
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function show(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'id' => 'required|integer|exists:posts,id',
+            ]);
+
+            $post = Post::with(['category', 'tags'])->find($request->id);
+
+            if (!$post) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Artículo no encontrado',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Artículo obtenido correctamente',
+                'datoAdicional' => new PostResource($post)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener el artículo',
+                'datoAdicional' => $th->getMessage()
             ], 200);
         }
     }

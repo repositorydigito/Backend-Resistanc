@@ -6,9 +6,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClassScheduleResource;
 use App\Http\Resources\InstructorResource;
+use App\Http\Resources\PostResource;
 use App\Http\Resources\ProductResource;
 use App\Models\ClassSchedule;
 use App\Models\Instructor;
+use App\Models\Post;
 use App\Models\Product;
 use DragonCode\Contracts\Cashier\Auth\Auth;
 use Illuminate\Http\Request;
@@ -109,9 +111,14 @@ final class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        $products = Product::with('category','productBrand')
+        $products = Product::with('category', 'productBrand')
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        $posts = Post::with('category', 'tags')
+            ->orderBy('is_featured', 'desc')
             ->limit(10)
             ->get();
 
@@ -156,6 +163,7 @@ final class HomeController extends Controller
                 'classSchedules' => ClassScheduleResource::collection($classSchedules),
                 'classSchedulesMe' => ClassScheduleResource::collection($classSchedulesMe),
                 'products' => ProductResource::collection($products),
+                'posts' => PostResource::collection($posts),
             ],
         ]);
     }

@@ -122,7 +122,7 @@ class ClientSeeder extends Seeder
             'birth_date' => '1990-01-01',
             'gender' => 'female',
             'shoe_size_eu' => 38,
-            'profile_image' => 'default_profile_image.jpg',
+
             'bio' => 'Una breve biografía del usuario.',
             'emergency_contact_name' => 'Contacto de Emergencia',
             'emergency_contact_phone' => '123456789',

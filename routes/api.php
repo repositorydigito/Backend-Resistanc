@@ -305,5 +305,6 @@ Route::prefix('posts/tags')->name('posts.tags.')->middleware('auth:sanctum')->gr
 // Artículos
 Route::prefix('posts')->name('posts.')->middleware('auth:sanctum')->group(function () {
     Route::post('/list', [PostController::class, 'index'])->name('index');
+    Route::post('/show', [PostController::class, 'show'])->name('show');
 });
 // Fin articulos

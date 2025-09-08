@@ -17,8 +17,11 @@ class PostResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'image_path' => $this->image_path,
+            'image_path' => $this->image_path ? asset('storage/' . $this->image_path) : null,
             'content' => $this->content,
+            'created_at' => $this->created_at ?
+                $this->created_at->translatedFormat('d \d\e F \d\e Y') :
+                null,
             'user' =>
             [
                 'id' => $this->user->id,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductOptionResource;
 use App\Models\ShoppingCart;
 use App\Models\CartItem;
 use App\Models\Product;
@@ -125,7 +126,7 @@ class ShoppingCartController extends Controller
             $cart = $this->getOrCreateActiveCart();
 
             // Cargar los items con sus relaciones
-            $cart->load(['items.product', 'items.productVariant']);
+            $cart->load(['items.product', 'items.productVariant.variantOptions.productOptionType']);
 
             // Recalcular totales por si acaso
             $cart->recalculateTotals();
@@ -162,6 +163,7 @@ class ShoppingCartController extends Controller
                                 'id' => $item->productVariant->id,
                                 'name' => $item->productVariant->name,
                                 'sku' => $item->productVariant->full_sku,
+                                'options' => ProductOptionResource::collection($item->productVariant->variantOptions)
                             ] : null,
                         ];
                     }),
@@ -250,15 +252,15 @@ class ShoppingCartController extends Controller
             }
 
             // Verificar stock si el producto no requiere variantes
-            if (!$product->requires_variants) {
-                if ($product->stock_quantity < $request->quantity) {
-                    throw new Error('Stock insuficiente para este producto');
-                }
-            } else if ($variant) {
-                if ($variant->stock_quantity < $request->quantity) {
-                    throw new Error('Stock insuficiente para esta variante');
-                }
-            }
+            // if (!$product->requires_variants) {
+            //     if ($product->stock_quantity < $request->quantity) {
+            //         throw new Error('Stock insuficiente para este producto');
+            //     }
+            // } else if ($variant) {
+            //     if ($variant->stock_quantity < $request->quantity) {
+            //         throw new Error('Stock insuficiente para esta variante');
+            //     }
+            // }
 
             // Agregar item al carrito
             $cartItem = $cart->addItem($product, $request->quantity, $variant);
