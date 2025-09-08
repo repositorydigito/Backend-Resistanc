@@ -4,15 +4,21 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserProfileResource\Pages;
 use App\Filament\Resources\UserProfileResource\RelationManagers;
+use App\Mail\EmailVerification;
+use App\Mail\EmailVerificationMailable;
 use App\Models\User;
 use App\Models\UserProfile;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Mockery\Matcher\Not;
 
 class UserProfileResource extends Resource
 {
@@ -258,18 +264,52 @@ class UserProfileResource extends Resource
                     ->modalSubmitActionLabel('Sí, reenviar')
                     ->action(function (UserProfile $record) {
                         try {
+                            Log::info('=== INICIANDO ACCIÓN DE REENVÍO ===');
+                            Log::info('UserProfile ID: ' . $record->id);
+
                             if (!$record->user) {
-                                return 'No se encontró el usuario asociado.';
+                                Log::error('No se encontró el usuario asociado');
+                                Notification::make()
+                                    ->title('Error')
+                                    ->danger()
+                                    ->body('No se encontró el usuario asociado.')
+                                    ->send();
+                                return;
                             }
 
-                            if ($record->user->hasVerifiedEmail()) {
-                                return 'El email ya está verificado.';
+                            $email = $record->user->email;
+                            Log::info('Email del usuario: ' . $email);
+
+                            if (empty($email)) {
+                                Log::error('El correo electrónico del usuario está vacío');
+                                Notification::make()
+                                    ->title('Error')
+                                    ->danger()
+                                    ->body('El correo electrónico del usuario está vacío.')
+                                    ->send();
+                                return;
                             }
 
-                            $record->user->sendEmailVerificationNotification();
-                            return 'Email de verificación enviado correctamente.';
+                            Log::info('Enviando correo a: ' . $email);
+
+                            // Enviar correo de verificación
+                            Mail::to($email)->send(new EmailVerificationMailable($record->user));
+
+                            Log::info('Correo enviado exitosamente');
+
+                            Notification::make()
+                                ->title('Email enviado')
+                                ->success()
+                                ->body("Correo enviado a: {$email}")
+                                ->send();
+
                         } catch (\Exception $e) {
-                            return 'Error al enviar el email: ' . $e->getMessage();
+                            Log::error('Error: ' . $e->getMessage());
+                            Notification::make()
+                                ->title('Error')
+                                ->danger()
+                                ->body('Error: ' . $e->getMessage())
+                                ->send();
                         }
                     })
                     ->visible(fn(UserProfile $record) => $record->user && !$record->user->hasVerifiedEmail()),
