@@ -21,14 +21,14 @@ class PostResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
 
-    protected static ?string $navigationGroup = 'Articulos';
+    protected static ?string $navigationGroup = 'News';
 
     protected static ?string $navigationLabel = 'Artículos';
 
     protected static ?string $label = 'Artículo'; // Nombre en singular
     protected static ?string $pluralLabel = 'Artículos'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 18;
 
 
 
@@ -39,7 +39,7 @@ class PostResource extends Resource
                 Forms\Components\Toggle::make('is_featured')
                     ->label('Destacado')
                     ->default(false),
-                Section::make('Información del Post')
+                Section::make('Información del Articulo')
                     ->schema([
                         Forms\Components\TextInput::make('title')
                             ->label('Título')
@@ -82,11 +82,11 @@ class PostResource extends Resource
                             ->label('Usuario')
                             ->required()
                             ->relationship('user', 'name'),
-                        Forms\Components\Select::make('tags')
-                            ->label('Etiquetas')
-                            ->multiple()
-                            ->relationship('tags', 'name')
-                            ->preload(),
+                        // Forms\Components\Select::make('tags')
+                        //     ->label('Etiquetas')
+                        //     ->multiple()
+                        //     ->relationship('tags', 'name')
+                        //     ->preload(),
                     ]),
             ]);
     }
@@ -106,10 +106,10 @@ class PostResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Usuario')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('tags.name')
-                    ->label('Etiquetas')
-                    ->badge()
-                    ->separator(', '),
+                // Tables\Columns\TextColumn::make('tags.name')
+                //     ->label('Etiquetas')
+                //     ->badge()
+                //     ->separator(', '),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado el')
                     ->dateTime()

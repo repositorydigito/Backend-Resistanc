@@ -20,14 +20,14 @@ class StudioResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
 
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Salas';
 
     protected static ?string $label = 'Sala'; // Nombre en singular
     protected static ?string $pluralLabel = 'Salas'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 21;
 
     public static function form(Form $form): Form
     {

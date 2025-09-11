@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClassScheduleResource;
+use App\Http\Resources\DisciplineResource;
 use App\Http\Resources\InstructorResource;
 use App\Http\Resources\PostResource;
 use App\Http\Resources\ProductResource;
 use App\Models\ClassSchedule;
+use App\Models\Discipline;
 use App\Models\Instructor;
 use App\Models\Post;
 use App\Models\Product;
@@ -95,6 +97,12 @@ final class HomeController extends Controller
             ->limit(10)
             ->get();
 
+        $disciplines = Discipline::whereHas('packages')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('display_name', 'asc')
+            ->get();
+
+
         $classSchedulesMe = $user->upcomingSeatReservations()
             ->whereHas('classSchedule.class', fn($q) => $q->where('status', 'active'))
             ->whereHas('classSchedule.studio', fn($q) => $q->where('status', 'active'))
@@ -159,6 +167,7 @@ final class HomeController extends Controller
                     }) : [],
 
                 ],
+                'disciplines' => DisciplineResource::collection($disciplines),
                 'instructors' => InstructorResource::collection($instructors),
                 'classSchedules' => ClassScheduleResource::collection($classSchedules),
                 'classSchedulesMe' => ClassScheduleResource::collection($classSchedulesMe),

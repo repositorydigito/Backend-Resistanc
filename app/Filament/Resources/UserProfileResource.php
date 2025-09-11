@@ -27,14 +27,14 @@ class UserProfileResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Clientes'; // Etiqueta en el menú de navegación
 
     protected static ?string $label = 'Cliente'; // Nombre en singular
     protected static ?string $pluralLabel = 'Clientes'; // Nombre en plural
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 19;
 
 
 

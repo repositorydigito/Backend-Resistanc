@@ -21,14 +21,14 @@ class MembershipResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-trophy';
 
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Membresias';
 
     protected static ?string $label = 'Membresia'; // Nombre en singular
     protected static ?string $pluralLabel = 'Membresias'; // Nombre en plural
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 22;
 
     public static function form(Form $form): Form
     {

@@ -21,14 +21,14 @@ class TypedrinkResource extends Resource
     // protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
 
-    protected static ?string $navigationGroup = 'Bebidas';
+    protected static ?string $navigationGroup = 'Gestión de Shakes';
 
-    protected static ?string $navigationLabel = 'Tipo de bebidas'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Especificaciones del Shake'; // Nombre del grupo de navegación
 
-    protected static ?string $label = 'Tipo de Bebida'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Tipos de Bebidas'; // Nombre en plural
+    protected static ?string $label = 'Especificación del Shake'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Especificaciones del Shake'; // Nombre en plural
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Form $form): Form
     {

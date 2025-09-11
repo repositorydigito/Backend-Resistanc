@@ -19,15 +19,15 @@ class TowelLoanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
-    protected static ?string $navigationGroup = 'Toallas';
+    protected static ?string $navigationGroup = 'Gestión de Toallas';
 
     protected static ?string $navigationLabel = 'Historial de préstamos';
 
-    protected static ?string $label = 'Préstamo de toalla';
+    protected static ?string $label = 'Historial de préstamo';
 
     protected static ?string $pluralLabel = 'Préstamos de toalla';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 9;
 
     public static function form(Form $form): Form
     {

@@ -28,7 +28,19 @@ class ProductTagResource extends Resource
     protected static ?string $label = 'Etiqueta'; // Nombre en singular
     protected static ?string $pluralLabel = 'Etiquetas'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    // protected static ?int $navigationSort = 2;
+
+
+    protected static bool $shouldRegisterNavigation = false; // Oculta del menú
+
+    // protected static ?int $navigationSort = 5;
+
+
+    // Opcional: bloquea el acceso por URL
+    public static function canAccess(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {

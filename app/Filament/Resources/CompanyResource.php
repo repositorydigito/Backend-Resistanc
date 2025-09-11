@@ -20,14 +20,14 @@ class CompanyResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationGroup = 'Seguridad';
+    protected static ?string $navigationGroup = 'Roles y Seguridad';
 
-    protected static ?string $navigationLabel = 'Configuración de la Empresa';
+    protected static ?string $navigationLabel = 'Administración de la Empresa';
 
-    protected static ?string $label = 'Configuración de la Empresa';
-    protected static ?string $pluralLabel = 'Configuración de la Empresa';
+    protected static ?string $label = 'Administración de la Empresa';
+    protected static ?string $pluralLabel = 'Administración de la Empresa';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 29;
 
     // Solo permitir una empresa
     public static function canCreate(): bool

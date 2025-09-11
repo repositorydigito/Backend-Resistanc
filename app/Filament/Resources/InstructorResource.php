@@ -24,14 +24,14 @@ class InstructorResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-hand-raised'; // Fuerza
 
-    protected static ?string $navigationGroup = 'Entrenamiento';
+    protected static ?string $navigationGroup = 'Gestión de Clases';
 
     protected static ?string $navigationLabel = 'Instructores';
 
     protected static ?string $label = 'Instructor'; // Nombre en singular
     protected static ?string $pluralLabel = 'Instructores'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {

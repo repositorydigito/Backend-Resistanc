@@ -25,9 +25,9 @@ class FootwearRentalResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-on-square';
 
 
-    protected static ?string $navigationGroup = 'Calzados'; // Nombre del grupo de navegación
+    protected static ?string $navigationGroup = 'Gestión de Calzados'; // Nombre del grupo de navegación
 
-    protected static ?string $navigationLabel = 'Préstamos de calzados'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Préstamo de calzados'; // Nombre del grupo de navegación
 
     protected static ?string $label = 'Préstamo de calzado'; // Nombre en singular
     protected static ?string $pluralLabel = 'Préstamos de calzado'; // Nombre en plural

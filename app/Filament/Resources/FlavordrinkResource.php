@@ -18,14 +18,14 @@ class FlavordrinkResource extends Resource
 {
     protected static ?string $model = Flavordrink::class;
 
-    protected static ?string $navigationGroup = 'Bebidas';
+    protected static ?string $navigationGroup = 'Gestión de Shakes';
 
-    protected static ?string $navigationLabel = 'Sabor de bebidas'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Sabor de Shakes'; // Nombre del grupo de navegación
 
-    protected static ?string $label = 'Sabor de Bebida'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Sabores de Bebidas'; // Nombre en plural
+    protected static ?string $label = 'Sabor de Shakes'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Sabores de Shakes'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 11;
 
     public static function form(Form $form): Form
     {

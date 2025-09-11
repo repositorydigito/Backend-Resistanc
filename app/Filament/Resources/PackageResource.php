@@ -21,14 +21,14 @@ class PackageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Paquetes';
 
     protected static ?string $label = 'Paquete'; // Nombre en singular
     protected static ?string $pluralLabel = 'Paquetes'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 20;
 
     public static function form(Form $form): Form
     {
@@ -243,7 +243,7 @@ class PackageResource extends Resource
                                         // Si se desmarca el toggle, limpiar la membresía
                                         if (!$state) {
                                             $set('membership_id', null);
-                                            
+
                                             // Si estamos editando un registro existente, actualizar el modelo
                                             if ($record && $record->exists) {
                                                 $record->update(['membership_id' => null]);

@@ -17,11 +17,13 @@ class TowelResource extends Resource
 {
     protected static ?string $model = Towel::class;
 
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationIcon = 'heroicon-s-swatch'; // Icono de muestra de color
     protected static ?string $modelLabel = 'Toalla';
     protected static ?string $pluralModelLabel = 'Toallas';
+
+     protected static ?int $navigationSort = 25;
 
     public static function form(Form $form): Form
     {

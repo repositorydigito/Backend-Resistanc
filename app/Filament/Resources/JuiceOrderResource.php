@@ -19,14 +19,14 @@ class JuiceOrderResource extends Resource
 
     // protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Bebidas'; // Nombre del grupo de navegación
+    protected static ?string $navigationGroup = 'Gestión de Shakes'; // Nombre del grupo de navegación
 
-    protected static ?string $navigationLabel = 'Pedidos de Jugos'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Historial de pedidos'; // Nombre del grupo de navegación
 
-    protected static ?string $label = 'Pedido de Jugo'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Pedidos de Jugos'; // Nombre en plural
+    protected static ?string $label = 'Historial de pedido'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Historial de pedidos'; // Nombre en plural
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 13;
 
     public static function form(Form $form): Form
     {

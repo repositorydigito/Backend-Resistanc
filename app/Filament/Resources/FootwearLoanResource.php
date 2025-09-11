@@ -20,14 +20,14 @@ class FootwearLoanResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
 
-    protected static ?string $navigationGroup = 'Calzados'; // Nombre del grupo de navegación
+    protected static ?string $navigationGroup = 'Gestión de Calzados'; // Nombre del grupo de navegación
 
     protected static ?string $navigationLabel = 'Historial de préstamos'; // Nombre del grupo de navegación
 
     protected static ?string $label = 'Historial de préstamo'; // Nombre en singular
     protected static ?string $pluralLabel = 'Historial de préstamos'; // Nombre en plural
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 7;
 
     public static function form(Form $form): Form
     {

@@ -21,15 +21,15 @@ class OrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static ?string $navigationGroup = 'Tienda';
+    protected static ?string $navigationGroup = 'Gestión de Tienda';
 
     protected static ?string $navigationLabel = 'Pedidos'; // Nombre en el menú de navegación
-    protected static ?string $slug = 'product-orders'; // Ruta del recurso
+    // protected static ?string $slug = 'product-orders'; // Ruta del recurso
 
     protected static ?string $label = 'Pedido'; // Nombre en singular
     protected static ?string $pluralLabel = 'Pedidos'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 14;
 
     public static function form(Form $form): Form
     {

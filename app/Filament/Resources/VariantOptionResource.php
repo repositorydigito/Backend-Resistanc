@@ -20,7 +20,7 @@ class VariantOptionResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-swatch';
 
 
-    protected static ?string $navigationGroup = 'Tienda';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Variantes de Producto'; // Nombre en el menú de navegación
     protected static ?string $slug = 'product-variant-options'; // Ruta del recurso
@@ -28,7 +28,7 @@ class VariantOptionResource extends Resource
     protected static ?string $label = 'Opción de Producto'; // Nombre en singular
     protected static ?string $pluralLabel = 'Opciones de Producto'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 23;
 
 
 

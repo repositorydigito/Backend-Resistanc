@@ -17,7 +17,15 @@ class InvoiceResource extends Resource
 {
     protected static ?string $model = Invoice::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
+
+
+    // protected static ?string $navigationGroup = 'Entrenamiento';
+
+    protected static ?string $navigationLabel = 'Facturación';
+
+    protected static ?string $label = 'Facturación'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Facturaciones'; // Nombre en plural
 
     public static function form(Form $form): Form
     {
@@ -138,14 +146,14 @@ class InvoiceResource extends Resource
                     ->label('Error de envío')
                     ->limit(60)
                     ->toggleable()
-                    ->visible(fn ($record) => !empty($record->error_envio)),
+                    ->visible(fn($record) => !empty($record->error_envio)),
                 Tables\Columns\TextColumn::make('enlace_del_pdf')
                     ->label('PDF')
-                    ->url(fn ($record) => $record->enlace_del_pdf, true)
+                    ->url(fn($record) => $record->enlace_del_pdf, true)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
-                    ->visible(fn ($record) => !empty($record->enlace_del_pdf)),
+                    ->visible(fn($record) => !empty($record->enlace_del_pdf)),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime()

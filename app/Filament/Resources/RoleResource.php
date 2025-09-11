@@ -181,7 +181,7 @@ class RoleResource extends Resource implements HasShieldPermissions
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Seguridad';
+        return 'Roles y Seguridad';
     }
 
     public static function getNavigationLabel(): string
@@ -196,7 +196,8 @@ class RoleResource extends Resource implements HasShieldPermissions
 
     public static function getNavigationSort(): ?int
     {
-        return Utils::getResourceNavigationSort();
+        // return Utils::getResourceNavigationSort();
+        return 27;
     }
 
     public static function getSubNavigationPosition(): SubNavigationPosition

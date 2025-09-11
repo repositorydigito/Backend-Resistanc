@@ -21,14 +21,14 @@ class UserResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
-    protected static ?string $navigationGroup = 'Seguridad';
+    protected static ?string $navigationGroup = 'Roles y Seguridad';
 
     protected static ?string $navigationLabel = 'Usuarios';
 
     protected static ?string $label = 'Usuario'; // Nombre en singular
     protected static ?string $pluralLabel = 'Usuarios'; // Nombre en plural
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 28;
 
     public static function form(Form $form): Form
     {

@@ -21,14 +21,14 @@ class ClassModelResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static ?string $navigationGroup = 'Entrenamiento';
+    protected static ?string $navigationGroup = 'Gestión de Clases';
 
     protected static ?string $navigationLabel = 'Clases';
 
     protected static ?string $label = 'Clase'; // Nombre en singular
     protected static ?string $pluralLabel = 'Clases'; // Nombre en plural
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

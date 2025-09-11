@@ -21,12 +21,12 @@ class ProductResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';
 
-    protected static ?string $navigationGroup = 'Tienda';
+    protected static ?string $navigationGroup = 'Gestión de Tienda';
     protected static ?string $navigationLabel = 'Productos';
     protected static ?string $slug = 'productos';
     protected static ?string $label = 'Producto';
     protected static ?string $pluralLabel = 'Productos';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 16;
 
     public static function form(Form $form): Form
     {

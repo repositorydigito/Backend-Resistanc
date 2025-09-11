@@ -20,7 +20,7 @@ class DisciplineResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationGroup = 'Entrenamiento';
+    protected static ?string $navigationGroup = 'Gestión de Clases';
 
     protected static ?string $navigationLabel = 'Disciplinas';
 

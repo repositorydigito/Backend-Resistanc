@@ -21,15 +21,15 @@ class ProductCategoryResource extends Resource
 
 
 
-    protected static ?string $navigationGroup = 'Tienda';
+    protected static ?string $navigationGroup = 'Gestión de Tienda';
 
     protected static ?string $navigationLabel = 'Categorías'; // Nombre en el menú de navegación
-    protected static ?string $slug = 'product-categories'; // Ruta del recurso
+    // protected static ?string $slug = 'product-categories'; // Ruta del recurso
 
     protected static ?string $label = 'Categoría'; // Nombre en singular
     protected static ?string $pluralLabel = 'Categorías'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 15;
 
     public static function form(Form $form): Form
     {

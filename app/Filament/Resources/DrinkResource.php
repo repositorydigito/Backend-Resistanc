@@ -28,7 +28,16 @@ class DrinkResource extends Resource
     protected static ?string $label = 'Combinación'; // Nombre en singular
     protected static ?string $pluralLabel = 'Combinaciones'; // Nombre en plural
 
-    protected static ?int $navigationSort = 5;
+    // protected static ?int $navigationSort = 5;
+
+    protected static bool $shouldRegisterNavigation = false; // Oculta del menú
+
+    // Opcional: bloquea el acceso por URL
+    public static function canAccess(): bool
+    {
+        return false;
+    }
+
 
     public static function form(Form $form): Form
     {

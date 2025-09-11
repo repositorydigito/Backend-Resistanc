@@ -26,14 +26,14 @@ class ClassScheduleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
 
-    protected static ?string $navigationGroup = 'Entrenamiento';
+    protected static ?string $navigationGroup = 'Gestión de Clases';
 
     protected static ?string $navigationLabel = 'Horarios';
 
     protected static ?string $label = 'Horario'; // Nombre en singular
     protected static ?string $pluralLabel = 'Horarios'; // Nombre en plural
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 3;
 
 
     public static function form(Form $form): Form

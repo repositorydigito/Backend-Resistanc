@@ -25,7 +25,17 @@ class JuiceCartCodesResource extends Resource
     protected static ?string $label = 'Carrito de Jugo'; // Nombre en singular
     protected static ?string $pluralLabel = 'Carritos de Jugos'; // Nombre en plural
 
-    protected static ?int $navigationSort = 5;
+
+    protected static bool $shouldRegisterNavigation = false; // Oculta del menú
+
+    // protected static ?int $navigationSort = 5;
+
+
+    // Opcional: bloquea el acceso por URL
+    public static function canAccess(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {

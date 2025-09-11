@@ -16,8 +16,8 @@ class FootwearReservationResource extends Resource
     protected static ?string $model = FootwearReservation::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-    protected static ?string $navigationGroup = 'Calzados';
-    protected static ?string $navigationLabel = 'Reservas de calzado';
+    protected static ?string $navigationGroup = 'Gestión de Calzados';
+    protected static ?string $navigationLabel = 'Reserva de calzado';
     protected static ?string $label = 'Reserva de calzado';
     protected static ?string $pluralLabel = 'Reservas de calzado';
     protected static ?int $navigationSort = 6;

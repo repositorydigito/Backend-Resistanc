@@ -18,14 +18,14 @@ class BasedrinkResource extends Resource
 {
     protected static ?string $model = Basedrink::class;
 
-    protected static ?string $navigationGroup = 'Bebidas';
+    protected static ?string $navigationGroup = 'Gestión de Shakes';
 
-    protected static ?string $navigationLabel = 'Bebidas base'; // Nombre del grupo de navegación
+    protected static ?string $navigationLabel = 'Opciones de Bebida Base'; // Nombre del grupo de navegación
 
-    protected static ?string $label = 'Bebida base'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Bebidas base'; // Nombre en plural
+    protected static ?string $label = 'Opción de Bebida Base'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Opciones de Bebida Base'; // Nombre en plural
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 12;
 
     public static function form(Form $form): Form
     {

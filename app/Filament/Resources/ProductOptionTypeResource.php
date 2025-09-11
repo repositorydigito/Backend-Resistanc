@@ -18,7 +18,7 @@ class ProductOptionTypeResource extends Resource
 {
     protected static ?string $model = ProductOptionType::class;
 
-   protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
+    protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
 
     protected static ?string $navigationGroup = 'Tienda';
 
@@ -28,7 +28,16 @@ class ProductOptionTypeResource extends Resource
     protected static ?string $label = 'Tipo de Opción de Producto'; // Nombre en singular
     protected static ?string $pluralLabel = 'Tipos de Opción de Producto'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    // protected static ?int $navigationSort = 2;
+
+
+    protected static bool $shouldRegisterNavigation = false; // Oculta del menú
+
+    // Opcional: bloquea el acceso por URL
+    public static function canAccess(): bool
+    {
+        return false;
+    }
 
 
     public static function form(Form $form): Form
@@ -46,7 +55,7 @@ class ProductOptionTypeResource extends Resource
                             ->label('Slug')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ProductOptionType::class, 'slug', fn ($record) => $record),
+                            ->unique(ProductOptionType::class, 'slug', fn($record) => $record),
                         Forms\Components\Toggle::make('is_color')
                             ->label('Es Color')
                             ->required(),

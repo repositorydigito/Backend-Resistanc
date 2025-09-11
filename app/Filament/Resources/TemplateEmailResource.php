@@ -19,14 +19,14 @@ class TemplateEmailResource extends Resource
 
 protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Plantillas de correo';
 
     protected static ?string $label = 'Plantilla de correo'; // Nombre en singular
     protected static ?string $pluralLabel = 'Plantillas de correo'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 26;
 
 
     public static function form(Form $form): Form

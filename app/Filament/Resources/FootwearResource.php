@@ -19,14 +19,14 @@ class FootwearResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-square-3-stack-3d';
 
-    protected static ?string $navigationGroup = 'Administración'; // Nombre del grupo de navegación
+    protected static ?string $navigationGroup = 'Configuración General'; // Nombre del grupo de navegación
 
     protected static ?string $navigationLabel = 'Calzado'; // Nombre del grupo de navegación
 
     protected static ?string $label = 'Calzado'; // Nombre en singular
     protected static ?string $pluralLabel = 'Calzados'; // Nombre en plural
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 24;
 
     public static function form(Form $form): Form
     {

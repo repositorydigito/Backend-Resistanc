@@ -23,7 +23,7 @@ class TowelRentalResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-on-square';
 
-    protected static ?string $navigationGroup = 'Toallas';
+    protected static ?string $navigationGroup = 'Gestión de Toallas';
 
     protected static ?string $navigationLabel = 'Préstamos de toallas';
 
@@ -31,7 +31,7 @@ class TowelRentalResource extends Resource
 
     protected static ?string $pluralLabel = 'Préstamos de toalla';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 8;
 
     public static function form(Form $form): Form
     {

@@ -21,14 +21,14 @@ class CategoryResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-folder';
 
 
-    protected static ?string $navigationGroup = 'Articulos';
+    protected static ?string $navigationGroup = 'News';
 
     protected static ?string $navigationLabel = 'Categorías';
 
     protected static ?string $label = 'Categoría'; // Nombre en singular
     protected static ?string $pluralLabel = 'Categorías'; // Nombre en plural
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 17;
 
 
 
