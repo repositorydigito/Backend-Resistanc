@@ -140,7 +140,7 @@ class UserProfileResource extends Resource
                     ]),
 
                 // Sección 3: Información de contacto y emergencia
-                Forms\Components\Section::make('Contacto y Emergencias')
+                Forms\Components\Section::make('Contacto de Emergencias')
                     ->icon('heroicon-o-phone')
                     ->columns(2)
                     ->schema([
@@ -152,12 +152,12 @@ class UserProfileResource extends Resource
                         //     ->visibleOn('edit'),
 
                         Forms\Components\TextInput::make('emergency_contact_name')
-                            ->label('Contacto de emergencia')
+                            ->label('Nombre')
                             ->placeholder('Nombre de la persona a contactar')
                             ->maxLength(100),
 
                         Forms\Components\TextInput::make('emergency_contact_phone')
-                            ->label('Teléfono de emergencia')
+                            ->label('Teléfono')
                             ->tel()
                             ->maxLength(15),
                     ]),
@@ -166,20 +166,20 @@ class UserProfileResource extends Resource
                 Forms\Components\Section::make('Información Adicional')
                     ->icon('heroicon-o-information-circle')
                     ->schema([
-                        Forms\Components\Textarea::make('bio')
-                            ->label('Biografía')
-                            ->columnSpanFull()
-                            ->maxLength(500),
+                        // Forms\Components\Textarea::make('bio')
+                        //     ->label('Biografía')
+                        //     ->columnSpanFull()
+                        //     ->maxLength(500),
 
                         Forms\Components\Textarea::make('medical_conditions')
                             ->label('Condiciones médicas')
                             ->columnSpanFull()
                             ->maxLength(500),
 
-                        Forms\Components\Textarea::make('fitness_goals')
-                            ->label('Objetivos de fitness')
-                            ->columnSpanFull()
-                            ->maxLength(500),
+                        // Forms\Components\Textarea::make('fitness_goals')
+                        //     ->label('Objetivos de fitness')
+                        //     ->columnSpanFull()
+                        //     ->maxLength(500),
                     ]),
             ]);
     }

@@ -50,7 +50,7 @@ class PostController extends Controller
         ]);
 
         try {
-            $query = Post::query()->with(['category', 'tags']);
+            $query = Post::where('status', 'published')->with(['category', 'tags']);
 
             // Filtrar por categoría si se proporciona
             if ($request->has('category_id')) {

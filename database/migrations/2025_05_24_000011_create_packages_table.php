@@ -21,7 +21,7 @@ return new class extends Migration
             $table->unsignedInteger('classes_quantity')->comment('Cantidad de clases en el paquete');
             $table->decimal('price_soles', 8, 2)->comment('Precio del paquete en soles');
             $table->decimal('original_price_soles', 8, 2)->nullable()->comment('Precio original para mostrar descuentos');
-            $table->unsignedInteger('validity_days')->comment('Días de vigencia del paquete');
+
 
             // Configuración de facturación
             $table->enum('billing_type', ['one_time', 'monthly', 'quarterly', 'yearly'])->default('one_time')->comment('Tipo de facturación del paquete');

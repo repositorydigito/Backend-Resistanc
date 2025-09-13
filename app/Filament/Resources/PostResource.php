@@ -52,15 +52,28 @@ class PostResource extends Resource
                             ->disk('public') // Usa el filesystem configurado como 'public'
                             ->preserveFilenames()
                             ->columnSpanFull()
-                            ->nullable(),
+                            ->required(fn(callable $get) => $get('status') === 'published')
+                            ->live() // Importante: notifica cambios en tiempo real
+                        ,
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'draft' => 'Borrador',
+                                'published' => 'Publicado',
+                                'Dismissed' => 'Desestimado'
+                            ])
+                            ->default('draft')
+                            ->live() // Importante: notifica cambios en tiempo real
+                            ->required()
+
                     ]),
 
                 Section::make('Contenido')
                     ->schema([
                         Forms\Components\RichEditor::make('content')
                             ->label('Contenido')
-                            ->required()
+                            ->required(fn(callable $get) => $get('status') === 'published')
                             ->columnSpanFull()
+                            ->live() // Importante: notifica cambios en tiempo real
                             ->toolbarButtons([
                                 'bold',
                                 'italic',
@@ -76,12 +89,22 @@ class PostResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('category_id')
                             ->label('Categoría')
-                            ->required()
+                            ->required(fn(callable $get) => $get('status') === 'published')
+                            ->live() // Importante: notifica cambios en tiempo real
                             ->relationship('category', 'name'),
+
+
                         Forms\Components\Select::make('user_id')
                             ->label('Usuario')
-                            ->required()
-                            ->relationship('user', 'name'),
+                            ->required(fn() => auth()->user()?->hasRole('super_admin') || auth()->user()?->hasRole('Administrador'))
+                            ->visible(fn() => auth()->user()?->hasRole('super_admin') || auth()->user()?->hasRole('Administrador'))
+                            ->relationship('user', 'name', function ($query) {
+                                // Excluir usuarios con rol de cliente
+                                return $query->whereDoesntHave('roles', function ($q) {
+                                    $q->where('name', 'Cliente');
+                                });
+                            })
+                            ->default(fn() => auth()->id()),
                         // Forms\Components\Select::make('tags')
                         //     ->label('Etiquetas')
                         //     ->multiple()
@@ -106,20 +129,37 @@ class PostResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Usuario')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'draft' => 'warning',
+                        'published' => 'success',
+                        'Dismissed' => 'gray',
+                        default => 'gray',
+                    })->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft' => 'Borrador',
+                        'published' => 'Publicado',
+                        'Dismissed' => 'Desestimado',
+                        default => $state,
+                    }),
+
+
+
                 // Tables\Columns\TextColumn::make('tags.name')
                 //     ->label('Etiquetas')
                 //     ->badge()
                 //     ->separator(', '),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado el')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Actualizado el')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('created_at')
+                //     ->label('Creado el')
+                //     ->dateTime()
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('updated_at')
+                //     ->label('Actualizado el')
+                //     ->dateTime()
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

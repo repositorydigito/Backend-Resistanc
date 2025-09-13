@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('capacity_per_seat')->nullable()->comment('Capacidad por asiento');
 
             // Informacion de las butacas
-            $table->enum('addressing', ['right_to_left', 'left_to_right', 'center'])->comment('Dirección de la sala');
+            $table->enum('addressing', ['right_to_left', 'left_to_right', 'center'])->default('center')->comment('Dirección de la sala');
             $table->integer('row')->nullable()->comment('Fila de la sala');
             $table->integer('column')->nullable()->comment('Columna de la sala');
             // Fin Informacion de las butacas

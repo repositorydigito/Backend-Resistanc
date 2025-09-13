@@ -14,16 +14,18 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
 
-            $table->string('title');
-            $table->string('slug')->unique();
+            $table->string('title')->comment('Titulo');
+            $table->string('slug')->unique()->comment('slug');
+            $table->string('image_path')->nullable()->comment('Imagen principal');
+            $table->longText('content')->nullable()->comment('contenido del articulo');
+            $table->boolean('is_featured')->default(false)->comment('es destacado');
 
-            $table->string('image_path')->nullable();
-            $table->longText('content');
+            $table->enum('status', ['draft', 'published', 'Dismissed'])->default('draft');
 
-            $table->boolean('is_featured')->default(false);
+            $table->date('date_published')->nullable();
 
-            $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('category_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
 
             $table->timestamps();
         });

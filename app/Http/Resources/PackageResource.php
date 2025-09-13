@@ -23,7 +23,7 @@ class PackageResource extends JsonResource
             'classes_quantity' => $this->classes_quantity,
             'price_soles' => number_format($this->price_soles, 2, '.', ''), // Formato: 999.99
             'original_price_soles' => number_format($this->original_price_soles, 2, '.', ''),
-            'validity_days' => $this->validity_days,
+
             'package_type' => $this->package_type,
             'billing_type' => $this->billing_type,
             'duration_in_months' => $this->duration_in_months, // New field for duration in months

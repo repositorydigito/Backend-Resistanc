@@ -16,4 +16,14 @@ class EditPost extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Si el usuario no es administrador, mantener su ID asignado
+        if (!auth()->user()?->hasRole('super_admin') && !auth()->user()?->hasRole('Administrador')) {
+            $data['user_id'] = auth()->id();
+        }
+
+        return $data;
+    }
 }

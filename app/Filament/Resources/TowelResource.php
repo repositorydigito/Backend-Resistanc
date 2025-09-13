@@ -75,16 +75,16 @@ class TowelResource extends Resource
                             ->label('Observaciones')
                             ->columnSpanFull(),
 
-                        Forms\Components\Select::make('status')
-                            ->label('Estado')
-                            ->required()
-                            ->options([
-                                'available' => 'Disponible',
-                                'maintenance' => 'En mantenimiento',
-                                'in_use' => 'En uso',
-                                'lost' => 'Perdida',
-                            ])
-                            ->default('available'),
+                        // Forms\Components\Select::make('status')
+                        //     ->label('Estado')
+                        //     ->required()
+                        //     ->options([
+                        //         'available' => 'Disponible',
+                        //         'maintenance' => 'En mantenimiento',
+                        //         'in_use' => 'En uso',
+                        //         'lost' => 'Perdida',
+                        //     ])
+                        //     ->default('available'),
 
                         Forms\Components\FileUpload::make('image')
                             ->label('Imagen principal')

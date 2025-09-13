@@ -8,10 +8,23 @@ use Illuminate\Support\Str;
 class Post extends Model
 {
 
-    protected $fillable = ['title', 'slug', 'image_path', 'content', 'category_id', 'user_id', 'is_featured'];
+    protected $fillable = [
+
+        'title', // titulo
+        'slug',  // slug
+        'image_path', // imagen principal
+        'content', // contenido del post
+        'is_featured', // destacado
+        'status', // estado del articulo
+        'date_published', // fecha de la publicacion del post
+
+        // Relaciones
+        'category_id', // categoria a la que pertenece el post
+        'user_id', // usuario que lo publico
+    ];
 
 
-       protected static function boot()
+    protected static function boot()
     {
         parent::boot();
 
@@ -65,5 +78,4 @@ class Post extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
-
 }

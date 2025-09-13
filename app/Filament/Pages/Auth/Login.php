@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Auth;
 
+use Filament\Forms\Components\Checkbox;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -21,8 +22,12 @@ class Login extends BaseLogin
                     ->autocomplete(),
                 TextInput::make('password')
                     ->label('Contraseña')
+                    // ->placeholder('')
                     ->password()
+                    ->revealable() // Permite mostrar/ocultar la contraseña
                     ->required(),
+                Checkbox::make('remember')
+                    ->label('Recordar sesión'), // Campo para "Recordar sesión"
             ])
             ->columns(1)
             ->extraAttributes([

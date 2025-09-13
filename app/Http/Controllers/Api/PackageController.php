@@ -44,7 +44,7 @@ final class PackageController extends Controller
      *       "classes_quantity": 5,
      *       "price_soles": 250.00,
      *       "original_price_soles": 250.00,
-     *       "validity_days": 30,
+
      *       "mode_type": "presencial",
      *       "billing_type": "one_time",
      *       "type": "fixed",

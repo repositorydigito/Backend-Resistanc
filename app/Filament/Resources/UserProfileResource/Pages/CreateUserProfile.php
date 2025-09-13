@@ -13,6 +13,11 @@ class CreateUserProfile extends CreateRecord
 {
     protected static string $resource = UserProfileResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Registrar Nuevo Cliente';
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         // Extraer datos del usuario del formulario

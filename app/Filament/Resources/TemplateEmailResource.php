@@ -120,7 +120,7 @@ protected static ?string $navigationIcon = 'heroicon-o-envelope';
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Nombre')
+                    ->label('Correo')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('subject')
                     ->label('Asunto')

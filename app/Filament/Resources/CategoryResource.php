@@ -41,13 +41,13 @@ class CategoryResource extends Resource
                     ->description('Define los detalles de la categoría.')
                     ->schema([
 
-                        Forms\Components\FileUpload::make('image_path')
-                            ->label('Imagen')
-                            ->image()
-                            ->directory('categories')
-                            ->maxSize(1024) // Tamaño máximo en KB
-                            ->columnSpanFull()
-                            ->nullable(),
+                        // Forms\Components\FileUpload::make('image_path')
+                        //     ->label('Imagen')
+                        //     ->image()
+                        //     ->directory('categories')
+                        //     ->maxSize(1024) // Tamaño máximo en KB
+                        //     ->columnSpanFull()
+                        //     ->nullable(),
 
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
@@ -68,6 +68,7 @@ class CategoryResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('created_at')

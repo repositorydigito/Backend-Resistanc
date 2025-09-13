@@ -32,4 +32,15 @@ class CreateStudio extends CreateRecord
                 ->send();
         }
     }
+
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction(),
+            $this->getCreateAnotherFormAction()
+                ->visible(false),
+            $this->getCancelFormAction(),
+        ];
+    }
 }

@@ -68,27 +68,27 @@ class StudioResource extends Resource
                             ]),
 
                         // Sección 2: Capacidad y distribución
-                        Section::make('Capacidad y distribución')
+                        Section::make('Capacidad')
                             ->columns(2)
                             ->schema([
                                 Forms\Components\TextInput::make('max_capacity')
-                                    ->label('Capacidad Máxima')
+                                    ->label('Aforo total')
                                     ->required()
                                     ->numeric(),
 
                                 Forms\Components\TextInput::make('capacity_per_seat')
-                                    ->label('Capacidad por Asiento')
+                                    ->label('Espacios Disponibles')
                                     ->required()
                                     ->numeric(),
 
-                                Forms\Components\Select::make('addressing')
-                                    ->label('Direccionamiento')
-                                    ->options([
-                                        'right_to_left' => 'Derecha a Izquierda',
-                                        'left_to_right' => 'Izquierda a Derecha',
-                                        'center' => 'Centro',
-                                    ])
-                                    ->required(),
+                                // Forms\Components\Select::make('addressing')
+                                //     ->label('Direccionamiento')
+                                //     ->options([
+                                //         'right_to_left' => 'Derecha a Izquierda',
+                                //         'left_to_right' => 'Izquierda a Derecha',
+                                //         'center' => 'Centro',
+                                //     ])
+                                //     ->required(),
                             ]),
 
                         // Sección 3: Configuración de asientos
@@ -186,12 +186,12 @@ class StudioResource extends Resource
                     ->label('Ubicación')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('max_capacity')
-                    ->label('Capacidad Máxima')
+                    ->label('Aforo')
                     ->numeric()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('seats_count')
-                    ->label('Asientos')
+                    ->label('Espacios')
                     ->getStateUsing(function ($record) {
                         $seatsCount = $record->seats()->count();
                         $seatCapacity = $record->capacity_per_seat ?? 0;

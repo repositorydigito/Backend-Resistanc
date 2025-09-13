@@ -19,14 +19,14 @@ class PackageResource extends Resource
 {
     protected static ?string $model = Package::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    protected static ?string $navigationIcon = 'heroicon-o-fire';
 
     protected static ?string $navigationGroup = 'Configuración General';
 
     protected static ?string $navigationLabel = 'Paquetes';
 
-    protected static ?string $label = 'Paquete'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Paquetes'; // Nombre en plural
+    protected static ?string $label = 'Paquete de clases'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Paquetes de clases'; // Nombre en plural
 
     protected static ?int $navigationSort = 20;
 
@@ -34,9 +34,9 @@ class PackageResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Toggle::make('is_featured')
-                    ->label('Destacado')
-                    ->required(),
+                // Forms\Components\Toggle::make('is_featured')
+                //     ->label('Destacado')
+                //     ->required(),
 
                 Section::make('Información del paquete')
                     ->columns(2)
@@ -102,10 +102,7 @@ class PackageResource extends Resource
                                     ->label('Precio base')
                                     ->numeric(),
 
-                                Forms\Components\TextInput::make('validity_days')
-                                    ->label('Días válidos')
-                                    ->required()
-                                    ->numeric(),
+
 
                                 Forms\Components\TextInput::make('duration_in_months')
                                     ->label('Vigencia en meses')
@@ -133,15 +130,15 @@ class PackageResource extends Resource
                                     ->default('assignable')
                                     ->required(),
 
-                                Forms\Components\Select::make('billing_type')
-                                    ->options([
-                                        'one_time' => 'Pago único',
-                                        'monthly' => 'Mensual',
-                                        'quarterly' => 'Trimestral',
-                                        'yearly' => 'Anual',
-                                    ])
-                                    ->label('Tipo de pago')
-                                    ->required(),
+                                // Forms\Components\Select::make('billing_type')
+                                //     ->options([
+                                //         'one_time' => 'Pago único',
+                                //         'monthly' => 'Mensual',
+                                //         'quarterly' => 'Trimestral',
+                                //         'yearly' => 'Anual',
+                                //     ])
+                                //     ->label('Tipo de pago')
+                                //     ->required(),
 
                                 Forms\Components\Select::make('commercial_type')
                                     ->options([
@@ -152,15 +149,15 @@ class PackageResource extends Resource
                                     ->label('Tipo comercial')
                                     ->required(),
 
-                                Forms\Components\Select::make('target_audience')
-                                    ->label('Audiencia objetivo')
-                                    ->options([
-                                        'beginner' => 'Principiantes',
-                                        'intermediate' => 'Intermedios',
-                                        'advanced' => 'Avanzados',
-                                        'all' => 'Todos',
-                                    ])
-                                    ->required(),
+                                // Forms\Components\Select::make('target_audience')
+                                //     ->label('Audiencia objetivo')
+                                //     ->options([
+                                //         'beginner' => 'Principiantes',
+                                //         'intermediate' => 'Intermedios',
+                                //         'advanced' => 'Avanzados',
+                                //         'all' => 'Todos',
+                                //     ])
+                                //     ->required(),
                             ]),
 
                         // Sección 4: Configuración de fechas
@@ -191,6 +188,7 @@ class PackageResource extends Resource
 
                         // Sección 5: Multimedia y diseño
                         Section::make('Multimedia y diseño')
+                            ->columns(2)
                             ->schema([
                                 Forms\Components\FileUpload::make('icon_url')
                                     ->label('Icono')
@@ -202,8 +200,7 @@ class PackageResource extends Resource
                                     ->imageResizeMode('crop')
                                     ->imageResizeTargetWidth(800)
                                     ->imageResizeTargetHeight(600)
-                                    ->image()
-                                    ->columnSpanFull(),
+                                    ->image(),
 
                                 Forms\Components\ColorPicker::make('color_hex')
                                     ->label('Color')
@@ -214,7 +211,7 @@ class PackageResource extends Resource
                         // Sección 6: Descripciones
                         Section::make('Descripciones')
                             ->schema([
-                               Textarea::make('short_description')
+                                Textarea::make('short_description')
                                     ->label('Descripción corta')
                                     ->columnSpanFull()
                                     ->maxLength(255),
@@ -293,15 +290,15 @@ class PackageResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('duration_in_months')
-                    ->label('Vigencia en meses')
+                    ->label('Duración en meses')
                     ->numeric()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('buy_type')
                     ->label('Tipo de compra')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'affordable' => 'Comprable',
-                        'assignable' => 'Asignable',
+                        'affordable' => 'Compra',
+                        'assignable' => 'Asignación',
                         default => ucfirst($state),
                     })
                     ->badge()
@@ -356,23 +353,33 @@ class PackageResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
+                // Tables\Columns\TextColumn::make('start_date')
+                //     ->label('Fecha de inicio')
+                //     ->date('M d') // Ej: "Ene 15", "Feb 28"
+                //     ->sortable(),
+                // Tables\Columns\TextColumn::make('end_date')
+                //     ->label('Fecha de fin')
+                //     ->date('M d') // Ej: "Ene 15", "Feb 28"
+                //     ->sortable(),
+
                 Tables\Columns\TextColumn::make('start_date')
-                    ->label('Fecha de inicio')
-                    ->date('M d') // Ej: "Ene 15", "Feb 28"
+                    ->label('Período de validez')
+                    ->formatStateUsing(function ($record) {
+                        $startDate = \Carbon\Carbon::parse($record->start_date)->format('M d');
+                        $endDate = \Carbon\Carbon::parse($record->end_date)->format('M d');
+                        return "{$startDate} - {$endDate}";
+                    })
                     ->sortable(),
-                Tables\Columns\TextColumn::make('end_date')
-                    ->label('Fecha de fin')
-                    ->date('M d') // Ej: "Ene 15", "Feb 28"
-                    ->sortable(),
+
 
                 Tables\Columns\TextColumn::make('original_price_soles')
                     ->label('Precio Base')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('validity_days')
-                    ->label('Días Validos')
-                    ->numeric()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('validity_days')
+                //     ->label('Días Validos')
+                //     ->numeric()
+                //     ->sortable(),
                 // Tables\Columns\TextColumn::make('package_type')
                 //     ->label('Tipo de paquete'), // Permite renderizar HTML
                 // Tables\Columns\TextColumn::make('billing_type'),

@@ -29,7 +29,6 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 1,
                 'price_soles' => 0.00,
                 'original_price_soles' => 35.00,
-                'validity_days' => 30,
                 'buy_type' => 'assignable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -62,7 +61,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 1,
                 'price_soles' => 35.00,
                 'original_price_soles' => 35.00,
-                'validity_days' => 30,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -95,7 +94,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 5,
                 'price_soles' => 250.00,
                 'original_price_soles' => 250.00,
-                'validity_days' => 30,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -127,7 +126,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 12,
                 'price_soles' => 450.00,
                 'original_price_soles' => 450.00,
-                'validity_days' => 60,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -159,7 +158,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 24,
                 'price_soles' => 850.00,
                 'original_price_soles' => 850.00,
-                'validity_days' => 180,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -191,7 +190,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 40,
                 'price_soles' => 1700.00,
                 'original_price_soles' => 1700.00,
-                'validity_days' => 365,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -225,7 +224,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 1,
                 'price_soles' => 0.00,
                 'original_price_soles' => 69.00,
-                'validity_days' => 30,
+
                 'buy_type' => 'assignable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -257,7 +256,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 1,
                 'price_soles' => 69.00,
                 'original_price_soles' => 69.00,
-                'validity_days' => 30,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -289,7 +288,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 4,
                 'price_soles' => 250.00,
                 'original_price_soles' => 250.00,
-                'validity_days' => 30,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -321,7 +320,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 8,
                 'price_soles' => 450.00,
                 'original_price_soles' => 450.00,
-                'validity_days' => 60,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -353,7 +352,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 12,
                 'price_soles' => 540.00,
                 'original_price_soles' => 540.00,
-                'validity_days' => 60,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -385,7 +384,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 20,
                 'price_soles' => 950.00,
                 'original_price_soles' => 950.00,
-                'validity_days' => 180,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -417,7 +416,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 40,
                 'price_soles' => 1800.00,
                 'original_price_soles' => 1800.00,
-                'validity_days' => 365,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -450,7 +449,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 8,
                 'price_soles' => 320.00,
                 'original_price_soles' => 400.00,
-                'validity_days' => 45,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -482,7 +481,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 6,
                 'price_soles' => 450.00,
                 'original_price_soles' => 550.00,
-                'validity_days' => 45,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -516,7 +515,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 10,
                 'price_soles' => 380.00,
                 'original_price_soles' => 500.00,
-                'validity_days' => 60,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -550,7 +549,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 12,
                 'price_soles' => 420.00,
                 'original_price_soles' => 520.00,
-                'validity_days' => 90,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -584,7 +583,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 15,
                 'price_soles' => 480.00,
                 'original_price_soles' => 650.00,
-                'validity_days' => 75,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -618,7 +617,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 8,
                 'price_soles' => 300.00,
                 'original_price_soles' => 380.00,
-                'validity_days' => 40,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -652,7 +651,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 20,
                 'price_soles' => 600.00,
                 'original_price_soles' => 1000.00,
-                'validity_days' => 120,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'mixto',
                 'billing_type' => 'one_time',
@@ -686,7 +685,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 16,
                 'price_soles' => 480.00,
                 'original_price_soles' => 720.00,
-                'validity_days' => 90,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -720,7 +719,7 @@ class PackageSeeder extends Seeder
             //     'classes_quantity' => 18,
             //     'price_soles' => 540.00,
             //     'original_price_soles' => 810.00,
-            //     'validity_days' => 100,
+
             //     'buy_type' => 'affordable',
             //     'mode_type' => 'presencial',
             //     'billing_type' => 'one_time',
@@ -752,7 +751,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 50,
                 'price_soles' => 1200.00,
                 'original_price_soles' => 2000.00,
-                'validity_days' => 365,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'mixto',
                 'billing_type' => 'one_time',
@@ -786,7 +785,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 25,
                 'price_soles' => 750.00,
                 'original_price_soles' => 1100.00,
-                'validity_days' => 150,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'virtual',
                 'billing_type' => 'one_time',
@@ -820,7 +819,7 @@ class PackageSeeder extends Seeder
             //     'classes_quantity' => 22,
             //     'price_soles' => 660.00,
             //     'original_price_soles' => 990.00,
-            //     'validity_days' => 120,
+
             //     'buy_type' => 'affordable',
             //     'mode_type' => 'presencial',
             //     'billing_type' => 'one_time',
@@ -852,7 +851,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 10,
                 'price_soles' => 350.00,
                 'original_price_soles' => 450.00,
-                'validity_days' => 60,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
@@ -886,7 +885,7 @@ class PackageSeeder extends Seeder
                 'classes_quantity' => 30,
                 'price_soles' => 900.00,
                 'original_price_soles' => 1200.00,
-                'validity_days' => 90,
+
                 'buy_type' => 'affordable',
                 'mode_type' => 'presencial',
                 'billing_type' => 'one_time',
