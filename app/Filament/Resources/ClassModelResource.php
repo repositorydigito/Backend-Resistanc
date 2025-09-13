@@ -42,7 +42,7 @@ class ClassModelResource extends Resource
                     ->columns(2)
                     ->schema([
 
-                       Forms\Components\FileUpload::make('img_url')
+                        Forms\Components\FileUpload::make('img_url')
                             ->label('Imagen')
                             ->disk('public')
                             ->directory('clases')
@@ -55,16 +55,18 @@ class ClassModelResource extends Resource
                             ->image()
                             ->columnSpanFull(),
 
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->maxLength(255),
                         Forms\Components\Select::make('discipline_id')
                             ->searchable()
                             ->preload()
                             ->label('Disciplina')
                             ->relationship('discipline', 'name')
                             ->required(),
+
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required()
+                            ->maxLength(255),
+
 
                         // Forms\Components\Select::make('instructor_id')
                         //     ->searchable()
@@ -109,20 +111,20 @@ class ClassModelResource extends Resource
                                 'grabada' => 'Grabada',
                             ])
                             ->required(),
-                        Forms\Components\TextInput::make('duration_minutes')
-                            ->label('Duración (minutos)')
-                            ->required()
-                            ->numeric(),
+                        // Forms\Components\TextInput::make('duration_minutes')
+                        //     ->label('Duración (minutos)')
+                        //     ->required()
+                        //     ->numeric(),
 
-                        Forms\Components\Select::make('difficulty_level')
-                            ->label('Nivel de Dificultad')
-                            ->options([
-                                'beginner' => 'Principiante',
-                                'intermediate' => 'Intermedio',
-                                'advanced' => 'Avanzado',
-                                'all_levels' => 'Todos los Niveles',
-                            ])
-                            ->required(),
+                        // Forms\Components\Select::make('difficulty_level')
+                        //     ->label('Nivel de Dificultad')
+                        //     ->options([
+                        //         'beginner' => 'Principiante',
+                        //         'intermediate' => 'Intermedio',
+                        //         'advanced' => 'Avanzado',
+                        //         'all_levels' => 'Todos los Niveles',
+                        //     ])
+                        //     ->required(),
 
                         Forms\Components\Select::make('status')
                             ->label('Estado')
@@ -131,12 +133,12 @@ class ClassModelResource extends Resource
                                 'inactive' => 'Inactivo',
                                 'draft' => 'Borrador',
                             ]),
-                        Forms\Components\TextInput::make('music_genre')
-                            ->label('Género Musical')
-                            ->maxLength(100),
-                        Forms\Components\Textarea::make('special_requirements')
-                            ->label('Requerimientos Especiales')
-                            ->columnSpanFull(),
+                        // Forms\Components\TextInput::make('music_genre')
+                        //     ->label('Género Musical')
+                        //     ->maxLength(100),
+                        // Forms\Components\Textarea::make('special_requirements')
+                        //     ->label('Requerimientos Especiales')
+                        //     ->columnSpanFull(),
 
 
                         Forms\Components\Textarea::make('description')
@@ -154,20 +156,17 @@ class ClassModelResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Nombre')
-                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('discipline.name')
                     ->label('Disciplina')
                     ->numeric()
                     ->sortable(),
-                // Tables\Columns\TextColumn::make('instructor.name')
-                //     ->numeric()
-                //     ->sortable(),
 
-                // Tables\Columns\TextColumn::make('studio.name')
-                //     ->numeric()
-                //     ->sortable(),
+
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
+                    ->searchable(),
+
 
                 Tables\Columns\TextColumn::make('type')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
@@ -184,31 +183,31 @@ class ClassModelResource extends Resource
                         default => 'gray',
                     })
                     ->label('Modalidad'),
-                Tables\Columns\TextColumn::make('duration_minutes')
-                    ->label('Duración (minutos)')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('max_capacity')
-                    ->label('Capacidad Máxima')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('difficulty_level')
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'beginner' => 'Principiante',
-                        'intermediate' => 'Intermedio',
-                        'advanced' => 'Avanzado',
-                        'all_levels' => 'Todos los Niveles',
-                        default => ucfirst($state),
-                    })
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'beginner' => 'success',
-                        'intermediate' => 'warning',
-                        'advanced' => 'danger',
-                        'all_levels' => 'primary',
-                        default => 'gray',
-                    })
-                    ->label('Nivel de Dificultad'),
+                // Tables\Columns\TextColumn::make('duration_minutes')
+                //     ->label('Duración (minutos)')
+                //     ->numeric()
+                //     ->sortable(),
+                // Tables\Columns\TextColumn::make('max_capacity')
+                //     ->label('Capacidad Máxima')
+                //     ->numeric()
+                //     ->sortable(),
+                // Tables\Columns\TextColumn::make('difficulty_level')
+                //     ->formatStateUsing(fn(string $state): string => match ($state) {
+                //         'beginner' => 'Principiante',
+                //         'intermediate' => 'Intermedio',
+                //         'advanced' => 'Avanzado',
+                //         'all_levels' => 'Todos los Niveles',
+                //         default => ucfirst($state),
+                //     })
+                //     ->badge()
+                //     ->color(fn(string $state): string => match ($state) {
+                //         'beginner' => 'success',
+                //         'intermediate' => 'warning',
+                //         'advanced' => 'danger',
+                //         'all_levels' => 'primary',
+                //         default => 'gray',
+                //     })
+                //     ->label('Nivel de Dificultad'),
                 // Tables\Columns\TextColumn::make('music_genre')
                 //     ->label('Género Musical')
                 //     ->searchable(),

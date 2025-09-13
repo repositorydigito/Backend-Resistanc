@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->string('name')->comment('Nombre de la clase');
             $table->enum('type', ['presencial', 'en_vivo', 'grabada'])->default('presencial')->comment('Tipo de clase');
-            $table->unsignedTinyInteger('duration_minutes')->comment('Duración de la clase en minutos');
+            $table->unsignedTinyInteger('duration_minutes')->nullable()->comment('Duración de la clase en minutos');
             $table->unsignedTinyInteger('max_capacity')->comment('Capacidad máxima de la clase');
             $table->text('description')->nullable()->comment('Descripción de la clase');
             $table->enum('difficulty_level', ['beginner', 'intermediate', 'advanced', 'all_levels'])->default('all_levels')->comment('Nivel de dificultad');

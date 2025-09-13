@@ -171,7 +171,7 @@ class ListClassSchedules extends ListRecords
                 ->color('gray'),
 
 
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()->label('Nuevo Horario'),
         ];
     }
 }

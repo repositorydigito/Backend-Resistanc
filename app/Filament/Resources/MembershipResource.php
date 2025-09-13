@@ -182,7 +182,7 @@ class MembershipResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('classes_before')
-                    ->label('Días de reserva anticipada')
+                    ->label('Reserva anticipada (dias)')
                     ->numeric()
                     ->sortable(),
 

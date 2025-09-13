@@ -17,7 +17,7 @@ class TemplateEmailResource extends Resource
 {
     protected static ?string $model = TemplateEmail::class;
 
-protected static ?string $navigationIcon = 'heroicon-o-envelope';
+    protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
     protected static ?string $navigationGroup = 'Configuración General';
 
@@ -37,9 +37,9 @@ protected static ?string $navigationIcon = 'heroicon-o-envelope';
                     ->description('Configura los detalles principales de la plantilla de correo.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Nombre de la plantilla')
+                            ->label('Correo')
                             ->required()
-                            ->disabled(fn (string $context): bool => $context === 'edit')
+                            ->disabled(fn(string $context): bool => $context === 'edit')
                             ->maxLength(255),
                         Forms\Components\TextInput::make('subject')
                             ->label('Asunto del correo')
@@ -51,7 +51,7 @@ protected static ?string $navigationIcon = 'heroicon-o-envelope';
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Contenido del correo')
+                Forms\Components\Section::make('Contenido del Mensaje')
                     ->description('Define el cuerpo del correo.')
                     ->schema([
                         Forms\Components\RichEditor::make('body')
@@ -76,21 +76,22 @@ protected static ?string $navigationIcon = 'heroicon-o-envelope';
                             ]),
                     ]),
 
-                Forms\Components\Section::make('Adjuntos y metadatos')
-                    ->description('Configura archivos adjuntos y metadatos adicionales.')
+                Forms\Components\Section::make('Imágenes a mostrar')
+                    ->description('Imagenes de los correos')
                     ->schema([
                         Forms\Components\Repeater::make('attachments')
                             ->label('Archivos adjuntos con orden')
                             ->schema([
                                 Forms\Components\FileUpload::make('file')
-                                    ->label('Archivo')
+                                    ->label('Imagen')
                                     ->directory('attachments')
                                     ->openable()
                                     ->downloadable()
+                                    ->helperText('Tamaño recomendado: 600-800 píxeles de ancho, menos de 1 MB. Formatos: JPG, PNG.')
                                     ->previewable()
                                     ->required(),
                                 Forms\Components\TextInput::make('order')
-                                    ->label('Orden')
+                                    ->label('Orden de aparición')
                                     ->numeric()
                                     ->default(1)
                                     ->minValue(1)
@@ -101,15 +102,8 @@ protected static ?string $navigationIcon = 'heroicon-o-envelope';
                             ->addActionLabel('Agregar archivo')
                             ->reorderable()
                             ->collapsible()
-                            ->itemLabel(fn (array $state): string => 'Archivo ' . ($state['order'] ?? 'sin orden'))
+                            ->itemLabel(fn(array $state): string => 'Archivo ' . ($state['order'] ?? 'sin orden'))
                             ->columnSpanFull(),
-                        // Forms\Components\KeyValue::make('metadata')
-                        //     ->label('Metadatos')
-                        //     ->columnSpanFull(),
-                        // Forms\Components\Toggle::make('is_active')
-                        //     ->label('¿Plantilla activa?')
-                        //     ->required()
-                        //     ->default(true),
                     ]),
             ]);
     }

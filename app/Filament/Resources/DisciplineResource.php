@@ -86,20 +86,20 @@ class DisciplineResource extends Resource
                                     ->required()
                                     ->maxLength(100),
 
-                                Forms\Components\Select::make('difficulty_level')
-                                    ->label('Nivel de dificultad')
-                                    ->options([
-                                        'beginner' => 'Principiante',
-                                        'intermediate' => 'Intermedio',
-                                        'advanced' => 'Avanzado',
-                                        'all_levels' => 'Todos los niveles',
-                                    ])
-                                    ->required(),
+                                // Forms\Components\Select::make('difficulty_level')
+                                //     ->label('Nivel de dificultad')
+                                //     ->options([
+                                //         'beginner' => 'Principiante',
+                                //         'intermediate' => 'Intermedio',
+                                //         'advanced' => 'Avanzado',
+                                //         'all_levels' => 'Todos los niveles',
+                                //     ])
+                                //     ->required(),
 
-                                Forms\Components\TextInput::make('calories_per_hour_avg')
-                                    ->label('Calorías por hora (promedio)')
-                                    ->numeric()
-                                    ->suffix('cal/h'),
+                                // Forms\Components\TextInput::make('calories_per_hour_avg')
+                                //     ->label('Calorías por hora (promedio)')
+                                //     ->numeric()
+                                //     ->suffix('cal/h'),
                             ]),
 
                         // Sección 3: Descripción y equipamiento
@@ -139,29 +139,29 @@ class DisciplineResource extends Resource
                 Tables\Columns\ColorColumn::make('color_hex')
                     ->label('Color'),
 
-                Tables\Columns\TextColumn::make('difficulty_level')
-                    ->label('Dificultad')
-                    ->formatStateUsing(fn($state) => match ($state) {
-                        'beginner' => 'Principiante',
-                        'intermediate' => 'Intermedio',
-                        'advanced' => 'Avanzado',
-                        'all_levels' => 'Todos',
-                        default => $state
-                    })
-                    ->badge()
-                    ->color(fn($state) => match ($state) {
-                        'beginner' => 'success',
-                        'intermediate' => 'primary',
-                        'advanced' => 'danger',
-                        'all_levels' => 'gray',
-                        default => 'secondary'
-                    }),
+                // Tables\Columns\TextColumn::make('difficulty_level')
+                //     ->label('Dificultad')
+                //     ->formatStateUsing(fn($state) => match ($state) {
+                //         'beginner' => 'Principiante',
+                //         'intermediate' => 'Intermedio',
+                //         'advanced' => 'Avanzado',
+                //         'all_levels' => 'Todos',
+                //         default => $state
+                //     })
+                //     ->badge()
+                //     ->color(fn($state) => match ($state) {
+                //         'beginner' => 'success',
+                //         'intermediate' => 'primary',
+                //         'advanced' => 'danger',
+                //         'all_levels' => 'gray',
+                //         default => 'secondary'
+                //     }),
 
-                Tables\Columns\TextColumn::make('calories_per_hour_avg')
-                    ->label('Calorías/h')
-                    ->numeric()
-                    ->sortable()
-                    ->suffix(' cal'),
+                // Tables\Columns\TextColumn::make('calories_per_hour_avg')
+                //     ->label('Calorías/h')
+                //     ->numeric()
+                //     ->sortable()
+                //     ->suffix(' cal'),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Activa')

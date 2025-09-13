@@ -264,8 +264,8 @@ class ClassScheduleResource extends Resource
                         //     ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
 
 
-                        Forms\Components\TextInput::make('theme')
-                            ->label('Tema'), // Ocupa todo el ancho
+                        // Forms\Components\TextInput::make('theme')
+                        //     ->label('Tema'), // Ocupa todo el ancho
 
                         Forms\Components\TextInput::make('waitlist_spots')
                             ->label('Lista de Espera')
