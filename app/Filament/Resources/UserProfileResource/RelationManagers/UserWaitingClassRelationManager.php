@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\UserResource\RelationManagers;
+namespace App\Filament\Resources\UserProfileResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;

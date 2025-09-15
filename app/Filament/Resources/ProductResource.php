@@ -64,6 +64,7 @@ class ProductResource extends Resource
                             ->relationship('productBrand', 'name')
                             ->nullable()
                             ->searchable()
+                            ->required()
                             ->preload(),
 
                         Forms\Components\TextInput::make('sku')

@@ -167,6 +167,7 @@ class PackageResource extends Resource
                                 Forms\Components\Select::make('type')
                                     ->live()
                                     ->options([
+                                        'free_trial' => 'Prueba Gratis',
                                         'fixed' => 'Fijo',
                                         'temporary' => 'Temporal',
                                     ])
@@ -341,12 +342,14 @@ class PackageResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo de paquete')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'free_trial' => 'Prueba Gratis',
                         'fixed' => 'Fijo',
                         'temporary' => 'Temporal',
                         default => ucfirst($state),
                     })
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
+                        'free_trial' => 'danger',
                         'fixed' => 'success',
                         'temporary' => 'warning',
                         default => 'gray',
@@ -441,6 +444,7 @@ class PackageResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Tipo de paquete')
                     ->options([
+                        'free_trial' => 'Prueba gratis',
                         'fixed' => 'Fijo',
                         'temporary' => 'Temporal',
                     ]),

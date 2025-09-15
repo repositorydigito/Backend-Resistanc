@@ -17,37 +17,6 @@ class FootwearController extends Controller
 {
     /**
      * Crear una reserva de calzado asociada a una clase
-     *
-     * Crea una reserva de calzado para un usuario cliente, asociada a un horario de clase.
-     * La fecha y hora de la reserva se toman del horario de clase.
-     *
-     * @summary Reservar calzado para clase
-     * @operationId reserveFootwear
-     *
-     * @bodyParam class_schedules_id integer required ID del horario de clase. Example: 1
-     * @bodyParam footwear_id integer required ID del calzado a reservar. Example: 5
-     * @bodyParam user_client_id integer required ID del usuario cliente que reserva. Example: 7
-     *
-     * @response 201 {
-     *   "success": true,
-     *   "reservation": {
-     *     "id": 1,
-     *     "reservation_date": "2024-07-22T10:00:00.000Z",
-     *     "scheduled_date": "2024-07-23T18:00:00.000Z",
-     *     "expiration_date": "2024-07-23T19:00:00.000Z",
-     *     "status": "pending",
-     *     "class_schedules_id": 1,
-     *     "footwear_id": 5,
-     *     "user_client_id": 7,
-     *     "user_id": 2,
-     *     "created_at": "2024-07-22T10:00:00.000Z",
-     *     "updated_at": "2024-07-22T10:00:00.000Z"
-     *   }
-     * }
-     *
-     * @response 422 {
-     *   "message": "Datos inválidos."
-     * }
      */
     public function reserve(Request $request): JsonResponse
     {

@@ -51,74 +51,6 @@ class ShoppingCartController extends Controller
     /**
      * Mostrar los productos del carrito del usuario autenticado
      *
-     * Obtiene todos los productos en el carrito actual del usuario, incluyendo información
-     * detallada de productos y variantes, así como los totales calculados.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Mostrar carrito de compras
-     * @operationId getShoppingCart
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Carrito obtenido exitosamente",
-     *   "datoAdicional": {
-     *     "cart": {
-     *       "id": 1,
-     *       "total_amount": 150.00,
-     *       "item_count": 3,
-     *       "total_items": 3,
-     *       "is_empty": false,
-     *       "status": "active"
-     *     },
-     *     "items": [
-     *       {
-     *         "id": 1,
-     *         "product_id": 1,
-     *         "product_variant_id": null,
-     *         "quantity": 2,
-     *         "unit_price": 50.00,
-     *         "total_price": 100.00,
-     *         "product": {
-     *           "id": 1,
-     *           "name": "Camiseta Resistance",
-     *           "sku": "CAM-001",
-     *           "img_url": "products/main/camisa.jpg"
-     *         },
-     *         "variant": null
-     *       },
-     *       {
-     *         "id": 2,
-     *         "product_id": 2,
-     *         "product_variant_id": 5,
-     *         "quantity": 1,
-     *         "unit_price": 50.00,
-     *         "total_price": 50.00,
-     *         "product": {
-     *           "id": 2,
-     *           "name": "Pantalón Deportivo",
-     *           "sku": "PAN-001",
-     *           "img_url": "products/main/pantalon.jpg"
-     *         },
-     *         "variant": {
-     *           "id": 5,
-     *           "name": "Talla M - Azul",
-     *           "sku": "PAN-001-M-AZUL"
-     *         }
-     *       }
-     *     ]
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Error al mostrar los productos del carrito",
-     *   "datoAdicional": "Usuario no autenticado"
-     * }
      */
     public function show(Request $request)
     {
@@ -182,51 +114,6 @@ class ShoppingCartController extends Controller
 
     /**
      * Agregar producto al carrito del usuario
-     *
-     * Agrega un producto específico al carrito del usuario autenticado. Si el producto
-     * ya existe en el carrito, se incrementa la cantidad. Se valida el stock disponible
-     * antes de agregar el producto.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Agregar producto al carrito
-     * @operationId addToCart
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam product_id integer required ID del producto a agregar. Example: 1
-     * @bodyParam quantity integer required Cantidad del producto (mínimo 1). Example: 2
-     * @bodyParam product_variant_id integer nullable ID de la variante del producto (opcional). Example: 5
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Producto agregado al carrito exitosamente",
-     *   "datoAdicional": {
-     *     "cart_item": {
-     *       "id": 1,
-     *       "quantity": 2,
-     *       "unit_price": 50.00,
-     *       "total_price": 100.00
-     *     },
-     *     "cart_total": 177.00,
-     *     "cart_items_count": 3
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Error al agregar el producto al carrito",
-     *   "datoAdicional": "Stock insuficiente para este producto"
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Error al agregar el producto al carrito",
-     *   "datoAdicional": "La variante no pertenece al producto especificado"
-     * }
      */
     public function add(Request $request)
     {
@@ -251,16 +138,6 @@ class ShoppingCartController extends Controller
                 }
             }
 
-            // Verificar stock si el producto no requiere variantes
-            // if (!$product->requires_variants) {
-            //     if ($product->stock_quantity < $request->quantity) {
-            //         throw new Error('Stock insuficiente para este producto');
-            //     }
-            // } else if ($variant) {
-            //     if ($variant->stock_quantity < $request->quantity) {
-            //         throw new Error('Stock insuficiente para esta variante');
-            //     }
-            // }
 
             // Agregar item al carrito
             $cartItem = $cart->addItem($product, $request->quantity, $variant);
@@ -293,36 +170,6 @@ class ShoppingCartController extends Controller
 
     /**
      * Eliminar producto específico del carrito
-     *
-     * Elimina un producto específico del carrito del usuario autenticado.
-     * Solo se puede eliminar productos que pertenezcan al carrito del usuario.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Eliminar producto del carrito
-     * @operationId removeFromCart
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam cart_item_id integer required ID del item del carrito a eliminar. Example: 1
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Producto eliminado del carrito exitosamente",
-     *   "datoAdicional": {
-     *     "cart_total": 77.00,
-     *     "cart_items_count": 2,
-     *     "is_empty": false
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Error al eliminar el producto del carrito",
-     *   "datoAdicional": "El item no pertenece a tu carrito"
-     * }
      */
     public function remove(Request $request)
     {
@@ -366,40 +213,6 @@ class ShoppingCartController extends Controller
 
     /**
      * Actualizar cantidad de un producto en el carrito
-     *
-     * Actualiza la cantidad de un producto específico en el carrito del usuario.
-     * Se valida el stock disponible antes de actualizar la cantidad.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Actualizar cantidad de producto
-     * @operationId updateCartQuantity
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam cart_item_id integer required ID del item del carrito a actualizar. Example: 1
-     * @bodyParam quantity integer required Nueva cantidad del producto (mínimo 1). Example: 3
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Cantidad actualizada exitosamente",
-     *   "datoAdicional": {
-     *     "cart_item": {
-     *       "id": 1,
-     *       "quantity": 3,
-     *       "total_price": 150.00
-     *     },
-     *     "cart_total": 227.00
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Error al actualizar la cantidad",
-     *   "datoAdicional": "Stock insuficiente para este producto"
-     * }
      */
     public function updateQuantity(Request $request)
     {
@@ -465,27 +278,6 @@ class ShoppingCartController extends Controller
 
     /**
      * Limpiar todo el carrito del usuario
-     *
-     * Elimina todos los productos del carrito del usuario autenticado,
-     * dejando el carrito completamente vacío.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Limpiar carrito completo
-     * @operationId clearCart
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Carrito limpiado exitosamente",
-     *   "datoAdicional": {
-     *     "cart_total": 0.00,
-     *     "cart_items_count": 0,
-     *     "is_empty": true
-     *   }
-     * }
      */
     public function clear(Request $request)
     {
@@ -518,42 +310,6 @@ class ShoppingCartController extends Controller
 
     /**
      * Confirmar carrito y crear orden
-     *
-     * Confirma el carrito actual del usuario, crea una nueva orden con todos los productos
-     * y genera automáticamente un nuevo carrito vacío para futuras compras.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Confirmar compra y crear orden
-     * @operationId confirmCart
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Orden creada exitosamente",
-     *   "datoAdicional": {
-     *     "order": {
-     *       "id": 1,
-     *       "order_number": "RST-2025-000001",
-     *       "total_amount": 177.00,
-     *       "status": "pending"
-     *     },
-     *     "new_cart": {
-     *       "id": 2,
-     *       "is_empty": true,
-     *       "total_items": 0
-     *     }
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Error al confirmar el carrito",
-     *   "datoAdicional": "No puedes confirmar un carrito vacío"
-     * }
      */
     public function confirm(Request $request)
     {

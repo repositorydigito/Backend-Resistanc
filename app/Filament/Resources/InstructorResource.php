@@ -115,9 +115,7 @@ class InstructorResource extends Resource
                                     ->label('Correo Electrónico')
                                     ->email()
                                     ->required()
-                                    ->maxLength(255)
-                                    ->disabled()
-                                    ->helperText('El email se gestiona desde la sección de usuario'),
+                                    ->maxLength(255),
 
                                 Forms\Components\TextInput::make('phone')
                                     ->label('Teléfono')

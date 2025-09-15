@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\UserResource\RelationManagers;
+namespace App\Filament\Resources\UserProfileResource\RelationManagers;
 
 use App\Models\UserPaymentMethod;
 use Filament\Forms;
@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class UserPaymentMethodRelationManager extends RelationManager
 {
-    protected static string $relationship = 'paymentMethods'; // ✅ Relación directa
+    protected static string $relationship = 'userPaymentMethods';
 
 
 
@@ -139,15 +139,15 @@ class UserPaymentMethodRelationManager extends RelationManager
                     ->default(),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                // Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Tables\Actions\EditAction::make(),
+                // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

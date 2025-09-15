@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\UserResource\RelationManagers;
+namespace App\Filament\Resources\UserProfileResource\RelationManagers;
 
 use App\Models\ClassSchedule;
 use App\Models\Drink;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DrinkUserRelationManager extends RelationManager
 {
-    protected static string $relationship = 'drinks'; // ✅ Coincide con la relación en User
+    protected static string $relationship = 'drinkUsers';
 
     protected static ?string $title = 'Bebidas del Usuario';
     protected static ?string $modelLabel = 'Bebida';
@@ -150,52 +150,52 @@ class DrinkUserRelationManager extends RelationManager
                     }),
             ])
             ->headerActions([
-                Tables\Actions\AttachAction::make()
-                    ->label('Añadir Bebida')
-                    ->preloadRecordSelect()
-                    ->form(fn(Tables\Actions\AttachAction $action): array => [
-                        $action->getRecordSelect()
-                            ->label('Bebida')
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->optionsLimit(50),
+                // Tables\Actions\AttachAction::make()
+                //     ->label('Añadir Bebida')
+                //     ->preloadRecordSelect()
+                //     ->form(fn(Tables\Actions\AttachAction $action): array => [
+                //         $action->getRecordSelect()
+                //             ->label('Bebida')
+                //             ->searchable()
+                //             ->preload()
+                //             ->required()
+                //             ->optionsLimit(50),
 
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('Cantidad')
-                            ->required()
-                            ->numeric()
-                            ->default(1)
-                            ->minValue(1)
-                            ->maxValue(10)
-                            ->step(1),
+                //         Forms\Components\TextInput::make('quantity')
+                //             ->label('Cantidad')
+                //             ->required()
+                //             ->numeric()
+                //             ->default(1)
+                //             ->minValue(1)
+                //             ->maxValue(10)
+                //             ->step(1),
 
-                        Forms\Components\Select::make('classschedule_id')
-                            ->label('Clase (Opcional)')
-                            ->options(function () {
-                                $userId = $this->getOwnerRecord()->id;
+                //         Forms\Components\Select::make('classschedule_id')
+                //             ->label('Clase (Opcional)')
+                //             ->options(function () {
+                //                 $userId = $this->getOwnerRecord()->id;
 
-                                return ClassSchedule::whereHas('classScheduleSeats', function ($query) use ($userId) {
-                                    $query->where('user_id', $userId)
-                                        ->whereIn('status', ['reserved', 'occupied']);
-                                })
-                                    ->with(['class', 'studio'])
-                                    ->orderBy('scheduled_date', 'desc')
-                                    ->get()
-                                    ->mapWithKeys(function ($schedule) {
-                                        $className = $schedule->class->name ?? 'Sin nombre';
-                                        $studioName = $schedule->studio->name ?? '';
-                                        $date = $schedule->scheduled_date;
-                                        $time = $schedule->start_time;
+                //                 return ClassSchedule::whereHas('classScheduleSeats', function ($query) use ($userId) {
+                //                     $query->where('user_id', $userId)
+                //                         ->whereIn('status', ['reserved', 'occupied']);
+                //                 })
+                //                     ->with(['class', 'studio'])
+                //                     ->orderBy('scheduled_date', 'desc')
+                //                     ->get()
+                //                     ->mapWithKeys(function ($schedule) {
+                //                         $className = $schedule->class->name ?? 'Sin nombre';
+                //                         $studioName = $schedule->studio->name ?? '';
+                //                         $date = $schedule->scheduled_date;
+                //                         $time = $schedule->start_time;
 
-                                        return [$schedule->id => "{$className} - {$date} {$time} ({$studioName})"];
-                                    });
-                            })
-                            ->searchable()
-                            ->nullable()
-                            ->helperText('Solo se muestran las clases donde tienes reservas activas'),
-                    ])
-                    ->color('success'),
+                //                         return [$schedule->id => "{$className} - {$date} {$time} ({$studioName})"];
+                //                     });
+                //             })
+                //             ->searchable()
+                //             ->nullable()
+                //             ->helperText('Solo se muestran las clases donde tienes reservas activas'),
+                //     ])
+                //     ->color('success'),
             ])
             ->actions([
                 Tables\Actions\Action::make('edit_pivot')
@@ -271,44 +271,16 @@ class DrinkUserRelationManager extends RelationManager
                 //     ])
                 //     ->modalHeading(fn($record) => "Detalles de {$record->name}"),
 
-                Tables\Actions\DetachAction::make()
-                    ->label('Quitar')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Quitar bebida')
-                    ->modalDescription('¿Estás seguro de que quieres quitar esta bebida del usuario?')
-                    ->modalSubmitActionLabel('Sí, quitar'),
+                // Tables\Actions\DetachAction::make()
+                //     ->label('Quitar')
+                //     ->color('danger')
+                //     ->requiresConfirmation()
+                //     ->modalHeading('Quitar bebida')
+                //     ->modalDescription('¿Estás seguro de que quieres quitar esta bebida del usuario?')
+                //     ->modalSubmitActionLabel('Sí, quitar'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DetachBulkAction::make()
-                        ->label('Quitar seleccionados')
-                        ->color('danger')
-                        ->requiresConfirmation(),
 
-                    Tables\Actions\BulkAction::make('update_quantity')
-                        ->label('Actualizar cantidad')
-                        ->icon('heroicon-o-pencil')
-                        ->color('warning')
-                        ->form([
-                            Forms\Components\TextInput::make('new_quantity')
-                                ->label('Nueva cantidad')
-                                ->required()
-                                ->numeric()
-                                ->minValue(1)
-                                ->maxValue(10),
-                        ])
-                        ->action(function ($records, array $data) {
-                            $user = $this->getOwnerRecord();
-
-                            foreach ($records as $record) {
-                                $user->drinks()->updateExistingPivot($record->id, [
-                                    'quantity' => $data['new_quantity'],
-                                    'updated_at' => now(),
-                                ]);
-                            }
-                        }),
-                ]),
             ])
             ->defaultSort('drink_user.created_at', 'desc') // ✅ Usar el nombre completo de la tabla pivot
             ->emptyStateHeading('No hay bebidas asignadas')

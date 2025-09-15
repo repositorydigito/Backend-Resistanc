@@ -291,26 +291,26 @@ class OrderResource extends Resource
                     ->columns(2),
 
                 // Sección de Información Adicional
-                Forms\Components\Section::make('Información Adicional')
-                    ->description('Códigos promocionales y notas')
-                    ->schema([
-                        Forms\Components\TextInput::make('promocode_used')
-                            ->label('Código Promocional')
-                            ->maxLength(50)
-                            ->placeholder('Código de descuento...'),
+                // Forms\Components\Section::make('Información Adicional')
+                //     ->description('Códigos promocionales y notas')
+                //     ->schema([
+                //         Forms\Components\TextInput::make('promocode_used')
+                //             ->label('Código Promocional')
+                //             ->maxLength(50)
+                //             ->placeholder('Código de descuento...'),
 
-                        Forms\Components\TextInput::make('currency')
-                            ->label('Moneda')
-                            ->maxLength(3)
-                            ->default('PEN')
-                            ->disabled(),
+                //         Forms\Components\TextInput::make('currency')
+                //             ->label('Moneda')
+                //             ->maxLength(3)
+                //             ->default('PEN')
+                //             ->disabled(),
 
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Notas Generales')
-                            ->rows(3)
-                            ->placeholder('Notas adicionales sobre el pedido...'),
-                    ])
-                    ->columns(2),
+                //         Forms\Components\Textarea::make('notes')
+                //             ->label('Notas Generales')
+                //             ->rows(3)
+                //             ->placeholder('Notas adicionales sobre el pedido...'),
+                //     ])
+                //     ->columns(2),
             ]);
     }
 

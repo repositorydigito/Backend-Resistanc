@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PaymentResource;
 use App\Models\UserPaymentMethod;
+use DragonCode\Contracts\Cashier\Auth\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -567,5 +568,52 @@ class PaymentController extends Controller
                 'datoAdicional' => []
             ], 200);
         }
+    }
+
+
+
+     /**
+     * Obtener el metodo de pago de la compra
+     *
+     */
+
+    public function defaultPayment()
+    {
+        try {
+            // Obtener el ID del usuario autenticado
+            $user_id = auth()->id();
+
+            // Buscar el método de pago por defecto del usuario
+            $userPaymentMethod = UserPaymentMethod::where('user_id', $user_id)
+                ->where('is_default', true)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$userPaymentMethod) {
+                // Si no tiene un método de pago por defecto, sugerir agregar uno
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'No tienes un método de pago por defecto configurado',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            // Si tiene un método de pago por defecto, devolverlo
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Método de pago por defecto obtenido exitosamente',
+                'datoAdicional' => $userPaymentMethod,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Fallo al obtener el método de pago',
+                'datoAdicional' => $th->getMessage(),
+            ], 200); // Código 500 para errores del servidor
+        }
+
     }
 }

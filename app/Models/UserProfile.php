@@ -6,6 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -86,5 +88,53 @@ final class UserProfile extends Model
         }
 
         return $this->birth_date->age;
+    }
+
+    /**
+     * Get the user's packages through the user relationship.
+     */
+    public function userPackages(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserPackage::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's payment methods through the user relationship.
+     */
+    public function userPaymentMethods(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserPaymentMethod::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's class schedule seats through the user relationship.
+     */
+    public function classScheduleSeats(): HasManyThrough
+    {
+        return $this->hasManyThrough(ClassScheduleSeat::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's drink orders through the user relationship.
+     */
+    public function drinkUsers(): HasManyThrough
+    {
+        return $this->hasManyThrough(DrinkUser::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's favorites through the user relationship.
+     */
+    public function userFavorites(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserFavorite::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's waiting classes through the user relationship.
+     */
+    public function waitingClasses(): HasManyThrough
+    {
+        return $this->hasManyThrough(WaitingClass::class, User::class, 'id', 'user_id', 'user_id', 'id');
     }
 }

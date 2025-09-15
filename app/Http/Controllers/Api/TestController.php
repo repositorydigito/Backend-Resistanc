@@ -15,33 +15,31 @@ final class TestController extends Controller
 {
     /**
      * Verifica el estado de la API
-     *
-     * Endpoint de prueba para verificar que la API RSISTANC está funcionando correctamente.
-     * Retorna información básica del sistema y estadísticas de usuarios.
-     *
-     * @summary Verificar estado de la API
-     * @operationId testApiStatus
-     *
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "message": "🚀 API RSISTANC está funcionando correctamente!",
-     *   "timestamp": "2024-01-15T10:30:00.000Z",
-     *   "users_count": 140,
-     *   "version": "1.0.0",
-     *   "environment": "local",
-     *   "status": "activo"
-     * }
      */
     public function status(): JsonResponse
     {
-        return response()->json([
-            'message' => '🚀 API RSISTANC está funcionando correctamente!',
-            'timestamp' => now()->toISOString(),
-            'users_count' => User::count(),
-            'version' => config('app.version', '1.0.0'),
-            'environment' => app()->environment(),
-            'status' => 'activo',
-        ]);
+
+        try {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error en el sistema',
+                'datoAdicional' => [
+                    'message' => '🚀 API RSISTANC está funcionando correctamente!',
+                    'timestamp' => now()->toISOString(),
+                    'users_count' => User::count(),
+                    'version' => config('app.version', '1.0.0'),
+                    'environment' => app()->environment(),
+                    'status' => 'activo',
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error en el sistema',
+                'datoAdicional' => $th->getMessage()
+            ], 200);
+        }
     }
 }

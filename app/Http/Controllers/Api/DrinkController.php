@@ -28,25 +28,6 @@ final class DrinkController extends Controller
     /**
      * Lista todas las bebidas activas del sistema
      *
-     * Obtiene una lista paginada de bebidas ordenadas por nombre.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar bebidas
-     * @operationId getDrinksList
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @queryParam per_page integer Número de bebidas por página (máximo 100). Example: 15
-     * @queryParam page integer Número de página para la paginación. Example: 1
-     * @queryParam include_relations boolean Incluir relaciones (bases, sabores, tipos). Example: true
-     * @queryParam search string Buscar bebidas por nombre o descripción. Example: "café"
-     * @queryParam base_id integer Filtrar por base de bebida específica. Example: 1
-     * @queryParam flavor_id integer Filtrar por sabor específico. Example: 2
-     * @queryParam type_id integer Filtrar por tipo de bebida específico. Example: 3
-     * @queryParam min_price decimal Precio mínimo para filtrar. Example: 10.50
-     * @queryParam max_price decimal Precio máximo para filtrar. Example: 25.00
-     *
      */
     public function index(Request $request): JsonResponse
     {
@@ -82,53 +63,6 @@ final class DrinkController extends Controller
 
     /**
      * Muestra una bebida específica
-     *
-     * Obtiene los detalles completos de una bebida por su ID.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Mostrar bebida específica
-     * @operationId getDrinkById
-     *
-     * @param  int  $id
-     * @return \App\Http\Resources\DrinkResource
-     *
-     * @response 200 {
-     *   "data": {
-     *     "id": 1,
-     *     "name": "Cappuccino Vainilla",
-     *     "slug": "cappuccino-vainilla",
-     *     "description": "Delicioso cappuccino con esencia de vainilla y espuma cremosa",
-     *     "image_url": "https://example.com/images/cappuccino-vainilla.jpg",
-     *     "price": 18.50,
-     *     "bases": [
-     *       {
-     *         "id": 1,
-     *         "name": "Café Espresso",
-     *         "description": "Base de café espresso intenso"
-     *       }
-     *     ],
-     *     "flavors": [
-     *       {
-     *         "id": 3,
-     *         "name": "Vainilla",
-     *         "description": "Esencia natural de vainilla"
-     *       }
-     *     ],
-     *     "types": [
-     *       {
-     *         "id": 2,
-     *         "name": "Caliente",
-     *         "description": "Bebida servida caliente"
-     *       }
-     *     ],
-     *     "created_at": "2024-01-15T10:30:00.000Z",
-     *     "updated_at": "2024-01-15T10:30:00.000Z"
-     *   }
-     * }
-     *
-     * @response 404 {
-     *   "message": "Bebida no encontrada"
-     * }
      */
     public function show(Request $request): JsonResponse
     {
@@ -159,33 +93,6 @@ final class DrinkController extends Controller
 
     /**
      * Lista todas las bases de bebidas disponibles
-     *
-     * Obtiene un listado completo de las bases de bebidas registradas en el sistema.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar bases de bebidas
-     * @operationId getDrinkBases
-     *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @response 200 {
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "name": "Café Espresso",
-     *       "description": "Base de café espresso de alta calidad",
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     },
-     *     {
-     *       "id": 2,
-     *       "name": "Té Negro",
-     *       "description": "Base de té negro orgánico",
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     }
-     *   ]
-     * }
      */
     public function baseDrinks()
     {
@@ -220,32 +127,6 @@ final class DrinkController extends Controller
     /**
      * Lista todos los sabores de bebidas disponibles
      *
-     * Obtiene un listado completo de los sabores registrados para bebidas.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar sabores de bebidas
-     * @operationId getDrinkFlavors
-     *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @response 200 {
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "name": "Vainilla",
-     *       "description": "Esencia natural de vainilla",
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     },
-     *     {
-     *       "id": 2,
-     *       "name": "Caramelo",
-     *       "description": "Sabor a caramelo artesanal",
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     }
-     *   ]
-     * }
      */
 
     public function flavorDrinks()
@@ -280,33 +161,6 @@ final class DrinkController extends Controller
 
     /**
      * Lista todos los tipos de bebidas disponibles
-     *
-     * Obtiene un listado completo de los tipos de preparación de bebidas.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar tipos de bebidas
-     * @operationId getDrinkTypes
-     *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @response 200 {
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "name": "Fría",
-     *       "description": "Bebida servida con hielo",
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     },
-     *     {
-     *       "id": 2,
-     *       "name": "Caliente",
-     *       "description": "Bebida servida caliente",
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     }
-     *   ]
-     * }
      */
 
     public function typeDrinks()
@@ -342,11 +196,6 @@ final class DrinkController extends Controller
 
     /**
      * Añade una bebida al carrito del usuario autenticado
-     *
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Añadir bebida al carrito
-     * @operationId addToCart
 
      */
 
@@ -523,12 +372,6 @@ final class DrinkController extends Controller
 
     /**
      * Muestra el carrito del usuario autenticado
-     *
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Mostrar carrito
-     * @operationId showToCart
-
      */
 
     public function showToCart(Request $request)
@@ -573,42 +416,6 @@ final class DrinkController extends Controller
 
     /**
      * Actualiza la cantidad de una o varias bebidas en el carrito del usuario autenticado
-     *
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Actualizar cantidad de bebida(s) en el carrito
-     * @operationId updateCartQuantity
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam drink_id integer sometimes ID de la bebida en el carrito (para actualización individual). Example: 3
-     * @bodyParam quantity integer sometimes Nueva cantidad (mínimo 1, para actualización individual). Example: 2
-     * @bodyParam drinks array sometimes Array de bebidas para actualización masiva. Example: [{"drink_id": 1, "quantity": 2}, {"drink_id": 3, "quantity": 5}]
-     * @bodyParam drinks.*.drink_id integer required ID de la bebida en el carrito. Example: 1
-     * @bodyParam drinks.*.quantity integer required Nueva cantidad (mínimo 1). Example: 2
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Cantidades actualizadas exitosamente",
-     *   "datoAdicional": {
-     *     "id": 1,
-     *     "code": "NWHLD7DJ",
-     *     "drinks": [...],
-     *     "total_items": 3,
-     *     "total_price": 0,
-     *     "updated_drinks": [1, 3],
-     *     "not_found_drinks": []
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 2,
-     *   "mensajeUsuario": "La bebida no está en el carrito",
-     *   "datoAdicional": null
-     * }
      */
     public function updateCartQuantity(Request $request)
     {
@@ -750,12 +557,7 @@ final class DrinkController extends Controller
 
     /**
      * Remueve una bebida del carrito del usuario autenticado
-     *
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Remover bebida del carrito
-     * @operationId removeFromCart
-     *
+
      */
     public function removeFromCart(Request $request)
     {

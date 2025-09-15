@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\UserResource\RelationManagers;
+namespace App\Filament\Resources\UserProfileResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -25,9 +25,23 @@ class ClassScheduleSeatsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('status')
+                Forms\Components\Select::make('package_id')
+                    ->label('Paquete Free Trial')
+                    ->options(function () {
+                        // Solo mostrar paquetes free_trial activos
+                        return \App\Models\Package::where('type', 'free_trial')
+                            ->where('status', 'active')
+                            ->get()
+                            ->mapWithKeys(function ($package) {
+                                return [
+                                    $package->id => "{$package->name} ({$package->classes_quantity} clases)"
+                                ];
+                            });
+                    })
                     ->required()
-                    ->maxLength(255),
+                    ->searchable()
+                    ->preload()
+                    ->helperText('Solo se muestran paquetes de tipo Free Trial disponibles'),
             ]);
     }
 
@@ -103,23 +117,23 @@ class ClassScheduleSeatsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                // Tables\Actions\CreateAction::make(),
+
             ])
             ->actions([
                 // Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('release')
-                    ->label('Liberar')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('warning')
-                    ->action(function ($record) {
-                        $record->update([
-                            'user_id' => null,
-                            'status' => 'available',
-                            'reserved_at' => null,
-                            'expires_at' => null,
-                        ]);
-                    })
-                    ->requiresConfirmation(),
+                // Tables\Actions\Action::make('release')
+                //     ->label('Liberar')
+                //     ->icon('heroicon-o-x-circle')
+                //     ->color('warning')
+                //     ->action(function ($record) {
+                //         $record->update([
+                //             'user_id' => null,
+                //             'status' => 'available',
+                //             'reserved_at' => null,
+                //             'expires_at' => null,
+                //         ]);
+                //     })
+                //     ->requiresConfirmation(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\PostCategoryResource;
 use App\Http\Resources\PostResource;
+use App\Http\Resources\TagResource;
 use App\Models\Category;
 use App\Models\Post;
+use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
+use Dedoc\Scramble\Attributes\BodyParameter;
 
 /**
  * @tags Artículos
@@ -21,20 +23,7 @@ class PostController extends Controller
      * Lista todos los artículos del sistema
      *
      * Obtiene una lista paginada de artículos con opciones de filtrado y ordenación.
-     *
-     * @summary Listar artículos
-     * @operationId getPostsList
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @queryParam per_page integer Número de artículos por página (máximo 100). Example: 15
-     * @queryParam page integer Número de página para la paginación. Example: 1
-     * @queryParam category_id integer Filtrar artículos por categoría. Example: 1
-     * @queryParam tag_id integer Filtrar artículos por etiqueta. Example: 1
-     * @queryParam order_by string Ordenar artículos por título o fecha de creación (title, created_at). Example: title
-     * @queryParam order_direction string Dirección de la ordenación (asc, desc). Example: asc
-     * @queryParam is_destacado boolean Filtrar artículos destacados. Example: true
+
      */
     public function index(Request $request): JsonResponse
     {
@@ -104,17 +93,9 @@ class PostController extends Controller
         }
     }
     /**
-     * Lista todas las categorías de artículos
+     * Vista independiente del articulo
      *
-     * @param int $id
-     * @return JsonResponse
-     */
 
-    /**
-     * Muestra los detalles de un artículo específico
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function show(Request $request): JsonResponse
     {
@@ -146,6 +127,96 @@ class PostController extends Controller
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener el artículo',
                 'datoAdicional' => $th->getMessage()
+            ], 200);
+        }
+    }
+
+    /**
+     * Lista todas las categorías de articulos
+     *
+     */
+
+    #[BodyParameter('per_page', description: 'Número de categorías por página', type: 'integer', example: 15)]
+    #[BodyParameter('page', description: 'Número de página para la paginación', type: 'integer', example: 1)]
+
+    public function categories(Request $request): JsonResponse
+    {
+
+        // Validación de parámetros de paginación
+        $request->validate([
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        try {
+            $query = Category::query()
+                ->whereHas('posts') // Solo categorías con al menos un post
+                ->orderBy('name', 'asc');
+
+            // Paginación o lista completa
+            if ($request->has('per_page')) {
+                $categories = $query->paginate(
+                    perPage: $request->integer('per_page', 15),
+                    page: $request->integer('page', 1)
+                );
+            } else {
+                $categories = $query->get();
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Lista de categorías obtenida correctamente',
+                'datoAdicional' =>  CategoryResource::collection($categories)
+
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener las categorías',
+                'datoAdicional' => null
+            ], 200);
+        }
+    }
+
+
+    /**
+     * Lista todas las etiquetas de articulos
+     */
+    public function tags(Request $request): JsonResponse
+    {
+        // Validación de parámetros de paginación
+        $request->validate([
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        try {
+            $query = Tag::query()->orderBy('name', 'asc');
+
+            // Paginación o lista completa
+            if ($request->has('per_page')) {
+                $tags = $query->paginate(
+                    perPage: $request->integer('per_page', 15),
+                    page: $request->integer('page', 1)
+                );
+            } else {
+                $tags = $query->get();
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Lista de etiquetas obtenida correctamente',
+                'datoAdicional' => TagResource::collection($tags)
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener las etiquetas',
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }

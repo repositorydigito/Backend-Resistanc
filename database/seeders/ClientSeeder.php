@@ -93,7 +93,9 @@ class ClientSeeder extends Seeder
             'currency' => 'PEN',
             'purchase_date' => now(),
             'activation_date' => now(),
-            'expiry_date' => now()->addDays($package1->validity_days),
+            'expiry_date' => $package1->duration_in_months
+                ? now()->addMonths($package1->duration_in_months)
+                : now()->addDays($package1->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
             'status' => 'active',
         ]);
         UserPackage::create([
@@ -106,7 +108,9 @@ class ClientSeeder extends Seeder
             'currency' => 'PEN',
             'purchase_date' => now(),
             'activation_date' => now(),
-            'expiry_date' => now()->addDays($package2->validity_days),
+            'expiry_date' => $package2->duration_in_months
+                ? now()->addMonths($package2->duration_in_months)
+                : now()->addDays($package2->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
             'status' => 'active',
         ]);
         // Fin cliente paquete

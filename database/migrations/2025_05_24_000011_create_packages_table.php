@@ -38,7 +38,7 @@ return new class extends Migration
             // Tipos y segmentación
             $table->enum('status', ['active', 'inactive', 'coming_soon', 'discontinued'])->default('active')->comment('Estado del paquete');
             $table->enum('buy_type', ['affordable', 'assignable'])->default('affordable')->comment('Tipo de compra del paquete');
-            $table->enum('type', ['fixed', 'temporary'])->comment('Tipo de paquete');
+            $table->enum('type', ['free_trial','fixed', 'temporary'])->comment('Tipo de paquete');
             $table->date('start_date')->nullable()->comment('Fecha de inicio del paquete');
             $table->date('end_date')->nullable()->comment('Fecha de finalización del paquete');
             $table->enum('mode_type', ['presencial', 'virtual', 'mixto'])->default('presencial')->comment('Tipo de modalidad del paquete');

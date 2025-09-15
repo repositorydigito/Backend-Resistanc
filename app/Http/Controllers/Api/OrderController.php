@@ -21,14 +21,6 @@ class OrderController extends Controller
 {
     /**
      * Lista los pedidos del usuario autenticado
-     *
-     * Obtiene una lista paginada de los pedidos realizados por el usuario.
-     *
-     * @summary Listar mis pedidos
-     * @operationId getUserOrders
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -43,14 +35,6 @@ class OrderController extends Controller
 
     /**
      * Crea un nuevo pedido
-     *
-     * Registra un nuevo pedido para el usuario autenticado con los productos seleccionados.
-     *
-     * @summary Crear un pedido
-     * @operationId createOrder
-     *
-     * @param  \App\Http\Requests\StoreOrderRequest  $request
-     * @return \App\Http\Resources\OrderDetailResource
      */
     public function store(StoreOrderRequest $request): OrderDetailResource
     {

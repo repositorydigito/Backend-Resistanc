@@ -71,7 +71,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/reset-password', [RecoverPasswordController::class, 'resetPassword'])->name('reset-password');
 
 
-    // Protected authentication routes
+    // Auth
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/me', [AuthController::class, 'me'])->name('me');
         Route::post('/me/update', [AuthController::class, 'updateMe'])->name('me.update');
@@ -81,54 +81,44 @@ Route::prefix('auth')->name('auth.')->group(function () {
     });
 });
 
-
-// Rutas de usuario
-Route::prefix('users')->name('users.')->group(function () {
-    Route::post('/', [UserController::class, 'store'])->name('store');
-
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-
-        Route::get('/{user}', [UserController::class, 'show'])->name('show');
-        Route::put('/{user}', [UserController::class, 'update'])->name('update');
-        Route::patch('/{user}', [UserController::class, 'update'])->name('patch');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
-
-        // User relationships
-        Route::get('/{user}/profile', [UserController::class, 'profile'])->name('profile');
-        Route::get('/{user}/social-accounts', [UserController::class, 'socialAccounts'])->name('social-accounts');
-        Route::get('/{user}/login-audits', [UserController::class, 'loginAudits'])->name('login-audits');
-    });
+// Home
+Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [HomeController::class, 'index'])->name('index');
 });
-
-// Mis paquetes
-Route::prefix('me/packages')->name('my-packages.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [UserPackageController::class, 'index'])->name('index');
-    Route::post('/', [UserPackageController::class, 'store'])->name('store');
-    Route::get('/summary-by-discipline', [UserPackageController::class, 'getPackagesSummaryByDiscipline'])->name('summary-by-discipline');
-});
+// Fin home
 
 // Paquetes
 Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(function () {
-
-    Route::get('/', [PackageController::class, 'index'])->name('index');
+    Route::post('/', [PackageController::class, 'index'])->name('index');
+    Route::post('/show', [PackageController::class, 'show'])->name('show');
+    Route::post('/me', [PackageController::class, 'packageMe'])->name('me');
+    Route::post('/me/create', [PackageController::class, 'packageMeCreate'])->name('meCreate');
 });
-
 
 // Disciplinas
 Route::prefix('disciplines')->name('disciplines.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [DisciplineController::class, 'index'])->name('index');
+    Route::post('/', [DisciplineController::class, 'index'])->name('index');
 });
 // Fin disciplinas
 
 // Instructores
 Route::prefix('instructors')->name('instructors.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [InstructorController::class, 'index'])->name('index');
-    Route::get('/week', [InstructorController::class, 'instructorsWeek'])->name('week');
-    Route::get('/show/{instructor}', [InstructorController::class, 'show'])->name('show');
-    Route::post('/rate/{id}', [InstructorController::class, 'scoreInstructor'])->name('favorite');
+    Route::post('/', [InstructorController::class, 'index'])->name('index');
+    Route::post('/week', [InstructorController::class, 'instructorsWeek'])->name('week');
+    Route::post('/show', [InstructorController::class, 'show'])->name('show');
+    Route::post('/rate', [InstructorController::class, 'scoreInstructor'])->name('favorite');
+    Route::post('ten', [InstructorController::class, 'indexTen']);
 });
 // Fin instructores
+
+// Artículos
+Route::prefix('posts')->name('posts.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/list', [PostController::class, 'index'])->name('index');
+    Route::post('/show', [PostController::class, 'show'])->name('show');
+    Route::post('/category/list', [PostController::class, 'categories'])->name('categories');
+    Route::post('/tags/list', [PostController::class, 'tags'])->name('tags');
+});
+// Fin articulos
 
 // Horarios
 Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:sanctum')->group(function () {
@@ -172,72 +162,42 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
 
 
 // Tienda
-// Categorias de productos
-Route::prefix('product-categories')->name('product-categories.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [ProductCategoryController::class, 'index'])->name('index');
-});
-// Fin categorias de productos
-
-// Etiquetas de productos
-Route::prefix('product-tags')->name('product-tags.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [ProductTagController::class, 'index'])->name('index');
-});
-// Fin etiquetas de productos
-
 // Productos
 Route::prefix('products')->name('products.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [ProductController::class, 'index'])->name('index');
-    Route::get('/{id}', [ProductController::class, 'show'])->name('show');
-    // Route::post('/{product}/favorite', [ProductController::class, 'scoreProduct'])->name('favorite');
-    // Route::post('/{product}/add-to-cart', [ProductController::class, 'addToCart'])->name('add-to-cart');
+    Route::post('/', [ProductController::class, 'index'])->name('index');
+    Route::post('/show', [ProductController::class, 'show'])->name('show');
+    Route::post('/categories/list', [ProductController::class, 'categories'])->name('categories');
+    Route::post('/tags/list', [ProductController::class, 'tags'])->name('tags');
 });
 // Fin productos
-
-// Carrito de compras
 // Fin Tienda
+
+
 // Favoritos
 Route::prefix('favorites')->name('favorites.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [FavoriteController::class, 'index'])->name('index');
+    Route::post('/', [FavoriteController::class, 'index'])->name('index');
     Route::post('/drinks/add', [FavoriteController::class, 'storeDrink'])->name('favorite-drink-add');
+    Route::post('/products', [FavoriteController::class, 'products'])->name('favorite-products');
     Route::post('/products/add', [FavoriteController::class, 'storeProduct'])->name('favorite-product-add');
     Route::post('/classes/add', [FavoriteController::class, 'storeClass'])->name('favorite-class-add');
     Route::post('/instructors/add', [FavoriteController::class, 'storeInstructor'])->name('favorite-instructor-add');
 });
 // Fin Favoritos
 
-// Home
-Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('index');
-});
-// Fin home
-
-
-// Perfil
-Route::prefix('profile')->name('profile.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [UserController::class, 'profile'])->name('index');
-});
-// Fin Perfil
 
 // Tarjetas
 Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [PaymentController::class, 'index'])->name('index');
+    Route::post('/', [PaymentController::class, 'index'])->name('index');
     Route::post('/create', [PaymentController::class, 'store'])->name('store');
     Route::get('/show/{card}', [PaymentController::class, 'show'])->name('show');
     Route::put('/update/{card}', [PaymentController::class, 'update'])->name('update');
     Route::delete('/destroy/{card}', [PaymentController::class, 'destroy'])->name('destroy');
     Route::post('/select/{card}', [PaymentController::class, 'selectPayment'])->name('select');
+
+    Route::post('/default', [PaymentController::class, 'defaultPayment'])->name('default');
 });
 
 // Fin tarjetas
-
-// Instructor
-
-Route::apiResource('instructors', InstructorController::class);
-Route::get('instructors-week', [InstructorController::class, 'instructorsWeek']);
-Route::post('instructors/{instructor}/score', [InstructorController::class, 'scoreInstructor']);
-Route::get('instructors-ten', [InstructorController::class, 'indexTen']);
-
-// Fin instructor1
 
 
 // Carrito de compras
@@ -284,30 +244,8 @@ Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(
     Route::post('/generate', [InvoiceController::class, 'generarComprobante'])->name('generate');
 });
 
-Route::post('/product-variants', [ProductVariantApiController::class, 'store']);
-
 
 // Reservas de calzado
 Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(function () {
     Route::post('/reserve', [FootwearController::class, 'reserve'])->name('reserve');
 });
-
-// Articulos
-// Categorias de Productos
-Route::prefix('posts/category')->name('posts.category.')->middleware('auth:sanctum')->group(function () {
-    Route::post('/list', [CategoryController::class, 'index'])->name('index');
-});
-// Fin categorias
-
-// Etiquetas
-Route::prefix('posts/tags')->name('posts.tags.')->middleware('auth:sanctum')->group(function () {
-    Route::post('/list', [TagController::class, 'index'])->name('index');
-});
-// Fin etiquetas
-
-// Artículos
-Route::prefix('posts')->name('posts.')->middleware('auth:sanctum')->group(function () {
-    Route::post('/list', [PostController::class, 'index'])->name('index');
-    Route::post('/show', [PostController::class, 'show'])->name('show');
-});
-// Fin articulos

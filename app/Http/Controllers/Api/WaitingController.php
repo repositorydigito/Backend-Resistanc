@@ -514,7 +514,7 @@ final class WaitingController extends Controller
                     'codMensaje' => 0,
                     'mensajeUsuario' => 'El horario de clase no existe',
                     'datoAdicional' => null
-                ], 404);
+                ], 200);
             }
 
             // Buscar entradas del usuario en la lista de espera para este horario

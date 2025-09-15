@@ -21,7 +21,6 @@ final class Package extends Model
         'classes_quantity',
         'price_soles',
         'original_price_soles',
-        'validity_days',
 
         'billing_type',
         'is_virtual_access',
@@ -57,7 +56,7 @@ final class Package extends Model
         'price_soles' => 'decimal:2',
         'original_price_soles' => 'decimal:2',
         'classes_quantity' => 'integer',
-        'validity_days' => 'integer',
+
         'priority_booking_days' => 'integer',
         'features' => 'array',
         'restrictions' => 'array',
@@ -190,24 +189,7 @@ final class Package extends Model
         };
     }
 
-    /**
-     * Get the validity period in a human-readable format.
-     */
-    public function getValidityPeriodAttribute(): string
-    {
-        if ($this->validity_days <= 7) {
-            return $this->validity_days . ' días';
-        } elseif ($this->validity_days <= 31) {
-            $weeks = round($this->validity_days / 7);
-            return $weeks . ' semanas';
-        } elseif ($this->validity_days <= 365) {
-            $months = round($this->validity_days / 30);
-            return $months . ' meses';
-        } else {
-            $years = round($this->validity_days / 365);
-            return $years . ' años';
-        }
-    }
+
 
     protected static function boot()
     {
