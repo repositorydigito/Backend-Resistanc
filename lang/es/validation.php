@@ -280,4 +280,8 @@ return [
         'work'                     => 'trabajo',
         'year'                     => 'año',
     ],
+    
+    'attributes' => [
+        'class_schedule_id' => 'ID del horario de clase',
+    ],
 ];

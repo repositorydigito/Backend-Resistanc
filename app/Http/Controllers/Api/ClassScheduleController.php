@@ -27,366 +27,185 @@ final class ClassScheduleController extends Controller
     /**
      * Lista todos los horarios de clases programados
      *
-     * Obtiene una lista de horarios de clases futuras con opciones de filtrado por clase, instructor, estudio y disciplina.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar horarios de clases programados
-     * @operationId getClassSchedulesList
-     * @tags Horarios de Clases
-     *
-     * @param  \App\Http\Requests\ClassScheduleIndexRequest  $request
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @response 200 {
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "scheduled_date": "2024-06-15",
-     *       "start_time": "08:00:00",
-     *       "end_time": "09:00:00",
-     *       "status": "scheduled",
-     *       "max_capacity": 20,
-     *       "current_reservations": 15,
-     *       "available_spots": 5,
-     *       "notes": "Traer mat de yoga",
-     *       "class": {
-     *         "id": 1,
-     *         "name": "Hatha Yoga",
-     *         "duration_minutes": 60,
-     *         "difficulty_level": "beginner"
-     *       },
-     *       "instructor": {
-     *         "id": 2,
-     *         "name": "Ana López",
-     *         "profile_image": "/images/instructors/ana.jpg"
-     *       },
-     *       "studio": {
-     *         "id": 3,
-     *         "name": "Sala Yoga A",
-     *         "max_capacity": 20
-     *       },
-     *       "seats_count": 15,
-     *       "reservations_count": 15,
-     *       "created_at": "2024-01-15T10:30:00.000Z",
-     *       "updated_at": "2024-01-15T10:30:00.000Z"
-     *     }
-     *   ],
-     *   "links": {
-     *     "first": "http://localhost/api/class-schedules?page=1",
-     *     "last": "http://localhost/api/class-schedules?page=1",
-     *     "prev": null,
-     *     "next": null
-     *   },
-     *   "meta": {
-     *     "current_page": 1,
-     *     "from": 1,
-     *     "last_page": 1,
-     *     "path": "http://localhost/api/class-schedules",
-     *     "per_page": 15,
-     *     "to": 1,
-     *     "total": 1
-     *   }
-     * }
      */
-    public function index(ClassScheduleIndexRequest $request): AnonymousResourceCollection
+    public function index(ClassScheduleIndexRequest $request)
     {
-        $query = ClassSchedule::query()
-            ->where('scheduled_date', '>=', now())
-            ->where('status', 'scheduled')
-            ->with(['class', 'instructor', 'studio']);
+        try {
 
-        // Filtros opcionales
-        if ($request->filled('class_id')) {
-            $query->where('class_id', $request->integer('class_id'));
+            // Validar parámetros (si no usas ClassScheduleIndexRequest, usa Validator::make)
+            $validated = $request->validated(); // Esto funciona si ya tienes el Form Request configurado
+
+            $query = ClassSchedule::query()
+                ->where('scheduled_date', '>=', now())
+                ->where('status', 'scheduled')
+                ->with(['class', 'instructor', 'studio']);
+
+            // Filtros opcionales
+            if ($request->filled('class_id')) {
+                $query->where('class_id', $request->integer('class_id'));
+            }
+
+            if ($request->filled('instructor_id')) {
+                $query->where('instructor_id', $request->integer('instructor_id'));
+            }
+
+            if ($request->filled('studio_id')) {
+                $query->where('studio_id', $request->integer('studio_id'));
+            }
+
+            if ($request->filled('discipline_id')) {
+                $query->whereHas('class', function ($query) use ($request) {
+                    $query->where('discipline_id', $request->integer('discipline_id'));
+                });
+            }
+
+            // Filtros de fecha
+            if ($request->filled('scheduled_date')) {
+                $query->whereDate('scheduled_date', $request->date('scheduled_date'));
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('scheduled_date', '>=', $request->date('date_from'));
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('scheduled_date', '<=', $request->date('date_to'));
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->string('search');
+                $query->whereHas('class', function ($query) use ($search) {
+                    $query->where('name', 'like', '%' . $search . '%');
+                });
+            }
+
+            // Incluir contadores si se solicita
+            if ($request->boolean('include_counts', false)) {
+                $query->withCount(['seats', 'reservations']);
+            }
+
+            // Incluir relaciones adicionales si se solicita
+            if ($request->boolean('include_relations', false)) {
+                $query->with(['class.discipline', 'seats.user']);
+            }
+
+            // Ordenamiento por fecha y hora
+            $query->orderBy('scheduled_date', 'asc')
+                ->orderBy('start_time', 'asc');
+
+            // Si no se especifica per_page, devolver todo sin paginar
+            if ($request->has('per_page')) {
+                $schedules = $query->paginate(
+                    perPage: min($request->integer('per_page', 15), 50),
+                    page: $request->integer('page', 1)
+                );
+            } else {
+                $schedules = $query->get();
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Lista de horarios obtenida exitosamente',
+                'datoAdicional' => ClassScheduleResource::collection($schedules)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener lista de horarios',
+                'datoAdicional' => $th->getMessage()
+            ], 200);
         }
-
-        if ($request->filled('instructor_id')) {
-            $query->where('instructor_id', $request->integer('instructor_id'));
-        }
-
-        if ($request->filled('studio_id')) {
-            $query->where('studio_id', $request->integer('studio_id'));
-        }
-
-        if ($request->filled('discipline_id')) {
-            $query->whereHas('class', function ($query) use ($request) {
-                $query->where('discipline_id', $request->integer('discipline_id'));
-            });
-        }
-
-        // Filtros de fecha
-        if ($request->filled('scheduled_date')) {
-            $query->whereDate('scheduled_date', $request->date('scheduled_date'));
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('scheduled_date', '>=', $request->date('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('scheduled_date', '<=', $request->date('date_to'));
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->string('search');
-            $query->whereHas('class', function ($query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%');
-            });
-        }
-
-        // Incluir contadores si se solicita
-        if ($request->boolean('include_counts', false)) {
-            $query->withCount(['seats', 'reservations']);
-        }
-
-        // Incluir relaciones adicionales si se solicita
-        if ($request->boolean('include_relations', false)) {
-            $query->with(['class.discipline', 'seats.user']);
-        }
-
-        // Ordenamiento por fecha y hora
-        $query->orderBy('scheduled_date', 'asc')
-            ->orderBy('start_time', 'asc');
-
-        // Si no se especifica per_page, devolver todo sin paginar
-        if ($request->has('per_page')) {
-            $schedules = $query->paginate(
-                perPage: min($request->integer('per_page', 15), 50),
-                page: $request->integer('page', 1)
-            );
-        } else {
-            $schedules = $query->get();
-        }
-
-        return ClassScheduleResource::collection($schedules);
     }
 
     /**
      * Obtiene un horario de clase específico
-     *
-     * Obtiene los detalles de un horario de clase específico, incluyendo información de la clase, instructor, estudio y asientos disponibles.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Obtener horario de clase específico
-     * @operationId getClassSchedule
-     *
-     * @param  int  $id
-     * @param  \Illuminate\Http\Request  $request
-     * @return \App\Http\Resources\ClassScheduleResource
-     *
-     * @queryParam include_seats boolean Incluir información detallada de asientos. Example: true
-     * @queryParam include_available_seats boolean Incluir solo asientos disponibles. Example: true
-     * @queryParam include_reserved_seats boolean Incluir solo asientos reservados. Example: true
-     *
-     * @response 200 {
-     *   "id": 1,
-     *   "class": {
-     *     "id": 1,
-     *     "name": "Hatha Yoga",
-     *     "discipline": "Yoga"
-     *   },
-     *   "instructor": {
-     *     "id": 2,
-     *     "name": "Ana López"
-     *   },
-     *   "studio": {
-     *     "id": 3,
-     *     "name": "Sala Yoga A"
-     *   },
-     *   "scheduled_date": "15/06/2024",
-     *   "start_time": "08:00:00",
-     *   "end_time": "09:00:00",
-     *   "max_capacity": 20,
-     *   "available_spots": 5,
-     *   "booked_spots": 15,
-     *   "waitlist_spots": 0,
-     *   "booking_opens_at": "14/06/2024 08:00:00",
-     *   "booking_closes_at": "15/06/2024 07:00:00",
-     *   "cancellation_deadline": "14/06/2024 12:00:00",
-     *   "special_notes": "Traer mat de yoga",
-     *   "is_holiday_schedule": false,
-     *   "status": "scheduled",
-     *   "seats": {
-     *     "available": [
-     *       {
-     *         "id": 1,
-     *         "seat_number": "A1",
-     *         "row": "A",
-     *         "column": 1,
-     *         "status": "available"
-     *       }
-     *     ],
-     *     "reserved": [
-     *       {
-     *         "id": 2,
-     *         "seat_number": "A2",
-     *         "row": "A",
-     *         "column": 2,
-     *         "status": "reserved",
-     *         "user": {
-     *           "id": 10,
-     *           "name": "Juan Pérez"
-     *         },
-     *         "reserved_at": "2024-06-14T10:30:00.000Z",
-     *         "expires_at": "2024-06-15T07:00:00.000Z"
-     *       }
-     *     ],
-     *     "occupied": [],
-     *     "blocked": []
-     *   },
-     *   "seats_summary": {
-     *     "total_seats": 20,
-     *     "available_count": 5,
-     *     "reserved_count": 15,
-     *     "occupied_count": 0,
-     *     "blocked_count": 0
-     *   }
-     * }
      */
-    public function show(int $id, Request $request)
+    public function show(Request $request)
     {
-        $query = ClassSchedule::with(['class', 'instructor', 'studio']);
 
-        // Incluir información de asientos si se solicita
-        if ($request->boolean('include_seats', false)) {
-            $query->with(['seats' => function ($query) {
-                $query->withPivot(['user_id', 'status', 'reserved_at', 'expires_at']);
-            }]);
-        }
+        try {
 
-        // Incluir solo asientos disponibles
-        if ($request->boolean('include_available_seats', false)) {
-            $query->with(['seats' => function ($query) {
-                $query->wherePivot('status', 'available')
-                    ->withPivot(['user_id', 'status', 'reserved_at', 'expires_at']);
-            }]);
-        }
+            $request->validate([
+                'classSchedule_id' => 'required|exists:class_schedules,id'
+            ]);
+            $query = ClassSchedule::with(['class', 'instructor', 'studio']);
 
-        // Incluir solo asientos reservados
-        if ($request->boolean('include_reserved_seats', false)) {
-            $query->with(['seats' => function ($query) {
-                $query->wherePivotIn('status', ['reserved', 'occupied'])
-                    ->with('user:id,name,email')
-                    ->withPivot(['user_id', 'status', 'reserved_at', 'expires_at']);
-            }]);
-        }
-
-        // Siempre incluir contadores de asientos
-        $query->withCount([
-            'seats as total_seats_count',
-            'seats as available_seats_count' => function ($query) {
-                $query->where('class_schedule_seat.status', 'available');
-            },
-            'seats as reserved_seats_count' => function ($query) {
-                $query->where('class_schedule_seat.status', 'reserved');
-            },
-            'seats as occupied_seats_count' => function ($query) {
-                $query->where('class_schedule_seat.status', 'occupied');
-            },
-            'seats as blocked_seats_count' => function ($query) {
-                $query->where('class_schedule_seat.status', 'blocked');
+            // Incluir información de asientos si se solicita
+            if ($request->boolean('include_seats', false)) {
+                $query->with(['seats' => function ($query) {
+                    $query->withPivot(['user_id', 'status', 'reserved_at', 'expires_at']);
+                }]);
             }
-        ]);
 
-        $schedule = $query->findOrFail($id);
+            // Incluir solo asientos disponibles
+            if ($request->boolean('include_available_seats', false)) {
+                $query->with(['seats' => function ($query) {
+                    $query->wherePivot('status', 'available')
+                        ->withPivot(['user_id', 'status', 'reserved_at', 'expires_at']);
+                }]);
+            }
 
-        return new ClassScheduleResource($schedule);
+            // Incluir solo asientos reservados
+            if ($request->boolean('include_reserved_seats', false)) {
+                $query->with(['seats' => function ($query) {
+                    $query->wherePivotIn('status', ['reserved', 'occupied'])
+                        ->with('user:id,name,email')
+                        ->withPivot(['user_id', 'status', 'reserved_at', 'expires_at']);
+                }]);
+            }
+
+            // Siempre incluir contadores de asientos
+            $query->withCount([
+                'seats as total_seats_count',
+                'seats as available_seats_count' => function ($query) {
+                    $query->where('class_schedule_seat.status', 'available');
+                },
+                'seats as reserved_seats_count' => function ($query) {
+                    $query->where('class_schedule_seat.status', 'reserved');
+                },
+                'seats as occupied_seats_count' => function ($query) {
+                    $query->where('class_schedule_seat.status', 'occupied');
+                },
+                'seats as blocked_seats_count' => function ($query) {
+                    $query->where('class_schedule_seat.status', 'blocked');
+                }
+            ]);
+
+            $schedule = $query->findOrFail($request->classSchedule_id);
+
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Horario obtenido exitosamente',
+                'datoAdicional' => new ClassScheduleResource($schedule)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener horario',
+                'datoAdicional' => $th->getMessage()
+            ], 200);
+        }
     }
 
 
     /**
      * Obtiene el mapa de asientos de un horario de clase
      *
-     * Devuelve la disposición visual de todos los asientos del estudio para el horario específico,
-     * incluyendo su estado actual (disponible, reservado, ocupado, bloqueado).
-     *
-     * @summary Obtener mapa de asientos
-     * @operationId getClassScheduleSeatMap
-     *
-     * @param  \App\Models\ClassSchedule  $classSchedule
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "studio": {
-     *       "id": 1,
-     *       "name": "Cycling Studio A",
-     *       "max_capacity": 20,
-     *       "rows": 4,
-     *       "columns": 5
-     *     },
-     *     "class": {
-     *       "id": 1,
-     *       "name": "Hatha Yoga",
-     *       "discipline": "Yoga",
-     *       "discipline_img": "/storage/images/disciplines/yoga.svg"
-     *     },
-     *     "instructor": {
-     *       "id": 2,
-     *       "name": "Ana López",
-     *       "profile_image": "/storage/images/instructors/ana.jpg"
-     *     },
-     *     "schedule_info": {
-     *       "id": 5,
-     *       "scheduled_date": "2025-01-15",
-     *       "start_time": "08:00:00",
-     *       "end_time": "09:00:00",
-     *       "status": "scheduled",
-     *       "max_capacity": 20,
-     *       "available_spots": 15,
-     *       "booked_spots": 5,
-     *       "waitlist_spots": 0
-     *     },
-     *     "seat_map": [
-     *       [
-     *         {
-     *           "id": 1,
-     *           "seat_number": "A1",
-     *           "row": "A",
-     *           "column": 1,
-     *           "status": "available",
-     *           "user": null
-     *         },
-     *         {
-     *           "id": 2,
-     *           "seat_number": "A2",
-     *           "row": "A",
-     *           "column": 2,
-     *           "status": "reserved",
-     *           "user": {
-     *             "id": 10,
-     *             "name": "Juan Pérez"
-     *           }
-     *         }
-     *       ]
-     *     ],
-     *     "summary": {
-     *       "total_seats": 20,
-     *       "available": 15,
-     *       "reserved": 4,
-     *       "occupied": 1,
-     *       "blocked": 0,
-     *       "occupancy_percentage": 25.0,
-     *       "available_percentage": 75.0
-     *     }
-     *   }
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "Horario de clase no encontrado"
-     * }
-     *
-     * @response 422 {
-     *   "success": false,
-     *   "message": "No hay asientos configurados para este horario",
-     *   "data": null
-     * }
      */
-    public function getSeatMap(ClassSchedule $classSchedule)
+    public function getSeatMap(Request $request)
     {
+        $request->validate([
+            'classSchedule_id' => 'required|exists:class_schedules,id'
+        ]);
+
         try {
+
+            $classSchedule = ClassSchedule::findOrFail($request->classSchedule_id);
 
             // Verificar que el horario está activo
             if ($classSchedule->status === 'cancelled') {
@@ -458,15 +277,11 @@ final class ClassScheduleController extends Controller
                 ]
             ];
 
-            // Log del resumen calculado
-            Log::info('Resumen calculado', [
-                'calculated_summary' => $responseData['summary']
-            ]);
-
             return response()->json([
-                'success' => true,
-                'message' => 'Mapa de asientos obtenido exitosamente',
-                'data' => $responseData
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Mapa de asientos obtenido exitosamente',
+                'datoAdicional' => $responseData
             ], 200);
         } catch (\Exception $e) {
             // Log del error para debugging
@@ -477,114 +292,26 @@ final class ClassScheduleController extends Controller
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Error interno al obtener el mapa de asientos',
-                'data' => null
-            ], 500);
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al obtener el mapa de asientos',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
         }
     }
 
     /**
      * Reservar múltiples asientos para el usuario autenticado
-     *
-     * Permite al usuario autenticado reservar uno o más asientos en un horario de clase específico.
-     * Los asientos se reservan temporalmente y expiran después del tiempo especificado.
-     *
-     * **IMPORTANTE:** El usuario debe tener paquetes disponibles para la disciplina de la clase.
-     * El sistema validará automáticamente que el usuario tenga paquetes activos y con clases
-     * disponibles para la disciplina específica antes de permitir la reserva.
-     *
-     * **CONSUMO DE PAQUETES:** Los paquetes se consumen en orden de fecha de expiración,
-     * priorizando aquellos que están más cerca de vencer para maximizar su uso.
-     *
-     * @summary Reservar asientos en horario
-     * @operationId reserveSeatsInSchedule
-     * @tags Reservas de Asientos
-     *
-     * @param  \App\Models\ClassSchedule  $classSchedule Horario de clase
-     * @param  \App\Http\Requests\ReserveSeatsRequest  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Asientos reservados exitosamente",
-     *   "data": {
-     *     "reserved_seats": [
-     *       {
-     *         "class_schedule_seat_id": 267,
-     *         "seat_id": 1,
-     *         "seat_number": "1.1",
-     *         "row": 1,
-     *         "column": 1,
-     *         "status": "reserved",
-     *         "reserved_at": "2024-06-15T10:30:00.000Z",
-     *         "expires_at": "2024-06-15T10:45:00.000Z"
-     *       }
-     *     ],
-     *     "reservation_summary": {
-     *       "total_reserved": 2,
-     *       "expires_in_minutes": 15,
-     *       "user_id": 10,
-     *       "schedule_id": 5,
-     *       "class_name": "Yoga Matutino",
-     *       "studio_name": "Sala Principal",
-     *       "scheduled_date": "2025-01-15",
-     *       "start_time": "08:00:00"
-     *     },
-     *     "package_consumption": [
-     *       {
-     *         "package_id": 42,
-     *         "package_code": "PKG001-2024",
-     *         "package_name": "Paquete Yoga 10 Clases",
-     *         "classes_consumed": 1,
-     *         "remaining_classes": 9,
-     *         "expiry_date": "2025-02-15",
-     *         "days_remaining": 35
-     *       }
-     *     ]
-     *   }
-     * }
-     *
-     * @response 400 {
-     *   "success": false,
-     *   "message": "Algunos asientos no están disponibles",
-     *   "data": {
-     *     "unavailable_seats": [1, 3],
-     *     "available_seats": [2, 4]
-     *   }
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "Horario de clase no encontrado"
-     * }
-     *
-     * @response 422 {
-     *   "success": false,
-     *   "message": "No tienes paquetes disponibles para la disciplina 'Yoga'",
-     *   "data": {
-     *     "reason": "insufficient_packages",
-     *     "discipline_required": {
-     *       "id": 1,
-     *       "name": "Yoga"
-     *     },
-     *     "available_packages": []
-     *   }
-     * }
-     *
-     * @response 422 {
-     *   "success": false,
-     *   "message": "No se puede reservar en este horario",
-     *   "data": {
-     *     "reason": "booking_closed"
-     *   }
-     * }
-     */
-    public function reserveSeats(ClassSchedule $classSchedule, ReserveSeatsRequest $request)
-    {
 
+     */
+    public function reserveSeats(ReserveSeatsRequest $request)
+    {
+        // Validar parámetros (si no usas ClassScheduleIndexRequest, usa Validator::make)
+        $validated = $request->validated(); // Esto funciona si ya tienes el Form Request configurado
 
         try {
+
+            $classSchedule = ClassSchedule::findOrFail($request->class_schedule_id);
             // Log inicial para debugging
 
             Log::info('Iniciando reserva de asientos', [
@@ -595,10 +322,12 @@ final class ClassScheduleController extends Controller
 
             // Verificar que el horario permite reservas
             if ($classSchedule->status === 'cancelled') {
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede reservar en un horario cancelado',
-                    'data' => ['reason' => 'schedule_cancelled']
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' =>  'No se puede reservar en un horario cancelado',
+                    'datoAdicional' => ['reason' => 'schedule_cancelled']
                 ], 200);
             }
 
@@ -611,10 +340,12 @@ final class ClassScheduleController extends Controller
             $limitToReserve = $startDateTime->copy()->addMinutes(10);
 
             if (now()->greaterThan($limitToReserve)) {
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede reservar después de los 10 minutos del inicio de la clase',
-                    'data' => [
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' =>  'No se puede reservar después de los 10 minutos del inicio de la clase',
+                    'datoAdicional' => [
                         'reason' => 'too_late',
                         'start_time' => $startDateTime->toDateTimeString(),
                         'limit_time' => $limitToReserve->toDateTimeString(),
@@ -633,10 +364,13 @@ final class ClassScheduleController extends Controller
             $packageValidation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
 
             if (!$packageValidation['valid']) {
+
+
                 return response()->json([
-                    'success' => false,
-                    'message' => $packageValidation['message'],
-                    'data' => [
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' =>  $packageValidation['message'],
+                    'datoAdicional' => [
                         'reason' => 'insufficient_packages',
                         'discipline_required' => $packageValidation['discipline_required'],
                         'available_packages' => $packageValidation['available_packages']
@@ -678,10 +412,12 @@ final class ClassScheduleController extends Controller
 
                 // Validar que el usuario no reserve más asientos de los que tiene disponibles
                 if (count($classScheduleSeatIds) > $totalAvailableSeats) {
+
                     return response()->json([
-                        'success' => false,
-                        'message' => 'No tienes suficientes asientos disponibles en tus paquetes para reservar esta cantidad.',
-                        'data' => [
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'No tienes suficientes asientos disponibles en tus paquetes para reservar esta cantidad.',
+                        'datoAdicional' => [
                             'requested_seats' => count($classScheduleSeatIds),
                             'available_seats' => $totalAvailableSeats
                         ]
@@ -699,14 +435,16 @@ final class ClassScheduleController extends Controller
                 $missingAssignmentIds = array_diff($classScheduleSeatIds, $foundAssignmentIds);
 
                 if (!empty($missingAssignmentIds)) {
+
                     return response()->json([
-                        'success' => false,
-                        'message' => 'Algunos asientos no están asignados a este horario',
-                        'data' => [
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Algunos asientos no están asignados a este horario',
+                        'datoAdicional' =>  [
                             'missing_assignment_ids' => $missingAssignmentIds,
                             'available_assignment_ids' => $foundAssignmentIds
                         ]
-                    ], 400);
+                    ], 200);
                 }
 
                 // Verificar disponibilidad de cada asiento
@@ -729,9 +467,10 @@ final class ClassScheduleController extends Controller
                 // Si hay asientos no disponibles, devolver error
                 if (!empty($unavailableSeats)) {
                     return response()->json([
-                        'success' => false,
-                        'message' => 'Algunos asientos no están disponibles',
-                        'data' => [
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Algunos asientos no están disponibles',
+                        'datoAdicional' => [
                             'unavailable_seats' => $unavailableSeats,
                             'available_seats' => collect($availableAssignments)->pluck('id')->toArray()
                         ]
@@ -799,24 +538,13 @@ final class ClassScheduleController extends Controller
                     ];
                 }
 
-                // Preparar respuesta exitosa
+
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Asientos reservados exitosamente',
-                    'data' => [
-                        'reserved_seats' => $reservedSeats,
-                        'reservation_summary' => [
-                            'total_reserved' => count($reservedSeats),
-                            'expires_in_minutes' => $minutesToExpire,
-                            'expires_at' => $expiresAt->toISOString(),
-                            'user_id' => $userId,
-                            'schedule_id' => $classSchedule->id,
-                            'class_name' => $classSchedule->class->name ?? 'N/A',
-                            'studio_name' => $classSchedule->studio->name ?? 'N/A',
-                            'scheduled_date' => $classSchedule->scheduled_date,
-                            'start_time' => $classSchedule->start_time
-                        ],
-                        'package_consumption' => $packageConsumptionDetails
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Asientos reservados exitosamente',
+                    'datoAdicional' => [
+                        'class_schedule_id' => $classSchedule->id
                     ]
                 ], 200);
             });
@@ -831,9 +559,10 @@ final class ClassScheduleController extends Controller
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Error interno al reservar asientos',
-                'data' => $e->getMessage()
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al reservar asientos',
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -841,39 +570,6 @@ final class ClassScheduleController extends Controller
     /**
      * Liberar/cancelar reserva de asientos usando el ID de class_schedule_seat
      *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam class_schedule_seat_ids array required Los IDs de la tabla class_schedule_seat a liberar. Example: [267, 268, 269]
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Reservas liberadas exitosamente",
-     *   "data": {
-     *     "released_seats": [
-     *       {
-     *         "class_schedule_seat_id": 267,
-     *         "seat_id": 1,
-     *         "seat_number": "1.1",
-     *         "previous_status": "reserved",
-     *         "new_status": "available",
-     *         "released_at": "2025-01-11T20:30:00.000000Z"
-     *       }
-     *     ],
-     *     "release_summary": {
-     *       "total_released": 3,
-     *       "user_id": 10
-     *     }
-     *   }
-     * }
-     *
-     * @response 400 {
-     *   "success": false,
-     *   "message": "Algunos asientos no pueden ser liberados",
-     *   "data": {
-     *     "invalid_assignments": [...]
-     *   }
-     * }
      */
     public function releaseSeats(Request $request)
     {
@@ -901,14 +597,16 @@ final class ClassScheduleController extends Controller
                 $missingIds = array_diff($assignmentIds, $foundIds);
 
                 if (!empty($missingIds)) {
+
                     return response()->json([
-                        'success' => false,
-                        'message' => 'Algunos asientos no pueden ser liberados (no existen o no te pertenecen)',
-                        'data' => [
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Algunos asientos no pueden ser liberados (no existen o no te pertenecen)',
+                        'datoAdicional' => [
                             'invalid_assignment_ids' => $missingIds,
                             'valid_assignment_ids' => $foundIds
                         ]
-                    ], 400);
+                    ], 200);
                 }
 
                 // Liberar todos los asientos
@@ -961,10 +659,12 @@ final class ClassScheduleController extends Controller
                 }
 
                 // Preparar respuesta exitosa
+
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Reservas liberadas exitosamente',
-                    'data' => [
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Reservas liberadas exitosamente',
+                    'datoAdicional' =>  [
                         'released_seats' => $releasedSeats,
                         'release_summary' => [
                             'total_released' => count($releasedSeats),
@@ -985,75 +685,16 @@ final class ClassScheduleController extends Controller
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Error interno al liberar asientos',
-                'data' => null
-            ], 500);
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Algunos asientos no pueden ser liberados (no existen o no te pertenecen)',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
         }
     }
 
     /**
-     * Obtener las reservas de asientos del usuario autenticado
-     *
-     * Muestra todos los horarios donde el usuario tiene asientos reservados,
-     * incluyendo información completa de la clase, estudio, asientos y estado de las reservas.
-     *
-     * @summary Mis reservas de asientos
-     * @operationId getMyReservations
-     * @tags Mis Reservas
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @queryParam status string Filtrar por estado de reserva (reserved, occupied, completed). Example: reserved
-     * @queryParam date_from string Filtrar desde fecha (Y-m-d). Example: 2025-01-15
-     * @queryParam date_to string Filtrar hasta fecha (Y-m-d). Example: 2025-01-30
-     * @queryParam upcoming boolean Solo reservas futuras (true/false). Example: true
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Reservas obtenidas exitosamente",
-     *   "data": {
-     *     "reservations": [
-     *       {
-     *         "schedule_id": 13,
-     *         "class_name": "Yoga Matutino",
-     *         "instructor_name": "María García",
-     *         "studio_name": "Sala Principal",
-     *         "scheduled_date": "2025-01-15",
-     *         "start_time": "08:00:00",
-     *         "end_time": "09:00:00",
-     *         "class_status": "scheduled",
-     *         "my_seats": [
-     *           {
-     *             "class_schedule_seat_id": 266,
-     *             "seat_id": 1,
-     *             "seat_number": "1.1",
-     *             "row": 1,
-     *             "column": 1,
-     *             "status": "reserved",
-     *             "reserved_at": "2025-01-11T20:30:00.000000Z",
-     *             "expires_at": "2025-01-11T20:45:00.000000Z"
-     *           }
-     *         ],
-     *         "total_my_seats": 2,
-     *         "can_cancel": true,
-     *         "cancellation_deadline": "2025-01-15T07:00:00.000000Z"
-     *       }
-     *     ],
-     *     "summary": {
-     *       "total_reservations": 5,
-     *       "upcoming_reservations": 3,
-     *       "past_reservations": 2,
-     *       "total_seats_reserved": 8
-     *     }
-     *   }
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "No tienes reservas de asientos"
-     * }
+     * Mis reservas de clases con filtros por estado
      */
     public function getMyReservations(Request $request)
     {
@@ -1062,144 +703,172 @@ final class ClassScheduleController extends Controller
 
             // Validar parámetros de filtro
             $request->validate([
-                'status' => 'nullable|string|in:reserved,occupied,completed',
-                'date_from' => 'nullable|date',
-                'date_to' => 'nullable|date|after_or_equal:date_from',
-                'upcoming' => 'nullable|boolean'
+                'status' => 'sometimes|string|in:reserved,occupied,completed',
+                'date_from' => 'sometimes|date',
+                'date_to' => 'sometimes|date|after_or_equal:date_from',
+                // 'upcoming' => 'sometimes|boolean',
+                'per_page' => 'sometimes|integer|min:1|max:50',
+                'page' => 'sometimes|integer|min:1'
             ]);
 
-            // Construir query base
-            $query = ClassScheduleSeat::with([
-                'classSchedule' => function ($q) {
-                    $q->with(['class', 'instructor', 'studio']);
-                },
-                'seat'
+            // Construir query base para obtener horarios directamente
+            $query = ClassSchedule::with([
+                'class.discipline',
+                'instructor',
+                'studio',
+                'classScheduleSeats' => function ($q) use ($userId) {
+                    $q->where('user_id', $userId)->with('seat');
+                }
             ])
-                ->where('user_id', $userId);
+                ->whereHas('classScheduleSeats', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
 
             // Aplicar filtros
             if ($request->filled('status')) {
-                $query->where('status', $request->status);
+                $query->whereHas('classScheduleSeats', function ($q) use ($request, $userId) {
+                    $q->where('user_id', $userId)->where('status', $request->status);
+                });
             }
 
             if ($request->filled('date_from')) {
-                $query->whereHas('classSchedule', function ($q) use ($request) {
-                    $q->where('scheduled_date', '>=', $request->date_from);
-                });
+                $query->where('scheduled_date', '>=', $request->date_from);
             }
 
             if ($request->filled('date_to')) {
-                $query->whereHas('classSchedule', function ($q) use ($request) {
-                    $q->where('scheduled_date', '<=', $request->date_to);
-                });
+                $query->where('scheduled_date', '<=', $request->date_to);
             }
 
-            if ($request->boolean('upcoming')) {
-                $query->whereHas('classSchedule', function ($q) {
-                    $q->where('scheduled_date', '>=', now()->toDateString());
+            // if ($request->boolean('upcoming')) {
+            //     $query->where('scheduled_date', '>=', now()->toDateString());
+            // }
+
+            // Aplicar paginación si se solicita
+            if ($request->has('per_page')) {
+                $classSchedules = $query->orderBy('scheduled_date', 'asc')
+                    ->orderBy('start_time', 'asc')
+                    ->paginate(
+                        perPage: $request->integer('per_page', 15),
+                        page: $request->integer('page', 1)
+                    );
+
+                $summary = $this->calculateReservationsSummary($classSchedules->items());
+
+                // Formatear reservas con información específica del usuario
+                $formattedReservations = $classSchedules->map(function ($schedule) use ($userId) {
+                    $userSeats = $schedule->classScheduleSeats->map(function ($seatAssignment) {
+                        return [
+                            'class_schedule_seat_id' => $seatAssignment->id,
+                            'seat_id' => $seatAssignment->seats_id,
+                            'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
+                            'row' => $seatAssignment->seat->row,
+                            'column' => $seatAssignment->seat->column,
+                            'status' => $seatAssignment->status,
+                            'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                            'expires_at' => $seatAssignment->expires_at?->toISOString()
+                        ];
+                    });
+
+                    $scheduleData = (new ClassScheduleResource($schedule))->toArray(request());
+                    $scheduleData['my_seats'] = $userSeats;
+                    $scheduleData['total_my_seats'] = $userSeats->count();
+
+                    // Actualizar seats_summary con información específica del usuario
+                    $scheduleData['seats_summary'] = [
+                        'total_seats' => $userSeats->count(),
+                        'available_count' => 0, // No aplicable para reservas del usuario
+                        'reserved_count' => $userSeats->where('status', 'reserved')->count(),
+                        'occupied_count' => $userSeats->where('status', 'occupied')->count(),
+                        'blocked_count' => $userSeats->where('status', 'blocked')->count(),
+                    ];
+
+                    return $scheduleData;
                 });
-            }
 
-            // Obtener reservas ordenadas por fecha
-            $seatReservations = $query->orderBy('created_at', 'desc')->get();
-
-            if ($seatReservations->isEmpty()) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No tienes reservas de asientos',
-                    'data' => [
-                        'reservations' => [],
-                        'summary' => [
-                            'total_reservations' => 0,
-                            'upcoming_reservations' => 0,
-                            'past_reservations' => 0,
-                            'total_seats_reserved' => 0
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Reservas obtenidas exitosamente',
+                    'datoAdicional' => [
+                        'reservations' => $formattedReservations,
+                        'summary' => $summary,
+                        'pagination' => [
+                            'current_page' => $classSchedules->currentPage(),
+                            'last_page' => $classSchedules->lastPage(),
+                            'per_page' => $classSchedules->perPage(),
+                            'total' => $classSchedules->total(),
+                            'from' => $classSchedules->firstItem(),
+                            'to' => $classSchedules->lastItem(),
+                            'has_more_pages' => $classSchedules->hasMorePages(),
                         ]
                     ]
-                ])
-                    ->setStatusCode(404);
-            }
+                ], 200);
+            } else {
+                // Sin paginación - obtener todos los resultados
+                $classSchedules = $query->orderBy('scheduled_date', 'asc')
+                    ->orderBy('start_time', 'asc')
+                    ->get();
 
-
-            // Agrupar por horario
-            $groupedReservations = $seatReservations->groupBy('class_schedules_id');
-
-            $reservations = [];
-            $totalSeats = 0;
-            $upcomingCount = 0;
-            $pastCount = 0;
-
-            foreach ($groupedReservations as $seats) {
-                $firstSeat = $seats->first();
-                $schedule = $firstSeat->classSchedule;
-
-                // Verificar si es futuro o pasado
-                $scheduleDateTime = \Carbon\Carbon::parse($schedule->scheduled_date . ' ' . $schedule->start_time);
-                $isUpcoming = $scheduleDateTime->isFuture();
-
-                if ($isUpcoming) {
-                    $upcomingCount++;
-                } else {
-                    $pastCount++;
+                if ($classSchedules->isEmpty()) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'No tienes reservas de asientos',
+                        'datoAdicional' => [
+                            'reservations' => [],
+                            'summary' => [
+                                'total_reservations' => 0,
+                                'upcoming_reservations' => 0,
+                                'past_reservations' => 0,
+                                'total_seats_reserved' => 0
+                            ]
+                        ]
+                    ], 200);
                 }
 
-                // Verificar si puede cancelar (al menos 2 horas antes)
-                $canCancel = $isUpcoming && $scheduleDateTime->diffInHours(now()) >= 2;
+                $summary = $this->calculateReservationsSummary($classSchedules->toArray());
 
-                // Preparar información de asientos
-                $mySeats = [];
-                foreach ($seats as $seatReservation) {
-                    $totalSeats++;
-                    $mySeats[] = [
-                        'class_schedule_seat_id' => $seatReservation->id,
-                        'seat_id' => $seatReservation->seats_id,
-                        'seat_number' => $seatReservation->seat->row . '.' . $seatReservation->seat->column,
-                        'row' => $seatReservation->seat->row,
-                        'column' => $seatReservation->seat->column,
-                        'status' => $seatReservation->status,
-                        'reserved_at' => $seatReservation->reserved_at?->toISOString(),
-                        'expires_at' => $seatReservation->expires_at?->toISOString()
+                // Formatear reservas con información específica del usuario
+                $formattedReservations = $classSchedules->map(function ($schedule) use ($userId) {
+                    $userSeats = $schedule->classScheduleSeats->map(function ($seatAssignment) {
+                        return [
+                            'class_schedule_seat_id' => $seatAssignment->id,
+                            'seat_id' => $seatAssignment->seats_id,
+                            'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
+                            'row' => $seatAssignment->seat->row,
+                            'column' => $seatAssignment->seat->column,
+                            'status' => $seatAssignment->status,
+                            'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                            'expires_at' => $seatAssignment->expires_at?->toISOString()
+                        ];
+                    });
+
+                    $scheduleData = (new ClassScheduleResource($schedule))->toArray(request());
+                    $scheduleData['my_seats'] = $userSeats;
+                    $scheduleData['total_my_seats'] = $userSeats->count();
+
+                    // Actualizar seats_summary con información específica del usuario
+                    $scheduleData['seats_summary'] = [
+                        'total_seats' => $userSeats->count(),
+                        'available_count' => 0, // No aplicable para reservas del usuario
+                        'reserved_count' => $userSeats->where('status', 'reserved')->count(),
+                        'occupied_count' => $userSeats->where('status', 'occupied')->count(),
+                        'blocked_count' => $userSeats->where('status', 'blocked')->count(),
                     ];
-                }
 
-                $reservations[] = [
-                    'schedule_id' => $schedule->id,
-                    'class_name' => $schedule->class->name ?? 'N/A',
-                    'instructor_name' => $schedule->instructor->name ?? 'N/A',
-                    'studio_name' => $schedule->studio->name ?? 'N/A',
-                    'scheduled_date' => $schedule->scheduled_date,
-                    'start_time' => $schedule->start_time,
-                    'end_time' => $schedule->end_time,
-                    'class_status' => $schedule->status,
-                    'is_upcoming' => $isUpcoming,
-                    'my_seats' => $mySeats,
-                    'total_my_seats' => count($mySeats),
-                    'can_cancel' => $canCancel,
-                    'cancellation_deadline' => $canCancel ? $scheduleDateTime->copy()->subHours(2)->toISOString() : null,
-                    'class_datetime' => $scheduleDateTime->toISOString()
-                ];
-            }
+                    return $scheduleData;
+                });
 
-            // Ordenar por fecha (próximas primero)
-            usort($reservations, function ($a, $b) {
-                if ($a['is_upcoming'] && !$b['is_upcoming']) return -1;
-                if (!$a['is_upcoming'] && $b['is_upcoming']) return 1;
-                return strcmp($a['class_datetime'], $b['class_datetime']);
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Reservas obtenidas exitosamente',
-                'data' => [
-                    'reservations' => $reservations,
-                    'summary' => [
-                        'total_reservations' => count($reservations),
-                        'upcoming_reservations' => $upcomingCount,
-                        'past_reservations' => $pastCount,
-                        'total_seats_reserved' => $totalSeats
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Reservas obtenidas exitosamente',
+                    'datoAdicional' => [
+                        'reservations' => $formattedReservations,
+                        'summary' => $summary
                     ]
-                ]
-            ], 200);
+                ], 200);
+            }
         } catch (\Exception $e) {
             Log::error('Error al obtener reservas del usuario', [
                 'user_id' => Auth::id(),
@@ -1208,208 +877,190 @@ final class ClassScheduleController extends Controller
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Error interno al obtener reservas',
-                'data' => null
-            ], 500);
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al obtener reservas',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
         }
+    }
+
+    /**
+     * Calcular resumen de reservas
+     */
+    private function calculateReservationsSummary($classSchedules)
+    {
+        $totalReservations = count($classSchedules);
+        $upcomingCount = 0;
+        $pastCount = 0;
+        $totalSeats = 0;
+
+        foreach ($classSchedules as $schedule) {
+            // Contar asientos del usuario
+            $userSeatsCount = count($schedule['classScheduleSeats'] ?? []);
+            $totalSeats += $userSeatsCount;
+
+            // Verificar si es futuro o pasado
+            // Manejar diferentes formatos de fecha
+            if (strpos($schedule['scheduled_date'], 'T') !== false || strpos($schedule['scheduled_date'], ' ') !== false) {
+                // Si ya contiene tiempo completo, usar directamente
+                $scheduleDateTime = \Carbon\Carbon::parse($schedule['scheduled_date']);
+            } else {
+                // Si solo contiene fecha, concatenar con hora
+                $scheduleDateTime = \Carbon\Carbon::parse($schedule['scheduled_date'] . ' ' . $schedule['start_time']);
+            }
+
+            if ($scheduleDateTime->isFuture()) {
+                $upcomingCount++;
+            } else {
+                $pastCount++;
+            }
+        }
+
+        return [
+            'total_reservations' => $totalReservations,
+            'upcoming_reservations' => $upcomingCount,
+            'past_reservations' => $pastCount,
+            'total_seats_reserved' => $totalSeats
+        ];
     }
 
     /**
      * Confirmar asistencia y marcar asientos como ocupados
      *
-     * Este método se usa cuando el usuario llega a la clase y confirma su asistencia.
-     * Cambia el estado de los asientos de 'reserved' a 'occupied'.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam class_schedule_seat_ids array required Los IDs de la tabla class_schedule_seat a confirmar. Example: [267, 268, 269]
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Asistencia confirmada exitosamente",
-     *   "data": {
-     *     "confirmed_seats": [
-     *       {
-     *         "class_schedule_seat_id": 267,
-     *         "seat_id": 1,
-     *         "seat_number": "1.1",
-     *         "previous_status": "reserved",
-     *         "new_status": "occupied",
-     *         "confirmed_at": "2025-01-11T20:30:00.000000Z"
-     *       }
-     *     ],
-     *     "confirmation_summary": {
-     *       "total_confirmed": 3,
-     *       "user_id": 10,
-     *       "class_name": "Yoga Matutino",
-     *       "scheduled_date": "2025-01-15",
-     *       "start_time": "08:00:00"
-     *     }
-     *   }
-     * }
      */
-    public function confirmAttendance(Request $request)
-    {
-        try {
-            // Validar datos de entrada
-            $request->validate([
-                'class_schedule_seat_ids' => 'required|array|min:1|max:50',
-                'class_schedule_seat_ids.*' => 'required|integer|exists:class_schedule_seat,id'
-            ]);
+    // public function confirmAttendance(Request $request)
+    // {
+    //     try {
+    //         // Validar datos de entrada
+    //         $request->validate([
+    //             'class_schedule_seat_ids' => 'required|array|min:1|max:50',
+    //             'class_schedule_seat_ids.*' => 'required|integer|exists:class_schedule_seat,id'
+    //         ]);
 
-            $userId = Auth::id();
-            $assignmentIds = $request->validated()['class_schedule_seat_ids'];
+    //         $userId = Auth::id();
+    //         $assignmentIds = $request->validated()['class_schedule_seat_ids'];
 
-            // Usar transacción para asegurar consistencia
-            return DB::transaction(function () use ($assignmentIds, $userId) {
+    //         // Usar transacción para asegurar consistencia
+    //         return DB::transaction(function () use ($assignmentIds, $userId) {
 
-                // Obtener las asignaciones que pertenecen al usuario autenticado
-                $assignments = ClassScheduleSeat::whereIn('id', $assignmentIds)
-                    ->where('user_id', $userId)
-                    ->where('status', 'reserved') // Solo asientos reservados pueden ser confirmados
-                    ->with(['classSchedule.class', 'seat'])
-                    ->lockForUpdate()
-                    ->get();
+    //             // Obtener las asignaciones que pertenecen al usuario autenticado
+    //             $assignments = ClassScheduleSeat::whereIn('id', $assignmentIds)
+    //                 ->where('user_id', $userId)
+    //                 ->where('status', 'reserved') // Solo asientos reservados pueden ser confirmados
+    //                 ->with(['classSchedule.class', 'seat'])
+    //                 ->lockForUpdate()
+    //                 ->get();
 
-                if ($assignments->isEmpty()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No se encontraron asientos reservados para confirmar',
-                        'data' => null
-                    ], 400);
-                }
+    //             if ($assignments->isEmpty()) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'No se encontraron asientos reservados para confirmar',
+    //                     'data' => null
+    //                 ], 400);
+    //             }
 
-                // Confirmar todos los asientos
-                $confirmedSeats = [];
-                $confirmedAt = now();
+    //             // Confirmar todos los asientos
+    //             $confirmedSeats = [];
+    //             $confirmedAt = now();
 
-                foreach ($assignments as $assignment) {
-                    $previousStatus = $assignment->status;
+    //             foreach ($assignments as $assignment) {
+    //                 $previousStatus = $assignment->status;
 
-                    // Actualizar a ocupado
-                    $assignment->update([
-                        'status' => 'occupied',
-                        'expires_at' => null // Ya no expira porque está confirmado
-                    ]);
+    //                 // Actualizar a ocupado
+    //                 $assignment->update([
+    //                     'status' => 'occupied',
+    //                     'expires_at' => null // Ya no expira porque está confirmado
+    //                 ]);
 
-                    $confirmedSeats[] = [
-                        'class_schedule_seat_id' => $assignment->id,
-                        'seat_id' => $assignment->seats_id,
-                        'seat_number' => $assignment->seat->row . '.' . $assignment->seat->column,
-                        'row' => $assignment->seat->row,
-                        'column' => $assignment->seat->column,
-                        'previous_status' => $previousStatus,
-                        'new_status' => 'occupied',
-                        'confirmed_at' => $confirmedAt->toISOString()
-                    ];
-                }
+    //                 $confirmedSeats[] = [
+    //                     'class_schedule_seat_id' => $assignment->id,
+    //                     'seat_id' => $assignment->seats_id,
+    //                     'seat_number' => $assignment->seat->row . '.' . $assignment->seat->column,
+    //                     'row' => $assignment->seat->row,
+    //                     'column' => $assignment->seat->column,
+    //                     'previous_status' => $previousStatus,
+    //                     'new_status' => 'occupied',
+    //                     'confirmed_at' => $confirmedAt->toISOString()
+    //                 ];
+    //             }
 
-                // Obtener información de la clase para el resumen
-                $firstAssignment = $assignments->first();
-                $classSchedule = $firstAssignment->classSchedule;
+    //             // Obtener información de la clase para el resumen
+    //             $firstAssignment = $assignments->first();
+    //             $classSchedule = $firstAssignment->classSchedule;
 
-                // Preparar respuesta exitosa
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Asistencia confirmada exitosamente',
-                    'data' => [
-                        'confirmed_seats' => $confirmedSeats,
-                        'confirmation_summary' => [
-                            'total_confirmed' => count($confirmedSeats),
-                            'user_id' => $userId,
-                            'schedule_id' => $classSchedule->id,
-                            'class_name' => $classSchedule->class->name ?? 'N/A',
-                            'scheduled_date' => $classSchedule->scheduled_date,
-                            'start_time' => $classSchedule->start_time,
-                            'confirmed_at' => $confirmedAt->toISOString()
-                        ]
-                    ]
-                ], 200);
-            });
-        } catch (\Exception $e) {
-            // Log del error para debugging
-            Log::error('Error al confirmar asistencia', [
-                'user_id' => Auth::id(),
-                'assignment_ids' => $request->input('class_schedule_seat_ids', []),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+    //             // Preparar respuesta exitosa
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Asistencia confirmada exitosamente',
+    //                 'data' => [
+    //                     'confirmed_seats' => $confirmedSeats,
+    //                     'confirmation_summary' => [
+    //                         'total_confirmed' => count($confirmedSeats),
+    //                         'user_id' => $userId,
+    //                         'schedule_id' => $classSchedule->id,
+    //                         'class_name' => $classSchedule->class->name ?? 'N/A',
+    //                         'scheduled_date' => $classSchedule->scheduled_date,
+    //                         'start_time' => $classSchedule->start_time,
+    //                         'confirmed_at' => $confirmedAt->toISOString()
+    //                     ]
+    //                 ]
+    //             ], 200);
+    //         });
+    //     } catch (\Exception $e) {
+    //         // Log del error para debugging
+    //         Log::error('Error al confirmar asistencia', [
+    //             'user_id' => Auth::id(),
+    //             'assignment_ids' => $request->input('class_schedule_seat_ids', []),
+    //             'error' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString()
+    //         ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno al confirmar asistencia',
-                'data' => null
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error interno al confirmar asistencia',
+    //             'data' => null
+    //         ], 500);
+    //     }
+    // }
 
     /**
      * Verificar disponibilidad de paquetes para un horario específico
-     *
-     * Permite verificar si el usuario tiene paquetes disponibles para la disciplina
-     * de una clase específica antes de intentar hacer una reserva.
-     *
-     * @summary Verificar paquetes disponibles para horario
-     * @operationId checkPackageAvailability
-     * @tags Validación de Paquetes
-     *
-     * @param  \App\Models\ClassSchedule  $classSchedule Horario de clase
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Paquetes disponibles encontrados",
-     *   "data": {
-     *     "can_reserve": true,
-     *     "discipline_required": {
-     *       "id": 1,
-     *       "name": "Yoga"
-     *     },
-     *     "available_packages": [
-     *       {
-     *         "id": 42,
-     *         "package_code": "PKG001-2024",
-     *         "package_name": "Paquete Yoga 10 Clases",
-     *         "remaining_classes": 9,
-     *         "expiry_date": "2025-02-15",
-     *         "days_remaining": 35
-     *       }
-     *     ]
-     *   }
-     * }
-     *
-     * @response 422 {
-     *   "success": false,
-     *   "message": "No tienes paquetes disponibles para la disciplina 'Yoga'",
-     *   "data": {
-     *     "can_reserve": false,
-     *     "discipline_required": {
-     *       "id": 1,
-     *       "name": "Yoga"
-     *     },
-     *     "available_packages": []
-     *   }
-     * }
      */
-    public function checkPackageAvailability(ClassSchedule $classSchedule)
+    public function checkPackageAvailability(Request $request)
     {
+        $request->validate([
+            'classSchedule_id' => 'required|exists:class_schedules,id'
+        ]);
+
         try {
+
+            $classSchedule = ClassSchedule::findOrFail($request->classSchedule_id);
+
+            if (!$classSchedule) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No existe el horario',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
             $userId = Auth::id();
             $packageValidationService = new PackageValidationService();
 
             $validation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
 
             return response()->json([
-                'success' => $validation['valid'],
-                'message' => $validation['message'],
-                'data' => [
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Horario disponible para el paquete',
+                'datoAdicional' => [
                     'can_reserve' => $validation['valid'],
                     'discipline_required' => $validation['discipline_required'],
                     'available_packages' => $validation['available_packages']
                 ]
-            ], $validation['valid'] ? 200 : 422);
+            ], 200);
         } catch (\Exception $e) {
             Log::error('Error al verificar disponibilidad de paquetes', [
                 'user_id' => Auth::id(),
@@ -1417,496 +1068,19 @@ final class ClassScheduleController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
             return response()->json([
-                'success' => false,
-                'message' => 'Error interno al verificar paquetes',
-                'data' => null
-            ], 500);
-        }
-    }
-
-    /**
-     * Lista los horarios completados de clases reservados por el usuario autenticado
-     *
-     * Obtiene una lista de los horarios de clases en los que el usuario autenticado ha reservado un asiento.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar horarios de clases reservadas del usuario
-     * @operationId getClassSchedulesByUser
-     * @tags Horarios de Clases
-     *
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Horarios de clase obtenidos exitosamente",
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "scheduled_date": "2025-06-19",
-     *       "start_time": "08:00:00",
-     *       "end_time": "09:00:00",
-     *       "status": "scheduled",
-     *       "class": {
-     *         "id": 10,
-     *         "name": "Full Body Strength",
-     *         "discipline": "Funcional",
-     *         "img_url": "/storage/images/classes/full_body.jpg",
-     *         "discipline_img": "/storage/images/disciplines/funcional.svg"
-     *       },
-     *       "instructor": {
-     *         "id": 3,
-     *         "name": "Juan Pérez",
-     *         "profile_image": "/storage/images/instructors/juan.jpg",
-     *         "rating_average": 4.8,
-     *         "is_head_coach": true
-     *       },
-     *       "studio": {
-     *         "id": 1,
-     *         "name": "Sala Principal"
-     *       },
-     *       "max_capacity": 20,
-     *       "available_spots": 5,
-     *       "booked_spots": 15,
-     *       "waitlist_spots": 0
-     *     }
-     *   ]
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "No tienes horarios de clase reservados",
-     *   "data": []
-     * }
-     */
-    public function classScheduleUser(Request $request)
-    {
-        try {
-            $userId = Auth::id();
-
-            // Validar parámetros de paginación
-            $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:50',
-                'page' => 'nullable|integer|min:1'
-            ]);
-
-            $query = ClassSchedule::with([
-                'class',
-                'instructor',
-                'studio',
-                'classScheduleSeats' => function ($query) use ($userId) {
-                    $query->where('user_id', $userId)
-                        ->where('status', 'completed')
-                        ->with('seat');
-                }
-            ])
-                ->whereHas('classScheduleSeats', function ($query) use ($userId) {
-                    $query->where('user_id', $userId)
-                        ->where('status', 'completed');
-                })
-                ->orderBy('scheduled_date', 'asc')
-                ->orderBy('start_time', 'asc');
-
-            // Aplicar paginación (siempre paginado)
-            $classSchedules = $query->paginate(
-                perPage: $request->integer('per_page', 15),
-                page: $request->integer('page', 1)
-            );
-
-            if ($classSchedules->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No tienes horarios de clase reservados',
-                    'data' => [],
-                    'meta' => [
-                        'current_page' => $classSchedules->currentPage(),
-                        'per_page' => $classSchedules->perPage(),
-                        'total' => $classSchedules->total(),
-                        'last_page' => $classSchedules->lastPage(),
-                        'from' => $classSchedules->firstItem(),
-                        'to' => $classSchedules->lastItem()
-                    ],
-                    'links' => [
-                        'first' => $classSchedules->url(1),
-                        'last' => $classSchedules->url($classSchedules->lastPage()),
-                        'prev' => $classSchedules->previousPageUrl(),
-                        'next' => $classSchedules->nextPageUrl()
-                    ]
-                ], 200);
-            }
-
-            // Transformar los datos para incluir información de asientos
-            $formattedSchedules = $classSchedules->map(function ($schedule) use ($userId) {
-                $userSeats = $schedule->classScheduleSeats->map(function ($seatAssignment) {
-                    return [
-                        'class_schedule_seat_id' => $seatAssignment->id,
-                        'seat_id' => $seatAssignment->seats_id,
-                        'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
-                        'row' => $seatAssignment->seat->row,
-                        'column' => $seatAssignment->seat->column,
-                        'status' => $seatAssignment->status,
-                        'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
-                        'expires_at' => $seatAssignment->expires_at?->toISOString()
-                    ];
-                });
-
-                return [
-                    'id' => $schedule->id,
-                    'scheduled_date' => $schedule->scheduled_date,
-                    'start_time' => $schedule->start_time,
-                    'end_time' => $schedule->end_time,
-                    'status' => $schedule->status,
-                    'class' => [
-                        'id' => $schedule->class->id,
-                        'name' => $schedule->class->name,
-                        'discipline' => $schedule->class->discipline->name ?? 'N/A',
-                        'img_url' => asset($schedule->class->img_url) ?? null,
-                        'discipline_img' => $schedule->class->discipline->icon_url ?? null,
-                    ],
-                    'instructor' => [
-                        'id' => $schedule->instructor->id,
-                        'name' => $schedule->instructor->name,
-                        'profile_image' => asset($schedule->instructor->profile_image) ?? null,
-                        'rating_average' => $schedule->instructor->rating_average ?? null,
-                        'is_head_coach' => $schedule->instructor->is_head_coach ?? false,
-                    ],
-                    'studio' => [
-                        'id' => $schedule->studio->id,
-                        'name' => $schedule->studio->name,
-                    ],
-                    'max_capacity' => $schedule->max_capacity,
-                    'available_spots' => $schedule->available_spots,
-                    'booked_spots' => $schedule->booked_spots,
-                    'waitlist_spots' => $schedule->waitlist_spots,
-                    'my_seats' => $userSeats,
-                    'total_my_seats' => $userSeats->count()
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Horarios de clase obtenidos exitosamente',
-                'data' => $formattedSchedules,
-                'meta' => [
-                    'current_page' => $classSchedules->currentPage(),
-                    'per_page' => $classSchedules->perPage(),
-                    'total' => $classSchedules->total(),
-                    'last_page' => $classSchedules->lastPage(),
-                    'from' => $classSchedules->firstItem(),
-                    'to' => $classSchedules->lastItem()
-                ],
-                'links' => [
-                    'first' => $classSchedules->url(1),
-                    'last' => $classSchedules->url($classSchedules->lastPage()),
-                    'prev' => $classSchedules->previousPageUrl(),
-                    'next' => $classSchedules->nextPageUrl()
-                ]
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al verificar paquetes',
+                'datoAdicional' => null
             ], 200);
-        } catch (\Exception $e) {
-            // Log del error para debugging
-            Log::error('Error al obtener horarios de clase del usuario', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno al obtener horarios de clase',
-                'data' => [],
-                'meta' => [
-                    'current_page' => 1,
-                    'per_page' => $request->integer('per_page', 15),
-                    'total' => 0,
-                    'last_page' => 1,
-                    'from' => null,
-                    'to' => null
-                ],
-                'links' => [
-                    'first' => null,
-                    'last' => null,
-                    'prev' => null,
-                    'next' => null
-                ]
-            ], 500);
         }
     }
 
-
-    /**
-     * Lista los horarios pendiente de clases reservados por el usuario autenticado
-     *
-     * Obtiene una lista de los horarios de clases en los que el usuario autenticado ha reservado un asiento.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Listar horarios de clases reservadas del usuario
-     * @operationId getClassSchedulesByUser
-     * @tags Horarios de Clases
-     *
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Horarios de clase obtenidos exitosamente",
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "scheduled_date": "2025-06-19",
-     *       "start_time": "08:00:00",
-     *       "end_time": "09:00:00",
-     *       "status": "scheduled",
-     *       "class": {
-     *         "id": 10,
-     *         "name": "Full Body Strength",
-     *         "discipline": "Funcional",
-     *         "img_url": "/storage/images/classes/full_body.jpg",
-     *         "discipline_img": "/storage/images/disciplines/funcional.svg"
-     *       },
-     *       "instructor": {
-     *         "id": 3,
-     *         "name": "Juan Pérez",
-     *         "profile_image": "/storage/images/instructors/juan.jpg",
-     *         "rating_average": 4.8,
-     *         "is_head_coach": true
-     *       },
-     *       "studio": {
-     *         "id": 1,
-     *         "name": "Sala Principal"
-     *       },
-     *       "max_capacity": 20,
-     *       "available_spots": 5,
-     *       "booked_spots": 15,
-     *       "waitlist_spots": 0
-     *     }
-     *   ]
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "No tienes horarios de clase reservados",
-     *   "data": []
-     * }
-     */
-    public function classScheduleUserPending(Request $request)
-    {
-        try {
-            $userId = Auth::id();
-
-            // Validar parámetros de paginación
-            $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:50',
-                'page' => 'nullable|integer|min:1'
-            ]);
-
-            $query = ClassSchedule::with([
-                'class',
-                'instructor',
-                'studio',
-                'classScheduleSeats' => function ($query) use ($userId) {
-                    $query->where('user_id', $userId)
-
-                        ->with('seat');
-                }
-
-            ])
-                ->where('status', 'scheduled') // Solo horarios programados
-                ->where('scheduled_date', '>=', now()->toDateString()) // Solo horarios
-                ->whereHas('classScheduleSeats', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->orderBy('scheduled_date', 'asc')
-                ->orderBy('start_time', 'asc');
-
-            // Aplicar paginación (siempre paginado)
-            $classSchedules = $query->paginate(
-                perPage: $request->integer('per_page', 15),
-                page: $request->integer('page', 1)
-            );
-
-            if ($classSchedules->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No tienes horarios de clase reservados',
-                    'data' => [],
-                    'meta' => [
-                        'current_page' => $classSchedules->currentPage(),
-                        'per_page' => $classSchedules->perPage(),
-                        'total' => $classSchedules->total(),
-                        'last_page' => $classSchedules->lastPage(),
-                        'from' => $classSchedules->firstItem(),
-                        'to' => $classSchedules->lastItem()
-                    ],
-                    'links' => [
-                        'first' => $classSchedules->url(1),
-                        'last' => $classSchedules->url($classSchedules->lastPage()),
-                        'prev' => $classSchedules->previousPageUrl(),
-                        'next' => $classSchedules->nextPageUrl()
-                    ]
-                ], 200);
-            }
-
-            // Transformar los datos para incluir información de asientos
-            $formattedSchedules = $classSchedules->map(function ($schedule) use ($userId) {
-                $userSeats = $schedule->classScheduleSeats->map(function ($seatAssignment) {
-                    return [
-                        'class_schedule_seat_id' => $seatAssignment->id,
-                        'seat_id' => $seatAssignment->seats_id,
-                        'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
-                        'row' => $seatAssignment->seat->row,
-                        'column' => $seatAssignment->seat->column,
-                        'status' => $seatAssignment->status,
-                        'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
-                        'expires_at' => $seatAssignment->expires_at?->toISOString()
-                    ];
-                });
-
-                return [
-                    'id' => $schedule->id,
-                    'scheduled_date' => $schedule->scheduled_date->format('d/m/Y'),
-                    'start_time' => $schedule->start_time,
-                    'end_time' => $schedule->end_time,
-                    'status' => $schedule->status,
-                    'class' => [
-                        'id' => $schedule->class->id,
-                        'name' => $schedule->class->name,
-                        'discipline' => $schedule->class->discipline->name ?? 'N/A',
-                        'img_url' => $schedule->class->img_url ? asset($schedule->class->img_url) : null,
-                        'discipline_img' => $schedule->class->discipline->icon_url ? asset($schedule->class->discipline->icon_url) : null,
-                    ],
-                    'instructor' => [
-                        'id' => $schedule->instructor->id,
-                        'name' => $schedule->instructor->name,
-                        'profile_image' => $schedule->instructor->profile_image ? asset($schedule->instructor->profile_image) : null,
-                        'rating_average' => $schedule->instructor->rating_average ?? null,
-                        'is_head_coach' => $schedule->instructor->is_head_coach ?? false,
-                    ],
-                    'studio' => [
-                        'id' => $schedule->studio->id,
-                        'name' => $schedule->studio->name,
-                        'location' => $schedule->studio->location ?? 'N/A',
-                    ],
-                    'max_capacity' => $schedule->max_capacity,
-                    'available_spots' => $schedule->available_spots,
-                    'booked_spots' => $schedule->booked_spots,
-                    'waitlist_spots' => $schedule->waitlist_spots,
-                    'my_seats' => $userSeats,
-                    'total_my_seats' => $userSeats->count()
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Horarios de clase obtenidos exitosamente',
-                'data' => $formattedSchedules,
-                'meta' => [
-                    'current_page' => $classSchedules->currentPage(),
-                    'per_page' => $classSchedules->perPage(),
-                    'total' => $classSchedules->total(),
-                    'last_page' => $classSchedules->lastPage(),
-                    'from' => $classSchedules->firstItem(),
-                    'to' => $classSchedules->lastItem()
-                ],
-                'links' => [
-                    'first' => $classSchedules->url(1),
-                    'last' => $classSchedules->url($classSchedules->lastPage()),
-                    'prev' => $classSchedules->previousPageUrl(),
-                    'next' => $classSchedules->nextPageUrl()
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            // Log del error para debugging
-            Log::error('Error al obtener horarios de clase del usuario', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno al obtener horarios de clase',
-                'data' => [],
-                'meta' => [
-                    'current_page' => 1,
-                    'per_page' => $request->integer('per_page', 15),
-                    'total' => 0,
-                    'last_page' => 1,
-                    'from' => null,
-                    'to' => null
-                ],
-                'links' => [
-                    'first' => null,
-                    'last' => null,
-                    'prev' => null,
-                    'next' => null
-                ]
-            ], 500);
-        }
-    }
 
 
     /**
      * Obtiene los asientos reservados por el usuario autenticado en un horario específico
-     *
-     * Devuelve todos los asientos que el usuario autenticado tiene reservados en el horario de clase especificado.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Obtener asientos reservados del usuario en horario específico
-     * @operationId getUserReservedSeatsInSchedule
-     * @tags Mis Reservas
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam class_schedule_id integer required ID del horario de clase. Example: 5
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Asientos reservados obtenidos exitosamente",
-     *   "data": {
-     *     "schedule_info": {
-     *       "id": 5,
-     *       "class_name": "Yoga Matutino",
-     *       "instructor_name": "María García",
-     *       "studio_name": "Sala Principal",
-     *       "scheduled_date": "2025-01-15",
-     *       "start_time": "08:00:00",
-     *       "end_time": "09:00:00"
-     *     },
-     *     "user_seats": [
-     *       {
-     *         "class_schedule_seat_id": 267,
-     *         "seat_id": 1,
-     *         "seat_number": "1.1",
-     *         "row": 1,
-     *         "column": 1,
-     *         "status": "reserved",
-     *         "reserved_at": "2025-01-11T20:30:00.000000Z",
-     *         "expires_at": "2025-01-11T20:45:00.000000Z",
-     *         "user_package_info": {
-     *           "package_id": 42,
-     *           "package_code": "PKG001-2024",
-     *           "package_name": "Paquete Yoga 10 Clases"
-     *         }
-     *       }
-     *     ],
-     *     "summary": {
-     *       "total_seats_reserved": 2,
-     *       "user_id": 10,
-     *       "schedule_id": 5
-     *     }
-     *   }
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "Horario de clase no encontrado"
-     * }
-     *
-     * @response 404 {
-     *   "success": false,
-     *   "message": "No tienes asientos reservados en este horario"
-     * }
      */
     public function reservedShow(Request $request): JsonResponse
     {
@@ -1920,7 +1094,7 @@ final class ClassScheduleController extends Controller
             $classScheduleId = $request->integer('class_schedule_id');
 
             // Obtener el horario de clase con sus relaciones
-            $classSchedule = ClassSchedule::with(['class', 'instructor', 'studio'])
+            $classSchedule = ClassSchedule::with(['class.discipline', 'instructor', 'studio'])
                 ->findOrFail($classScheduleId);
 
             // Obtener todos los asientos reservados por el usuario en este horario
@@ -1935,8 +1109,11 @@ final class ClassScheduleController extends Controller
                     'codMensaje' => 0,
                     'mensajeUsuario' => 'No tienes asientos reservados en este horario',
                     'datoAdicional' => null
-                ], 404);
+                ], 200);
             }
+
+            // Obtener el mapa completo de asientos del horario
+            $seatMapData = $classSchedule->getSeatMap();
 
             // Preparar información del horario
             $scheduleInfo = [
@@ -1982,6 +1159,29 @@ final class ClassScheduleController extends Controller
                 'schedule_id' => $classScheduleId
             ];
 
+            // Marcar los asientos del usuario en el mapa
+            $userSeatIds = $userSeats->pluck('seats_id')->toArray();
+            $enhancedSeatGrid = [];
+
+            if (isset($seatMapData['seat_grid'])) {
+                foreach ($seatMapData['seat_grid'] as $rowIndex => $row) {
+                    $enhancedRow = [];
+                    foreach ($row as $seat) {
+                        $enhancedSeat = $seat;
+                        // Verificar que el asiento tenga la clave 'id' antes de usarla
+                        if (isset($seat['id']) && in_array($seat['id'], $userSeatIds)) {
+                            $enhancedSeat['is_mine'] = true;
+                            $enhancedSeat['my_status'] = $userSeats->firstWhere('seats_id', $seat['id'])->status;
+                        } else {
+                            $enhancedSeat['is_mine'] = false;
+                            $enhancedSeat['my_status'] = null;
+                        }
+                        $enhancedRow[] = $enhancedSeat;
+                    }
+                    $enhancedSeatGrid[] = $enhancedRow;
+                }
+            }
+
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
@@ -1989,10 +1189,33 @@ final class ClassScheduleController extends Controller
                 'datoAdicional' => [
                     'schedule_info' => $scheduleInfo,
                     'user_seats' => $formattedUserSeats,
-                    'summary' => $summary
+                    'summary' => $summary,
+                    'seat_map' => [
+                        'studio' => [
+                            'id' => $classSchedule->studio->id,
+                            'name' => $classSchedule->studio->name,
+                            'max_capacity' => $classSchedule->studio->max_capacity,
+                            'rows' => $classSchedule->studio->row,
+                            'columns' => $classSchedule->studio->column,
+                            'location' => $classSchedule->studio->location
+                        ],
+                        'seat_grid' => $enhancedSeatGrid,
+                        'summary' => [
+                            'total_seats' => $seatMapData['summary']['total_seats'] ?? 0,
+                            'available' => $seatMapData['summary']['available_count'] ?? 0,
+                            'reserved' => $seatMapData['summary']['reserved_count'] ?? 0,
+                            'occupied' => $seatMapData['summary']['occupied_count'] ?? 0,
+                            'blocked' => $seatMapData['summary']['blocked_count'] ?? 0
+                        ]
+                    ],
+                    'my_reservation_summary' => [
+                        'total_my_seats' => $userSeats->count(),
+                        'my_reserved_seats' => $userSeats->where('status', 'reserved')->count(),
+                        'my_occupied_seats' => $userSeats->where('status', 'occupied')->count(),
+                        'my_blocked_seats' => $userSeats->where('status', 'blocked')->count(),
+                    ]
                 ]
             ], 200);
-
         } catch (\Throwable $e) {
             // Log del error para debugging
             Log::error('Error al obtener asientos reservados del usuario', [
@@ -2006,7 +1229,7 @@ final class ClassScheduleController extends Controller
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error interno al obtener asientos reservados',
-                'datoAdicional' => null
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }

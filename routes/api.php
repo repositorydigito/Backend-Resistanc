@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Two\FacebookProvider;
 
 // Ruta de testeo
-Route::get('/test', [TestController::class, 'status'])->name('test.status');
+Route::post('/test', [TestController::class, 'status'])->name('test.status');
 
 // Logueo con redes sociales
 // Socials
@@ -122,16 +122,16 @@ Route::prefix('posts')->name('posts.')->middleware('auth:sanctum')->group(functi
 
 // Horarios
 Route::prefix('class-schedules')->name('class-schedules.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [ClassScheduleController::class, 'index'])->name('index');
-    Route::get('/show/{classSchedule}', [ClassScheduleController::class, 'show'])->name('show');
-    Route::get('/{classSchedule}/seat-map', [ClassScheduleController::class, 'getSeatMap'])->name('seat-map');
-    Route::get('/{classSchedule}/check-packages', [ClassScheduleController::class, 'checkPackageAvailability'])->name('check-packages');
-    Route::post('/{classSchedule}/reserve-seats', [ClassScheduleController::class, 'reserveSeats'])->name('reserve-seats');
+    Route::post('/', [ClassScheduleController::class, 'index'])->name('index');
+    Route::post('/show', [ClassScheduleController::class, 'show'])->name('show');
+    Route::post('/seat-map', [ClassScheduleController::class, 'getSeatMap'])->name('seat-map');
+    Route::post('/check-packages', [ClassScheduleController::class, 'checkPackageAvailability'])->name('check-packages');
+    Route::post('/reserve-seats', [ClassScheduleController::class, 'reserveSeats'])->name('reserve-seats');
     Route::post('/release-seats', [ClassScheduleController::class, 'releaseSeats'])->name('release-seats');
-    Route::post('/confirm-attendance', [ClassScheduleController::class, 'confirmAttendance'])->name('confirm-attendance');
-    Route::get('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
-    Route::get('/class-schedulesUser', [ClassScheduleController::class, 'classScheduleUser'])->name('class-schedules');
-    Route::get('/class-schedulesUserPending', [ClassScheduleController::class, 'classScheduleUserPending'])->name('class-schedules-pending');
+    // Route::post('/confirm-attendance', [ClassScheduleController::class, 'confirmAttendance'])->name('confirm-attendance');
+    Route::post('/my-reservations', [ClassScheduleController::class, 'getMyReservations'])->name('my-reservations');
+    // Route::post('/class-schedulesUser', [ClassScheduleController::class, 'classScheduleUser'])->name('class-schedules');
+    // Route::post('/class-schedulesUserPending', [ClassScheduleController::class, 'classScheduleUserPending'])->name('class-schedules-pending');
     Route::post('/reserved-show', [ClassScheduleController::class, 'reservedShow'])->name('reserved-show');
 });
 // Fin Horarios
@@ -153,6 +153,7 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
     Route::post('/base-drinks', [DrinkController::class, 'baseDrinks'])->name('base-drinks');
     Route::post('/flavor-drinks', [DrinkController::class, 'flavorDrinks'])->name('flavor-drinks');
     Route::post('/type-drinks', [DrinkController::class, 'typeDrinks'])->name('type-drinks');
+    // Carrito shakes
     Route::post('/cart/add', [DrinkController::class, 'addToCart'])->name('add-to-cart');
     Route::post('/cart/show', [DrinkController::class, 'showToCart'])->name('show-to-cart');
     Route::post('/cart/remove', [DrinkController::class, 'removeFromCart'])->name('remove-from-cart');
@@ -193,7 +194,6 @@ Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(fun
     Route::put('/update/{card}', [PaymentController::class, 'update'])->name('update');
     Route::delete('/destroy/{card}', [PaymentController::class, 'destroy'])->name('destroy');
     Route::post('/select/{card}', [PaymentController::class, 'selectPayment'])->name('select');
-
     Route::post('/default', [PaymentController::class, 'defaultPayment'])->name('default');
 });
 
@@ -211,15 +211,7 @@ Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum
 });
 // Fin carrito
 
-// Carrito shake
-Route::prefix('juice-cart')->name('juice-cart.')->middleware('auth:sanctum')->group(function () {
-    Route::post('/', [JuiceCartCodeController::class, 'show'])->name('show');
-    Route::post('/add', [JuiceCartCodeController::class, 'add'])->name('add');
-    Route::post('/remove', [JuiceCartCodeController::class, 'remove'])->name('remove');
-    Route::post('/update-quantity', [JuiceCartCodeController::class, 'updateQuantity'])->name('update-quantity');
-    Route::post('/clear', [JuiceCartCodeController::class, 'clear'])->name('clear');
-    Route::post('/confirm', [JuiceCartCodeController::class, 'confirm'])->name('confirm');
-});
+
 
 // Fin carrito shake
 
@@ -247,5 +239,7 @@ Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(
 
 // Reservas de calzado
 Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [FootwearController::class, 'index'])->name('index');
+    Route::post('/class-schedule', [FootwearController::class, 'indexClassSchedule'])->name('index-class-schedule');
     Route::post('/reserve', [FootwearController::class, 'reserve'])->name('reserve');
 });

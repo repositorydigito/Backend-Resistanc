@@ -22,6 +22,7 @@ return new class extends Migration
 
             // Relaciones
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('cascade');
 
             // Índices
             $table->index('user_id');

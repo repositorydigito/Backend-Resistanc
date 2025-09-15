@@ -12,11 +12,15 @@ final class ShoppingCart extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'session_id',
-        'status',
+
         'total_amount',
         'item_count',
+        'status',
+
+        // Relaciones
+        'user_id',
+        'order_id',
     ];
 
     protected $casts = [
@@ -167,5 +171,10 @@ final class ShoppingCart extends Model
         return $order;
     }
 
+
+    public function order()
+    {
+        return $this->hasOne(Order::class);
+    }
 
 }

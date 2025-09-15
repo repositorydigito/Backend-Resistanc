@@ -36,18 +36,18 @@ class ClassScheduleIndexRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'per_page' => 'nullable|integer|min:1|max:50',
-            'page' => 'nullable|integer|min:1',
-            'class_id' => 'nullable|integer|exists:classes,id',
-            'instructor_id' => 'nullable|integer|exists:users,id',
-            'studio_id' => 'nullable|integer|exists:studios,id',
-            'discipline_id' => 'nullable|integer|exists:disciplines,id',
-            'scheduled_date' => 'nullable|date_format:Y-m-d',
-            'date_from' => 'nullable|date_format:Y-m-d',
-            'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
-            'search' => 'nullable|string|max:255',
-            'include_counts' => 'nullable|boolean',
-            'include_relations' => 'nullable|boolean',
+            'per_page' => 'sometimes|integer|min:1|max:50',
+            'page' => 'sometimes|integer|min:1',
+            'class_id' => 'sometimes|integer|exists:classes,id',
+            'instructor_id' => 'sometimes|integer|exists:users,id',
+            'studio_id' => 'sometimes|integer|exists:studios,id',
+            'discipline_id' => 'sometimes|integer|exists:disciplines,id',
+            'scheduled_date' => 'sometimes|date_format:Y-m-d',
+            'date_from' => 'sometimes|date_format:Y-m-d',
+            'date_to' => 'sometimes|date_format:Y-m-d|after_or_equal:date_from',
+            'search' => 'sometimes|string|max:255',
+            'include_counts' => 'sometimes|boolean',
+            'include_relations' => 'sometimes|boolean',
         ];
     }
 

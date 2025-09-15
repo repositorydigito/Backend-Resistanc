@@ -30,7 +30,8 @@ final class Order extends Model
         'special_instructions',
         'promocode_used',
         'notes',
-        'discount_code_id',
+
+        'items',
 
         // Relaciones
         'user_id',
@@ -294,5 +295,10 @@ final class Order extends Model
             'tax_amount_soles' => $taxAmount,
             'total_amount_soles' => $totalAmount,
         ]);
+    }
+
+    public function shoppingCart()
+    {
+        return $this->belongsTo(ShoppingCart::class);
     }
 }

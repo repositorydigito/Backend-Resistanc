@@ -29,6 +29,11 @@ class ReserveSeatsRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'class_schedule_id' => [
+                'required',
+                'integer',
+                'exists:class_schedules,id'
+            ],
             'class_schedule_seat_ids' => [
                 'required',
                 'array',

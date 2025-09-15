@@ -126,6 +126,7 @@ final class HomeController extends Controller
             ->get();
 
         $posts = Post::with('category', 'tags')
+            ->where('status', 'published')
             ->orderBy('is_featured', 'desc')
             ->limit(10)
             ->get();

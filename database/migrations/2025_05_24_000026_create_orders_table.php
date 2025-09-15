@@ -22,19 +22,24 @@ return new class extends Migration
             $table->decimal('discount_amount_soles', 8, 2)->default(0.00)->comment('Monto del descuento en soles');
             $table->decimal('total_amount_soles', 10, 2)->comment('Monto total en soles');
             $table->char('currency', 3)->default('PEN')->comment('Código de moneda');
+
             $table->enum('status', ['pending', 'confirmed', 'processing', 'preparing', 'ready', 'delivered', 'cancelled', 'refunded'])->default('pending')->comment('Estado de la orden');
             $table->enum('payment_status', ['pending', 'authorized', 'paid', 'partially_paid', 'failed', 'refunded'])->default('pending')->comment('Estado del pago');
-            $table->enum('delivery_method', ['pickup', 'delivery', 'digital'])->default('pickup')->comment('Método de entrega');
+
+            $table->json('items')->comment('Lista de productos comprados');
+
+            // Delivery
+            $table->enum('delivery_method', ['pickup', 'delivery', 'digital'])->nullable()->default('pickup')->comment('Método de entrega');
             $table->date('delivery_date')->nullable()->comment('Fecha de entrega');
             $table->string('delivery_time_slot', 50)->nullable()->comment('Franja horaria de entrega');
             $table->json('delivery_address')->nullable()->comment('Dirección de entrega');
             $table->text('special_instructions')->nullable()->comment('Instrucciones especiales');
             $table->string('promocode_used', 50)->nullable()->comment('Código promocional utilizado');
             $table->text('notes')->nullable()->comment('Notas');
+            // Delivery
 
             // Relaciones
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('discount_code_id')->nullable()->constrained('discount_codes');
 
             // Índices
             $table->index(['user_id', 'status']);

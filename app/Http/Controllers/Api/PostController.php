@@ -115,6 +115,18 @@ class PostController extends Controller
                 ], 200);
             }
 
+            // Verificar si el artículo está en estado "draft"
+            if ($post->status === 'draft') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'El articulo no se puede mostrar esta en borrador',
+                    'datoAdicional' => null,
+
+                ], 200);
+            }
+
+
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
