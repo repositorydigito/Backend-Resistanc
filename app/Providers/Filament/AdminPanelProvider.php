@@ -31,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
-            ->profile(EditProfile::class)
+            // ->profile(EditProfile::class)
             ->favicon(asset('/image/logos/iconos/resistance-logo.ico')) // Icono pages
             ->brandLogo(asset('image/logos/resistance-logo-two.png')) // 👈 Logo principal
             ->darkModeBrandLogo(asset('image/logos/resistance-logo-two-white.png'))
