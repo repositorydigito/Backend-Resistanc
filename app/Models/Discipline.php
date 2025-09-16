@@ -17,6 +17,7 @@ final class Discipline extends Model
         'description',
         'icon_url',
         'image_url',
+        'image_seat',
         'color_hex',
         'equipment_required',
         'difficulty_level',

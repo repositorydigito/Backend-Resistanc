@@ -47,11 +47,11 @@ class InstructorResource extends Resource
                     ->description('Datos de acceso al sistema')
                     ->schema([
                         Forms\Components\TextInput::make('user_email')
-                            ->label('Correo electrónico')
-                            ->email()
+                            ->label('Correo electrónico o Usuario')
+
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('ejemplo@correo.com')
+                            ->placeholder('ejemplo@correo.com o Alex')
                             ->helperText('Este será el correo de acceso al sistema')
                             ->columnSpanFull(),
 

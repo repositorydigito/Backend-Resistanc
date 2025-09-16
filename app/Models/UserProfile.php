@@ -99,6 +99,14 @@ final class UserProfile extends Model
     }
 
     /**
+     * Get the user memberships through the user relationship.
+     */
+    public function userMemberships(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserMembership::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
      * Get the user's payment methods through the user relationship.
      */
     public function userPaymentMethods(): HasManyThrough

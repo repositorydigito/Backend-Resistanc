@@ -354,6 +354,7 @@ class UserProfileResource extends Resource
     {
         return [
             RelationManagers\UserPackagesRelationManager::class,
+            RelationManagers\UserMembershipsRelationManager::class,
             RelationManagers\UserPaymentMethodRelationManager::class,
             RelationManagers\ClassScheduleSeatsRelationManager::class,
             RelationManagers\DrinkUserRelationManager::class,

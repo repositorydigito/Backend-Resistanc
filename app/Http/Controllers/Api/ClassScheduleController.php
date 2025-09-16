@@ -261,6 +261,7 @@ final class ClassScheduleController extends Controller
                     'name' => $classSchedule->class->name,
                     'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
                     'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : null,
+                    'discipline_img_seat' => $classSchedule->class->discipline->image_seat ? asset('storage/') . '/' . $classSchedule->class->discipline->image_seat : null,
                 ],
                 'instructor' => [
                     'id' => $classSchedule->instructor->id,
@@ -388,14 +389,17 @@ final class ClassScheduleController extends Controller
 
             // Usar transacción para asegurar consistencia
             return DB::transaction(function () use ($classSchedule, $classScheduleSeatIds, $userId, $minutesToExpire, $packageValidationService, $packageValidation) {
-                // Obtener los paquetes disponibles como modelos Eloquent
+                // Obtener los paquetes y membresías disponibles como modelos Eloquent
                 $classSchedule->load(['class.discipline']);
                 $disciplineId = $classSchedule->class->discipline_id;
                 $availablePackages = $packageValidationService->getUserAvailablePackagesForDiscipline($userId, $disciplineId);
-                $totalAvailableSeats = $availablePackages->sum('remaining_classes');
+                $availableMemberships = $packageValidationService->getUserAvailableMembershipsForDiscipline($userId, $disciplineId);
 
-                // Log del orden de consumo de paquetes
-                Log::info('Orden de consumo de paquetes (más cercanos a vencer primero)', [
+                // Calcular total de asientos disponibles (paquetes + membresías)
+                $totalAvailableSeats = $availablePackages->sum('remaining_classes') + $availableMemberships->sum('remaining_free_classes');
+
+                // Log del orden de consumo de paquetes y membresías
+                Log::info('Orden de consumo de paquetes y membresías (más cercanos a vencer primero)', [
                     'user_id' => $userId,
                     'schedule_id' => $classSchedule->id,
                     'packages_order' => $availablePackages->map(function ($package) {
@@ -405,7 +409,19 @@ final class ClassScheduleController extends Controller
                             'package_name' => $package->package->name ?? 'N/A',
                             'remaining_classes' => $package->remaining_classes,
                             'expiry_date' => $package->expiry_date?->toDateString(),
-                            'days_remaining' => $package->days_remaining
+                            'days_remaining' => $package->days_remaining,
+                            'type' => 'package'
+                        ];
+                    })->toArray(),
+                    'memberships_order' => $availableMemberships->map(function ($membership) {
+                        return [
+                            'membership_id' => $membership->id,
+                            'membership_name' => $membership->membership->name ?? 'N/A',
+                            'discipline_name' => $membership->discipline->name ?? 'N/A',
+                            'remaining_free_classes' => $membership->remaining_free_classes,
+                            'expiry_date' => $membership->expiry_date?->toDateString(),
+                            'days_remaining' => $membership->days_remaining,
+                            'type' => 'membership'
                         ];
                     })->toArray()
                 ]);
@@ -481,61 +497,75 @@ final class ClassScheduleController extends Controller
                 $reservedSeats = [];
                 $reservedAt = now();
                 $expiresAt = $reservedAt->copy()->addMinutes($minutesToExpire);
-                $packageConsumptionDetails = [];
+                $consumptionDetails = [];
 
-                // Consumir un asiento de un paquete por cada asiento reservado
-                // Los paquetes ya están ordenados por fecha de expiración (más cercanos a vencer primero)
-                $packageIndex = 0;
+                // Consumir clases priorizando membresías sobre paquetes
                 foreach ($availableAssignments as $i => $assignment) {
-                    // Buscar el siguiente paquete con clases disponibles
-                    while ($packageIndex < $availablePackages->count() && $availablePackages[$packageIndex]->remaining_classes <= 0) {
-                        $packageIndex++;
-                    }
-                    if ($packageIndex >= $availablePackages->count()) {
+                    // Usar el servicio para consumir la mejor opción disponible
+                    $consumptionResult = $packageValidationService->consumeClassFromBestOption($userId, $disciplineId);
+
+                    if (!$consumptionResult['success']) {
                         // Esto no debería ocurrir por la validación previa
+                        Log::error('Error al consumir clase para reserva', [
+                            'user_id' => $userId,
+                            'schedule_id' => $classSchedule->id,
+                            'assignment_id' => $assignment->id,
+                            'error' => $consumptionResult['message']
+                        ]);
                         break;
                     }
-                    $package = $availablePackages[$packageIndex];
-                    $package->loadMissing('package'); // Asegura que la relación esté cargada
-                    $package->useClasses(1);
-                    $packageConsumptionDetails[] = [
-                        'package_id' => $package->id,
-                        'package_code' => $package->package_code,
-                        'package_name' => $package->package->name ?? 'N/A',
-                        'classes_consumed' => 1,
-                        'remaining_classes' => $package->remaining_classes,
-                        'expiry_date' => $package->expiry_date?->toDateString(),
-                        'days_remaining' => $package->days_remaining
-                    ];
 
-                    // Actualizar el asiento con el user_package_id
-                    $assignment->update([
-                        'user_id' => $userId,
-                        'status' => 'reserved',
-                        'reserved_at' => $reservedAt,
-                        'expires_at' => $expiresAt,
-                        'user_package_id' => $package->id
-                    ]);
+                    // Determinar qué tipo de consumo se realizó
+                    $consumedItem = null;
+                    $consumedType = null;
 
-                    // Cargar la relación del asiento para obtener información completa
-                    $assignment->load('seat');
+                    if (isset($consumptionResult['consumed_membership'])) {
+                        $consumedItem = $consumptionResult['consumed_membership'];
+                        $consumedType = 'membership';
+                    } elseif (isset($consumptionResult['consumed_package'])) {
+                        $consumedItem = $consumptionResult['consumed_package'];
+                        $consumedType = 'package';
+                    }
 
-                    $reservedSeats[] = [
-                        'class_schedule_seat_id' => $assignment->id,
-                        'seat_id' => $assignment->seats_id,
-                        'seat_number' => $assignment->seat->row . '.' . $assignment->seat->column,
-                        'row' => $assignment->seat->row,
-                        'column' => $assignment->seat->column,
-                        'status' => 'reserved',
-                        'user_id' => $userId,
-                        'reserved_at' => $reservedAt->toISOString(),
-                        'expires_at' => $expiresAt->toISOString(),
-                        'assignment_id' => $assignment->id,
-                        'schedule_id' => $classSchedule->id,
-                        'user_package_id' => $package->id, // Mostrar el paquete usado
-                        'package_code' => $package->package_code,
-                        'package_name' => $package->package->name ?? 'N/A'
-                    ];
+                    if ($consumedItem) {
+                        $consumptionDetails[] = $consumedItem;
+
+                        // Actualizar el asiento con la información correspondiente
+                        $updateData = [
+                            'user_id' => $userId,
+                            'status' => 'reserved',
+                            'reserved_at' => $reservedAt,
+                            'expires_at' => $expiresAt,
+                        ];
+
+                        // Agregar el ID correspondiente según el tipo
+                        if ($consumedType === 'membership') {
+                            $updateData['user_membership_id'] = $consumedItem['id'];
+                        } else {
+                            $updateData['user_package_id'] = $consumedItem['id'];
+                        }
+
+                        $assignment->update($updateData);
+
+                        // Cargar la relación del asiento para obtener información completa
+                        $assignment->load('seat');
+
+                        $reservedSeats[] = [
+                            'class_schedule_seat_id' => $assignment->id,
+                            'seat_id' => $assignment->seats_id,
+                            'seat_number' => $assignment->seat->row . '.' . $assignment->seat->column,
+                            'row' => $assignment->seat->row,
+                            'column' => $assignment->seat->column,
+                            'status' => 'reserved',
+                            'user_id' => $userId,
+                            'reserved_at' => $reservedAt->toISOString(),
+                            'expires_at' => $expiresAt->toISOString(),
+                            'assignment_id' => $assignment->id,
+                            'schedule_id' => $classSchedule->id,
+                            'consumed_type' => $consumedType,
+                            'consumed_item' => $consumedItem
+                        ];
+                    }
                 }
 
 
@@ -617,6 +647,7 @@ final class ClassScheduleController extends Controller
                 foreach ($assignments as $assignment) {
                     $previousStatus = $assignment->status;
                     $previousUserPackageId = $assignment->user_package_id;
+                    $previousUserMembershipId = $assignment->user_membership_id;
 
                     // Cargar la relación del asiento
                     $assignment->load('seat');
@@ -631,7 +662,24 @@ final class ClassScheduleController extends Controller
                                 'package_code' => $userPackage->package_code,
                                 'package_name' => $userPackage->package->name ?? 'N/A',
                                 'classes_refunded' => 1,
-                                'remaining_classes' => $userPackage->remaining_classes
+                                'remaining_classes' => $userPackage->remaining_classes,
+                                'type' => 'package'
+                            ];
+                        }
+                    }
+
+                    // Si tenía una membresía asignada, devolver la clase gratis
+                    if ($previousUserMembershipId) {
+                        $userMembership = \App\Models\UserMembership::find($previousUserMembershipId);
+                        if ($userMembership && $userMembership->user_id === $userId) {
+                            $userMembership->refundFreeClasses(1);
+                            $refundedPackages[] = [
+                                'membership_id' => $userMembership->id,
+                                'membership_name' => $userMembership->membership->name ?? 'N/A',
+                                'discipline_name' => $userMembership->discipline->name ?? 'N/A',
+                                'classes_refunded' => 1,
+                                'remaining_free_classes' => $userMembership->remaining_free_classes,
+                                'type' => 'membership'
                             ];
                         }
                     }
@@ -642,7 +690,8 @@ final class ClassScheduleController extends Controller
                         'status' => 'available',
                         'reserved_at' => null,
                         'expires_at' => null,
-                        'user_package_id' => null
+                        'user_package_id' => null,
+                        'user_membership_id' => null
                     ]);
 
                     $releasedSeats[] = [

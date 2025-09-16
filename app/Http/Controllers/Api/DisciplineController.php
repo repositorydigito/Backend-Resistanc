@@ -23,7 +23,7 @@ final class DisciplineController extends Controller
         try {
             $query = Discipline::query()
                 ->active()
-                ->whereHas('packages')
+                // ->whereHas('packages')
                 ->orderBy('sort_order', 'asc')
                 ->orderBy('display_name', 'asc');
 

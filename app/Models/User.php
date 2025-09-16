@@ -219,6 +219,14 @@ final class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(UserPackage::class);
     }
 
+    /**
+     * Get the user memberships for free classes.
+     */
+    public function userMemberships(): HasMany
+    {
+        return $this->hasMany(UserMembership::class);
+    }
+
 
     /**
      * Get the user's full name from profile.

@@ -84,6 +84,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
 // Home
 Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('index');
+
 });
 // Fin home
 
@@ -93,6 +94,7 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
     Route::post('/show', [PackageController::class, 'show'])->name('show');
     Route::post('/me', [PackageController::class, 'packageMe'])->name('me');
     Route::post('/me/create', [PackageController::class, 'packageMeCreate'])->name('meCreate');
+    Route::post('/me/vigent',[PackageController::class , 'packageMeVigent'])->name('packageMeVigent');
 });
 
 // Disciplinas

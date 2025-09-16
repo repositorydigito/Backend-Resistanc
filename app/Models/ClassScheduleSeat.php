@@ -19,6 +19,7 @@ class ClassScheduleSeat extends Model
         // relaciones
         'class_schedules_id',
         'user_package_id',
+        'user_membership_id',
         'seats_id',
         'user_id',
         'user_waiting_id',
@@ -55,6 +56,11 @@ class ClassScheduleSeat extends Model
     public function userPackage(): BelongsTo
     {
         return $this->belongsTo(UserPackage::class, 'user_package_id');
+    }
+
+    public function userMembership(): BelongsTo
+    {
+        return $this->belongsTo(UserMembership::class, 'user_membership_id');
     }
 
     // 📋 Scopes

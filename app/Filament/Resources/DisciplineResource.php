@@ -56,13 +56,24 @@ class DisciplineResource extends Resource
                                     ->preserveFilenames()
                                     ->maxSize(2048),
                                 Forms\Components\FileUpload::make('image_url')
-                                    ->label('Imagen de fondo')
+                                    ->label('Imagen de fondo pagina')
                                     ->columnSpanFull()
                                     ->image()
                                     ->directory('disciplines/images')
                                     ->disk('public')
                                     ->visibility('public')
                                     ->extraAttributes(['class' => 'h-64 w-full object-cover'])
+                                    ->preserveFilenames()
+                                    ->maxSize(2048),
+
+                                Forms\Components\FileUpload::make('image_seat')
+                                    ->label('Imagen del espacio')
+                                    ->columnSpanFull()
+                                    ->image()
+                                    ->directory('disciplines/seat')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->extraAttributes(['class' => 'h-64 w-64'])
                                     ->preserveFilenames()
                                     ->maxSize(2048),
 

@@ -24,55 +24,6 @@ final class HomeController extends Controller
 {
     /**
      * Datos de la pantalla de inicio
-     *
-     * Retorna información útil para la app del usuario autenticado: instructores activos con disciplina,
-     * clases próximas reservadas, y productos activos.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Obtener datos del home
-     * @operationId getHomeData
-     *
-     * @response 200 {
-     *   "data": {
-     *     "instructors": [
-     *       {
-     *         "id": 1,
-     *         "name": "Laura Mendoza",
-     *         "discipline": {
-     *           "id": 1,
-     *           "name": "Yoga"
-     *         }
-     *       }
-     *     ],
-     *     "classSchedules": [
-     *       {
-     *         "id": 10,
-     *         "status": "reserved",
-     *         "class_schedule": {
-     *           "id": 2,
-     *           "class": { "name": "Pilates" },
-     *           "studio": { "name": "Sala A" }
-     *         },
-     *         "seat": {
-     *           "id": 5,
-     *           "label": "A3"
-     *         }
-     *       }
-     *     ],
-     *     "products": [
-     *       {
-     *         "id": 5,
-     *         "name": "Proteína Whey",
-     *         "category": {
-     *           "id": 2,
-     *           "name": "Suplementos"
-     *         }
-     *       }
-     *     ]
-     *   }
-     * }
-     *
-     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
@@ -177,4 +128,8 @@ final class HomeController extends Controller
             ],
         ]);
     }
+
+
+
+
 }
