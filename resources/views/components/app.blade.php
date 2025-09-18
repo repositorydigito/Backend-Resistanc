@@ -1,51 +1,37 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="">
-
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="@yield('meta-description', 'Descripción predeterminada de tu sitio')">
-
-    <meta name="keywords" content="@yield('meta-keywords', 'palabras, clave, default')">
-    <meta name="author" content="Nombre de tu empresa/aplicación">
-
-
-    <!-- Favicon -->
-    <link rel="icon" href="{{ asset('image/logos/iconos/resistance-logo.ico') }}" type="image/x-icon">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
-
-    <!-- Styles / Scripts -->
-
-    <title>@yield('title', config('app.name')) - {{ config('app.slogan', 'Tu eslogan aquí') }}</title>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-
-
+    <title>Resistance - Inicio</title>
+    <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
 </head>
+<body>
 
-@stack('css')
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="{{ route('home') }}" class="logo">Resistance</a>
+                <ul class="nav-menu">
+                    <li><a href="{{ route('home') }}" class="nav-link">Inicio</a></li>
+                    <li><a href="#membresias" class="nav-link">Membresías</a></li>
+                    <li><a href="#disciplinas" class="nav-link">Disciplinas</a></li>
+                    <li><a href="#contacto" class="nav-link">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-<body class="">
-
-    @include('layouts.partials.navigate')
-
-
-    <div class="">
+    <main>
         {{ $slot }}
-    </div>
+    </main>
 
-    @include('layouts.partials.footerapp')
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; {{ date('Y') }} Resistance Gym. Todos los derechos reservados.</p>
+        </div>
+    </footer>
 
-
-    @stack('js')
 
 </body>
-
 </html>
