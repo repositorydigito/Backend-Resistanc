@@ -37,8 +37,8 @@ class ClassScheduleResource extends JsonResource
                 'location' => $this->studio->location,
             ],
             'scheduled_date' => $this->scheduled_date->format('d/m/Y'),
-            'start_time' => $this->start_time,
-            'end_time' => $this->end_time,
+            'start_time' => \Carbon\Carbon::parse($this->start_time)->format('H:i'), // ✅ Convierte a Carbon primero
+            'end_time' => \Carbon\Carbon::parse($this->end_time)->format('H:i'),   // ✅ Convierte a Car
             'max_capacity' => $this->max_capacity,
             'available_spots' => $this->available_spots,
             'booked_spots' => $this->booked_spots,
