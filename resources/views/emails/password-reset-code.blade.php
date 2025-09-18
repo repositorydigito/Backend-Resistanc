@@ -1,51 +1,132 @@
-@component('mail::message')
-# 🔐 Código de Recuperación de Contraseña
+<!DOCTYPE html>
+<html lang="es">
 
-¡Hola **{{ $userName }}**! 👋
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Código de Recuperación de Contraseña</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
 
-Has solicitado restablecer tu contraseña en **{{ config('app.name') }}**.
+        html {
+            background: #EFF0F2;
+        }
 
-## Tu código de verificación es:
+        .main {
+            background: #4a6cb0;
+            height: 100vh;
+            width: 100vw;
+        }
 
-<div style="text-align: center; margin: 40px 0; padding: 20px;">
-    <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 30px 40px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
-        <div style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; letter-spacing: 12px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-            {{ $code }}
+        .code__content {
+
+            display: grid;
+            justify-content: center;
+            justify-items: center;
+
+        }
+
+        .code {
+            background: linear-gradient(94deg, #E7D4D8 0%, #E5D7EA 28.85%, #E7DFE9 50.48%, #D9D9D2 69.71%, #CDD6D7 100%);
+            padding: .5rem 1rem;
+            align-items: center;
+            border-radius: 16px;
+            font-size: 1.7rem;
+            letter-spacing: .8rem;
+            font-weight: 500;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            justify-items: center;
+            max-width: 150px;
+            width: 150px;
+            margin: auto;
+        }
+
+        .main {
+            display: grid;
+            padding: 2rem;
+        }
+
+        .fondo {
+
+            background: #EFF0F2;
+            display: grid;
+            justify-content: center;
+            align-content: center;
+            padding: 5rem 2rem;
+        }
+
+        .card {
+            background: #fff;
+            max-width: 550px;
+            width: 550px;
+            margin: auto;
+            padding: 1.5rem;
+        }
+
+        .card__content--negrita {
+            font-weight: 600;
+            color: #B0694C;
+            background: #fff;
+        }
+
+        .card__title {
+            font-size: 1.3rem;
+        }
+
+        .card__title--negrita {
+            font-weight: 800;
+        }
+
+        .card__saludo {
+            font-size: 1rem;
+        }
+
+        .card__body>* {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="main">
+
+        <div class="fondo">
+            <div class="card">
+
+                <div class="card__content">
+
+                    <h2 class="card__title">
+                        ¡DON’T <span class="card__title--negrita">WORRY!</span>
+                    </h2>
+
+                    <h1 class="card__saludo">Hola {{ $user->name }}, </h1>
+
+                    <div class="card__body">
+                        {!! $data->body !!}
+                    </div>
+                    <div class="code__content">
+                        <span class="code">
+                            {{ $code }}
+                        </span>
+                    </div>
+
+
+                </div>
+
+
+            </div>
         </div>
-    </div>
-</div>
 
-## ⚠️ Información Importante:
 
-- ⏰ **Expiración:** Este código expirará en **{{ $expireTime }} minutos**
-- 🔒 **Seguridad:** No compartas este código con nadie
-- 📱 **Uso:** Ingresa este código en la aplicación para continuar
-- 🚫 **Si no lo solicitaste:** Puedes ignorar este mensaje de forma segura
 
-## 🚀 ¿Cómo usar el código?
+    </main>
+</body>
 
-1. Abre la aplicación **{{ config('app.name') }}**
-2. Ve a la sección de recuperación de contraseña
-3. Ingresa el código: **{{ $code }}**
-4. Crea tu nueva contraseña segura
-
-@component('mail::button', ['url' => '#', 'color' => 'primary'])
-📱 Abrir Aplicación
-@endcomponent
-
----
-
-<div style="background: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 4px;">
-    <strong>💡 Consejo de Seguridad:</strong><br>
-    Después de cambiar tu contraseña, asegúrate de cerrar sesión en todos los dispositivos donde tengas la aplicación abierta.
-</div>
-
----
-
-**Saludos, el equipo de {{ config('app.name') }}** 🎉
-
-<small style="color: #6c757d; font-size: 12px;">
-📧 Este es un mensaje automático de seguridad. Por favor no respondas a este correo.<br>
-🛡️ Si tienes dudas sobre la seguridad de tu cuenta, contacta a nuestro equipo de soporte.
-</small>
-@endcomponent
+</html>

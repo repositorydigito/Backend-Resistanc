@@ -73,6 +73,10 @@ class TemplateEmailResource extends Resource
                                 'redo',
                                 'strike',
                                 'undo',
+                                'alignLeft',
+                                'alignCenter',
+                                'alignRight',
+                                'alignJustify',
                             ]),
                     ]),
 

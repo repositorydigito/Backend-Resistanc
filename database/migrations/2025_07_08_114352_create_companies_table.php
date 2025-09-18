@@ -29,6 +29,8 @@ return new class extends Migration
 
             $table->string('signature_image')->nullable()->comment('Ruta de la imagen de la firma');
 
+            $table->json('social_networks')->nullable()->comment('Redes sociales');
+
             // Facturacion con nube Fac
             $table->text('url_facturacion')->nullable()->comment('Proveedor de facturación');
             $table->text('token_facturacion')->nullable()->comment('Token de acceso para la API de facturación');

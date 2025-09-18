@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SendPasswordResetCodeRequest;
 use App\Http\Requests\VerifyPasswordResetCodeRequest;
 use App\Http\Requests\ResetPasswordWithCodeRequest;
+use App\Mail\RecoverPasswordCode;
 use App\Models\User;
 use App\Models\PasswordResetCode;
 use App\Notifications\PasswordResetCodeNotification;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Dedoc\Scramble\Attributes\BodyParameter;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * @tags Recuperación de Contraseña
@@ -25,40 +27,7 @@ final class RecoverPasswordController extends Controller
     /**
      * Enviar código de recuperación de contraseña
      *
-     * Envía un código de 4 dígitos al correo electrónico del usuario
-     * para permitir la recuperación de contraseña.
-     *
-     * @summary Enviar código de recuperación
-     * @operationId sendPasswordResetCode
-     *
-     * @param  \App\Http\Requests\SendPasswordResetCodeRequest  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam email string required Correo electrónico del usuario. Example: migelo5511@gmail.com
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 200,
-     *   "mensajeUsuario": "Se ha enviado un código de verificación a tu correo electrónico.",
-     *   "datoAdicional": {
-     *     "email": "migelo5511@gmail.com",
-     *     "expires_in": 600
-     *   }
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 404,
-     *   "mensajeUsuario": "No se encontró un usuario con ese correo electrónico.",
-     *   "datoAdicional": null
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 429,
-     *   "mensajeUsuario": "Demasiadas solicitudes. Intenta de nuevo en 60 segundos.",
-     *   "datoAdicional": null
-     * }
+
      */
     #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'migelo5511@gmail.com')]
     public function sendResetCode(SendPasswordResetCodeRequest $request): JsonResponse
@@ -92,8 +61,11 @@ final class RecoverPasswordController extends Controller
         // Crear código de recuperación
         $resetCode = PasswordResetCode::createForEmail($email, 10);
 
-        // Enviar notificación
-        $user->notify(new PasswordResetCodeNotification($resetCode->code));
+
+        // Enviar correo
+        Mail::to($user->email)->send(new RecoverPasswordCode($resetCode->code, $user));
+
+        // $user->notify(new PasswordResetCodeNotification($resetCode->code));
 
         // Incrementar rate limiter
         RateLimiter::hit($key, 60);

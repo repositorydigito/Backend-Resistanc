@@ -66,7 +66,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
         ->name('verification.send');
 
     // Password recovery routes
-    Route::post('/send-reset-code', [RecoverPasswordController::class, 'sendResetCode'])->name('send-reset-code');
+    Route::post('/send-reset-code', [RecoverPasswordController::class, 'sendResetCode'])->name('send-reset-code'); // envia codigo de actualizacion de contraseña al correo
     Route::post('/verify-reset-code', [RecoverPasswordController::class, 'verifyResetCode'])->name('verify-reset-code');
     Route::post('/reset-password', [RecoverPasswordController::class, 'resetPassword'])->name('reset-password');
 
@@ -78,13 +78,13 @@ Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
         Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
+        Route::post('/password/update', [AuthController::class, 'updatePassword'])->name('password-update'); // Asegura que el usuario esté autenticado
     });
 });
 
 // Home
 Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('index');
-
 });
 // Fin home
 
@@ -94,7 +94,7 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
     Route::post('/show', [PackageController::class, 'show'])->name('show');
     Route::post('/me', [PackageController::class, 'packageMe'])->name('me');
     Route::post('/me/create', [PackageController::class, 'packageMeCreate'])->name('meCreate');
-    Route::post('/me/vigent',[PackageController::class , 'packageMeVigent'])->name('packageMeVigent');
+    Route::post('/me/vigent', [PackageController::class, 'packageMeVigent'])->name('packageMeVigent');
 });
 
 // Disciplinas

@@ -248,3 +248,4 @@ class UserMembershipsRelationManager extends RelationManager
             ->emptyStateIcon('heroicon-o-gift');
     }
 }
+

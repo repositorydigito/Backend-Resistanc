@@ -20,6 +20,7 @@ class Company extends Model
         'currency',
         'locale',
         'signature_image', // Ruta de la imagen de la firma
+        'social_networks', // Redes sociales
 
         // Facturacion con nube Fac
         'url_facturacion',
@@ -28,6 +29,7 @@ class Company extends Model
 
     protected $casts = [
         'settings' => 'array',
+        'social_networks' => 'array',
         'established_at' => 'datetime'
     ];
 

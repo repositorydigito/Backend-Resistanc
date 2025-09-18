@@ -128,10 +128,11 @@ class CompanyResource extends Resource
                         Forms\Components\FileUpload::make('logo_path')
                             ->label('Logo')
                             ->image()
-                            ->imageEditor()
-                            ->imageCropAspectRatio('16:9')
-                            ->imageResizeTargetWidth('1920')
-                            ->imageResizeTargetHeight('1080')
+                            // ->imageEditor()
+                            // ->imageCropAspectRatio('16:9')
+                            // ->imageResizeTargetWidth('1920')
+                            // ->imageResizeTargetHeight('1080')
+
                             ->directory('company-logos')
                             ->visibility('public')
                             ->helperText('Formatos: PNG, JPG, SVG. Tamaño máximo: 2MB'),
@@ -173,14 +174,58 @@ class CompanyResource extends Resource
                           Forms\Components\FileUpload::make('signature_image')
                             ->label('Imagen de la Firma')
                             ->image()
-                            ->imageEditor()
-                            ->imageCropAspectRatio('16:9')
-                            ->imageResizeTargetWidth('1920')
-                            ->imageResizeTargetHeight('1080')
+                            // ->imageEditor()
+                            // ->imageCropAspectRatio('16:9')
+                            // ->imageResizeTargetWidth('1920')
+                            // ->imageResizeTargetHeight('1080')
                             ->directory('company-logos')
                             ->visibility('public')
                             ->helperText('Formatos: PNG, JPG, SVG. Tamaño máximo: 2MB'),
+                    ]),
+
+                Forms\Components\Section::make('Redes Sociales')
+                    ->description('Configuración de redes sociales de la empresa')
+                    ->schema([
+                        Forms\Components\Repeater::make('social_networks')
+                            ->label('Redes Sociales')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Nombre de la Red Social')
+                                    ->required()
+                                    ->placeholder('Ej: Facebook, Instagram, Twitter')
+                                    ->maxLength(50),
+
+                                Forms\Components\TextInput::make('url')
+                                    ->label('Enlace/URL')
+                                    ->required()
+                                    ->url()
+                                    ->placeholder('Ej: https://www.facebook.com/resistancegym')
+                                    ->maxLength(255),
+
+                                Forms\Components\FileUpload::make('icon')
+                                    ->label('Icono/Imagen')
+                                    ->image()
+                                    ->directory('company-logos/social-icons')
+                                    ->visibility('public')
+                                    ->helperText('Icono o imagen representativa de la red social')
+                                    ->maxSize(1024), // 1MB máximo
+
+                                // Forms\Components\TextInput::make('color')
+                                //     ->label('Color de la Red Social')
+                                //     ->placeholder('Ej: #1877F2 (Facebook), #E4405F (Instagram)')
+                                //     ->helperText('Color hexadecimal para personalizar la apariencia')
+                                //     ->maxLength(7),
+                            ])
+                            ->columns(2)
+                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'Nueva Red Social')
+                            ->addActionLabel('Agregar Red Social')
+                            ->reorderable(true)
+                            ->collapsible()
+                            ->cloneable()
+                            ->defaultItems(0)
+                            ->helperText('Agrega las redes sociales de tu empresa con sus respectivos enlaces e iconos'),
                     ])
+                    ->collapsible()
             ]);
     }
 
@@ -206,6 +251,24 @@ class CompanyResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('social_networks')
+                    ->label('Redes Sociales')
+                    ->formatStateUsing(function ($state) {
+                        if (!$state || empty($state)) {
+                            return 'Sin redes sociales';
+                        }
+
+                        // Asegurar que sea un array
+                        if (!is_array($state)) {
+                            return 'Sin redes sociales';
+                        }
+
+                        $count = count($state);
+                        $names = array_column($state, 'name');
+                        return $count . ' red(es): ' . implode(', ', $names);
+                    })
+                    ->searchable(false)
+                    ->sortable(false),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Última Actualización')
                     ->dateTime()

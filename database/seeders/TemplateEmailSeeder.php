@@ -59,7 +59,7 @@ class TemplateEmailSeeder extends Seeder
 
             [
                 'name' => 'Código de verificación',
-                'subject' => 'Verifica tu cuenta en RSISTANC',
+                'subject' => 'DON’T WORRY! Te ayudamos a recuperar tu cuenta ❤️‍🔥',
                 'body' => '
                 <p>Recibimos una solicitud para restablecer tu contraseña.</p>
                 <p>Tu código de verificación es:</p>

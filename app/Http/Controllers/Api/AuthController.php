@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * @tags Autenticación
@@ -347,10 +348,7 @@ final class AuthController extends Controller
     }
 
     /**
-
      * Cerrar sesión
-     *
-
      */
     public function logout(Request $request): JsonResponse
     {
@@ -365,8 +363,6 @@ final class AuthController extends Controller
 
     /**
      * Cerrar todas las sesiones
-     *
-
      */
     public function logoutAll(Request $request): JsonResponse
     {
@@ -385,8 +381,6 @@ final class AuthController extends Controller
 
     /**
      * Renovar token de acceso
-     *
-
      */
     public function refresh(Request $request): JsonResponse
     {
@@ -615,5 +609,79 @@ final class AuthController extends Controller
         $user->load(['profile', 'loginAudits']);
 
         return new AuthResource($user);
+    }
+    /**
+     * Editar contraseña
+     */
+    public function updatePassword(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'current_password' => ['required', 'string'],
+                'password' => [
+                    'required',
+                    'string',
+                    'confirmed',
+                    Password::min(8)
+                        ->letters()
+                        ->mixedCase()
+                        ->numbers()
+                        ->symbols()
+                        ->uncompromised(),
+                ],
+            ]);
+
+            // Verificar que la contraseña actual sea correcta
+            if (!Hash::check($request->current_password, auth()->user()->password)) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'La contraseña actual es incorrecta',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            $user = auth()->user();
+
+            // Actualizar la contraseña
+            $user->update([
+                'password' => Hash::make($request->password),
+            ]);
+
+            // Eliminar todos los tokens existentes del usuario (cerrar sesiones en otros dispositivos)
+            $user->tokens()->delete();
+
+            // Generar un nuevo token para mantener la sesión activa en el dispositivo actual
+            $newToken = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Contraseña actualizada exitosamente. Se han cerrado todas las demás sesiones.',
+                'datoAdicional' => [
+                    'token' => $newToken,
+                    'token_type' => 'Bearer',
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ]
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error de validación',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al actualizar la contraseña',
+                'datoAdicional' => $th->getMessage(),
+            ], 200);
+        }
     }
 }
