@@ -175,12 +175,56 @@ final class ClassScheduleController extends Controller
 
             $schedule = $query->findOrFail($request->classSchedule_id);
 
+            // Convertir a array y agregar información específica del usuario
+            $scheduleData = (new ClassScheduleResource($schedule))->toArray(request());
+
+            // Siempre incluir información de asientos del usuario si está autenticado
+            $userId = Auth::id();
+
+            // Obtener asientos del usuario en este horario
+            $userSeats = ClassScheduleSeat::where('class_schedules_id', $schedule->id)
+                ->where('user_id', $userId)
+                ->with('seat')
+                ->get();
+
+            if ($userSeats->isNotEmpty()) {
+                $userSeatsFormatted = $userSeats->map(function ($seatAssignment) {
+                    return [
+                        'class_schedule_seat_id' => $seatAssignment->id,
+                        'seat_id' => $seatAssignment->seats_id,
+                        'seat_number' => $seatAssignment->seat->row . '.' . $seatAssignment->seat->column,
+                        'row' => $seatAssignment->seat->row,
+                        'column' => $seatAssignment->seat->column,
+                        'status' => $seatAssignment->status,
+                        'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                        'expires_at' => $seatAssignment->expires_at?->toISOString()
+                    ];
+                });
+
+                $scheduleData['my_seats'] = $userSeatsFormatted;
+                $scheduleData['total_my_seats'] = $userSeatsFormatted->count();
+
+                // Actualizar seats_summary con información específica del usuario
+                $scheduleData['seats_summary'] = [
+                    'total_seats' => $scheduleData['seats_summary']['total_seats'] ?? 0,
+                    'available_count' => $scheduleData['seats_summary']['available_count'] ?? 0,
+                    'reserved_count' => $scheduleData['seats_summary']['reserved_count'] ?? 0,
+                    'occupied_count' => $scheduleData['seats_summary']['occupied_count'] ?? 0,
+                    'blocked_count' => $scheduleData['seats_summary']['blocked_count'] ?? 0,
+                    'my_reserved_seats' => $userSeats->where('status', 'reserved')->count(),
+                    'my_occupied_seats' => $userSeats->where('status', 'occupied')->count(),
+                    'my_blocked_seats' => $userSeats->where('status', 'blocked')->count(),
+                ];
+            } else {
+                $scheduleData['my_seats'] = [];
+                $scheduleData['total_my_seats'] = 0;
+            }
 
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
                 'mensajeUsuario' => 'Horario obtenido exitosamente',
-                'datoAdicional' => new ClassScheduleResource($schedule)
+                'datoAdicional' => $scheduleData
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -1142,12 +1186,27 @@ final class ClassScheduleController extends Controller
             $userId = Auth::id();
             $classScheduleId = $request->integer('class_schedule_id');
 
-            // Obtener el horario de clase con sus relaciones
+            // Obtener el horario de clase con sus relaciones y contadores de asientos
             $classSchedule = ClassSchedule::with(['class.discipline', 'instructor', 'studio'])
+                ->withCount([
+                    'seats as total_seats_count',
+                    'seats as available_seats_count' => function ($query) {
+                        $query->where('class_schedule_seat.status', 'available');
+                    },
+                    'seats as reserved_seats_count' => function ($query) {
+                        $query->where('class_schedule_seat.status', 'reserved');
+                    },
+                    'seats as occupied_seats_count' => function ($query) {
+                        $query->where('class_schedule_seat.status', 'occupied');
+                    },
+                    'seats as blocked_seats_count' => function ($query) {
+                        $query->where('class_schedule_seat.status', 'blocked');
+                    }
+                ])
                 ->findOrFail($classScheduleId);
 
             // Obtener todos los asientos reservados por el usuario en este horario
-            $userSeats = ClassScheduleSeat::with(['seat', 'userPackage.package'])
+            $userSeats = ClassScheduleSeat::with(['seat', 'userPackage.package', 'userMembership.membership'])
                 ->where('class_schedules_id', $classScheduleId)
                 ->where('user_id', $userId)
                 ->get();
@@ -1161,23 +1220,11 @@ final class ClassScheduleController extends Controller
                 ], 200);
             }
 
-            // Obtener el mapa completo de asientos del horario
-            $seatMapData = $classSchedule->getSeatMap();
+            // Convertir a la estructura estándar usando ClassScheduleResource
+            $scheduleData = (new ClassScheduleResource($classSchedule))->toArray(request());
 
-            // Preparar información del horario
-            $scheduleInfo = [
-                'id' => $classSchedule->id,
-                'class_name' => $classSchedule->class->name ?? 'N/A',
-                'instructor_name' => $classSchedule->instructor->name ?? 'N/A',
-                'studio_name' => $classSchedule->studio->name ?? 'N/A',
-                'scheduled_date' => $classSchedule->scheduled_date,
-                'start_time' => $classSchedule->start_time,
-                'end_time' => $classSchedule->end_time,
-                'status' => $classSchedule->status
-            ];
-
-            // Preparar información de los asientos del usuario
-            $formattedUserSeats = $userSeats->map(function ($seatAssignment) {
+            // Formatear asientos del usuario con la misma estructura
+            $userSeatsFormatted = $userSeats->map(function ($seatAssignment) {
                 $seatData = [
                     'class_schedule_seat_id' => $seatAssignment->id,
                     'seat_id' => $seatAssignment->seats_id,
@@ -1198,72 +1245,39 @@ final class ClassScheduleController extends Controller
                     ];
                 }
 
+                // Agregar información de la membresía si existe
+                if ($seatAssignment->userMembership) {
+                    $seatData['user_membership_info'] = [
+                        'membership_id' => $seatAssignment->userMembership->id,
+                        'membership_name' => $seatAssignment->userMembership->membership->name ?? 'N/A',
+                        'discipline_name' => $seatAssignment->userMembership->discipline->name ?? 'N/A'
+                    ];
+                }
+
                 return $seatData;
             });
 
-            // Preparar resumen
-            $summary = [
-                'total_seats_reserved' => $userSeats->count(),
-                'user_id' => $userId,
-                'schedule_id' => $classScheduleId
+            // Agregar información específica del usuario
+            $scheduleData['my_seats'] = $userSeatsFormatted;
+            $scheduleData['total_my_seats'] = $userSeatsFormatted->count();
+
+            // Actualizar seats_summary con información específica del usuario
+            $scheduleData['seats_summary'] = [
+                'total_seats' => $scheduleData['seats_summary']['total_seats'] ?? 0,
+                'available_count' => $scheduleData['seats_summary']['available_count'] ?? 0,
+                'reserved_count' => $scheduleData['seats_summary']['reserved_count'] ?? 0,
+                'occupied_count' => $scheduleData['seats_summary']['occupied_count'] ?? 0,
+                'blocked_count' => $scheduleData['seats_summary']['blocked_count'] ?? 0,
+                'my_reserved_seats' => $userSeats->where('status', 'reserved')->count(),
+                'my_occupied_seats' => $userSeats->where('status', 'occupied')->count(),
+                'my_blocked_seats' => $userSeats->where('status', 'blocked')->count(),
             ];
-
-            // Marcar los asientos del usuario en el mapa
-            $userSeatIds = $userSeats->pluck('seats_id')->toArray();
-            $enhancedSeatGrid = [];
-
-            if (isset($seatMapData['seat_grid'])) {
-                foreach ($seatMapData['seat_grid'] as $rowIndex => $row) {
-                    $enhancedRow = [];
-                    foreach ($row as $seat) {
-                        $enhancedSeat = $seat;
-                        // Verificar que el asiento tenga la clave 'id' antes de usarla
-                        if (isset($seat['id']) && in_array($seat['id'], $userSeatIds)) {
-                            $enhancedSeat['is_mine'] = true;
-                            $enhancedSeat['my_status'] = $userSeats->firstWhere('seats_id', $seat['id'])->status;
-                        } else {
-                            $enhancedSeat['is_mine'] = false;
-                            $enhancedSeat['my_status'] = null;
-                        }
-                        $enhancedRow[] = $enhancedSeat;
-                    }
-                    $enhancedSeatGrid[] = $enhancedRow;
-                }
-            }
 
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
                 'mensajeUsuario' => 'Asientos reservados obtenidos exitosamente',
-                'datoAdicional' => [
-                    'schedule_info' => $scheduleInfo,
-                    'user_seats' => $formattedUserSeats,
-                    'summary' => $summary,
-                    'seat_map' => [
-                        'studio' => [
-                            'id' => $classSchedule->studio->id,
-                            'name' => $classSchedule->studio->name,
-                            'max_capacity' => $classSchedule->studio->max_capacity,
-                            'rows' => $classSchedule->studio->row,
-                            'columns' => $classSchedule->studio->column,
-                            'location' => $classSchedule->studio->location
-                        ],
-                        'seat_grid' => $enhancedSeatGrid,
-                        'summary' => [
-                            'total_seats' => $seatMapData['summary']['total_seats'] ?? 0,
-                            'available' => $seatMapData['summary']['available_count'] ?? 0,
-                            'reserved' => $seatMapData['summary']['reserved_count'] ?? 0,
-                            'occupied' => $seatMapData['summary']['occupied_count'] ?? 0,
-                            'blocked' => $seatMapData['summary']['blocked_count'] ?? 0
-                        ]
-                    ],
-                    'my_reservation_summary' => [
-                        'total_my_seats' => $userSeats->count(),
-                        'my_reserved_seats' => $userSeats->where('status', 'reserved')->count(),
-                        'my_occupied_seats' => $userSeats->where('status', 'occupied')->count(),
-                        'my_blocked_seats' => $userSeats->where('status', 'blocked')->count(),
-                    ]
-                ]
+                'datoAdicional' => $scheduleData
             ], 200);
         } catch (\Throwable $e) {
             // Log del error para debugging
