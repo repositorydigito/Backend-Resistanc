@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // no utilizado
         Schema::create('membership_benefits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->enum('membership_level', ['resistance', 'gold', 'black']);
             $table->enum('benefit_type', ['priority_booking', 'discount_percentage', 'free_shakes', 'auto_enrollment', 'guest_passes', 'personal_training']);
             $table->json('benefit_value')->comment('Valor específico del beneficio');
@@ -28,6 +28,9 @@ return new class extends Migration
             $table->timestamp('last_reset_at')->nullable()->comment('Último reset mensual/anual');
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();
+
+            // Relaciones
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             // Índices
             $table->index(['user_id', 'membership_level']);

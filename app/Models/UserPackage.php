@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Carbon\Carbon;
@@ -9,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use Illuminate\Support\Str;
 
 final class UserPackage extends Model
 {
@@ -18,7 +18,7 @@ final class UserPackage extends Model
         'user_id',
         'package_id',
         'package_code',
-        'total_classes',
+        // 'total_classes',
         'used_classes',
         'remaining_classes',
         'amount_paid_soles',
@@ -27,9 +27,9 @@ final class UserPackage extends Model
         'activation_date',
         'expiry_date',
         'status',
-        'auto_renew',
+        // 'auto_renew',
         'renewal_price',
-        'benefits_included',
+        // 'benefits_included',
         'notes',
     ];
 
@@ -37,14 +37,47 @@ final class UserPackage extends Model
         'purchase_date' => 'date',
         'activation_date' => 'date',
         'expiry_date' => 'date',
-        'total_classes' => 'integer',
+        // 'total_classes' => 'integer',
         'used_classes' => 'integer',
         'remaining_classes' => 'integer',
         'amount_paid_soles' => 'decimal:2',
         'renewal_price' => 'decimal:2',
-        'benefits_included' => 'array',
-        'auto_renew' => 'boolean',
+        // 'benefits_included' => 'array',
+        // 'auto_renew' => 'boolean',
     ];
+
+    protected $appends = [
+        'estimated_expiry_date',
+        'expiry_status',
+    ];
+
+
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (UserPackage $userPackage) {
+            // Generar código único si no se proporcionó uno
+            if (empty($userPackage->package_code)) {
+                $userPackage->package_code = static::generateUniquePackageCode();
+            }
+        });
+    }
+
+    /**
+     * Genera un código de paquete único
+     */
+    public static function generateUniquePackageCode(): string
+    {
+        do {
+            $code = strtoupper(Str::random(12)); // Ejemplo: "A1B2C3D4E5F6"
+        } while (static::where('package_code', $code)->exists());
+
+        return $code;
+    }
+
 
     /**
      * Get the user that owns this package.
@@ -116,8 +149,8 @@ final class UserPackage extends Model
     public function getIsValidAttribute(): bool
     {
         return $this->status === 'active' &&
-               $this->activation_date && $this->activation_date->isPast() &&
-               $this->expiry_date && $this->expiry_date->isFuture();
+            $this->activation_date && $this->activation_date->isPast() &&
+            $this->expiry_date && $this->expiry_date->isFuture();
     }
 
     /**
@@ -141,11 +174,15 @@ final class UserPackage extends Model
      */
     public function getDaysRemainingAttribute(): int
     {
-        if (!$this->expiry_date || $this->is_expired) {
+        if (!$this->expiry_date) {
             return 0;
         }
 
-        return $this->expiry_date->diffInDays(now());
+        if ($this->expiry_date->isPast()) {
+            return 0;
+        }
+
+        return (int) now()->diffInDays($this->expiry_date, false);
     }
 
     /**
@@ -200,6 +237,95 @@ final class UserPackage extends Model
     }
 
     /**
+     * Use classes from this package.
+     */
+    public function useClasses(int $classes = 1): bool
+    {
+        // Validar que el paquete esté activo y no expirado
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        if ($this->expiry_date && $this->expiry_date->isPast()) {
+            return false;
+        }
+
+        if ($this->remaining_classes < $classes) {
+            return false;
+        }
+
+        $this->increment('used_classes', $classes);
+        $this->decrement('remaining_classes', $classes);
+
+        return true;
+    }
+
+    /**
+     * Refund classes to this package.
+     */
+    public function refundClasses(int $classes = 1): bool
+    {
+        // No validar used_classes, simplemente incrementar remaining_classes
+        $this->increment('remaining_classes', $classes);
+
+        // Solo decrementar used_classes si hay suficientes
+        if ($this->used_classes >= $classes) {
+            $this->decrement('used_classes', $classes);
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if this package can be used for a specific discipline.
+     */
+    public function canUseForDiscipline(int $disciplineId): bool
+    {
+        if (!$this->is_valid || !$this->has_classes) {
+            return false;
+        }
+
+        // Cargar la relación del paquete si no está cargada
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+
+        return $this->package && $this->package->discipline_id === $disciplineId;
+    }
+
+    /**
+     * Check if the package has classes available.
+     */
+    public function getHasClassesAttribute(): bool
+    {
+        return $this->remaining_classes > 0;
+    }
+
+    /**
+     * Get the discipline ID of this package.
+     */
+    public function getDisciplineIdAttribute(): ?int
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+
+        return $this->package?->discipline_id;
+    }
+
+    /**
+     * Get the discipline name of this package.
+     */
+    public function getDisciplineNameAttribute(): ?string
+    {
+        if (!$this->relationLoaded('package.discipline')) {
+            $this->load('package.discipline');
+        }
+
+        return $this->package?->discipline?->name;
+    }
+
+    /**
      * Activate the package.
      */
     public function activate(): void
@@ -228,5 +354,49 @@ final class UserPackage extends Model
         $this->update([
             'status' => 'expired',
         ]);
+    }
+
+    /**
+     * Obtener la fecha de expiración estimada (creado + duración del paquete).
+     */
+    public function getEstimatedExpiryDateAttribute()
+    {
+        // Cargar la relación del paquete si no está cargada
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+        if (!$this->package || !$this->purchase_date) {
+            return null;
+        }
+        // Si el paquete tiene duration_in_months, sumar a purchase_date
+        $months = $this->package->duration_in_months ?? 0;
+        return $this->purchase_date->copy()->addMonths($months);
+    }
+
+    /**
+     * Get the expiry status for display.
+     */
+    public function getExpiryStatusAttribute(): string
+    {
+        // Si no hay fecha de expiración
+        if (!$this->expiry_date) {
+            return 'Sin fecha de expiración';
+        }
+
+        // Si la fecha ya pasó
+        if ($this->expiry_date->isPast()) {
+            return 'Vencido';
+        }
+
+        // Calcular días restantes
+        $daysRemaining = now()->diffInDays($this->expiry_date, false);
+
+        // Si quedan 7 días o menos
+        if ($daysRemaining <= 7) {
+            return 'Por vencer';
+        }
+
+        // Si quedan más de 7 días
+        return 'Vigente';
     }
 }

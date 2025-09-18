@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('additional_services', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 80);
-            $table->text('description')->nullable();
-            $table->decimal('price_soles', 10, 2);
-            $table->unsignedInteger('duration_min');
-            $table->boolean('is_active')->default(true);
+            $table->string('name', 80)->comment('Nombre del servicio adicional');
+            $table->text('description')->nullable()->comment('Descripción del servicio adicional');
+            $table->decimal('price_soles', 10, 2)->comment('Precio del servicio adicional en soles');
+            $table->unsignedInteger('duration_min')->comment('Duración del servicio adicional en minutos');
+            $table->boolean('is_active')->default(true)->comment('Si el servicio adicional está activo');
             $table->timestamps();
         });
     }

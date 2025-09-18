@@ -1,12 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use Illuminate\Support\Str;
+
 
 final class Package extends Model
 {
@@ -20,8 +21,7 @@ final class Package extends Model
         'classes_quantity',
         'price_soles',
         'original_price_soles',
-        'validity_days',
-        'package_type',
+
         'billing_type',
         'is_virtual_access',
         'priority_booking_days',
@@ -33,13 +33,30 @@ final class Package extends Model
         'features',
         'restrictions',
         'target_audience',
+
+        // nuevo
+        'icon_url',
+        'color_hex',
+        'type',
+        'mode_type',
+        'commercial_type',
+        'discipline_id',
+        'buy_type',
+        'start_date',
+        'end_date',
+        'duration_in_months',
+
+
+        // Relaciones
+        'membership_id',
+
     ];
 
     protected $casts = [
         'price_soles' => 'decimal:2',
         'original_price_soles' => 'decimal:2',
         'classes_quantity' => 'integer',
-        'validity_days' => 'integer',
+
         'priority_booking_days' => 'integer',
         'features' => 'array',
         'restrictions' => 'array',
@@ -115,7 +132,7 @@ final class Package extends Model
      */
     public function getFeaturesStringAttribute(): string
     {
-        if (!$this->features) {
+        if (!$this->features || !is_array($this->features)) {
             return '';
         }
 
@@ -127,7 +144,7 @@ final class Package extends Model
      */
     public function getRestrictionsStringAttribute(): string
     {
-        if (!$this->restrictions) {
+        if (!$this->restrictions || !is_array($this->restrictions)) {
             return '';
         }
 
@@ -151,12 +168,11 @@ final class Package extends Model
      */
     public function getTypeDisplayNameAttribute(): string
     {
-        return match ($this->package_type) {
-            'presencial' => 'Presencial',
-            'virtual' => 'Virtual',
-            'mixto' => 'Mixto',
-            default => ucfirst($this->package_type),
-        };
+        // Validar que el valor no sea null antes de usar ucfirst
+        return $this->type ? ucfirst($this->type) : '';
+
+        // O si quieres un valor por defecto más específico:
+        // return $this->type ? ucfirst($this->type) : 'Basic';
     }
 
     /**
@@ -173,22 +189,65 @@ final class Package extends Model
         };
     }
 
-    /**
-     * Get the validity period in a human-readable format.
-     */
-    public function getValidityPeriodAttribute(): string
+
+
+    protected static function boot()
     {
-        if ($this->validity_days <= 7) {
-            return $this->validity_days . ' días';
-        } elseif ($this->validity_days <= 31) {
-            $weeks = round($this->validity_days / 7);
-            return $weeks . ' semanas';
-        } elseif ($this->validity_days <= 365) {
-            $months = round($this->validity_days / 30);
-            return $months . ' meses';
-        } else {
-            $years = round($this->validity_days / 365);
-            return $years . ' años';
-        }
+        parent::boot();
+
+        static::creating(function ($membership) {
+            if (empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+
+        static::updating(function ($membership) {
+            if ($membership->isDirty('name') && empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->where('id', '!=', $membership->id)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
     }
+
+
+
+    // Relacion uno a uno
+    public function membership()
+    {
+        return $this->belongsTo(Membership::class);
+    }
+
+    public function userPackage()
+    {
+        return $this->hasMany(UserPackage::class);
+    }
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+    public function discipline()
+    {
+        return $this->belongsTo(Discipline::class);
+    }
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class);
+    }
+
+
 }

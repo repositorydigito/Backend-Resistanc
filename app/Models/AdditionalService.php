@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class AdditionalService extends Model
 {
+
+    // No utilizado
     use HasFactory;
 
     protected $fillable = [
@@ -83,8 +83,8 @@ final class AdditionalService extends Model
             'equipment_rental' => 'Alquiler de Equipos',
             'locker_rental' => 'Alquiler de Casillero',
             'towel_service' => 'Servicio de Toallas',
-            default => ucfirst($this->type),
-        ];
+            default => ucfirst($this->type)
+        };
     }
 
     /**

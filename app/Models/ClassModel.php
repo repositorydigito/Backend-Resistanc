@@ -1,12 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class ClassModel extends Model
@@ -16,13 +15,12 @@ final class ClassModel extends Model
     protected $table = 'classes';
 
     protected $fillable = [
-        'discipline_id',
-        'instructor_id',
-        'studio_id',
+
         'name',
         'description',
         'duration_minutes',
         'max_participants',
+        'max_capacity',
         'type',
         'intensity_level',
         'difficulty_level',
@@ -30,6 +28,15 @@ final class ClassModel extends Model
         'special_requirements',
         'is_featured',
         'status',
+
+        // Nuevo
+        'img_url',
+
+        // Relaciones
+        'discipline_id',
+        // 'instructor_id',
+        // 'studio_id',
+
     ];
 
     protected $casts = [
@@ -46,25 +53,7 @@ final class ClassModel extends Model
         return $this->belongsTo(Discipline::class);
     }
 
-    /**
-     * Get the instructor for this class.
-     */
-    public function instructor(): BelongsTo
-    {
-        return $this->belongsTo(Instructor::class);
-    }
 
-    /**
-     * Get the studio where this class is held.
-     */
-    public function studio(): BelongsTo
-    {
-        return $this->belongsTo(Studio::class);
-    }
-
-    /**
-     * Get the schedules for this class.
-     */
     public function schedules(): HasMany
     {
         return $this->hasMany(ClassSchedule::class, 'class_id');
@@ -184,5 +173,17 @@ final class ClassModel extends Model
             ->where('status', 'scheduled')
             ->orderBy('scheduled_date')
             ->first();
+    }
+
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class, 'class_id');
+    }
+
+    public function userFavorites(): BelongsToMany
+    {
+        return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
     }
 }

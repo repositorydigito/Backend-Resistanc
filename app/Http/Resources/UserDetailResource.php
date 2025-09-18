@@ -40,37 +40,7 @@ final class UserDetailResource extends JsonResource
                 return new UserProfileResource($this->profile);
             }),
 
-            // All contacts
-            'contacts' => $this->whenLoaded('contacts', function () {
-                return UserContactResource::collection($this->contacts);
-            }),
 
-            // Primary contact
-            'primary_contact' => $this->whenLoaded('primaryContact', function () {
-                return new UserContactResource($this->primaryContact);
-            }),
-
-            // Social accounts (limited info for security)
-            'social_accounts' => $this->whenLoaded('socialAccounts', function () {
-                return SocialAccountResource::collection($this->socialAccounts);
-            }),
-
-            // Login audits (admin only)
-            'login_audits' => $this->when(
-                $request->user()?->isAdmin() ?? false,
-                function () {
-                    return $this->whenLoaded('loginAudits', function () {
-                        return LoginAuditResource::collection($this->loginAudits->take(10));
-                    });
-                }
-            ),
-
-            // Statistics
-            'stats' => [
-                'contacts_count' => $this->whenCounted('contacts'),
-                'social_accounts_count' => $this->whenCounted('socialAccounts'),
-                'login_audits_count' => $this->whenCounted('loginAudits'),
-            ],
         ];
     }
 }

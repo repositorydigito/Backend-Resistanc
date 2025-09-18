@@ -28,21 +28,37 @@ final class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
+            /**
+             * Correo electrónico del usuario
+             * @example migelo5511@gmail.com
+             */
             'email' => [
                 'required',
                 'string',
-                'email:rfc,dns',
+                'email',
                 'max:255',
             ],
+            /**
+             * Contraseña del usuario
+             * @example 123456789
+             */
             'password' => [
                 'required',
                 'string',
                 'min:8',
             ],
+            /**
+             * Recordar sesión por más tiempo
+             * @example true
+             */
             'remember' => [
                 'nullable',
                 'boolean',
             ],
+            /**
+             * Nombre del dispositivo para el token
+             * @example Mi Dispositivo
+             */
             'device_name' => [
                 'nullable',
                 'string',

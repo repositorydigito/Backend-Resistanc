@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,11 +30,14 @@ final class Instructor extends Model
         'hourly_rate_soles',
         'status',
         'availability_schedule',
+
+        // nuevo
+        'type_document',
+        'document_number',
     ];
 
     protected $casts = [
-        'specialties' => 'array',
-        'certifications' => 'array',
+        // Removed 'specialties' and 'certifications' casts to avoid conflicts with accessors
         'availability_schedule' => 'array',
         'is_head_coach' => 'boolean',
         'experience_years' => 'integer',
@@ -44,7 +45,113 @@ final class Instructor extends Model
         'total_classes_taught' => 'integer',
         'hourly_rate_soles' => 'decimal:2',
         'hire_date' => 'date',
+
+
     ];
+
+    /**
+     * Mutator for specialties to ensure it's always stored as JSON
+     */
+    public function setSpecialtiesAttribute($value): void
+    {
+        if (is_null($value)) {
+            $this->attributes['specialties'] = json_encode([]);
+            return;
+        }
+
+        if (is_string($value)) {
+            // If it's already a JSON string, validate it
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->attributes['specialties'] = $value;
+            } else {
+                // If it's not valid JSON, treat as single value
+                $this->attributes['specialties'] = json_encode([$value]);
+            }
+            return;
+        }
+
+        if (is_array($value)) {
+            $this->attributes['specialties'] = json_encode($value);
+            return;
+        }
+
+        // Fallback for any other type
+        $this->attributes['specialties'] = json_encode([]);
+    }
+
+    /**
+     * Mutator for certifications to ensure it's always stored as JSON
+     */
+    public function setCertificationsAttribute($value): void
+    {
+        if (is_null($value)) {
+            $this->attributes['certifications'] = json_encode([]);
+            return;
+        }
+
+        if (is_string($value)) {
+            // If it's already a JSON string, validate it
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->attributes['certifications'] = $value;
+            } else {
+                // If it's not valid JSON, treat as single value
+                $this->attributes['certifications'] = json_encode([$value]);
+            }
+            return;
+        }
+
+        if (is_array($value)) {
+            $this->attributes['certifications'] = json_encode($value);
+            return;
+        }
+
+        // Fallback for any other type
+        $this->attributes['certifications'] = json_encode([]);
+    }
+
+    /**
+     * Accessor for specialties to ensure it's always an array
+     */
+    public function getSpecialtiesAttribute($value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return [];
+    }
+
+    /**
+     * Accessor for certifications to ensure it's always an array
+     */
+    public function getCertificationsAttribute($value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return [];
+    }
 
     /**
      * Get the user account associated with this instructor.
@@ -65,10 +172,10 @@ final class Instructor extends Model
     /**
      * Get the classes taught by this instructor.
      */
-    public function classes(): HasMany
-    {
-        return $this->hasMany(ClassModel::class, 'instructor_id');
-    }
+    // public function classes(): HasMany
+    // {
+    //     return $this->hasMany(ClassModel::class, 'instructor_id');
+    // }
 
     /**
      * Get the class schedules for this instructor.
@@ -117,11 +224,13 @@ final class Instructor extends Model
      */
     public function getCertificationsStringAttribute(): string
     {
-        if (!$this->certifications) {
+        $certifications = $this->certifications;
+
+        if (empty($certifications)) {
             return '';
         }
 
-        return implode(', ', $this->certifications);
+        return implode(', ', $certifications);
     }
 
     /**
@@ -169,7 +278,8 @@ final class Instructor extends Model
      */
     public function updateRatingAverage(): void
     {
-        $average = $this->ratings()->avg('rating');
+        // Use 'score' field if available, fallback to 'rating'
+        $average = $this->ratings()->avg('score') ?? $this->ratings()->avg('rating');
         $this->update(['rating_average' => $average ?? 0]);
     }
 
@@ -180,4 +290,15 @@ final class Instructor extends Model
     {
         $this->increment('total_classes_taught');
     }
+
+
+      public function userFavorites(): BelongsToMany
+    {
+        return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
+
+
 }

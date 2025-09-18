@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class CartItem extends Model
 {
+
     use HasFactory;
 
     protected $fillable = [
@@ -19,7 +18,7 @@ final class CartItem extends Model
         'quantity',
         'unit_price',
         'total_price',
-        'notes',
+        // 'notes',
     ];
 
     protected $casts = [
@@ -83,7 +82,7 @@ final class CartItem extends Model
     public function decreaseQuantity(int $amount = 1): void
     {
         $newQuantity = max(0, $this->quantity - $amount);
-        
+
         if ($newQuantity <= 0) {
             $this->delete();
         } else {

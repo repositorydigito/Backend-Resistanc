@@ -13,17 +13,19 @@ return new class extends Migration
     {
         Schema::create('coach_ratings', function (Blueprint $table) {
             $table->id();
+
+            $table->unsignedTinyInteger('score')->comment('Puntuación del coach, de 1 a 5');
+            $table->text('comment')->nullable()->comment('Comentario del usuario sobre el coach');
+
+            // Relaciones
             $table->foreignId('instructor_id')->constrained('instructors')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->unsignedTinyInteger('score');
-            $table->text('comment')->nullable();
-            $table->timestamps();
 
             // Índices
             $table->unique(['instructor_id', 'user_id']);
             $table->index('user_id');
 
-            // Note: Check constraints will be handled at the application level
+            $table->timestamps();
         });
     }
 

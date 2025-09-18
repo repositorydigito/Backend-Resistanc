@@ -82,7 +82,7 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
         /*
          * URL to an image that displays as a small square logo next to the title, above the table of contents.
          */
-        'logo' => '',
+        'logo' => 'https://digito.pe/wp-content/uploads/2022/02/logo-fondoazul.png',
 
         /*
          * Use to fetch the credential policy for the Try It feature. Options are: omit, include (default), and same-origin
@@ -130,10 +130,43 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
 
     'middleware' => [
         'web',
-        RestrictedDocsAccess::class,
+        // RestrictedDocsAccess::class,
     ],
 
-    'extensions' => [],
+    'extensions' => [
+        \App\Extensions\AddAuthorizationHeader::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security Schemes
+    |--------------------------------------------------------------------------
+    |
+    | Define security schemes for API authentication. This will add an
+    | "Authorize" button to the documentation interface.
+    |
+    */
+    'security' => [
+        'sanctum' => [
+            'type' => 'http',
+            'scheme' => 'bearer',
+            'bearerFormat' => 'JWT',
+            'description' => 'Token de autenticación Laravel Sanctum. Obtén tu token haciendo login en `/api/auth/login`',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Global Security Requirements
+    |--------------------------------------------------------------------------
+    |
+    | Define global security requirements that apply to all endpoints.
+    | This ensures the "Authorize" button appears in the documentation.
+    |
+    */
+    'global_security' => [
+        ['sanctum' => []],
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -150,5 +183,7 @@ API RESTful completa para gestión de usuarios, perfiles, contactos y auditoría
         \App\Models\UserContact::class,
         \App\Models\SocialAccount::class,
         \App\Models\LoginAudit::class,
+        \App\Models\UserPackage::class,
+        \App\Models\Package::class,
     ],
 ];

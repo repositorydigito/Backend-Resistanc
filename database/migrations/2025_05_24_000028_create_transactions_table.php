@@ -11,35 +11,65 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // no utilizado
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
+
+            $table->enum('transaction_type', [
+                'package_purchase',
+                'product_order',
+                'subscription_payment',
+                'refund',
+                'chargeback',
+                'fee'
+            ])->comment('Tipo de transacción');
+
+            $table->decimal('amount_soles', 10, 2)->comment('Monto de la transacción en soles');
+            $table->char('currency', 3)->default('PEN')->comment('Código de moneda');
+            $table->decimal('exchange_rate', 10, 4)->nullable()->comment('Tasa de cambio');
+
+            // Gateway
+            $table->enum('gateway_provider', ['culqi', 'niubiz', 'paypal', 'stripe', 'izipay', 'payu'])->nullable()->comment('Proveedor del gateway de pago');
+            $table->string('gateway_transaction_id')->nullable()->comment('ID de transacción del gateway');
+            $table->json('gateway_response')->nullable()->comment('Respuesta completa del gateway');
+            $table->string('confirmation_code', 100)->nullable()->comment('Código de confirmación');
+            $table->string('reference_number', 100)->nullable()->comment('Número de referencia');
+
+            // Estado de pago
+            $table->enum('payment_status', [
+                'pending',
+                'processing',
+                'completed',
+                'failed',
+                'cancelled',
+                'refunded',
+                'disputed'
+            ])->default('pending')->comment('Estado del pago');
+
+            $table->text('refund_reason')->nullable()->comment('Razón del reembolso');
+            $table->text('failure_reason')->nullable()->comment('Razón del fallo');
+            $table->text('notes')->nullable()->comment('Notas');
+
+            $table->timestamp('processed_at')->nullable()->comment('Fecha y hora de procesamiento');
+            $table->timestamp('reconciled_at')->nullable()->comment('Fecha y hora de conciliación');
+
+            $table->json('fees')->nullable()->comment('Comisiones y fees aplicados');
+            $table->json('metadata')->nullable()->comment('Metadata adicional del pago');
+
+            // Relaciones
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('payment_method_id')->nullable()->constrained('user_payment_methods')->onDelete('set null');
             $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('set null');
             $table->foreignId('user_package_id')->nullable()->constrained('user_packages')->onDelete('set null');
-            $table->string('transaction_code', 30)->unique();
-            $table->enum('transaction_type', ['package_purchase', 'product_purchase', 'subscription_payment', 'refund', 'partial_refund', 'cancellation_fee']);
-            $table->decimal('amount_soles', 10, 2);
-            $table->char('currency', 3)->default('PEN');
-            $table->enum('status', ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded']);
-            $table->enum('payment_method', ['credit_card', 'debit_card', 'bank_transfer', 'digital_wallet', 'cash']);
-            $table->string('payment_provider', 50)->nullable()->comment('visa, mastercard, yape, plin, etc.');
-            $table->string('external_transaction_id')->nullable()->comment('ID del proveedor de pago');
-            $table->string('authorization_code', 50)->nullable();
-            $table->decimal('processing_fee', 8, 2)->default(0.00);
-            $table->json('payment_details')->nullable()->comment('Detalles específicos del método de pago');
-            $table->timestamp('processed_at')->nullable();
-            $table->text('failure_reason')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
 
             // Índices
-            $table->index(['user_id', 'status']);
-            $table->index(['transaction_type', 'status']);
-            $table->index('status');
-            $table->index('transaction_code');
-            $table->index('external_transaction_id');
-            $table->index('processed_at');
+            $table->index(['user_id', 'payment_status'], 'idx_transactions_user');
+            $table->index('gateway_transaction_id', 'idx_transactions_gateway');
+            $table->index('payment_status', 'idx_transactions_status');
+            $table->index('transaction_type', 'idx_transactions_type');
+            $table->index('created_at', 'idx_transactions_date');
+
+            $table->timestamps(); // created_at y updated_at
         });
     }
 

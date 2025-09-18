@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,29 +8,79 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Support\Str;
+
 final class Product extends Model
 {
     use HasFactory;
 
+    // protected $fillable = [
+    //     'category_id',
+    //     'name',
+    //     'slug',
+    //     'description',
+    //     'short_description',
+    //     'sku',
+    //     'price_soles',
+    //     'cost_price_soles',
+    //     'compare_price_soles',
+    //     'stock_quantity',
+    //     'min_stock_alert',
+    //     'weight_grams',
+    //     'dimensions',
+    //     'images',
+    //     'nutritional_info',
+    //     'ingredients',
+    //     'allergens',
+    //     'product_type',
+    //     'requires_variants',
+    //     'is_virtual',
+    //     'is_featured',
+    //     'is_available_for_booking',
+    //     'status',
+    //     'meta_title',
+    //     'meta_description',
+    // ];
+
+    // protected $casts = [
+    //     'price_soles' => 'decimal:2',
+    //     'cost_price_soles' => 'decimal:2',
+    //     'compare_price_soles' => 'decimal:2',
+    //     'stock_quantity' => 'integer',
+    //     'min_stock_alert' => 'integer',
+    //     'weight_grams' => 'integer',
+    //     'dimensions' => 'array',
+    //     'images' => 'array',
+    //     'nutritional_info' => 'array',
+    //     'ingredients' => 'array',
+    //     'allergens' => 'array',
+    //     'requires_variants' => 'boolean',
+    //     'is_virtual' => 'boolean',
+    //     'is_featured' => 'boolean',
+    //     'is_available_for_booking' => 'boolean',
+    // ];
+
+
     protected $fillable = [
-        'category_id',
         'name',
         'slug',
+        'category_id',
+        'sku',
+        'stock_quantity',
         'description',
         'short_description',
-        'sku',
         'price_soles',
         'cost_price_soles',
         'compare_price_soles',
-        'stock_quantity',
         'min_stock_alert',
         'weight_grams',
         'dimensions',
         'images',
+        'img_url',
         'nutritional_info',
         'ingredients',
         'allergens',
-        'product_type',
+        // 'product_type',
         'requires_variants',
         'is_virtual',
         'is_featured',
@@ -40,12 +88,14 @@ final class Product extends Model
         'status',
         'meta_title',
         'meta_description',
+        'is_cupon',
+        'url_cupon_code',
     ];
 
     protected $casts = [
-        'price_soles' => 'decimal:2',
-        'cost_price_soles' => 'decimal:2',
-        'compare_price_soles' => 'decimal:2',
+        'price_soles' => 'float',
+        'cost_price_soles' => 'float',
+        'compare_price_soles' => 'float',
         'stock_quantity' => 'integer',
         'min_stock_alert' => 'integer',
         'weight_grams' => 'integer',
@@ -59,6 +109,7 @@ final class Product extends Model
         'is_featured' => 'boolean',
         'is_available_for_booking' => 'boolean',
     ];
+
 
     /**
      * Get the category that owns the product.
@@ -75,6 +126,12 @@ final class Product extends Model
     {
         return $this->hasMany(ProductVariant::class);
     }
+
+    public function optionValues(): HasMany
+    {
+        return $this->hasMany(ProductVariantOption::class);
+    }
+
 
     /**
      * Get the tags for this product.
@@ -145,7 +202,7 @@ final class Product extends Model
      */
     public function getFinalPriceAttribute(): float
     {
-        return $this->compare_price_soles ?? $this->price_soles;
+        return (float) ($this->compare_price_soles ?? $this->price_soles ?? 0);
     }
 
     /**
@@ -231,5 +288,52 @@ final class Product extends Model
     public function increaseStock(int $quantity): void
     {
         $this->increment('stock_quantity', $quantity);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($membership) {
+            if (empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+
+        static::updating(function ($membership) {
+            if ($membership->isDirty('name') && empty($membership->slug)) {
+                $membership->slug = Str::slug($membership->name);
+
+                // Asegurar que el slug sea único
+                $originalSlug = $membership->slug;
+                $counter = 1;
+                while (static::where('slug', $membership->slug)->where('id', '!=', $membership->id)->exists()) {
+                    $membership->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+        });
+    }
+
+    // relacion muchos a muchos polimorfica
+
+    public function userFavorites(): BelongsToMany
+    {
+        return $this->morphToMany(UserFavorite::class, 'favoritable', 'user_favorites', 'favoritable_id', 'user_id')
+            ->withPivot('notes', 'priority')
+            ->withTimestamps();
+    }
+
+    public function productBrand(): BelongsTo
+    {
+        return $this->belongsTo(ProductBrand::class, 'product_brand_id');
     }
 }

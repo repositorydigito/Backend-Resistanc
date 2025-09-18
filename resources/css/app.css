@@ -1,11 +1,73 @@
-@import 'tailwindcss';
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
+@import "tailwindcss";
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+:root {
+    /* Colores */
+    --color-primary: #3b82f6;
+    --color-secondary: #fbbf24;
+    --color-accent: #4ade80;
+    --color-neutral: #374151;
+    --color-base-100: #ffffff;
+    --color-base-200: #f3f4f6;
+    --color-base-300: #e5e7eb;
+    /* Fin colores */
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Tipografías */
+    --font-one: "Outfit", sans-serif;
+
+    /* Fin tipografías */
+}
+
+* {
+    /* outline: 1px solid red; */
+}
+
+.container {
+  max-width: 1280px; /* screen-xl en Tailwind es 1280px */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+}
+
+.btn__one {
+    text-transform: uppercase;
+    font-weight: 600;
+    background-color: white;
+    color: #b66f37;
+    border-radius: 30px;
+}
+.btn__two {
+    text-transform: uppercase;
+    font-weight: 600;
+    border: 1px solid white;
+    border-radius: 30px;
+}
+
+.nav__link {
+    color: white;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+    text-transform: uppercase;
+}
+
+.footer {
+    /* padding: 20px; */
+    background: linear-gradient(
+        94deg,
+        #cdd6d7 0%,
+        #d9d9d2 30.29%,
+        #e7dfe9 49.52%,
+        #e5d7ea 71.15%,
+        #e7d4d8 100%
+    );
+    border-top: 1px solid #fff;
 }

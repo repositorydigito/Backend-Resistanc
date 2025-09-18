@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,38 +13,27 @@ final class ProductVariant extends Model
     protected $fillable = [
         'product_id',
         'sku',
-        'variant_name',
-        'size',
-        'color',
-        'material',
-        'flavor',
-        'intensity',
-        'price_modifier',
-        'cost_price',
+        'price_soles',
+        'cost_price_soles',
+        'compare_price_soles',
         'stock_quantity',
         'min_stock_alert',
-        'max_stock_capacity',
-        'weight_grams',
-        'dimensions_cm',
-        'barcode',
-        'is_active',
-        'is_featured',
-        'is_default',
-        'sort_order',
+        'images',
+        'main_image',
+        'is_active'
     ];
 
     protected $casts = [
-        'price_modifier' => 'decimal:2',
-        'cost_price' => 'decimal:2',
-        'stock_quantity' => 'integer',
-        'min_stock_alert' => 'integer',
-        'max_stock_capacity' => 'integer',
-        'weight_grams' => 'integer',
-        'is_active' => 'boolean',
-        'is_featured' => 'boolean',
-        'is_default' => 'boolean',
-        'sort_order' => 'integer',
+        'images' => 'array',
     ];
+
+
+    // protected static function booted(): void
+    // {
+    //     static::creating(function ($variant) {
+    //         dd($variant->toArray());
+    //     });
+    // }
 
     /**
      * Get the product that owns this variant.
@@ -85,7 +72,7 @@ final class ProductVariant extends Model
      */
     public function getFinalPriceAttribute(): float
     {
-        return $this->product->price_soles + $this->price_modifier;
+        return (float) $this->price_soles;
     }
 
     /**
@@ -139,5 +126,10 @@ final class ProductVariant extends Model
     public function increaseStock(int $quantity): void
     {
         $this->increment('stock_quantity', $quantity);
+    }
+
+    public function variantOptions()
+    {
+        return $this->belongsToMany(\App\Models\VariantOption::class, 'product_variant_option_value');
     }
 }

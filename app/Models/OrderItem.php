@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,16 +11,14 @@ final class OrderItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'order_id',
-        'product_id',
-        'product_variant_id',
         'quantity',
         'unit_price',
         'total_price',
-        'product_name',
-        'product_sku',
-        'product_image',
-        'notes',
+
+        // Relaciones
+        'order_id',
+        'product_id',
+        'product_variant_id',
     ];
 
     protected $casts = [
@@ -60,7 +56,7 @@ final class OrderItem extends Model
      */
     public function calculateTotal(): float
     {
-        return $this->quantity * $this->unit_price;
+        return $this->quantity * $this->unit_price_soles;
     }
 
     /**
@@ -68,6 +64,6 @@ final class OrderItem extends Model
      */
     public function updateTotal(): void
     {
-        $this->update(['total_price' => $this->calculateTotal()]);
+        $this->update(['total_price_soles' => $this->calculateTotal()]);
     }
 }

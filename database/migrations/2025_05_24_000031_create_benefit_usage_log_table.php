@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // No utilizado
         Schema::create('benefit_usage_log', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,10 +24,15 @@ final class CoachRating extends Model
         'status',
         'moderated_at',
         'moderator_notes',
+
+        // nuevo
+        'comment', // Comentario del usuario
+        'score',
     ];
 
     protected $casts = [
         'rating' => 'integer',
+        'score' => 'integer',
         'aspects_rated' => 'array',
         'is_anonymous' => 'boolean',
         'is_verified' => 'boolean',
@@ -37,6 +40,33 @@ final class CoachRating extends Model
         'reported_count' => 'integer',
         'moderated_at' => 'datetime',
     ];
+
+    /**
+     * Boot the model and add event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Update instructor rating average when a rating is created or updated
+        static::created(function ($rating) {
+            if ($rating->instructor) {
+                $rating->instructor->updateRatingAverage();
+            }
+        });
+
+        static::updated(function ($rating) {
+            if ($rating->instructor) {
+                $rating->instructor->updateRatingAverage();
+            }
+        });
+
+        static::deleted(function ($rating) {
+            if ($rating->instructor) {
+                $rating->instructor->updateRatingAverage();
+            }
+        });
+    }
 
     /**
      * Get the user who made this rating.
@@ -176,7 +206,7 @@ final class CoachRating extends Model
     public function report(): void
     {
         $this->increment('reported_count');
-        
+
         // Auto-hide if too many reports
         if ($this->reported_count >= 5) {
             $this->update(['status' => 'hidden']);

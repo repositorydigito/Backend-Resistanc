@@ -14,93 +14,71 @@ class DisciplineSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('🎯 Seeding disciplines...');
 
-        $disciplines = [
+        $this->command->info('🌱 Seeders de Disciplinas');
+        // Disciplinas
+
+        $disciplines = Discipline::insert([
             [
-                'name' => 'cycling',
+                'id' => 1,
+                'name' => 'Cycling',
                 'display_name' => 'Cycling',
                 'description' => 'Entrenamiento cardiovascular intenso en bicicletas estáticas con música energizante y luces dinámicas. Quema calorías mientras te diviertes en un ambiente motivador.',
-                'icon_url' => '/images/disciplines/cycling.svg',
-                'color_hex' => '#FF6B35',
+
+                'color_hex' => '#945527',
                 'equipment_required' => json_encode(['bicicleta_estática', 'toalla', 'botella_agua', 'zapatillas_deportivas']),
                 'difficulty_level' => 'all_levels',
                 'calories_per_hour_avg' => 600,
                 'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'solidreformer',
-                'display_name' => 'Solid Reformer',
-                'description' => 'Pilates en máquina reformer para fortalecer y tonificar todo el cuerpo. Mejora la postura, flexibilidad y fuerza con movimientos controlados y precisos.',
-                'icon_url' => '/images/disciplines/solidreformer.svg',
-                'color_hex' => '#4ECDC4',
+                'id' => 2,
+                'name' => 'Reformer',
+                'display_name' => 'Reformer',
+                'description' => 'Entrenamiento de fuerza y flexibilidad en una reforma de Pilates. Fortalece todo el cuerpo y mejora la postura.',
+
+                'color_hex' => '#9D5AA9',
                 'equipment_required' => json_encode(['reformer', 'mat', 'props', 'calcetines_antideslizantes']),
                 'difficulty_level' => 'intermediate',
                 'calories_per_hour_avg' => 350,
                 'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'pilates_mat',
-                'display_name' => 'Pilates Mat',
-                'description' => 'Pilates en colchoneta enfocado en core, flexibilidad y control corporal. Fortalece desde adentro hacia afuera con ejercicios clásicos y modernos.',
-                'icon_url' => '/images/disciplines/pilates_mat.svg',
-                'color_hex' => '#95E1D3',
+                'id' => 3,
+                'name' => 'Pilates',
+                'display_name' => 'Pilates',
+                'description' => 'Clases de Pilates en colchoneta para tonificar y fortalecer el core. Ideal para principiantes.',
+
+                'color_hex' => '#2F59A6',
                 'equipment_required' => json_encode(['mat', 'pelota', 'banda_elastica', 'bloque']),
                 'difficulty_level' => 'beginner',
                 'calories_per_hour_avg' => 250,
                 'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
+
             [
-                'name' => 'yoga',
-                'display_name' => 'Yoga',
-                'description' => 'Práctica milenaria que combina posturas físicas, respiración y meditación. Mejora la flexibilidad, fuerza y bienestar mental en un ambiente de paz.',
-                'icon_url' => '/images/disciplines/yoga.svg',
-                'color_hex' => '#A8E6CF',
-                'equipment_required' => json_encode(['mat', 'bloque', 'correa', 'manta']),
-                'difficulty_level' => 'all_levels',
-                'calories_per_hour_avg' => 200,
-                'is_active' => true,
-            ],
-            [
-                'name' => 'barre',
-                'display_name' => 'Barre',
-                'description' => 'Entrenamiento inspirado en ballet que combina pilates, yoga y danza. Tonifica y esculpe el cuerpo con movimientos gráciles pero desafiantes.',
-                'icon_url' => '/images/disciplines/barre.svg',
-                'color_hex' => '#FFB6C1',
-                'equipment_required' => json_encode(['barra', 'mat', 'pelotas_pequeñas', 'bandas_ligeras']),
+                'id' => 4,
+                'name' => 'Box',
+                'display_name' => 'Box',
+                'description' => 'Clases de Box para mejorar la resistencia y la fuerza. Ideal para todos los niveles.',
+
+                'color_hex' => '#FF5733',
+                'equipment_required' => json_encode(['guantes', 'saco_de_boxeo', 'cuerda', 'botella_agua']),
                 'difficulty_level' => 'intermediate',
-                'calories_per_hour_avg' => 300,
+                'calories_per_hour_avg' => 250,
                 'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
-            [
-                'name' => 'hiit',
-                'display_name' => 'HIIT',
-                'description' => 'Entrenamiento de alta intensidad por intervalos. Maximiza la quema de calorías y mejora la condición cardiovascular en sesiones cortas pero intensas.',
-                'icon_url' => '/images/disciplines/hiit.svg',
-                'color_hex' => '#FF4757',
-                'equipment_required' => json_encode(['mat', 'pesas', 'bandas', 'step']),
-                'difficulty_level' => 'advanced',
-                'calories_per_hour_avg' => 700,
-                'is_active' => true,
-            ],
-            [
-                'name' => 'stretching',
-                'display_name' => 'Stretching & Recovery',
-                'description' => 'Sesiones de estiramiento y recuperación para mejorar la flexibilidad y aliviar tensiones. Perfecto para complementar entrenamientos intensos.',
-                'icon_url' => '/images/disciplines/stretching.svg',
-                'color_hex' => '#C7ECEE',
-                'equipment_required' => json_encode(['mat', 'foam_roller', 'pelotas_masaje', 'correas']),
-                'difficulty_level' => 'all_levels',
-                'calories_per_hour_avg' => 150,
-                'is_active' => true,
-            ],
-        ];
 
-        foreach ($disciplines as $disciplineData) {
-            Discipline::create($disciplineData);
-            $this->command->line("✅ Created discipline: {$disciplineData['display_name']}");
-        }
+        ]);
 
-        $this->command->info("🎉 Created " . count($disciplines) . " disciplines successfully!");
+        // Fin discipinas
     }
 }

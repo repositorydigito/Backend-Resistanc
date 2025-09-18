@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +16,8 @@ final class Discipline extends Model
         'display_name',
         'description',
         'icon_url',
+        'image_url',
+        'image_seat',
         'color_hex',
         'equipment_required',
         'difficulty_level',
@@ -67,5 +67,22 @@ final class Discipline extends Model
         }
 
         return implode(', ', $this->equipment_required);
+    }
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class, 'discipline_id');
+    }
+
+    // Tablas polimórficas
+    public function membresiables(): BelongsToMany
+    {
+        return $this->morphToMany(Membership::class, 'membresiable')
+            ->withPivot('quantity', 'is_active', 'has_image', 'image_path', 'unlimited')
+            ->withTimestamps();
+    }
+
+    public function memberships()
+    {
+        return $this->belongsTo(Membership::class);
     }
 }

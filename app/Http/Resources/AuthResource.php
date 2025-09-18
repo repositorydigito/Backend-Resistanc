@@ -36,13 +36,13 @@ final class AuthResource extends JsonResource
 
                 // Basic profile info (if loaded)
                 'profile' => $this->whenLoaded('profile', function () {
-                    return new UserProfileResource($this->profile);
+                    if ($this->profile) {
+                        return new UserProfileResource($this->profile);
+                    }
+                    return null;
                 }),
 
-                // Primary contact (if loaded)
-                'primary_contact' => $this->whenLoaded('primaryContact', function () {
-                    return new UserContactResource($this->primaryContact);
-                }),
+
             ],
 
             // Token information (when provided)

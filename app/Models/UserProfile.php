@@ -1,13 +1,14 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
-use App\Enums\Gender;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Perfil detallado del usuario
@@ -28,18 +29,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class UserProfile extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'user_id',
         'first_name',
         'last_name',
         'birth_date',
         'gender',
         'shoe_size_eu',
+        'profile_image',
+        'bio',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'medical_conditions',
+        'fitness_goals',
+
+        'is_active',
+        'observations',
+        // Relaciones
+        'user_id',
     ];
 
     /**
@@ -49,7 +60,6 @@ final class UserProfile extends Model
     {
         return [
             'birth_date' => 'date',
-            'gender' => Gender::class,
             'shoe_size_eu' => 'integer',
         ];
     }
@@ -62,19 +72,77 @@ final class UserProfile extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the user's full name.
-     */
-    public function getFullNameAttribute(): string
+    // En el modelo UserProfile
+    public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
     }
 
     /**
-     * Get the user's age.
+     * Get the user's age in years.
      */
-    public function getAgeAttribute(): int
+    public function getAgeAttribute(): ?int
     {
+        if (!$this->birth_date) {
+            return null;
+        }
+
         return $this->birth_date->age;
+    }
+
+    /**
+     * Get the user's packages through the user relationship.
+     */
+    public function userPackages(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserPackage::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user memberships through the user relationship.
+     */
+    public function userMemberships(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserMembership::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's payment methods through the user relationship.
+     */
+    public function userPaymentMethods(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserPaymentMethod::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's class schedule seats through the user relationship.
+     */
+    public function classScheduleSeats(): HasManyThrough
+    {
+        return $this->hasManyThrough(ClassScheduleSeat::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's drink orders through the user relationship.
+     */
+    public function drinkUsers(): HasManyThrough
+    {
+        return $this->hasManyThrough(DrinkUser::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's favorites through the user relationship.
+     */
+    public function userFavorites(): HasManyThrough
+    {
+        return $this->hasManyThrough(UserFavorite::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Get the user's waiting classes through the user relationship.
+     */
+    public function waitingClasses(): HasManyThrough
+    {
+        return $this->hasManyThrough(WaitingClass::class, User::class, 'id', 'user_id', 'user_id', 'id');
     }
 }
