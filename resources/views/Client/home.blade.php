@@ -74,14 +74,12 @@
                 height: 95vh;
                 display: flex;
                 align-items: center;
-
             }
 
             .header {
-                background-image: url('{{ asset('image/pages/header__two.jpeg') }}');
+                background-image: url('{{ asset('image/pages/banner1.png') }}');
                 background-size: cover;
                 background-position: 80% center;
-                /* Ajusta este valor según sea necesario */
                 color: white;
                 overflow: hidden;
                 position: relative;
@@ -398,6 +396,45 @@
             .pregunta__content p {
                 margin: 0;
             }
+
+            .btn-primary {
+            background: white;
+            color: #ff6b35;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 14px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #ff6b35;
+            cursor: pointer;
+        }
         </style>
     @endpush
 
@@ -413,9 +450,9 @@
                     <p class="header__subtitle">Clases que te transforman. Energía que te eleva. Una comunidad que te
                         empuja a más.</p>
 
-                    <div class="mt-5 buttons flex gap-5">
-                        <a href="#" class="btn btn__one">Empieza hoy</a>
-                        <a href="#" class="btn btn__two ">Reserva tu clase de prueba</a>
+                    <div class="cta-buttons">
+                        <a href="#" class="btn-primary">EMPIEZA HOY</a>
+                        <a href="#" class="btn-secondary">RESERVA TU CLASE DE PRUEBA</a>
                     </div>
                 </div>
 

@@ -17,7 +17,7 @@ class HomeController extends Controller
         $membresias = Membership::all();
         $disciplines = Discipline::all();
 
-        return view('client.home', compact('membresias', 'disciplines'));
+        return view('client.home2', compact('membresias', 'disciplines'));
     }
 
 }
