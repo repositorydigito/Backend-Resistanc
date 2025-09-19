@@ -2,11 +2,12 @@
 
 {{-- Hero --}}
 <section class="hero" id="inicio">
-    <div class="container">
-        <h1>Transforma tu Vida</h1>
-        <p>Entrena con los mejores equipos e instructores certificados</p>
-        <a href="#membresias" class="btn btn-primary">Ver Membresías</a>
-        <a href="#disciplinas" class="btn btn-outline">Conocer Disciplinas</a>
+    <div class="containerBanner">
+        <h1>TRAIN <span class="light">YOUR</span> RSISTANC.</h1>
+        <h1><span class="light">LIVE</span> UNSTOPPABLE.</h1>
+        <p>Clases que te transforman. Energía que te eleva. Una comunidad que te empuja a más.</p>
+        <a href="#membresias" class="btn btn-primary">EMPIEZA HOY</a>
+        <a href="#disciplinas" class="btn btn-outline">RESERVA TU CLASE DE PRUEBA</a>
     </div>
 </section>
 
