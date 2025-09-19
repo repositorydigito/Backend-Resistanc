@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('disciplines', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100)->unique()->comment('Nombre unico de la disciplina');
+            $table->integer('order')->nullable()->unique()->comment('orden de visualizacion');
             $table->string('display_name', 100)->comment('Nombre que sera visual para el usuario');
             $table->text('description')->nullable()->comment('Descripcion de la disciplina');
             $table->string('icon_url')->nullable()->comment('icono de la disciplina');

@@ -22,6 +22,7 @@ class DisciplineSeeder extends Seeder
             [
                 'id' => 1,
                 'name' => 'Cycling',
+                'order' => 1,
                 'display_name' => 'Cycling',
                 'description' => 'Entrenamiento cardiovascular intenso en bicicletas estáticas con música energizante y luces dinámicas. Quema calorías mientras te diviertes en un ambiente motivador.',
 
@@ -36,6 +37,7 @@ class DisciplineSeeder extends Seeder
             [
                 'id' => 2,
                 'name' => 'Reformer',
+                'order' => 2,
                 'display_name' => 'Reformer',
                 'description' => 'Entrenamiento de fuerza y flexibilidad en una reforma de Pilates. Fortalece todo el cuerpo y mejora la postura.',
 
@@ -50,6 +52,7 @@ class DisciplineSeeder extends Seeder
             [
                 'id' => 3,
                 'name' => 'Pilates',
+                'order' => 3,
                 'display_name' => 'Pilates',
                 'description' => 'Clases de Pilates en colchoneta para tonificar y fortalecer el core. Ideal para principiantes.',
 
@@ -65,6 +68,7 @@ class DisciplineSeeder extends Seeder
             [
                 'id' => 4,
                 'name' => 'Box',
+                'order' => 4,
                 'display_name' => 'Box',
                 'description' => 'Clases de Box para mejorar la resistencia y la fuerza. Ideal para todos los niveles.',
 

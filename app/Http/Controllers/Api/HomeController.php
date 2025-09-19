@@ -49,9 +49,7 @@ final class HomeController extends Controller
             ->get();
 
         $disciplines = Discipline::
-        // whereHas('packages')
-            orderBy('sort_order', 'asc')
-            ->orderBy('display_name', 'asc')
+            orderBy('order', 'asc')
             ->get();
 
 

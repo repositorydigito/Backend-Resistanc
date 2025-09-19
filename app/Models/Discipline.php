@@ -13,6 +13,7 @@ final class Discipline extends Model
 
     protected $fillable = [
         'name',
+        'order',
         'display_name',
         'description',
         'icon_url',
