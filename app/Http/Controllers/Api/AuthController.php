@@ -14,6 +14,7 @@ use App\Http\Resources\LoginResource;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\SimpleUserResource;
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -39,47 +40,82 @@ final class AuthController extends Controller
      * Genera automáticamente un token de acceso para la API.
      *
      */
-    public function register(RegisterRequest $request): AuthResource
+    public function register(Request $request)
     {
-        $validated = $request->validated();
 
-        $user = DB::transaction(function () use ($validated) {
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'], // Auto-hashed by model
-            ]);
+// Validación mejorada
+    $validated = $request->validate([
+        'first_name' => 'required|string|max:255|min:2',
+        'last_name' => 'required|string|max:255|min:2',
+        'email' => 'required|string|email|max:255|unique:users,email',
+        'password' => 'required|string|confirmed|min:8',
+        'birth_date' => 'nullable|date',
+        'gender' => 'required|string',
+        'phone' => 'required|string|min:9|max:20', // Cambiado a string para permitir formatos como +51 999999999
+        'adress' => 'required|string|max:255',
+        'shoe_size_eu' => 'nullable|string|max:5',
+        // 'device_name' => 'nullable|string|max:255'
+    ]);
 
-            // Asignar rol de Cliente por defecto
-            $user->assignRole('Cliente');
+    try {
+        // Crear usuario con contraseña hasheada explícitamente
+        $user = User::create([
+            'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']), // Hash explícito
+        ]);
 
-            // Enviar email de verificación
-            $user->sendEmailVerificationNotification();
+        // Crear perfil de usuario
+        UserProfile::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'birth_date' => $validated['birth_date'],
+            'gender' => $validated['gender'],
+            'phone' => $validated['phone'],
+            'adress' => $validated['adress'],
+            'shoe_size_eu' => $validated['shoe_size_eu'] ?? null,
+            'user_id' => $user->id
+        ]);
 
-            // Create login audit for registration
-            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-            $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
-            $user->loginAudits()->create([
-                'ip' => $ipAddress,
-                'user_agent' => $userAgent,
-                'success' => true,
-                'created_at' => now(),
-            ]);
+        // Asignar rol
+        $user->assignRole('Cliente');
 
-            return $user;
-        });
+        // Enviar verificación
+        $user->sendEmailVerificationNotification();
 
-        // Generate API token
+        // Generar token
         $deviceName = $validated['device_name'] ?? 'API Token';
         $token = $user->createToken($deviceName)->plainTextToken;
 
-        // Add token to user for resource
+        // Cargar relaciones y preparar respuesta
+        $user->load(['profile', 'loginAudits']);
         $user->token = $token;
 
-        // Load relationships for response
-        $user->load(['profile', 'loginAudits']);
+        return response()->json([
+            'exito' => true,
+            'codMensaje' => 1,
+            'mensajeUsuario' => 'Registro de usuario exitoso',
+            'datoAdicional' => new AuthResource($user)
+        ], 200); // 201 Created es más semántico que 200
 
-        return new AuthResource($user);
+    } catch (ValidationException $e) {
+        // Errores de validación (aunque no debería llegar aquí por el validate inicial)
+        return response()->json([
+            'exito' => false,
+            'codMensaje' => 2,
+            'mensajeUsuario' => 'Datos inválidos',
+            'datoAdicional' => $e->errors()
+        ], 200); // 422 Unprocessable Entity
+
+    } catch (\Throwable $th) {
+        // Otros errores
+        return response()->json([
+            'exito' => false,
+            'codMensaje' => 0,
+            'mensajeUsuario' => 'Error al registrar usuario',
+            'datoAdicional' => $th->getMessage()
+        ], 200); // 500 Internal Server Error
+    }
     }
 
     /**

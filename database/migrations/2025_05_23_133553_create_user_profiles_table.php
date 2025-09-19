@@ -33,6 +33,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->comment('Indica si el perfil está activo');
             $table->string('observations')->nullable()->comment('Observaciones adicionales');
 
+            $table->string('adress')->nullable()->comment('Direccion');
+            $table->string('phone')->nullable()->comment('Telefono');
+
 
             // RELACIONES
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

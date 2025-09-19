@@ -56,8 +56,10 @@ Route::prefix('social-login')->name('social-login.')->group(function () {
 // Fin logueo con redes sociales
 
 Route::prefix('auth')->name('auth.')->group(function () {
-    // Public authentication routes
+    // Registrar un nuevo cliente desde el app
     Route::post('/register', [AuthController::class, 'register'])->name('register');
+
+    // Login desde el app solo verifica clientes
     Route::post('/login', [AuthController::class, 'login'])->name('login');
 
     // Email verification routes

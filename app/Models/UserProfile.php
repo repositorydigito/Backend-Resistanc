@@ -46,7 +46,8 @@ final class UserProfile extends Model
         'emergency_contact_phone',
         'medical_conditions',
         'fitness_goals',
-
+        'adress',
+        'phone',
         'is_active',
         'observations',
         // Relaciones
