@@ -20,7 +20,7 @@ class DrinkResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'description' => $this->description,
-            'image_url' => $this->image_url ? asset($this->image_url) : null,
+            'image_url' => $this->image_url ? asset('storage/'.$this->image_url) : null,
             'price' => $this->price,
 
             // ✅ Siempre cargar relaciones (sin whenLoaded)
