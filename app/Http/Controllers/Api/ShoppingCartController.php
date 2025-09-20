@@ -89,7 +89,7 @@ class ShoppingCartController extends Controller
                                 'id' => $item->product->id,
                                 'name' => $item->product->name,
                                 'sku' => $item->product->sku,
-                                'img_url' => $item->product->img_url,
+                                'img_url' =>$item->product->img_url ? asset('storage/' . $item->product->img_url) : null,
                             ],
                             'variant' => $item->productVariant ? [
                                 'id' => $item->productVariant->id,
