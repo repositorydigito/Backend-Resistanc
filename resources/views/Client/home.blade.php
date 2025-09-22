@@ -19,7 +19,10 @@
         <div class="grid">
             @foreach($disciplines as $discipline)
             <div class="card">
-                <h3>{{ $discipline->name }}</h3>
+                <div class="logoStudio1">
+                    <img src="/image/logos/logoBlancoR.svg" alt="logo">
+                    <h3>{{ $discipline->name }}</h3>
+                </div>
                 @if($discipline->description)
                 <p>{{ $discipline->description }}</p>
                 @endif
@@ -69,7 +72,10 @@
         <div class="gridServicios">
             @foreach($disciplines as $discipline)
             <div class="card">
-                <h3>{{ $discipline->name }}</h3>
+                <div class="logoStudio1">
+                    <img src="/image/logos/logoBlancoR.svg" alt="logo">
+                    <h3>{{ $discipline->name }}</h3>
+                </div>
                 @if($discipline->description)
                 <p>{{ $discipline->description }}</p>
                 @endif
@@ -102,7 +108,7 @@
     <div class="containerDireccion">        
         <div class="textDireccion">
             <h1><span class="light">ENCUENTRA</span></h1>
-            <div class="logoStudio">
+            <div class="logoStudio1">
                 <img src="/image/logos/iconos/logor.svg" alt="logo">
                 <h1>STUDIO</h1>
             </div>
