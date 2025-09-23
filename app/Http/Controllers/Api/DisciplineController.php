@@ -24,7 +24,7 @@ final class DisciplineController extends Controller
             $query = Discipline::query()
                 ->active()
                 // ->whereHas('packages')
-                ->orderBy('sort_order', 'asc')
+                ->orderBy('order', 'asc')
                 ->orderBy('display_name', 'asc');
 
             // Incluir contadores si se solicita
