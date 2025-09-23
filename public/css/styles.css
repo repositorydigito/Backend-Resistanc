@@ -218,6 +218,13 @@ body {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
+.mapaStudio:hover{
+  opacity: 0.9; 
+  cursor: pointer;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
 .textDireccion {
   display: flex;
   flex-direction: column;
@@ -336,11 +343,19 @@ body {
 
 /* Cards */
 .card {
-  padding: 8rem 24px 24px;
+  padding: 8rem 24px 4px;
   color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   border-radius: 16px;
+  height: 20rem;
+  overflow: hidden;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  background: linear-gradient(124deg,#B0694C 20%,#A267B4 70%);
+  background-clip: padding-box;
+  background: 
+    linear-gradient(124deg, rgba(176, 105, 76, 0.6) 20%, rgba(162, 103, 180, 0.6) 70%),
+    url('/image/pages/cycling2.png') center/cover no-repeat;
 }
 
 .card h3 {
@@ -355,10 +370,69 @@ body {
 }
 
 .card:hover { 
+  opacity: 0.9;
+  cursor: pointer;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Carrusel */
+.carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  margin-top: 2rem;
+}
+
+.carousel-items {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 16px;
+  padding: 0 8px 8px;
+}
+
+.carousel-items::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-item {
+  flex: 0 0 24%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.carousel-controls {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  gap: 1rem;
+  padding: 16px 0;
+}
+
+.carousel-nav {
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 10;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.carousel-nav:hover { 
   opacity: 0.9; 
   cursor: pointer;
   transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 /* Membership cards */

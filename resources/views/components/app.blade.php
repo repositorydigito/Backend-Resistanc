@@ -78,7 +78,7 @@
             </div>
             <div class="footerBottom">
                 <p>&copy; 2025 RSISTANC. Todos los derechos reservados.</p>
-                <p><a href="#">Políticas de Privacidad</a> | <a href="#">Términos y Condiciones</a></p>
+                <p><a href="privacity">Políticas de Privacidad</a> | <a href="terms">Términos y Condiciones</a></p>
             </div>
         </div>
     </footer>

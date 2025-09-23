@@ -1,10 +1,16 @@
 <?php
 
 use App\Http\Controllers\Client\HomeController;
+use App\Http\Controllers\Client\PrivacityController;
+use App\Http\Controllers\Client\TermsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/privacity', [PrivacityController::class, 'index'])->name('privacity');
+
+Route::get('/terms', [TermsController::class, 'index'])->name('terms');
 
 // Ruta de prueba simple
 Route::get('/test', function () {

@@ -16,18 +16,28 @@
 <section class="section" id="disciplinas">
     <div class="containerDisciplines">
         <h2 class="section-title"><span class="light">ELIGE CÓMO QUIERES</span> MOVERTE</h2>
-        <div class="grid">
-            @foreach($disciplines as $discipline)
-            <div class="card">
-                <div class="logoStudio1">
-                    <img src="/image/logos/logoBlancoR.svg" alt="logo">
-                    <h3>{{ $discipline->name }}</h3>
-                </div>
-                @if($discipline->description)
-                <p>{{ $discipline->description }}</p>
-                @endif
+
+        <div class="carousel-container">
+            <div class="carousel-items" id="carousel">
+                @foreach($disciplines as $index => $discipline)
+                    <div class="carousel-item">
+                        <div class="card">
+                            <div class="logoStudio1">
+                                <img src="/image/logos/logoBlancoR.svg" alt="logo">
+                                <h3>{{ $discipline->name }}</h3>
+                            </div>
+                            @if($discipline->description)
+                                <p>{{ $discipline->description }}</p>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
             </div>
-            @endforeach
+
+            <div class="carousel-controls">
+                <button class="carousel-nav carousel-nav-left" onclick="prevSlide()">←</button>
+                <button class="carousel-nav carousel-nav-right" onclick="nextSlide()">→</button>
+            </div>
         </div>
     </div>
 </section>
@@ -79,6 +89,9 @@
                 @if($discipline->description)
                 <p>{{ $discipline->description }}</p>
                 @endif
+                <div class="logoStudio">
+                    <span class="light">⚡Shake it, wear it, own it.</span>
+                </div>
             </div>
             @endforeach
         </div>
@@ -128,7 +141,7 @@
             </div>
         </div>
         <a href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú" target="_blank" rel="noopener noreferrer">
-            <img src="/image/pages/mapa.svg" alt="Mapa de Studio">
+            <img src="/image/pages/mapa.svg" alt="Mapa de Studio" class="mapaStudio">
         </a>
     </div>
 </section>
@@ -242,5 +255,45 @@
         <a href="mailto:info@resistance.com" class="btn btn-outline">Enviar Email</a>
     </div>
 </section> -->
+
+<script>
+let slideIndex = 0;
+const carousel = document.getElementById('carousel');
+const items = carousel.querySelectorAll('.carousel-item');
+let slidesPerView = window.innerWidth < 768 ? 1 : 3;
+
+function updateSlides() {
+    const slideWidth = carousel.offsetWidth / slidesPerView;
+    carousel.scrollLeft = slideIndex * slideWidth;
+}
+
+function nextSlide() {
+    if (slideIndex < items.length - slidesPerView) {
+        slideIndex++;
+        updateSlides();
+    }
+}
+
+function prevSlide() {
+    if (slideIndex > 0) {
+        slideIndex--;
+        updateSlides();
+    }
+}
+
+function handleResize() {
+    const newSlidesPerView = window.innerWidth < 768 ? 1 : 3;
+    if (newSlidesPerView !== slidesPerView) {
+        slidesPerView = newSlidesPerView;
+        updateSlides();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    updateSlides();
+
+    window.addEventListener('resize', handleResize);
+});
+</script>
 
 </x-app>
