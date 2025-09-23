@@ -100,7 +100,7 @@ class StudioResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
-                                    ->maxValue(20)
+                                    // ->maxValue(20)
                                     ->helperText('Número de filas para distribuir los asientos'),
 
                                 Forms\Components\TextInput::make('column')
@@ -108,7 +108,7 @@ class StudioResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
-                                    ->maxValue(20)
+                                    // ->maxValue(20)
                                     ->helperText('Número de columnas para distribuir los asientos')
                                     ->live()
                                     ->afterStateUpdated(function ($state, $get, $set) {
