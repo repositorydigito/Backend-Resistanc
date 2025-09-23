@@ -6,6 +6,7 @@ use App\Filament\Resources\ClassModelResource\Pages;
 use App\Filament\Resources\ClassModelResource\RelationManagers;
 use App\Models\ClassModel;
 use Filament\Forms;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -98,11 +99,15 @@ class ClassModelResource extends Resource
                         //     ->relationship('studio', 'name')
                         //     ->required(),
 
-                        Forms\Components\TextInput::make('max_capacity')
-                            ->label('Capacidad Máxima')
+                        // Forms\Components\TextInput::make('max_capacity')
+                        //     ->label('Capacidad Máxima')
+                        //     ->required()
+                        //     ->numeric(),
+                        ColorPicker::make('color_hex')
+                            ->label('Color')
                             ->required()
-                            ->numeric(),
-
+                            ->hex() // Asegura que solo acepte formato HEX (#RRGGBB)
+                            ->default('#000000'), // Color por defecto (negro)
                         Forms\Components\Select::make('type')
                             ->label('Modalidad')
                             ->options([

@@ -20,6 +20,7 @@ class ClassScheduleResource extends JsonResource
             'class' => [
                 'id' => $this->class->id,
                 'name' => $this->class->name,
+                'color_hex' => $this->class->color_hex,
                 'img_url' => $this->class->img_url ? asset('storage/') . '/' . $this->class->img_url : null,
                 'discipline' => $this->class->discipline->name,
                 'discipline_img' => $this->class->discipline->icon_url ? asset('storage/') . '/' . $this->class->discipline->icon_url : null,

@@ -31,6 +31,7 @@ final class ClassModel extends Model
 
         // Nuevo
         'img_url',
+        'color_hex',
 
         // Relaciones
         'discipline_id',
