@@ -1,9 +1,5 @@
-/* RESISTANCE GYM - CSS SIMPLE YAGNI */
-
-/* Reset mínimo */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Variables básicas */
 :root {
   --primary: #B0694C;
   --text: #1f2937;
@@ -13,7 +9,6 @@
   --spacing: 16px;
 }
 
-/* Base */
 body { 
   font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.6; 
@@ -126,7 +121,7 @@ body {
     font-weight: 200;
 }
 
-.hero p { 
+.hero-description { 
   font-size: 1.5rem;
   font-weight: 300;
   margin-bottom: 32px;
@@ -321,7 +316,10 @@ body {
 
 .card-purple {
   padding-top: 14rem;
-  background: #9D5AA9; /* Color púrpura similar al de la imagen */
+  opacity: 0.9;
+  background: 
+    linear-gradient(124deg, rgba(164, 76, 176, 0.6) 20%, rgba(110, 53, 128, 0.6) 70%),
+    url('/image/pages/cyclingGroup.png') center/cover no-repeat;
 }
 
 .dark {
@@ -447,6 +445,12 @@ body {
   font-weight: bold;
   color: var(--primary);
   margin: var(--spacing) 0;
+}
+
+.service-subtitle {
+  font-size: 0.9rem;
+  font-weight: 300;
+  margin: 0.5rem 0;
 }
 
 .features {
@@ -628,30 +632,237 @@ body {
     padding-top: 3rem;
 }
 
-/* Responsive */
+.footerBottom a {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+}
+
+.footerBottom a:hover {
+    color: var(--primary);
+}
+
 @media (max-width: 768px) {
-  .nav { 
-    flex-direction: column; 
-    gap: var(--spacing); 
+  /* --- Layout y contenedores --- */
+  .container,
+  .containerNav,
+  .containerBanner,
+  .containerDisciplines,
+  .containerDescarga,
+  .containerDireccion,
+  .containerFaq {
+    padding-left: var(--spacing);
+    padding-right: var(--spacing);
   }
-  
-  .nav-menu { 
-    gap: var(--spacing); 
+
+  .containerBanner {
+    padding: 4rem var(--spacing) 2rem;
   }
-  
-  .hero h1 { 
-    font-size: 32px; 
+
+  .containerDisciplines,
+  .containerDescarga,
+  .containerDireccion {
+    padding: 24px var(--spacing);
   }
-  
-  .hero p { 
-    font-size: 18px; 
+
+  /* --- Header --- */
+  .nav {
+    flex-direction: row;
+    gap: var(--spacing);
   }
-  
-  .grid { 
-    grid-template-columns: 1fr; 
+
+  .nav-menu {
+    gap: var(--spacing);
+    flex-wrap: wrap;
+    justify-content: center;
   }
-  
-  .section-title {
+
+  .logo {
+    width: 150px;
+  }
+
+  /* --- Hero --- */
+  .hero {
+    padding: 80px 0 40px;
+    background-position: center;
+  }
+
+  .hero h1 {
+    font-size: 2.25rem; /* 36px */
+    line-height: 1.2;
+  }
+
+  .hero p {
+    font-size: 1.125rem; /* 18px */
+    margin-bottom: 24px;
+    max-width: 100%;
+  }
+
+  .btn {
+    display: block;
+    margin: 8px auto;
+    padding: 12px 20px;
+    width: fit-content;
+  }
+
+  /* --- Secciones --- */
+  .section {
+    padding: 32px 0 16px;
+    margin: 0 8px;
+  }
+
+  .section-title,
+  .titleServicios {
     font-size: 24px;
+    text-align: center;
+  }
+
+  .subtitleServicios {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  /* --- Disciplinas y Servicios (Grids) --- */
+  .grid,
+  .gridServicios,
+  .gridCards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* --- Cards --- */
+  .card {
+    padding: 4rem 16px 16px;
+    height: auto;
+    min-height: 220px;
+  }
+
+  .card h3 {
+    font-size: 24px;
+  }
+
+  /* --- Paquetes --- */
+  .package-card {
+    padding: 24px 16px;
+    min-height: auto;
+  }
+
+  .card-brown {
+    padding-top: 4rem;
+  }
+
+  .card-purple {
+    padding-top: 6rem;
+  }
+
+  .package-card h3 {
+    font-size: 24px;
+  }
+
+  /* --- Descarga --- */
+  .containerDescarga {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .textDescarga {
+    padding: 0;
+    align-items: center;
+  }
+
+  .textDescarga > div {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .textDescarga img {
+    width: auto;
+    height: 40px;
+  }
+
+  /* --- Dirección --- */
+  .containerDireccion {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .textDireccion {
+    padding: 0;
+    align-items: self-start;
+    text-align: left;
+  }
+
+  .logoStudio,
+  .logoStudio1 {
+    justify-content: center;
+  }
+
+  /* --- FAQ --- */
+  .containerFaq {
+    padding: 24px var(--spacing);
+  }
+
+  .faq-container {
+    margin-top: 24px;
+  }
+
+  .faq-item {
+    padding: 12px;
+  }
+
+  .faq-question {
+    font-size: 1rem;
+    padding: 10px 0;
+  }
+
+  .faq-answer {
+    font-size: 0.9rem;
+    padding: 10px 0;
+  }
+
+  /* --- Carrusel --- */
+  .carousel-item {
+    flex: 0 0 100%;
+  }
+
+  .carousel-controls {
+    padding: 16px 0 8px;
+  }
+
+  /* --- Footer --- */
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .footer-column {
+    text-align: center;
+  }
+
+  .footer-logo {
+    align-items: center;
+  }
+
+  .footerBottom {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  /* --- Utilidades --- */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  h1, h2, h3, h4 {
+    line-height: 1.3;
   }
 }

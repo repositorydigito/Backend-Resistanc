@@ -9,6 +9,8 @@ class HomePageContent extends Model
 {
     use HasFactory;
 
+    protected $table = 'home_page_contents';
+
     protected $fillable = [
         'section',
         'key',

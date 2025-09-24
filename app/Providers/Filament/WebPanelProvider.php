@@ -36,6 +36,7 @@ class WebPanelProvider extends PanelProvider
             ->resources([
                 \App\Filament\Web\Resources\HomePageContentResource::class,
                 \App\Filament\Web\Resources\FaqResource::class,
+                \App\Filament\Web\Resources\ServiceResource::class,
                 \App\Filament\Web\Resources\LegalPolicyResource::class,
                 \App\Filament\Web\Resources\LegalFaqResource::class,
             ])

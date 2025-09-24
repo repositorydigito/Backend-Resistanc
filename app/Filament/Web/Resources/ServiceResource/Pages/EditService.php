@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Web\Resources\HomePageContentResource\Pages;
+namespace App\Filament\Web\Resources\ServiceResource\Pages;
 
-use App\Filament\Web\Resources\HomePageContentResource;
+use App\Filament\Web\Resources\ServiceResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditHomePageContent extends EditRecord
+class EditService extends EditRecord
 {
-    protected static string $resource = HomePageContentResource::class;
+    protected static string $resource = ServiceResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -19,15 +19,11 @@ class EditHomePageContent extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Editar Contenido';
+        return 'Editar Servicio';
     }
 
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
     }
-
-
-
-
 }

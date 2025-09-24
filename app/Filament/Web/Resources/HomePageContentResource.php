@@ -81,17 +81,22 @@ class HomePageContentResource extends Resource
 
                 Forms\Components\Section::make('Contenido')
                     ->schema([
-                        Forms\Components\TextInput::make('value')
-                            ->label('Valor')
-                            ->required()
-                            ->maxLength(255)
-                            ->visible(fn (Forms\Get $get): bool => in_array($get('type'), ['text', 'url', 'email', 'phone'])),
+
 
                         Forms\Components\Textarea::make('value')
                             ->label('Valor')
                             ->required()
-                            ->rows(4)
-                            ->visible(fn (Forms\Get $get): bool => $get('type') === 'textarea'),
+                            ->rows(function (Forms\Get $get) {
+                                return $get('type') === 'textarea' ? 6 : 2;
+                            })
+                            ->helperText(function (Forms\Get $get) {
+                                $type = $get('type');
+                                if ($type === 'textarea') {
+                                    return 'Contenido largo. Puede usar HTML: <strong>, <em>, <p>, <br>, etc.';
+                                }
+                                return 'Contenido corto. Para ' . $type . ', escriba el texto directamente.';
+                            })
+                            ->visible(fn (Forms\Get $get): bool => in_array($get('type'), ['text', 'textarea', 'url', 'email', 'phone'])),
 
                         Forms\Components\FileUpload::make('value')
                             ->label('Imagen')

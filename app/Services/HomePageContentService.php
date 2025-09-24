@@ -94,4 +94,20 @@ class HomePageContentService
 
         return asset('storage/' . $imagePath);
     }
+
+    /**
+     * Get content with HTML rendering support
+     */
+    public static function getHtml(string $section, string $key, string $default = ''): string
+    {
+        return self::get($section, $key, $default);
+    }
+
+    /**
+     * Check if content contains HTML tags
+     */
+    public static function isHtml(string $content): bool
+    {
+        return $content !== strip_tags($content);
+    }
 }

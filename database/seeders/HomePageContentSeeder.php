@@ -17,21 +17,21 @@ class HomePageContentSeeder extends Seeder
             [
                 'section' => 'hero',
                 'key' => 'title_line_1',
-                'value' => 'TRAIN YOUR RSISTANC.',
+                'value' => 'TRAIN <span class="light">YOUR</span> RSISTANC.',
                 'type' => 'text',
                 'order' => 1,
             ],
             [
                 'section' => 'hero',
                 'key' => 'title_line_2',
-                'value' => 'LIVE UNSTOPPABLE.',
+                'value' => '<span class="light">LIVE</span> UNSTOPPABLE.',
                 'type' => 'text',
                 'order' => 2,
             ],
             [
                 'section' => 'hero',
                 'key' => 'description',
-                'value' => 'Clases que te transforman. Energía que te eleva. Una comunidad que te empuja a más.',
+                'value' => '<p>Clases que te transforman. <strong>Energía que te eleva.</strong> Una comunidad que te empuja a más.</p>',
                 'type' => 'textarea',
                 'order' => 3,
             ],
@@ -68,7 +68,7 @@ class HomePageContentSeeder extends Seeder
             [
                 'section' => 'disciplines',
                 'key' => 'title',
-                'value' => 'ELIGE CÓMO QUIERES MOVERTE',
+                'value' => 'ELIGE <strong>CÓMO QUIERES</strong> MOVERTE',
                 'type' => 'text',
                 'order' => 1,
             ],

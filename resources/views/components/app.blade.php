@@ -30,7 +30,6 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
-                <!-- Logo y redes -->
                 <div class="footer-logo">
                     <img src="{{ asset('image/logos/logorsistanc.svg') }}" alt="RSISTANC Logo">
                     <div class="social-icons">
@@ -43,7 +42,6 @@
                     </div>
                 </div>
 
-                <!-- Columna 1: R Studio -->
                 <div class="footer-column">
                     <h4>R Studio</h4>
                     <ul>
@@ -55,7 +53,6 @@
                     </ul>
                 </div>
 
-                <!-- Columna 2: Links -->
                 <div class="footer-column">
                     <h4>Links</h4>
                     <ul>
@@ -67,7 +64,6 @@
                     </ul>
                 </div>
 
-                <!-- Columna 3: App -->
                 <div class="footer-column">
                     <h4>App</h4>
                     <ul>
