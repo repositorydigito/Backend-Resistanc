@@ -183,7 +183,8 @@ body {
   background-color: white;
   display: flex;
   flex-direction: row;
-  gap: 24px;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .textDescarga {
@@ -208,7 +209,7 @@ body {
   background-color: white;
   display: flex;
   flex-direction: row;
-  gap: 10rem;
+  justify-content: space-between;
 }
 
 .logoStudio img:hover { 

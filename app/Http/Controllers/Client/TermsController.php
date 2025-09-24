@@ -17,7 +17,7 @@ class TermsController extends Controller
         $membresias = Membership::all();
         $disciplines = Discipline::all();
 
-        return view('client.terms', compact('membresias', 'disciplines'));
+        return view('client.terms-conditions', compact('membresias', 'disciplines'));
     }
 
 }
