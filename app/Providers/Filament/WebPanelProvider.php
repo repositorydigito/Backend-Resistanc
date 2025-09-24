@@ -37,6 +37,7 @@ class WebPanelProvider extends PanelProvider
                 \App\Filament\Web\Resources\HomePageContentResource::class,
                 \App\Filament\Web\Resources\FaqResource::class,
                 \App\Filament\Web\Resources\ServiceResource::class,
+                \App\Filament\Web\Resources\DisciplineResource::class,
                 \App\Filament\Web\Resources\LegalPolicyResource::class,
                 \App\Filament\Web\Resources\LegalFaqResource::class,
             ])

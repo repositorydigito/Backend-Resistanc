@@ -2,6 +2,7 @@
 use App\Services\HomePageContentService;
 use App\Models\Faq;
 use App\Models\Service;
+use App\Models\Discipline;
 
 $heroContent = HomePageContentService::getHeroContent();
 $disciplinesContent = HomePageContentService::getDisciplinesContent();
@@ -12,6 +13,7 @@ $locationContent = HomePageContentService::getLocationContent();
 $faqContent = HomePageContentService::getFaqContent();
 $faqs = Faq::active()->ordered()->get();
 $services = Service::active()->ordered()->get();
+$disciplines = Discipline::active()->ordered()->get();
 @endphp
 
 <x-app>
@@ -37,10 +39,10 @@ $services = Service::active()->ordered()->get();
             <div class="carousel-items" id="carousel">
                 @foreach($disciplines as $index => $discipline)
                     <div class="carousel-item">
-                        <div class="card">
+                        <div class="card" style="background-image: url('{{ $discipline->image_url }}');">
                             <div class="logoStudio1">
-                                <img src="/image/logos/logoBlancoR.svg" alt="logo">
-                                <h3>{{ $discipline->name }}</h3>
+                                <img src="{{ $discipline->icon_url }}" alt="{{ $discipline->display_name }}">
+                                <h3>{{ $discipline->display_name }}</h3>
                             </div>
                             @if($discipline->description)
                                 <p>{{ $discipline->description }}</p>
@@ -97,9 +99,9 @@ $services = Service::active()->ordered()->get();
         <h3 class="subtitleServicios"><span class="light">{!! $servicesContent['subtitle'] ?? 'Explora lo que hace única tu experiencia en R STUDIO, dentro y fuera del training floor.' !!}</span></h3>
         <div class="gridServicios">
             @foreach($services as $service)
-            <div class="card">
+            <div class="card" style="background-image: url('{{ $service->image_url }}');">
                 <div class="logoStudio1">
-                    <img src="{{ $service->image_url }}" alt="{{ $service->title }}">
+                    <img src="/image/logos/logoBlancoR.svg" alt="logo">
                     <h3>{{ $service->title }}</h3>
                 </div>
                 @if($service->description)
@@ -272,4 +274,62 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('resize', handleResize);
 });
 </script>
+
+<style>
+    /* Estilos para disciplinas */
+    .discipline-difficulty {
+        margin: 0.5rem 0;
+        text-align: center;
+    }
+    
+    .difficulty-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .difficulty-beginner {
+        background-color: #10B981;
+        color: white;
+    }
+    
+    .difficulty-intermediate {
+        background-color: #F59E0B;
+        color: white;
+    }
+    
+    .difficulty-advanced {
+        background-color: #EF4444;
+        color: white;
+    }
+    
+    .difficulty-expert {
+        background-color: #6B7280;
+        color: white;
+    }
+    
+    .discipline-calories {
+        margin-top: 0.5rem;
+        text-align: center;
+    }
+    
+    .discipline-calories small {
+        color: #B0694C;
+        font-weight: 500;
+    }
+    
+    /* Estilos para servicios */
+    .service-subtitle {
+        font-size: 0.9rem;
+        color: #B0694C;
+        font-weight: 500;
+        margin: 0.5rem 0;
+        font-style: italic;
+    }
+</style>
+
 </x-app>
