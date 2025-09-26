@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\Company;
 use App\Models\Discipline;
+use App\Models\LegalPolicy;
 use App\Models\Product;
 use App\Models\ProductBrand;
 use App\Models\Studio;
@@ -98,6 +99,16 @@ class DatabaseSeeder extends Seeder
 
         // Plantillas de email
         $this->call(TemplateEmailSeeder::class);
+
+        // Preguntas frecuentes
+        $this->call(FaqSeeder::class);
+
+        // Servicios
+        $this->call(ServiceSeeder::class);
+
+        // Politicas y privacidad
+        $this->call(LegalPolicy::class);
+
 
         $this->command->info('🎉 Database seeding completed!');
     }
