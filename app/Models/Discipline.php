@@ -81,42 +81,42 @@ final class Discipline extends Model
     /**
      * Get the icon URL with fallback.
      */
-    public function getIconUrlAttribute($value): string
-    {
-        if (!$value) {
-            return '/image/logos/logoBlancoR.svg'; // Default icon
-        }
+    // public function getIconUrlAttribute($value): string
+    // {
+    //     if (!$value) {
+    //         return '/image/logos/logoBlancoR.svg'; // Default icon
+    //     }
 
-        if (filter_var($value, FILTER_VALIDATE_URL)) {
-            return $value;
-        }
+    //     if (filter_var($value, FILTER_VALIDATE_URL)) {
+    //         return $value;
+    //     }
 
-        if (str_starts_with($value, '/')) {
-            return $value;
-        }
+    //     if (str_starts_with($value, '/')) {
+    //         return $value;
+    //     }
 
-        return asset('storage/' . $value);
-    }
+    //     return asset('storage/' . $value);
+    // }
 
     /**
      * Get the image URL with fallback.
      */
-    public function getImageUrlAttribute($value): string
-    {
-        if (!$value) {
-            return '/image/logos/logoBlancoR.svg'; // Default image
-        }
+    // public function getImageUrlAttribute($value): string
+    // {
+    //     if (!$value) {
+    //         return '/image/logos/logoBlancoR.svg'; // Default image
+    //     }
 
-        if (filter_var($value, FILTER_VALIDATE_URL)) {
-            return $value;
-        }
+    //     if (filter_var($value, FILTER_VALIDATE_URL)) {
+    //         return $value;
+    //     }
 
-        if (str_starts_with($value, '/')) {
-            return $value;
-        }
+    //     if (str_starts_with($value, '/')) {
+    //         return $value;
+    //     }
 
-        return asset('storage/' . $value);
-    }
+    //     return asset('storage/' . $value);
+    // }
 
     /**
      * Get the display name or fallback to name.
