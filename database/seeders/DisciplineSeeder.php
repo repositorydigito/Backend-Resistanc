@@ -79,22 +79,7 @@ class DisciplineSeeder extends Seeder
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-
-            [
-                'id' => 5,
-                'name' => 'Karate',
-                'display_name' => 'Karate',
-                'description' => 'Clases de Karate para mejorar la resistencia y la fuerza. Ideal para todos los niveles.',
-
-                'color_hex' => '#FF5733',
-                'equipment_required' => json_encode(['guantes', 'saco_de_boxeo', 'cuerda', 'botella_agua']),
-                'difficulty_level' => 'intermediate',
-                'calories_per_hour_avg' => 250,
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ]
 
         ]);
 
