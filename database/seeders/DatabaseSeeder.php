@@ -107,7 +107,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ServiceSeeder::class);
 
         // Politicas y privacidad
-        $this->call(LegalPolicy::class);
+        $this->call(LegalPolicySeeder::class);
 
 
         $this->command->info('🎉 Database seeding completed!');
