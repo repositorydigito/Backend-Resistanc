@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
 
-        // no utilizado
         Schema::create('user_payment_methods', function (Blueprint $table) {
             $table->id();
 

@@ -233,21 +233,8 @@ final class ClassSchedule extends Model
         return $this->belongsTo(ClassModel::class); // Ajusta el modelo real si se llama diferente
     }
 
-    /**
-     * Get the bookings for this schedule.
-     */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class);
-    }
 
-    /**
-     * Get the booking seats for this schedule.
-     */
-    public function bookingSeats(): HasMany
-    {
-        return $this->hasMany(BookingSeat::class);
-    }
+
 
     /**
      * Get the waitlist entries for this schedule.

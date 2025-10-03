@@ -109,6 +109,9 @@ class DatabaseSeeder extends Seeder
         // Politicas y privacidad
         $this->call(LegalPolicySeeder::class);
 
+        // Promociones y codigos
+        $this->call(PromoCodesSeeder::class);
+
 
         $this->command->info('🎉 Database seeding completed!');
     }

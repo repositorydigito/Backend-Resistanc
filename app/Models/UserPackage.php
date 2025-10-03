@@ -103,13 +103,7 @@ final class UserPackage extends Model
         return $this->belongsTo(User::class, 'gift_from_user_id');
     }
 
-    /**
-     * Get the bookings made with this package.
-     */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class);
-    }
+
 
     /**
      * Scope to get only active packages.
@@ -398,5 +392,10 @@ final class UserPackage extends Model
 
         // Si quedan más de 7 días
         return 'Vigente';
+    }
+
+    public function promoCodes()
+    {
+        return $this->belongsToMany(PromoCodes::class);
     }
 }

@@ -15,25 +15,36 @@ return new class extends Migration
             $table->id();
 
             $table->string('name')->unique()->comment('Nombre de la empresa');
-            $table->string('legal_name')->nullable()->comment('Nombre legal de la empresa');
-            $table->string('tax_id', 20)->unique()->comment('Número de identificación fiscal');
+            $table->string('social_reason')->nullable()->comment('Razon social de la empresa');
             $table->string('address')->comment('Dirección de la empresa');
             $table->string('phone', 20)->comment('Teléfono de la empresa');
+            $table->string('phone_whassap', 20)->comment('Teléfono de whassap');
+            $table->string('phone_help', 20)->comment('Teléfono de ayuda');
             $table->string('email')->nullable()->comment('Correo electrónico de la empresa');
             $table->string('logo_path')->nullable()->comment('Ruta del logotipo de la empresa');
-            $table->string('website')->nullable()->comment('Sitio web de la empresa');
-            $table->json('settings')->nullable()->comment('Configuraciones de la empresa');
-            $table->string('timezone')->default('UTC')->comment('Zona horaria de la empresa');
-            $table->string('currency', 3)->default('SOL')->comment('Moneda de la empresa');
-            $table->string('locale', 5)->default('es_PE')->comment('Idioma de la empresa');
+
 
             $table->string('signature_image')->nullable()->comment('Ruta de la imagen de la firma');
-
             $table->json('social_networks')->nullable()->comment('Redes sociales');
 
-            // Facturacion con nube Fac
-            $table->text('url_facturacion')->nullable()->comment('Proveedor de facturación');
-            $table->text('token_facturacion')->nullable()->comment('Token de acceso para la API de facturación');
+            // Facturacion con Greenter
+            $table->boolean('is_production')->default(false)->comment('Para que empiece a facturar');
+
+            // Produccion
+            $table->string('sol_user_production')->nullable()->comment('Usuario sol produccion');
+            $table->string('sol_user_password_production')->nullable()->comment('Contraseña del Usuario sol produccion');
+            $table->string('cert_path_production')->nullable()->comment('Ruta donde guardo mi certificado digital produccion');
+
+            $table->string('client_id_production')->nullable()->comment('client id de produccion');
+            $table->string('client_secret_production')->nullable()->comment('client secret de produccion');
+
+            // Pruebas
+            $table->string('sol_user_evidence')->nullable()->comment('Usuario sol prueba QA');
+            $table->string('sol_user_password_evidence')->nullable()->comment('Contraseña del Usuario sol QA');
+            $table->string('cert_path_evidence')->nullable()->comment('Ruta donde guardo mi certificado digital QA');
+
+            $table->string('client_id_evidence')->nullable()->comment('client id de QA');
+            $table->string('client_secret_evidence')->nullable()->comment('client secret de QA');
 
             $table->timestamps();
         });

@@ -29,15 +29,14 @@ class CompanyResource extends Resource
 
     protected static ?int $navigationSort = 29;
 
-    // Solo permitir una empresa
-    public static function canCreate(): bool
+   public static function canCreate(): bool
     {
         return Company::count() === 0;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return false; // No permitir eliminar la configuración
+        return false;
     }
 
     public static function form(Form $form): Form
@@ -51,18 +50,11 @@ class CompanyResource extends Resource
                             ->label('Nombre de la Empresa')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('Ej: Resistance Gym'),
-
-                        Forms\Components\TextInput::make('legal_name')
+                            ->placeholder('Ej: RSISTANCE'),
+                        Forms\Components\TextInput::make('social_reason')
                             ->label('Razón Social')
                             ->maxLength(255)
-                            ->placeholder('Ej: Resistance Gym S.A.C.'),
-
-                        Forms\Components\TextInput::make('tax_id')
-                            ->label('RUC')
-                            ->required()
-                            ->maxLength(20)
-                            ->placeholder('Ej: 20123456789'),
+                            ->placeholder('Ej: RSISTANCE S.A.C.'),
                     ])
                     ->columns(2),
 
@@ -73,115 +65,51 @@ class CompanyResource extends Resource
                             ->label('Dirección')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('Ej: Av. Principal 123, Lima'),
-
+                            ->placeholder('Ej: Av. Ejemplo 123, Lima, Perú'),
                         Forms\Components\TextInput::make('phone')
                             ->label('Teléfono')
                             ->tel()
                             ->required()
                             ->maxLength(20)
-                            ->placeholder('Ej: +51 1 234 5678'),
-
+                            ->placeholder('Ej: +51 987654321'),
+                        Forms\Components\TextInput::make('phone_whassap')
+                            ->label('Teléfono WhatsApp')
+                            ->tel()
+                            ->required()
+                            ->maxLength(20)
+                            ->placeholder('Ej: +51 987654321'),
+                        Forms\Components\TextInput::make('phone_help')
+                            ->label('Teléfono de Ayuda')
+                            ->tel()
+                            ->required()
+                            ->maxLength(20)
+                            ->placeholder('Ej: +51 987654321'),
                         Forms\Components\TextInput::make('email')
                             ->label('Correo Electrónico')
                             ->email()
                             ->maxLength(255)
-                            ->placeholder('Ej: info@resistancegym.com'),
-
-                        Forms\Components\TextInput::make('website')
-                            ->label('Sitio Web')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('Ej: https://www.resistancegym.com'),
+                            ->placeholder('Ej: info@rsistance.com'),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Configuración del Sistema')
-                    ->description('Configuraciones técnicas del sistema')
-                    ->schema([
-                        Forms\Components\TextInput::make('timezone')
-                            ->label('Zona Horaria')
-                            ->required()
-                            ->maxLength(255)
-                            ->default('America/Lima')
-                            ->placeholder('Ej: America/Lima'),
-
-                        Forms\Components\TextInput::make('currency')
-                            ->label('Moneda')
-                            ->required()
-                            ->maxLength(3)
-                            ->default('PEN')
-                            ->placeholder('Ej: PEN'),
-
-                        Forms\Components\TextInput::make('locale')
-                            ->label('Idioma')
-                            ->required()
-                            ->maxLength(5)
-                            ->default('es_PE')
-                            ->placeholder('Ej: es_PE'),
-                    ])
-                    ->columns(3),
-
-                Forms\Components\Section::make('Logo de la Empresa')
-                    ->description('Logo que aparecerá en el sistema')
+                Forms\Components\Section::make('Logo y Firma')
+                    ->description('Logo y firma de la empresa')
                     ->schema([
                         Forms\Components\FileUpload::make('logo_path')
                             ->label('Logo')
                             ->image()
-                            // ->imageEditor()
-                            // ->imageCropAspectRatio('16:9')
-                            // ->imageResizeTargetWidth('1920')
-                            // ->imageResizeTargetHeight('1080')
-
                             ->directory('company-logos')
                             ->visibility('public')
                             ->helperText('Formatos: PNG, JPG, SVG. Tamaño máximo: 2MB'),
-                    ])
-                    ->collapsible(),
-
-                Forms\Components\Section::make('Información de Facturación')
-                    ->description('Datos de facturación de la empresa')
-                    ->schema([
-                        Forms\Components\TextInput::make('url_facturacion')
-                            ->label('Proveedor de Facturación')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('Ej: https://api.facturacion.com'),
-
-                        Forms\Components\TextInput::make('token_facturacion')
-                            ->label('Token de Acceso')
-                            ->password()
-                            ->maxLength(255)
-                            ->placeholder('Ingrese su token de acceso'),
-
-                    ]),
-
-                Forms\Components\Section::make('Configuraciones Adicionales')
-                    ->description('Otras configuraciones del sistema')
-                    ->schema([
-                        Forms\Components\KeyValue::make('settings')
-                            ->label('Configuraciones JSON')
-                            ->keyLabel('Clave')
-                            ->valueLabel('Valor')
-                            ->helperText('Configuraciones adicionales en formato clave-valor')
-                            ->columnSpanFull(),
-                    ])
-                    ->collapsible(),
-
-                Forms\Components\Section::make('Información de correos')
-                    ->description('Informacion correos de la empresa')
-                    ->schema([
-                          Forms\Components\FileUpload::make('signature_image')
+                        Forms\Components\FileUpload::make('signature_image')
                             ->label('Imagen de la Firma')
                             ->image()
-                            // ->imageEditor()
-                            // ->imageCropAspectRatio('16:9')
-                            // ->imageResizeTargetWidth('1920')
-                            // ->imageResizeTargetHeight('1080')
                             ->directory('company-logos')
                             ->visibility('public')
                             ->helperText('Formatos: PNG, JPG, SVG. Tamaño máximo: 2MB'),
-                    ]),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
 
                 Forms\Components\Section::make('Redes Sociales')
                     ->description('Configuración de redes sociales de la empresa')
@@ -194,27 +122,12 @@ class CompanyResource extends Resource
                                     ->required()
                                     ->placeholder('Ej: Facebook, Instagram, Twitter')
                                     ->maxLength(50),
-
                                 Forms\Components\TextInput::make('url')
                                     ->label('Enlace/URL')
                                     ->required()
                                     ->url()
-                                    ->placeholder('Ej: https://www.facebook.com/resistancegym')
+                                    ->placeholder('Ej: https://www.facebook.com/rsistance')
                                     ->maxLength(255),
-
-                                Forms\Components\FileUpload::make('icon')
-                                    ->label('Icono/Imagen')
-                                    ->image()
-                                    ->directory('company-logos/social-icons')
-                                    ->visibility('public')
-                                    ->helperText('Icono o imagen representativa de la red social')
-                                    ->maxSize(1024), // 1MB máximo
-
-                                // Forms\Components\TextInput::make('color')
-                                //     ->label('Color de la Red Social')
-                                //     ->placeholder('Ej: #1877F2 (Facebook), #E4405F (Instagram)')
-                                //     ->helperText('Color hexadecimal para personalizar la apariencia')
-                                //     ->maxLength(7),
                             ])
                             ->columns(2)
                             ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'Nueva Red Social')
@@ -223,13 +136,69 @@ class CompanyResource extends Resource
                             ->collapsible()
                             ->cloneable()
                             ->defaultItems(0)
-                            ->helperText('Agrega las redes sociales de tu empresa con sus respectivos enlaces e iconos'),
+                            ->helperText('Agrega las redes sociales de tu empresa con sus respectivos enlaces'),
                     ])
-                    ->collapsible()
+                    ->collapsible(),
+
+                Forms\Components\Section::make('Configuración de Facturación (Greenter)')
+                    ->description('Configuración para facturación electrónica')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_production')
+                            ->label('Modo Producción')
+                            ->helperText('Activar para facturar en modo producción')
+                            ->default(false),
+                        Forms\Components\TextInput::make('sol_user_production')
+                            ->label('Usuario SOL Producción')
+                            ->maxLength(255)
+                            ->placeholder('Usuario SOL para producción'),
+                        Forms\Components\TextInput::make('sol_user_password_production')
+                            ->label('Contraseña SOL Producción')
+                            ->password()
+                            ->maxLength(255)
+                            ->placeholder('Contraseña SOL para producción'),
+                        Forms\Components\TextInput::make('cert_path_production')
+                            ->label('Ruta del Certificado Producción')
+                            ->maxLength(255)
+                            ->placeholder('Ruta del certificado digital para producción'),
+                        Forms\Components\TextInput::make('client_id_production')
+                            ->label('Client ID Producción')
+                            ->maxLength(255)
+                            ->placeholder('Client ID para producción'),
+                        Forms\Components\TextInput::make('client_secret_production')
+                            ->label('Client Secret Producción')
+                            ->password()
+                            ->maxLength(255)
+                            ->placeholder('Client secret para producción'),
+                        Forms\Components\TextInput::make('sol_user_evidence')
+                            ->label('Usuario SOL Pruebas (QA)')
+                            ->maxLength(255)
+                            ->placeholder('Usuario SOL para pruebas'),
+                        Forms\Components\TextInput::make('sol_user_password_evidence')
+                            ->label('Contraseña SOL Pruebas (QA)')
+                            ->password()
+                            ->maxLength(255)
+                            ->placeholder('Contraseña SOL para pruebas'),
+                        Forms\Components\TextInput::make('cert_path_evidence')
+                            ->label('Ruta del Certificado Pruebas (QA)')
+                            ->maxLength(255)
+                            ->placeholder('Ruta del certificado digital para pruebas'),
+                        Forms\Components\TextInput::make('client_id_evidence')
+                            ->label('Client ID Pruebas (QA)')
+                            ->maxLength(255)
+                            ->placeholder('Client ID para pruebas'),
+                        Forms\Components\TextInput::make('client_secret_evidence')
+                            ->label('Client Secret Pruebas (QA)')
+                            ->password()
+                            ->maxLength(255)
+                            ->placeholder('Client secret para pruebas'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
             ]);
     }
 
-    public static function table(Table $table): Table
+
+  public static function table(Table $table): Table
     {
         return $table
             ->columns([
@@ -237,12 +206,8 @@ class CompanyResource extends Resource
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('legal_name')
+                Tables\Columns\TextColumn::make('social_reason')
                     ->label('Razón Social')
-                    ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('tax_id')
-                    ->label('RUC')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
@@ -257,18 +222,21 @@ class CompanyResource extends Resource
                         if (!$state || empty($state)) {
                             return 'Sin redes sociales';
                         }
-
-                        // Asegurar que sea un array
                         if (!is_array($state)) {
                             return 'Sin redes sociales';
                         }
-
                         $count = count($state);
                         $names = array_column($state, 'name');
                         return $count . ' red(es): ' . implode(', ', $names);
                     })
                     ->searchable(false)
                     ->sortable(false),
+                Tables\Columns\IconColumn::make('is_production')
+                    ->label('Modo Producción')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Última Actualización')
                     ->dateTime()
@@ -282,9 +250,9 @@ class CompanyResource extends Resource
                     ->label('Editar Configuración'),
             ])
             ->bulkActions([
-                // No permitir acciones masivas
+                //
             ])
-            ->paginated(false); // No paginar ya que solo habrá una empresa
+            ->paginated(false);
     }
 
     public static function getRelations(): array

@@ -18,21 +18,38 @@ class CompanySeeder extends Seeder
 
         Company::create([
             'name' => 'RSISTANCE',
-            'legal_name' => 'RSISTANCE S.A.C.',
-            'tax_id' => '12345678901',
+            'social_reason' => 'RSISTANCE S.A.C.',
+
             'address' => 'Av. Ejemplo 123, Lima, Perú',
             'phone' => '+51 987654321',
+            'phone_whassap' => '+51 987654321',
+            'phone_help' => '+51 987654321',
             'email' => 'info@rsistance.com',
-            'logo_path' => 'https://i.imgur.com/1234567.png',
-            'website' => 'https://www.rsistance.com',
-            'settings' => [
-                'default_currency' => 'PEN',
-                'default_locale' => 'es_PE',
-                'default_timezone' => 'America/Lima',
-            ],
-            'timezone' => 'America/Lima',
-            'currency' => 'PEN',
-            'locale' => 'es_PE',
+            'logo_path' => '',
+            'signature_image' => '',
+            'social_networks' => json_encode([
+                ["name" => "Facebook", "url" => "https://facebook.com/rsistance"],
+                ["name" => "Instagram", "url" => "https://instagram.com/rsistance"],
+                ["name" => "Twitter", "url" => "https://twitter.com/rsistance"]
+            ]),
+
+            'is_production' => false,
+
+            'sol_user_production' => '',
+            'sol_user_password_production' => '',
+            'cert_path_production' => '',
+
+            'client_id_production' => '',
+            'client_secret_production' => '',
+
+            'sol_user_evidence' => '',
+            'sol_user_password_evidence' => '',
+            'cert_path_evidence' => '',
+
+            'client_id_evidence' => '',
+            'client_secret_evidence' => '',
+
+
             'created_at' => now(),
             'updated_at' => now(),
         ]);

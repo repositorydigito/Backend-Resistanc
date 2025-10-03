@@ -65,13 +65,7 @@ class UserMembership extends Model
         return $this->belongsTo(Package::class, 'source_package_id');
     }
 
-    /**
-     * Get the bookings made with this membership.
-     */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class, 'user_membership_id');
-    }
+
 
     /**
      * Scope to get only active memberships.

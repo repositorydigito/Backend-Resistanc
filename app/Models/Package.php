@@ -13,6 +13,7 @@ final class Package extends Model
 {
     use HasFactory;
 
+
     protected $fillable = [
         'name',
         'slug',
@@ -222,6 +223,11 @@ final class Package extends Model
                 }
             }
         });
+
+        // Eliminar relaciones de promocodes antes de eliminar el paquete
+        static::deleting(function ($package) {
+            $package->promocodes()->detach();
+        });
     }
 
 
@@ -250,4 +256,10 @@ final class Package extends Model
     }
 
 
+    public function promocodes()
+    {
+        return $this->belongsToMany(PromoCodes::class, 'promocodes_package', 'package_id', 'promo_codes_id')
+            ->withPivot(['quantity', 'discount', 'created_at', 'updated_at'])
+            ->withTimestamps();
+    }
 }
