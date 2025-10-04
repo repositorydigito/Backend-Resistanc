@@ -102,6 +102,7 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
 // Disciplinas
 Route::prefix('disciplines')->name('disciplines.')->middleware('auth:sanctum')->group(function () {
     Route::post('/', [DisciplineController::class, 'index'])->name('index');
+    Route::post('/group', [DisciplineController::class, 'indexGroup'])->name('indexGroup');
 });
 // Fin disciplinas
 

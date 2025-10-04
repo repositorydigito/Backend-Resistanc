@@ -281,10 +281,10 @@ final class UserPackage extends Model
 
         // Cargar la relación del paquete si no está cargada
         if (!$this->relationLoaded('package')) {
-            $this->load('package');
+            $this->load('package.disciplines');
         }
 
-        return $this->package && $this->package->discipline_id === $disciplineId;
+        return $this->package && $this->package->disciplines->contains('id', $disciplineId);
     }
 
     /**
@@ -296,27 +296,51 @@ final class UserPackage extends Model
     }
 
     /**
-     * Get the discipline ID of this package.
+     * Get the discipline IDs of this package.
+     */
+    public function getDisciplineIdsAttribute(): ?array
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->pluck('id')->toArray();
+    }
+
+    /**
+     * Get the primary discipline ID of this package (first discipline).
      */
     public function getDisciplineIdAttribute(): ?int
     {
         if (!$this->relationLoaded('package')) {
-            $this->load('package');
+            $this->load('package.disciplines');
         }
 
-        return $this->package?->discipline_id;
+        return $this->package?->disciplines?->first()?->id;
     }
 
     /**
-     * Get the discipline name of this package.
+     * Get the discipline names of this package.
+     */
+    public function getDisciplineNamesAttribute(): ?array
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->pluck('name')->toArray();
+    }
+
+    /**
+     * Get the primary discipline name of this package (first discipline).
      */
     public function getDisciplineNameAttribute(): ?string
     {
-        if (!$this->relationLoaded('package.discipline')) {
-            $this->load('package.discipline');
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
         }
 
-        return $this->package?->discipline?->name;
+        return $this->package?->disciplines?->first()?->name;
     }
 
     /**

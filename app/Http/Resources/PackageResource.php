@@ -59,6 +59,22 @@ class PackageResource extends JsonResource
             // TODO: Add user packages relationship when needed
 
 
+            // ✅ AGREGAR INFORMACIÓN DE DISCIPLINAS
+            'disciplines' => $this->whenLoaded('disciplines', function () {
+                return $this->disciplines->map(function ($discipline) {
+                    return [
+                        'id' => $discipline->id,
+                        'name' => $discipline->name,
+                        'slug' => $discipline->slug,
+                        'display_name' => $discipline->display_name,
+                        'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
+                        'color_hex' => $discipline->color_hex,
+                        'is_active' => $discipline->is_active,
+                        'order' => $discipline->order,
+                    ];
+                });
+            }),
+
             // ✅ AGREGAR INFORMACIÓN DE MEMBRESÍA
             'membership' => $this->whenLoaded('membership', function () {
                 return [

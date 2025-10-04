@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('name')->comment('Nombre del usuario');
             $table->string('email')->unique('Email del usuario');
             $table->timestamp('email_verified_at')->nullable()->comment('Verificacion del usuario');
-            $table->string('password')->comment('Contrasenia del usuario');
+            $table->string('password')->nullable()->comment('Contrasenia del usuario');
+            $table->string('google_id')->nullable()->comment('id del logueo por google');
+            $table->string('facebook_id')->nullable()->comment('id del logueo por facebook');
             $table->rememberToken();
             $table->timestamps();
         });

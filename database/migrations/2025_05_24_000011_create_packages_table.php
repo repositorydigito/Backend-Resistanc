@@ -31,6 +31,7 @@ return new class extends Migration
 
             // Branding y visual
             $table->boolean('is_featured')->default(false)->comment('Si el paquete es destacado');
+            $table->boolean('is_membresia')->default(false)->comment('Si el paquete va tener pago recurrente');
             $table->boolean('is_popular')->default(false)->comment('Si el paquete es popular');
             $table->unsignedTinyInteger('display_order')->default(0)->comment('Orden de visualización del paquete');
             $table->string('color_hex')->nullable()->default('#d4691a')->comment('Color del paquete');
@@ -49,13 +50,14 @@ return new class extends Migration
             $table->json('features')->nullable()->comment('Características y beneficios del paquete')->comment('Características y beneficios del paquete');
             $table->json('restrictions')->nullable()->comment('Restricciones y condiciones')->comment('Restricciones y condiciones del paquete');
 
+
+
             // nuevo
             $table->string('icon_url')->nullable()->comment('URL de la imagen del paquete');
             $table->integer('duration_in_months')->nullable()->comment('Duración del paquete en meses');
 
             // Relaciones
             $table->foreignId('membership_id')->nullable()->constrained('memberships')->onDelete('set null');
-            $table->foreignId('discipline_id')->constrained('disciplines');
 
             // Índices
             $table->index(['status', 'display_order']);

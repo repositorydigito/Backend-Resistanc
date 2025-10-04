@@ -34,9 +34,7 @@ class PackageResource extends Resource
     {
         return $form
             ->schema([
-                // Forms\Components\Toggle::make('is_featured')
-                //     ->label('Destacado')
-                //     ->required(),
+
 
                 Section::make('Información del paquete')
                     ->columns(2)
@@ -50,9 +48,13 @@ class PackageResource extends Resource
                                     ->required()
                                     ->maxLength(100),
 
-                                Forms\Components\Select::make('discipline_id')
-                                    ->label('Disciplina')
-                                    ->relationship('discipline', 'name')
+
+
+                                Forms\Components\Select::make('disciplines') // Cambia a plural
+                                    ->label('Disciplinas')
+                                    ->relationship('disciplines', 'name') // Relación muchos a muchos
+                                    ->multiple() // Permite selección múltiple
+                                    ->preload() // Carga opciones anticipadamente (opcional)
                                     ->required(),
 
                                 Forms\Components\Select::make('status')
@@ -130,16 +132,6 @@ class PackageResource extends Resource
                                     ->default('assignable')
                                     ->required(),
 
-                                // Forms\Components\Select::make('billing_type')
-                                //     ->options([
-                                //         'one_time' => 'Pago único',
-                                //         'monthly' => 'Mensual',
-                                //         'quarterly' => 'Trimestral',
-                                //         'yearly' => 'Anual',
-                                //     ])
-                                //     ->label('Tipo de pago')
-                                //     ->required(),
-
                                 Forms\Components\Select::make('commercial_type')
                                     ->options([
                                         'promotion' => 'Promoción',
@@ -149,15 +141,10 @@ class PackageResource extends Resource
                                     ->label('Tipo comercial')
                                     ->required(),
 
-                                // Forms\Components\Select::make('target_audience')
-                                //     ->label('Audiencia objetivo')
-                                //     ->options([
-                                //         'beginner' => 'Principiantes',
-                                //         'intermediate' => 'Intermedios',
-                                //         'advanced' => 'Avanzados',
-                                //         'all' => 'Todos',
-                                //     ])
-                                //     ->required(),
+                                Forms\Components\Toggle::make('is_membresia')
+                                    ->label('¿Es membresía?')
+                                    ->default(false), // Para hacer campos reactivos si es necesario
+
                             ]),
 
                         // Sección 4: Configuración de fechas
@@ -252,7 +239,7 @@ class PackageResource extends Resource
                                 Forms\Components\Select::make('membership_id')
                                     ->visible(fn($get) => $get('membreship'))
                                     ->live()
-                                    ->label('Membresía asociada')
+                                    ->label('Categoria asociada')
                                     ->relationship('membership', 'name')
                                     ->columnSpanFull(),
                             ]),
@@ -283,9 +270,6 @@ class PackageResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                // Tables\Columns\TextColumn::make('short_description')
-                //     ->searchable(),
-
                 Tables\Columns\TextColumn::make('classes_quantity')
                     ->label('N° de Clases')
                     ->numeric()
@@ -312,33 +296,30 @@ class PackageResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('membership.name')
-                    ->label('Membresía')
+                    ->label('Categoria')
                     ->searchable(),
 
 
-                Tables\Columns\TextColumn::make('discipline.name')
-                    ->label('Disciplina')
+                Tables\Columns\TextColumn::make('disciplines')
+                    ->label('Disciplinas')
                     ->badge()
-                    ->color(fn($record) => $record->discipline->color_hex)
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'cycling' => 'Ciclo',
-                        'solidreformer' => 'Reformer',
-                        'pilates_mat' => 'Pilates Mat',
-                        default => ucfirst($state),
+                    ->color('primary')
+                    ->getStateUsing(function ($record) {
+                        return $record->disciplines->pluck('name')->map(function ($name) {
+                            return match ($name) {
+                                'cycling' => 'Ciclo',
+                                'solidreformer' => 'Reformer',
+                                'pilates_mat' => 'Pilates Mat',
+                                default => ucfirst($name),
+                            };
+                        })->join(', ');
                     })
-                    ->searchable()
-                    ->extraAttributes(function ($record) {
-                        return [
-                            'style' => "background-color: {$record->discipline->color_hex}10; color:  {$record->discipline->color_hex}; border: 1px solid {$record->discipline->color_hex}; padding: 0; font-weight: bold; border-radius: 0.45rem; text-align: center; display: flex; width: 100%; justify-content: center; align-items: center;",
-                            'class' => 'p-0 text-sm text-center' // Estilos adicionales para el badge
-                        ];
+                    ->searchable(query: function ($query, $search) {
+                        $query->whereHas('disciplines', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
                     }),
 
-
-                // Tables\Columns\TextColumn::make('price_soles')
-                //     ->label('Precio con descuento')
-                //     ->numeric()
-                //     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo de paquete')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
@@ -356,14 +337,6 @@ class PackageResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
-                // Tables\Columns\TextColumn::make('start_date')
-                //     ->label('Fecha de inicio')
-                //     ->date('M d') // Ej: "Ene 15", "Feb 28"
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('end_date')
-                //     ->label('Fecha de fin')
-                //     ->date('M d') // Ej: "Ene 15", "Feb 28"
-                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('start_date')
                     ->label('Período de validez')
@@ -379,24 +352,7 @@ class PackageResource extends Resource
                     ->label('Precio Base')
                     ->numeric()
                     ->sortable(),
-                // Tables\Columns\TextColumn::make('validity_days')
-                //     ->label('Días Validos')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('package_type')
-                //     ->label('Tipo de paquete'), // Permite renderizar HTML
-                // Tables\Columns\TextColumn::make('billing_type'),
-                // Tables\Columns\IconColumn::make('is_virtual_access')
-                //     ->boolean(),
-                // Tables\Columns\TextColumn::make('priority_booking_days')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\IconColumn::make('auto_renewal')
-                //     ->boolean(),
-                // Tables\Columns\IconColumn::make('is_featured')
-                //     ->boolean(),
-                // Tables\Columns\IconColumn::make('is_popular')
-                //     ->boolean(),
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
@@ -410,18 +366,7 @@ class PackageResource extends Resource
                         'inactive' => 'danger',
                         default => 'secondary',
                     }),
-                // Tables\Columns\TextColumn::make('display_order')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('target_audience'),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -462,18 +407,12 @@ class PackageResource extends Resource
                         'virtual' => 'Virtual',
                         'mixto' => 'Mixto',
                     ]),
-                // Tables\Filters\SelectFilter::make('target_audience')
-                //     ->options([
-                //         'beginner' => 'Principiantes',
-                //         'intermediate' => 'Intermedios',
-                //         'advanced' => 'Avanzados',
-                //         'all' => 'Todos',
-                //     ])
-                //     ->default('all'),
-                Tables\Filters\SelectFilter::make('discipline_id')
+
+                Tables\Filters\SelectFilter::make('disciplines') // Cambiar a plural
                     ->label('Disciplina')
-                    ->relationship('discipline', 'name')
-                    ->label('Disciplina'),
+                    ->relationship('disciplines', 'name') // Relación muchos a muchos
+                    ->preload() // Opcional: cargar opciones anticipadamente
+                    ->multiple(), // Permitir filtrar por múltiples disciplinas
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

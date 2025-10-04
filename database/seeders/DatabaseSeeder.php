@@ -41,7 +41,8 @@ class DatabaseSeeder extends Seeder
         $this->call(StudioSeeder::class);
 
         // Paquetes
-        $this->call(PackageSeeder::class);
+        // $this->call(PackageSeeder::class);
+        $this->call(PackageNewSeeder::class);
 
         // Clientes
         $this->call(ClientSeeder::class);

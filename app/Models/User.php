@@ -470,24 +470,35 @@ final class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAvailableClassesByDiscipline(): array
     {
-        return $this->userPackages()
-            ->with('package.discipline')
+        $userPackages = $this->userPackages()
+            ->with('package.disciplines')
             ->where('status', 'active')
             ->where('expiry_date', '>', now())
             ->where('remaining_classes', '>', 0)
-            ->get()
-            ->groupBy('package.discipline_id')
-            ->map(function ($packages, $disciplineId) {
-                $discipline = $packages->first()->package->discipline;
-                return [
-                    'discipline_id' => $disciplineId,
-                    'discipline_name' => $discipline->name,
-                    'total_available_classes' => $packages->sum('remaining_classes'),
-                    'packages_count' => $packages->count(),
-                ];
-            })
-            ->values()
-            ->toArray();
+            ->get();
+
+        $disciplineData = [];
+
+        foreach ($userPackages as $userPackage) {
+            foreach ($userPackage->package->disciplines as $discipline) {
+                $disciplineId = $discipline->id;
+
+                if (!isset($disciplineData[$disciplineId])) {
+                    $disciplineData[$disciplineId] = [
+                        'discipline_id' => $disciplineId,
+                        'discipline_name' => $discipline->name,
+                        'discipline_display_name' => $discipline->display_name,
+                        'total_available_classes' => 0,
+                        'packages_count' => 0,
+                    ];
+                }
+
+                $disciplineData[$disciplineId]['total_available_classes'] += $userPackage->remaining_classes;
+                $disciplineData[$disciplineId]['packages_count']++;
+            }
+        }
+
+        return array_values($disciplineData);
     }
 
     public function footwearLoansAsClient(): HasMany

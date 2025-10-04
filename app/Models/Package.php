@@ -41,11 +41,11 @@ final class Package extends Model
         'type',
         'mode_type',
         'commercial_type',
-        'discipline_id',
         'buy_type',
         'start_date',
         'end_date',
         'duration_in_months',
+        'is_membresia',
 
 
         // Relaciones
@@ -246,9 +246,9 @@ final class Package extends Model
     {
         return $this->hasMany(User::class);
     }
-    public function discipline()
+    public function disciplines()
     {
-        return $this->belongsTo(Discipline::class);
+        return $this->belongsToMany(Discipline::class);
     }
     public function classSchedules()
     {

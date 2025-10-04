@@ -29,12 +29,13 @@ final class PackageController extends Controller
                 'discipline_id' => 'sometimes|integer|exists:disciplines,id',
                 'mode_type' => 'sometimes|string|in:online,presencial,híbrido', // Ajusta según tus valores
                 'commercial_type' => 'sometimes|string|in:promotion,regular', // Ajusta según tus valores
+                'is_membresia' => 'sometimes|boolean',
                 'per_page' => 'sometimes|integer|min:1|max:100',
                 'page' => 'sometimes|integer|min:1',
             ]);
 
             $packages = Package::query()
-                ->with(['discipline', 'membership'])
+                ->with(['disciplines', 'membership'])
                 ->withCount(['userPackages'])
                 ->where('buy_type', 'affordable')
                 ->active()
@@ -48,13 +49,18 @@ final class PackageController extends Controller
                         });
                 })
                 ->when($request->filled('discipline_id'), function ($query) use ($request) {
-                    $query->where('discipline_id', $request->integer('discipline_id'));
+                    $query->whereHas('disciplines', function ($subQuery) use ($request) {
+                        $subQuery->where('disciplines.id', $request->integer('discipline_id'));
+                    });
                 })
                 ->when($request->filled('mode_type'), function ($query) use ($request) {
                     $query->where('mode_type', $request->string('mode_type'));
                 })
                 ->when($request->filled('commercial_type'), function ($query) use ($request) {
                     $query->where('commercial_type', $request->string('commercial_type'));
+                })
+                ->when($request->has('is_membresia'), function ($query) use ($request) {
+                    $query->where('is_membresia', $request->boolean('is_membresia'));
                 })
                 ->orderByRaw("
                 CASE
@@ -96,7 +102,7 @@ final class PackageController extends Controller
         try {
             $package = Package::where('id', $request->package_id)
                 ->where('buy_type', 'affordable')
-                ->with(['discipline', 'membership'])
+                ->with(['disciplines', 'membership'])
                 ->first(); // Usa first() en lugar de get()
 
             if (!$package) {
@@ -142,12 +148,12 @@ final class PackageController extends Controller
                         ->orWhere('expiry_date', '<', now());
                 })
                 ->orderBy('expiry_date', 'desc')
-                ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.discipline:id,name,slug']);
+                ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.disciplines:id,name,slug,display_name']);
 
             // Filtro por disciplina (nuevo)
             if ($request->filled('discipline_id')) {
-                $query->whereHas('package', function ($q) use ($request) {
-                    $q->where('discipline_id', $request->integer('discipline_id'));
+                $query->whereHas('package.disciplines', function ($q) use ($request) {
+                    $q->where('disciplines.id', $request->integer('discipline_id'));
                 });
             }
 
@@ -416,7 +422,7 @@ final class PackageController extends Controller
 
             // Obtener paquetes activos y vigentes del usuario
             $userPackagesQuery = $user->userPackages()
-                ->with(['package.discipline'])
+                ->with(['package.disciplines'])
                 ->where('status', 'active')
                 ->where('remaining_classes', '>', 0)
                 ->where('expiry_date', '>', now()) // Solo paquetes vigentes
@@ -424,8 +430,8 @@ final class PackageController extends Controller
 
             // Aplicar filtro por disciplina si se proporciona
             if ($disciplineId) {
-                $userPackagesQuery->whereHas('package', function ($query) use ($disciplineId) {
-                    $query->where('discipline_id', $disciplineId);
+                $userPackagesQuery->whereHas('package.disciplines', function ($query) use ($disciplineId) {
+                    $query->where('disciplines.id', $disciplineId);
                 });
             }
 
@@ -451,12 +457,27 @@ final class PackageController extends Controller
 
             // Agregar paquetes
             foreach ($userPackages as $userPackage) {
+                $disciplines = $userPackage->package->disciplines->map(function ($discipline) {
+                    return [
+                        'id' => $discipline->id,
+                        'name' => $discipline->name,
+                        'display_name' => $discipline->display_name,
+                        'slug' => $discipline->slug,
+                        'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
+                        'color_hex' => $discipline->color_hex,
+                    ];
+                });
+
                 $classesData[] = [
                     'id' => $userPackage->id,
                     'type' => 'package',
                     'name' => $userPackage->package->name,
-                    'discipline_id' => $userPackage->package->discipline_id,
-                    'discipline_name' => $userPackage->package->discipline->name ?? 'Sin disciplina',
+                    'disciplines' => $disciplines,
+                    'primary_discipline' => $disciplines->first() ? [
+                        'id' => $disciplines->first()['id'],
+                        'name' => $disciplines->first()['name'],
+                        'display_name' => $disciplines->first()['display_name'],
+                    ] : null,
                     'remaining_classes' => $userPackage->remaining_classes,
                     'total_classes' => $userPackage->package->classes_quantity,
                     'expiry_date' => $userPackage->expiry_date->format('d \d\e F \d\e Y'),

@@ -79,55 +79,15 @@ final class Discipline extends Model
     }
 
     /**
-     * Get the icon URL with fallback.
-     */
-    // public function getIconUrlAttribute($value): string
-    // {
-    //     if (!$value) {
-    //         return '/image/logos/logoBlancoR.svg'; // Default icon
-    //     }
-
-    //     if (filter_var($value, FILTER_VALIDATE_URL)) {
-    //         return $value;
-    //     }
-
-    //     if (str_starts_with($value, '/')) {
-    //         return $value;
-    //     }
-
-    //     return asset('storage/' . $value);
-    // }
-
-    /**
-     * Get the image URL with fallback.
-     */
-    // public function getImageUrlAttribute($value): string
-    // {
-    //     if (!$value) {
-    //         return '/image/logos/logoBlancoR.svg'; // Default image
-    //     }
-
-    //     if (filter_var($value, FILTER_VALIDATE_URL)) {
-    //         return $value;
-    //     }
-
-    //     if (str_starts_with($value, '/')) {
-    //         return $value;
-    //     }
-
-    //     return asset('storage/' . $value);
-    // }
-
-    /**
      * Get the display name or fallback to name.
      */
     public function getDisplayNameAttribute($value): string
     {
         return $value ?: $this->name;
     }
-    public function packages(): HasMany
+    public function packages()
     {
-        return $this->hasMany(Package::class, 'discipline_id');
+        return $this->belongsToMany(Package::class);
     }
 
     // Tablas polimórficas
