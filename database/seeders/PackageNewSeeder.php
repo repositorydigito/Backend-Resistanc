@@ -250,7 +250,7 @@ class PackageNewSeeder extends Seeder
 
         // 1 clase FIT - Membresía
         $packageOneMembership = Package::create([
-            'name' => '1 clase FIT - Membresía',
+            'name' => '1 clase FIT',
             'slug' => '1-clase-fit-membresia',
             'description' => 'Paquete básico de FIT con 1 clase y membresía',
             'short_description' => '1 clase FIT con membresía válida por 1 mes',
@@ -284,7 +284,7 @@ class PackageNewSeeder extends Seeder
 
         // 8 clases FIT - Membresía
         $packageEightMembership = Package::create([
-            'name' => '8 clase FIT - Membresía',
+            'name' => '8 clase FIT',
             'slug' => '8-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 8 clases y membresía',
             'short_description' => '8 clases FIT con membresía válidas por 1 mes',
@@ -318,7 +318,7 @@ class PackageNewSeeder extends Seeder
 
         // 12 clases FIT - Membresía
         $packageTwelveMembership = Package::create([
-            'name' => '12 clase FIT - Membresía',
+            'name' => '12 clase FIT',
             'slug' => '12-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 12 clases y membresía',
             'short_description' => '12 clases FIT con membresía válidas por 1 mes',
@@ -352,7 +352,7 @@ class PackageNewSeeder extends Seeder
 
         // 16 clases FIT - Membresía
         $packageSixteenMembership = Package::create([
-            'name' => '16 clase FIT - Membresía',
+            'name' => '16 clase FIT',
             'slug' => '16-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 16 clases y membresía',
             'short_description' => '16 clases FIT con membresía válidas por 1 mes',
@@ -386,7 +386,7 @@ class PackageNewSeeder extends Seeder
 
         // 20 clases FIT - Membresía
         $packageTwentyMembership = Package::create([
-            'name' => '20 clase FIT - Membresía',
+            'name' => '20 clase FIT',
             'slug' => '20-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 20 clases y membresía',
             'short_description' => '20 clases FIT con membresía válidas por 1 mes',
@@ -420,7 +420,7 @@ class PackageNewSeeder extends Seeder
 
         // 24 clases FIT - Membresía (con membership_id = 2)
         $packageTwentyFourMembership = Package::create([
-            'name' => '24 clase FIT - Membresía',
+            'name' => '24 clase FIT',
             'slug' => '24-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 24 clases y membresía',
             'short_description' => '24 clases FIT con membresía válidas por 1 mes',
@@ -454,7 +454,7 @@ class PackageNewSeeder extends Seeder
 
         // 40 clases FIT - Membresía (con membership_id = 3)
         $packageFortyMembership = Package::create([
-            'name' => '40 clase FIT - Membresía',
+            'name' => '40 clase FIT',
             'slug' => '40-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 40 clases y membresía',
             'short_description' => '40 clases FIT con membresía válidas por 1 mes',

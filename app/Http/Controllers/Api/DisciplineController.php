@@ -68,8 +68,7 @@ final class DisciplineController extends Controller
             // Validar parámetros opcionales
             $request->validate([
                 'is_membresia' => 'sometimes|boolean',
-                'mode_type' => 'sometimes|string|in:online,presencial,híbrido',
-                'commercial_type' => 'sometimes|string|in:promotion,regular',
+
             ]);
 
             // Obtener paquetes activos con sus disciplinas
@@ -92,13 +91,13 @@ final class DisciplineController extends Controller
                 $packagesQuery->where('is_membresia', $request->boolean('is_membresia'));
             }
 
-            if ($request->filled('mode_type')) {
-                $packagesQuery->where('mode_type', $request->string('mode_type'));
-            }
+            //  if ($request->filled('mode_type')) {
+            //      $packagesQuery->where('mode_type', $request->string('mode_type'));
+            //  }
 
-            if ($request->filled('commercial_type')) {
-                $packagesQuery->where('commercial_type', $request->string('commercial_type'));
-            }
+            // if ($request->filled('commercial_type')) {
+            //     $packagesQuery->where('commercial_type', $request->string('commercial_type'));
+            // }
 
             $packages = $packagesQuery->get();
 
@@ -174,8 +173,8 @@ final class DisciplineController extends Controller
                 'total_disciplines' => collect($disciplineGroups)->sum('disciplines_count'),
                 'filters_applied' => [
                     'is_membresia' => $request->has('is_membresia') ? $request->boolean('is_membresia') : null,
-                    'mode_type' => $request->string('mode_type'),
-                    'commercial_type' => $request->string('commercial_type'),
+                    // 'mode_type' => $request->string('mode_type'),
+                    // 'commercial_type' => $request->string('commercial_type'),
                 ]
             ];
 
@@ -183,10 +182,9 @@ final class DisciplineController extends Controller
                 'exito' => true,
                 'codMensaje' => 1,
                 'mensajeUsuario' => 'Grupos de disciplinas obtenidos correctamente',
-                'datoAdicional' => [
-                    'groups' => $disciplineGroups,
-                    'stats' => $stats
-                ]
+                'datoAdicional' =>  $disciplineGroups,
+                    // 'stats' => $stats
+
             ], 200);
 
         } catch (\Throwable $th) {
