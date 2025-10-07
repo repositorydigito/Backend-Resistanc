@@ -57,6 +57,20 @@ final class UserPackageResource extends JsonResource
                     'classes_quantity' => $this->package->classes_quantity,
                     'price_soles' => number_format((float) $this->package->price_soles, 2, '.', ''),
                     'validity_days' => $this->package->validity_days,
+
+                    // Agregar información de disciplinas
+                    'disciplines' => $this->package->relationLoaded('disciplines')
+                        ? $this->package->disciplines->map(function ($discipline) {
+                            return [
+                                'id' => $discipline->id,
+                                'name' => $discipline->name,
+                                'display_name' => $discipline->display_name,
+                                'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
+                                'color_hex' => $discipline->color_hex,
+                                'order' => $discipline->order,
+                            ];
+                        })
+                        : [],
                 ];
             }),
         ];

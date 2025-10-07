@@ -148,7 +148,7 @@ final class PackageController extends Controller
                         ->orWhere('expiry_date', '<', now());
                 })
                 ->orderBy('expiry_date', 'desc')
-                ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.disciplines:id,name,slug,display_name']);
+                ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.disciplines:id,name,display_name']);
 
             // Filtro por disciplina (nuevo)
             if ($request->filled('discipline_id')) {
@@ -462,7 +462,6 @@ final class PackageController extends Controller
                         'id' => $discipline->id,
                         'name' => $discipline->name,
                         'display_name' => $discipline->display_name,
-                        'slug' => $discipline->slug,
                         'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
                         'color_hex' => $discipline->color_hex,
                     ];

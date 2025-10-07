@@ -127,7 +127,6 @@ final class DisciplineController extends Controller
                         $disciplineGroups[$groupKey]['disciplines'][] = [
                             'id' => $discipline->id,
                             'name' => $discipline->name,
-                            'slug' => $discipline->slug,
                             'display_name' => $discipline->display_name,
                             'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
                             'color_hex' => $discipline->color_hex,

@@ -490,7 +490,7 @@ class PackageNewSeeder extends Seeder
 
         // 1 clase Reformer
         $packageOneReformer = Package::create([
-            'name' => '1 clase Reformer',
+            'name' => '1 clase',
             'slug' => '1-clase-reformer',
             'description' => 'Paquete básico de Reformer con 1 clase',
             'short_description' => '1 clase Reformer válida por 1 mes',
@@ -524,7 +524,7 @@ class PackageNewSeeder extends Seeder
 
         // 4 clases Reformer
         $packageFourReformer = Package::create([
-            'name' => '4 clase Reformer',
+            'name' => '4 clase',
             'slug' => '4-clase-reformer',
             'description' => 'Paquete mensual de Reformer con 4 clases',
             'short_description' => '4 clases Reformer válidas por 1 mes',
@@ -558,7 +558,7 @@ class PackageNewSeeder extends Seeder
 
         // 8 clases Reformer
         $packageEightReformer = Package::create([
-            'name' => '8 clase Reformer',
+            'name' => '8 clase',
             'slug' => '8-clase-reformer',
             'description' => 'Paquete mensual de Reformer con 8 clases',
             'short_description' => '8 clases Reformer válidas por 1 mes',
@@ -592,7 +592,7 @@ class PackageNewSeeder extends Seeder
 
         // 12 clases Reformer
         $packageTwelveReformer = Package::create([
-            'name' => '12 clase Reformer',
+            'name' => '12 clase',
             'slug' => '12-clase-reformer',
             'description' => 'Paquete mensual de Reformer con 12 clases',
             'short_description' => '12 clases Reformer válidas por 1 mes',
@@ -626,7 +626,7 @@ class PackageNewSeeder extends Seeder
 
         // 20 clases Reformer (con membership_id = 2)
         $packageTwentyReformer = Package::create([
-            'name' => '20 clase Reformer',
+            'name' => '20 clase',
             'slug' => '20-clase-reformer',
             'description' => 'Paquete mensual de Reformer con 20 clases',
             'short_description' => '20 clases Reformer válidas por 1 mes',
@@ -660,7 +660,7 @@ class PackageNewSeeder extends Seeder
 
         // 40 clases Reformer (con membership_id = 3)
         $packageFortyReformer = Package::create([
-            'name' => '40 clase Reformer',
+            'name' => '40 clase',
             'slug' => '40-clase-reformer',
             'description' => 'Paquete mensual de Reformer con 40 clases',
             'short_description' => '40 clases Reformer válidas por 1 mes',
@@ -696,7 +696,7 @@ class PackageNewSeeder extends Seeder
 
         // 1 clase Reformer - Regular
         $packageOneReformerRegular = Package::create([
-            'name' => '1 clase Reformer',
+            'name' => '1 clase',
             'slug' => '1-clase-reformer-regular',
             'description' => 'Paquete básico de Reformer con 1 clase',
             'short_description' => '1 clase Reformer válida por 1 mes',
@@ -730,7 +730,7 @@ class PackageNewSeeder extends Seeder
 
         // 4 clases Reformer - Regular
         $packageFourReformerRegular = Package::create([
-            'name' => '4 clase Reformer',
+            'name' => '4 clase',
             'slug' => '4-clase-reformer-regular',
             'description' => 'Paquete mensual de Reformer con 4 clases',
             'short_description' => '4 clases Reformer válidas por 1 mes',
@@ -764,7 +764,7 @@ class PackageNewSeeder extends Seeder
 
         // 8 clases Reformer - Regular
         $packageEightReformerRegular = Package::create([
-            'name' => '8 clase Reformer',
+            'name' => '8 clase',
             'slug' => '8-clase-reformer-regular',
             'description' => 'Paquete bimestral de Reformer con 8 clases',
             'short_description' => '8 clases Reformer válidas por 2 meses',
@@ -798,7 +798,7 @@ class PackageNewSeeder extends Seeder
 
         // 12 clases Reformer - Regular
         $packageTwelveReformerRegular = Package::create([
-            'name' => '12 clase Reformer',
+            'name' => '12 clase',
             'slug' => '12-clase-reformer-regular',
             'description' => 'Paquete trimestral de Reformer con 12 clases',
             'short_description' => '12 clases Reformer válidas por 3 meses',
@@ -832,7 +832,7 @@ class PackageNewSeeder extends Seeder
 
         // 20 clases Reformer - Regular (con membership_id = 2)
         $packageTwentyReformerRegular = Package::create([
-            'name' => '20 clase Reformer',
+            'name' => '20 clase',
             'slug' => '20-clase-reformer-regular',
             'description' => 'Paquete semestral de Reformer con 20 clases',
             'short_description' => '20 clases Reformer válidas por 6 meses',
@@ -866,7 +866,7 @@ class PackageNewSeeder extends Seeder
 
         // 40 clases Reformer - Regular (con membership_id = 3)
         $packageFortyReformerRegular = Package::create([
-            'name' => '40 clase Reformer',
+            'name' => '40 clase ',
             'slug' => '40-clase-reformer-regular',
             'description' => 'Paquete anual de Reformer con 40 clases',
             'short_description' => '40 clases Reformer válidas por 1 año',

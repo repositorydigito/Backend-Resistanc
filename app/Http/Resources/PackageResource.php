@@ -43,6 +43,7 @@ class PackageResource extends JsonResource
             'commercial_type' => $this->commercial_type,
             'icon_url' =>  $this->icon_url ?  asset('storage/' . $this->icon_url)  : '', // Ensure the URL is absolute
 
+            'is_membresia' => $this->is_membresia,
             // Computed attributes using model accessors
             'is_unlimited' => $this->is_unlimited,
             'is_on_sale' => $this->is_on_sale,
@@ -65,7 +66,6 @@ class PackageResource extends JsonResource
                     return [
                         'id' => $discipline->id,
                         'name' => $discipline->name,
-                        'slug' => $discipline->slug,
                         'display_name' => $discipline->display_name,
                         'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
                         'color_hex' => $discipline->color_hex,
