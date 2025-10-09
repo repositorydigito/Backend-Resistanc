@@ -98,6 +98,15 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
     Route::post('/me/create', [PackageController::class, 'packageMeCreate'])->name('meCreate');
     Route::post('/me/vigent', [PackageController::class, 'packageMeVigent'])->name('packageMeVigent');
 });
+// Fin paquetes
+
+// Códigos promocionales
+Route::prefix('promo-codes')->name('promo-codes.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/validate', [\App\Http\Controllers\Api\PromoCodeController::class, 'validate'])->name('validate');
+    Route::post('/consume', [\App\Http\Controllers\Api\PromoCodeController::class, 'consume'])->name('consume');
+    Route::post('/my-history', [\App\Http\Controllers\Api\PromoCodeController::class, 'myHistory'])->name('my-history');
+});
+// Fin códigos promocionales
 
 // Disciplinas
 Route::prefix('disciplines')->name('disciplines.')->middleware('auth:sanctum')->group(function () {

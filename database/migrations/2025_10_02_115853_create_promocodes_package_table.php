@@ -17,7 +17,11 @@ return new class extends Migration
             $table->foreignId('package_id')->constrained('packages')->comment('Paquete relacionado');
             $table->foreignId('promo_codes_id')->constrained('promo_codes')->comment('Promocodes relacionado');
 
-            $table->integer('quantity')->comment('cantidad de codigos generados');
+
+
+            $table->integer('quantity')->nullable()->comment('cantidad de codigos generados');
+
+
             $table->string('discount')->comment('monto o porcentaje de descuento');
 
             $table->timestamps();

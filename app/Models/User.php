@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -227,6 +228,15 @@ final class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(UserMembership::class);
     }
 
+    /**
+     * Get the promo codes used by the user.
+     */
+    public function promoCodes(): BelongsToMany
+    {
+        return $this->belongsToMany(PromoCodes::class, 'promocodes_user', 'user_id', 'promo_codes_id')
+            ->withPivot(['package_id', 'monto', 'discount_applied', 'original_price', 'final_price', 'created_at', 'updated_at'])
+            ->withTimestamps();
+    }
 
     /**
      * Get the user's full name from profile.

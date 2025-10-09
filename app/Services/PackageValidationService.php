@@ -114,12 +114,14 @@ final class PackageValidationService
             ->where('user_id', $userId)
             ->where('status', 'active')
             ->where('remaining_classes', '>', 0)
-            ->whereHas('package', function ($query) use ($disciplineId) {
-                $query->where('discipline_id', $disciplineId)
-                      ->where('status', 'active');
+            ->whereHas('package', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->whereHas('package.disciplines', function ($query) use ($disciplineId) {
+                $query->where('disciplines.id', $disciplineId);
             })
             ->whereDate('expiry_date', '>=', now())
-            ->with(['package:id,name,discipline_id'])
+            ->with(['package:id,name', 'package.disciplines:id,name'])
             ->orderBy('expiry_date', 'asc') // Usar primero los que expiran antes
             ->get();
     }
@@ -310,34 +312,73 @@ final class PackageValidationService
             ->where('status', 'active')
             ->where('remaining_classes', '>', 0)
             ->whereDate('expiry_date', '>=', now())
-            ->with(['package.discipline:id,name'])
+            ->with(['package.disciplines:id,name'])
             ->get();
 
         $summary = [];
 
         foreach ($userPackages as $userPackage) {
-            $disciplineId = $userPackage->package->discipline_id ?? null;
-            $disciplineName = $userPackage->package->discipline->name ?? 'Sin disciplina';
+            // Ahora un paquete puede tener múltiples disciplinas
+            $disciplines = $userPackage->package->disciplines ?? collect();
 
-            if (!isset($summary[$disciplineId])) {
-                $summary[$disciplineId] = [
-                    'discipline_id' => $disciplineId,
-                    'discipline_name' => $disciplineName,
-                    'total_packages' => 0,
-                    'total_classes_remaining' => 0,
-                    'packages' => []
+            if ($disciplines->isEmpty()) {
+                // Paquete sin disciplinas asignadas
+                $disciplineId = null;
+                $disciplineName = 'Sin disciplina';
+
+                if (!isset($summary[$disciplineId])) {
+                    $summary[$disciplineId] = [
+                        'discipline_id' => $disciplineId,
+                        'discipline_name' => $disciplineName,
+                        'total_packages' => 0,
+                        'total_classes_remaining' => 0,
+                        'packages' => []
+                    ];
+                }
+
+                $summary[$disciplineId]['total_packages']++;
+                $summary[$disciplineId]['total_classes_remaining'] += $userPackage->remaining_classes;
+                $summary[$disciplineId]['packages'][] = [
+                    'id' => $userPackage->id,
+                    'package_code' => $userPackage->package_code,
+                    'package_name' => $userPackage->package->name ?? 'N/A',
+                    'remaining_classes' => $userPackage->remaining_classes,
+                    'expiry_date' => $userPackage->expiry_date?->toDateString(),
+                    'disciplines' => []
                 ];
-            }
+            } else {
+                // Agrupar por cada disciplina que tenga el paquete
+                foreach ($disciplines as $discipline) {
+                    $disciplineId = $discipline->id;
+                    $disciplineName = $discipline->name;
 
-            $summary[$disciplineId]['total_packages']++;
-            $summary[$disciplineId]['total_classes_remaining'] += $userPackage->remaining_classes;
-            $summary[$disciplineId]['packages'][] = [
-                'id' => $userPackage->id,
-                'package_code' => $userPackage->package_code,
-                'package_name' => $userPackage->package->name ?? 'N/A',
-                'remaining_classes' => $userPackage->remaining_classes,
-                'expiry_date' => $userPackage->expiry_date?->toDateString()
-            ];
+                    if (!isset($summary[$disciplineId])) {
+                        $summary[$disciplineId] = [
+                            'discipline_id' => $disciplineId,
+                            'discipline_name' => $disciplineName,
+                            'total_packages' => 0,
+                            'total_classes_remaining' => 0,
+                            'packages' => []
+                        ];
+                    }
+
+                    // Verificar si este paquete ya está en la lista de esta disciplina
+                    $packageExists = collect($summary[$disciplineId]['packages'])->contains('id', $userPackage->id);
+
+                    if (!$packageExists) {
+                        $summary[$disciplineId]['total_packages']++;
+                        $summary[$disciplineId]['total_classes_remaining'] += $userPackage->remaining_classes;
+                        $summary[$disciplineId]['packages'][] = [
+                            'id' => $userPackage->id,
+                            'package_code' => $userPackage->package_code,
+                            'package_name' => $userPackage->package->name ?? 'N/A',
+                            'remaining_classes' => $userPackage->remaining_classes,
+                            'expiry_date' => $userPackage->expiry_date?->toDateString(),
+                            'disciplines' => $disciplines->pluck('name')->toArray()
+                        ];
+                    }
+                }
+            }
         }
 
         return array_values($summary);

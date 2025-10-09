@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class UserPackage extends Model
@@ -22,6 +22,10 @@ final class UserPackage extends Model
         'used_classes',
         'remaining_classes',
         'amount_paid_soles',
+        'real_amount_paid_soles',
+        'original_package_price_soles',
+        'promo_code_used',
+        'discount_percentage',
         'currency',
         'purchase_date',
         'activation_date',
@@ -41,6 +45,9 @@ final class UserPackage extends Model
         'used_classes' => 'integer',
         'remaining_classes' => 'integer',
         'amount_paid_soles' => 'decimal:2',
+        'real_amount_paid_soles' => 'decimal:2',
+        'original_package_price_soles' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
         'renewal_price' => 'decimal:2',
         // 'benefits_included' => 'array',
         // 'auto_renew' => 'boolean',
@@ -103,7 +110,45 @@ final class UserPackage extends Model
         return $this->belongsTo(User::class, 'gift_from_user_id');
     }
 
+    /**
+     * Get promo code information used for this package
+     */
+    public function getPromoCodeInfoAttribute(): ?array
+    {
+        if (!$this->user_id || !$this->package_id) {
+            return null;
+        }
 
+        $promoCodeUsage = DB::table('promocodes_user')
+            ->join('promo_codes', 'promocodes_user.promo_codes_id', '=', 'promo_codes.id')
+            ->where('promocodes_user.user_id', $this->user_id)
+            ->where('promocodes_user.package_id', $this->package_id)
+            ->select([
+                'promo_codes.code',
+                'promo_codes.name',
+                'promocodes_user.discount_applied',
+                'promocodes_user.original_price',
+                'promocodes_user.final_price',
+                'promocodes_user.monto',
+                'promocodes_user.created_at'
+            ])
+            ->orderBy('promocodes_user.created_at', 'desc')
+            ->first();
+
+        if (!$promoCodeUsage) {
+            return null;
+        }
+
+        return [
+            'code' => $promoCodeUsage->code,
+            'name' => $promoCodeUsage->name,
+            'discount_applied' => (float) $promoCodeUsage->discount_applied,
+            'original_price' => (float) $promoCodeUsage->original_price,
+            'final_price' => (float) $promoCodeUsage->final_price,
+            'amount_paid' => (float) $promoCodeUsage->monto,
+            'used_at' => $promoCodeUsage->created_at,
+        ];
+    }
 
     /**
      * Scope to get only active packages.

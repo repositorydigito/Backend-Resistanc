@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @tags Paquetes
@@ -183,6 +184,10 @@ final class PackageController extends Controller
     /**
      * Comprar/Agregar un paquete al usuario autenticado
      *
+     * @param int package_id ID del paquete a comprar
+     * @param int payment_method_id ID del método de pago del usuario
+     * @param string promo_code (opcional) Código promocional a aplicar
+     * @param string notes (opcional) Notas adicionales
      */
     public function packageMeCreate(Request $request)
     {
@@ -191,6 +196,7 @@ final class PackageController extends Controller
             $request->validate([
                 'package_id' => 'required|integer|exists:packages,id',
                 'payment_method_id' => 'required|integer|exists:user_payment_methods,id',
+                'promo_code' => 'nullable|string|max:50',
                 'notes' => 'nullable|string|max:500',
             ]);
 
@@ -235,7 +241,33 @@ final class PackageController extends Controller
                 ], 200);
             }
 
+            // Validar y aplicar código promocional si se proporciona
+            $promoCodeData = null;
+            $finalPrice = $package->price_soles;
+            $originalPrice = $package->price_soles;
+            $discountPercentage = 0;
+            $discountAmount = 0;
+            $promoCodeUsed = null;
 
+            if ($request->filled('promo_code')) {
+                $promoCodeValidation = $this->validateAndApplyPromoCode($request->string('promo_code'), $package->id, $userId);
+
+                if (!$promoCodeValidation['valid']) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => $promoCodeValidation['message'],
+                        'datoAdicional' => $promoCodeValidation['details'] ?? null
+                    ], 200);
+                }
+
+                $promoCodeData = $promoCodeValidation['data'];
+                $finalPrice = $promoCodeData['final_price'];
+                $originalPrice = $promoCodeData['original_price'];
+                $discountPercentage = $promoCodeData['discount_percentage'];
+                $discountAmount = $promoCodeData['discount_amount'];
+                $promoCodeUsed = $promoCodeValidation['code'];
+            }
 
             // Calcular fecha de expiración
             $expiryDate = $package->duration_in_months
@@ -250,7 +282,11 @@ final class PackageController extends Controller
                     'package_id' => $package->id,
                     'remaining_classes' => $package->classes_quantity,
                     'used_classes' => 0,
-                    'amount_paid_soles' => $package->price_soles,
+                    'amount_paid_soles' => $originalPrice, // Precio original del paquete
+                    'real_amount_paid_soles' => $finalPrice, // Monto real pagado (después de descuentos)
+                    'original_package_price_soles' => $originalPrice,
+                    'promo_code_used' => $promoCodeUsed,
+                    'discount_percentage' => $discountPercentage,
                     'currency' => 'PEN',
                     'purchase_date' => now(),
                     'activation_date' => now(),
@@ -291,6 +327,11 @@ final class PackageController extends Controller
                     }
                 }
 
+                // Registrar uso del código promocional si se usó
+                if ($promoCodeUsed && $promoCodeData) {
+                    $this->registerPromoCodeUsage($userId, $package->id, $promoCodeUsed, $promoCodeData);
+                }
+
                 // Aquí podrías agregar lógica de procesamiento de pago
                 // Por ejemplo, integrar con un gateway de pago como Culqi, PayU, etc.
 
@@ -303,7 +344,16 @@ final class PackageController extends Controller
                     'expiry_date' => $userPackage->expiry_date->format('Y-m-d'),
                     'status' => $userPackage->status,
                     'package_name' => $package->name,
-                    'amount_paid' => $userPackage->amount_paid_soles,
+                    'pricing' => [
+                        'original_price' => $userPackage->amount_paid_soles,
+                        'final_price' => $userPackage->real_amount_paid_soles,
+                        'discount_percentage' => $userPackage->discount_percentage,
+                        'savings' => $userPackage->amount_paid_soles - $userPackage->real_amount_paid_soles,
+                    ],
+                    'promo_code' => $promoCodeUsed ? [
+                        'code' => $promoCodeUsed,
+                        'applied' => true
+                    ] : null,
                 ];
 
                 // Agregar información de membresía si se creó
@@ -537,6 +587,147 @@ final class PackageController extends Controller
                 'mensajeUsuario' => 'Error al obtener clases restantes',
                 'datoAdicional' => $th->getMessage()
             ], 200);
+        }
+    }
+
+    /**
+     * Validar y aplicar código promocional
+     */
+    private function validateAndApplyPromoCode(string $code, int $packageId, int $userId): array
+    {
+        try {
+            // Buscar el código promocional
+            $promoCode = \App\Models\PromoCodes::where('code', $code)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$promoCode) {
+                return [
+                    'valid' => false,
+                    'message' => 'Código promocional no válido o inactivo'
+                ];
+            }
+
+            // Validar fechas para códigos estacionales
+            if ($promoCode->type === 'season') {
+                $now = now();
+                if ($promoCode->start_date && $now->lt($promoCode->start_date)) {
+                    return [
+                        'valid' => false,
+                        'message' => 'Código promocional aún no está vigente'
+                    ];
+                }
+                if ($promoCode->end_date && $now->gt($promoCode->end_date)) {
+                    return [
+                        'valid' => false,
+                        'message' => 'Código promocional expirado'
+                    ];
+                }
+            }
+
+            // Verificar si el usuario ya usó este código
+            $alreadyUsed = $promoCode->users()
+                ->where('user_id', $userId)
+                ->exists();
+
+            if ($alreadyUsed) {
+                return [
+                    'valid' => false,
+                    'message' => 'Ya has usado este código promocional anteriormente'
+                ];
+            }
+
+            // Verificar si el código aplica al paquete
+            $packageDiscount = $promoCode->packages()
+                ->where('package_id', $packageId)
+                ->where('quantity', '>', 0)
+                ->first();
+
+            if (!$packageDiscount) {
+                return [
+                    'valid' => false,
+                    'message' => 'Este código promocional no es válido para el paquete seleccionado'
+                ];
+            }
+
+            // Calcular descuento
+            $originalPrice = \App\Models\Package::find($packageId)->price_soles;
+            $discount = (float) $packageDiscount->discount_percentage;
+            $discountAmount = ($originalPrice * $discount) / 100;
+            $finalPrice = $originalPrice - $discountAmount;
+
+            return [
+                'valid' => true,
+                'code' => $promoCode->code,
+                'data' => [
+                    'original_price' => $originalPrice,
+                    'discount_percentage' => $discount,
+                    'discount_amount' => $discountAmount,
+                    'final_price' => $finalPrice,
+                    'package_discount_id' => $packageDiscount->id,
+                    'available_quantity' => $packageDiscount->quantity
+                ]
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error validating promo code', [
+                'code' => $code,
+                'package_id' => $packageId,
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'valid' => false,
+                'message' => 'Error al validar el código promocional'
+            ];
+        }
+    }
+
+    /**
+     * Registrar uso del código promocional
+     */
+    private function registerPromoCodeUsage(int $userId, int $packageId, string $promoCode, array $promoCodeData): void
+    {
+        try {
+            $promoCodeModel = \App\Models\PromoCodes::where('code', $promoCode)->first();
+
+            if (!$promoCodeModel) {
+                throw new \Exception('Código promocional no encontrado');
+            }
+
+            // Decrementar cantidad disponible
+            $promoCodeModel->packages()->updateExistingPivot($packageId, [
+                'quantity' => DB::raw('quantity - 1')
+            ]);
+
+            // Registrar uso del código por el usuario
+            $promoCodeModel->users()->attach($userId, [
+                'monto' => $promoCodeData['final_price'],
+                'package_id' => $packageId,
+                'discount_applied' => $promoCodeData['discount_percentage'],
+                'original_price' => $promoCodeData['original_price'],
+                'final_price' => $promoCodeData['final_price'],
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            Log::info('Código promocional aplicado en compra de paquete', [
+                'user_id' => $userId,
+                'promo_code' => $promoCode,
+                'package_id' => $packageId,
+                'discount' => $promoCodeData['discount_percentage'],
+                'final_price' => $promoCodeData['final_price']
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error registering promo code usage', [
+                'user_id' => $userId,
+                'package_id' => $packageId,
+                'promo_code' => $promoCode,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 }

@@ -12,7 +12,15 @@ class PromoCodes extends Model
         'name_supplier',
         'initial',
         'code',
+        'type',
+        'start_date',
+        'end_date',
         'status',
+    ];
+
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     protected static function boot()
@@ -44,16 +52,16 @@ class PromoCodes extends Model
 
         do {
             $attempt++;
-            
+
             // Generar parte aleatoria: 4 caracteres alfanuméricos
             $randomPart = strtoupper(substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 4));
-            
+
             // Formato: INICIAL + AÑO + RANDOM (ej: VER2025A3B7)
             $code = $initial . date('Y') . $randomPart;
-            
+
             // Verificar si el código ya existe
             $exists = static::where('code', $code)->exists();
-            
+
         } while ($exists && $attempt < $maxAttempts);
 
         // Si después de 10 intentos no se encuentra uno único, usar timestamp
@@ -75,7 +83,7 @@ class PromoCodes extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'promocodes_user', 'promo_codes_id', 'user_id')
-            ->withPivot(['monto', 'created_at', 'updated_at'])
+            ->withPivot(['package_id', 'monto', 'discount_applied', 'original_price', 'final_price', 'created_at', 'updated_at'])
             ->withTimestamps();
     }
 }

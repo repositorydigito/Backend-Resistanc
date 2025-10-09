@@ -10,7 +10,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UserPackagesRelationManager extends RelationManager
@@ -32,12 +32,12 @@ class UserPackagesRelationManager extends RelationManager
                         modifyQueryUsing: fn(Builder $query) => $query
                             ->where('status', 'active')
                             ->where('type', 'free_trial')
-                            ->orderBy('discipline_id')
-                            ->with('discipline')
+                            ->orderBy('name')
+                            ->with('disciplines')
                     )
                     ->getOptionLabelFromRecordUsing(
                         fn(Package $record) =>
-                        $record->name . ' - ' . ($record->discipline->name ?? 'Sin disciplina') . ' (' . $record->classes_quantity . ' clases)'
+                        $record->name . ' - ' . ($record->disciplines->pluck('name')->join(', ') ?: 'Sin disciplina') . ' (' . $record->classes_quantity . ' clases)'
                     )
                     ->required()
                     ->searchable()
@@ -69,11 +69,12 @@ class UserPackagesRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('package.discipline.name')
-                    ->label('Disciplina')
+                Tables\Columns\TextColumn::make('package.disciplines')
+                    ->label('Disciplinas')
+                    ->getStateUsing(fn($record) => $record->package?->disciplines->pluck('name')->join(', ') ?: 'N/A')
                     ->badge()
                     ->color('primary')
-                    ->sortable(),
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -111,10 +112,34 @@ class UserPackagesRelationManager extends RelationManager
                     })
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('amount_paid_soles')
-                    ->label('Monto')
+                Tables\Columns\TextColumn::make('promo_code_used')
+                    ->label('Código Promo')
+                    ->badge()
+                    ->color('success')
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('discount_percentage')
+                    ->label('Descuento')
+                    ->suffix('%')
+                    ->badge()
+                    ->color('warning')
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('original_package_price_soles')
+                    ->label('Precio Original')
                     ->money('PEN')
-                    ->sortable(),
+                    ->getStateUsing(fn($record) => $record->original_package_price_soles ?? $record->package?->price_soles)
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('real_amount_paid_soles')
+                    ->label('Monto Real Pagado')
+                    ->money('PEN')
+                    ->sortable()
+                    ->weight('bold')
+                    ->color(fn($record) => $record->promo_code_used ? 'success' : null)
+                    ->getStateUsing(fn($record) => $record->real_amount_paid_soles ?? $record->amount_paid_soles),
 
                 Tables\Columns\TextColumn::make('purchase_date')
                     ->label('Compra')
@@ -144,7 +169,10 @@ class UserPackagesRelationManager extends RelationManager
                         ->where('expiry_date', '>=', now())
                         ->where('status', 'active')),
 
-
+                Tables\Filters\Filter::make('with_promo_code')
+                    ->label('Con Código Promocional')
+                    ->query(fn(Builder $query) => $query->whereNotNull('promo_code_used'))
+                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()

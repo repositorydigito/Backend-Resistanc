@@ -21,11 +21,14 @@ return new class extends Migration
             $table->string('initial')->comment('Inicial del codigo');
             $table->string('code')->comment('Codigo combinado con el codigo');
 
+            $table->enum('type', ['season', 'consumption'])->default('consumption')->comment('Tipo: temporada o consumo');
+            $table->dateTime('start_date')->nullable()->comment('Fecha de inicio para promociones por temporada');
+            $table->dateTime('end_date')->nullable()->comment('Fecha de fin para promociones por temporada');
 
-            $table->enum('status',['active','inactive']);
+
+            $table->enum('status', ['active', 'inactive']);
 
             $table->timestamps();
-
         });
     }
 

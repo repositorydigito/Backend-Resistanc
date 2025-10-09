@@ -41,13 +41,16 @@ class MembershipService
         }
 
         // 2. Verificar paquetes disponibles para la disciplina
-        $availablePackages = UserPackage::with(['package'])
+        $availablePackages = UserPackage::with(['package.disciplines'])
             ->where('user_id', $userId)
             ->where('status', 'active')
             ->where('expiry_date', '>', now())
             ->where('remaining_classes', '>', 0)
-            ->whereHas('package', function ($query) use ($disciplineId) {
-                $query->where('discipline_id', $disciplineId);
+            ->whereHas('package', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->whereHas('package.disciplines', function ($query) use ($disciplineId) {
+                $query->where('disciplines.id', $disciplineId);
             })
             ->get();
 

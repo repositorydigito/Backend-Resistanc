@@ -17,7 +17,7 @@ class PackageNewSeeder extends Seeder
 
         // 1 clase FIT
         $packageOne = Package::create([
-            'name' => '1 clase FIT',
+            'name' => '1 clase',
             'slug' => '1-clase-fit',
             'description' => 'Paquete básico de FIT con 1 clase',
             'short_description' => '1 clase FIT válida por 1 mes',
@@ -50,7 +50,7 @@ class PackageNewSeeder extends Seeder
 
         // 8 clases FIT
         $packageEight = Package::create([
-            'name' => '8 clase FIT',
+            'name' => '8 clase',
             'slug' => '8-clase-fit',
             'description' => 'Paquete mensual de FIT con 8 clases',
             'short_description' => '8 clases FIT válidas por 1 mes',
@@ -83,7 +83,7 @@ class PackageNewSeeder extends Seeder
 
         // 12 clases FIT
         $packageTwelve = Package::create([
-            'name' => '12 clase FIT',
+            'name' => '12 clase',
             'slug' => '12-clase-fit',
             'description' => 'Paquete bimestral de FIT con 12 clases',
             'short_description' => '12 clases FIT válidas por 2 meses',
@@ -116,7 +116,7 @@ class PackageNewSeeder extends Seeder
 
         // 16 clases FIT
         $packageSixteen = Package::create([
-            'name' => '16 clase FIT',
+            'name' => '16 clase',
             'slug' => '16-clase-fit',
             'description' => 'Paquete trimestral de FIT con 16 clases',
             'short_description' => '16 clases FIT válidas por 3 meses',
@@ -149,7 +149,7 @@ class PackageNewSeeder extends Seeder
 
         // 20 clases FIT
         $packageTwenty = Package::create([
-            'name' => '20 clase FIT',
+            'name' => '20 clase',
             'slug' => '20-clase-fit',
             'description' => 'Paquete cuatrimestral de FIT con 20 clases',
             'short_description' => '20 clases FIT válidas por 4 meses',
@@ -182,7 +182,7 @@ class PackageNewSeeder extends Seeder
 
         // 24 clases FIT (con membership_id = 2)
         $packageTwentyFour = Package::create([
-            'name' => '24 clase FIT',
+            'name' => '24 clase',
             'slug' => '24-clase-fit',
             'description' => 'Paquete semestral de FIT con 24 clases',
             'short_description' => '24 clases FIT válidas por 6 meses',
@@ -215,7 +215,7 @@ class PackageNewSeeder extends Seeder
 
         // 40 clases FIT (con membership_id = 3)
         $packageForty = Package::create([
-            'name' => '40 clase FIT',
+            'name' => '40 clase',
             'slug' => '40-clase-fit',
             'description' => 'Paquete anual de FIT con 40 clases',
             'short_description' => '40 clases FIT válidas por 1 año',
@@ -249,42 +249,42 @@ class PackageNewSeeder extends Seeder
         // ========== PAQUETES FIT CON MEMBRESÍA ==========
 
         // 1 clase FIT - Membresía
-        $packageOneMembership = Package::create([
-            'name' => '1 clase FIT',
-            'slug' => '1-clase-fit-membresia',
-            'description' => 'Paquete básico de FIT con 1 clase y membresía',
-            'short_description' => '1 clase FIT con membresía válida por 1 mes',
-            'classes_quantity' => 1,
-            'price_soles' => 55.00,
-            'original_price_soles' => 55.00,
-            'buy_type' => 'affordable',
-            'mode_type' => 'presencial',
-            'billing_type' => 'one_time',
-            'type' => 'fixed',
-            'commercial_type' => 'basic',
-            'duration_in_months' => 1,
-            'start_date' => null,
-            'end_date' => null,
-            'is_virtual_access' => false,
-            'priority_booking_days' => 1,
-            'auto_renewal' => false,
-            'is_featured' => false,
-            'is_popular' => false,
-            'status' => 'active',
-            'display_order' => 8,
-            'features' => json_encode(['Acceso a clases FIT', 'Equipamiento incluido', 'Beneficios de membresía']),
-            'restrictions' => json_encode(['Válido por 30 días']),
-                'target_audience' => 'beginner',
-            'membership_id' => null,
-            'is_membresia' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $packageOneMembership->disciplines()->sync([1, 3, 4]);
+        // $packageOneMembership = Package::create([
+        //     'name' => '1 clase ',
+        //     'slug' => '1-clase-fit-membresia',
+        //     'description' => 'Paquete básico de FIT con 1 clase y membresía',
+        //     'short_description' => '1 clase FIT con membresía válida por 1 mes',
+        //     'classes_quantity' => 1,
+        //     'price_soles' => 55.00,
+        //     'original_price_soles' => 55.00,
+        //     'buy_type' => 'affordable',
+        //     'mode_type' => 'presencial',
+        //     'billing_type' => 'one_time',
+        //     'type' => 'fixed',
+        //     'commercial_type' => 'basic',
+        //     'duration_in_months' => 1,
+        //     'start_date' => null,
+        //     'end_date' => null,
+        //     'is_virtual_access' => false,
+        //     'priority_booking_days' => 1,
+        //     'auto_renewal' => false,
+        //     'is_featured' => false,
+        //     'is_popular' => false,
+        //     'status' => 'active',
+        //     'display_order' => 8,
+        //     'features' => json_encode(['Acceso a clases FIT', 'Equipamiento incluido', 'Beneficios de membresía']),
+        //     'restrictions' => json_encode(['Válido por 30 días']),
+        //         'target_audience' => 'beginner',
+        //     'membership_id' => null,
+        //     'is_membresia' => true,
+        //     'created_at' => now(),
+        //     'updated_at' => now(),
+        // ]);
+        // $packageOneMembership->disciplines()->sync([1, 3, 4]);
 
         // 8 clases FIT - Membresía
         $packageEightMembership = Package::create([
-            'name' => '8 clase FIT',
+            'name' => '8 clase',
             'slug' => '8-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 8 clases y membresía',
             'short_description' => '8 clases FIT con membresía válidas por 1 mes',
@@ -318,7 +318,7 @@ class PackageNewSeeder extends Seeder
 
         // 12 clases FIT - Membresía
         $packageTwelveMembership = Package::create([
-            'name' => '12 clase FIT',
+            'name' => '12 clase',
             'slug' => '12-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 12 clases y membresía',
             'short_description' => '12 clases FIT con membresía válidas por 1 mes',
@@ -352,7 +352,7 @@ class PackageNewSeeder extends Seeder
 
         // 16 clases FIT - Membresía
         $packageSixteenMembership = Package::create([
-            'name' => '16 clase FIT',
+            'name' => '16 clase',
             'slug' => '16-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 16 clases y membresía',
             'short_description' => '16 clases FIT con membresía válidas por 1 mes',
@@ -386,7 +386,7 @@ class PackageNewSeeder extends Seeder
 
         // 20 clases FIT - Membresía
         $packageTwentyMembership = Package::create([
-            'name' => '20 clase FIT',
+            'name' => '20 clase',
             'slug' => '20-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 20 clases y membresía',
             'short_description' => '20 clases FIT con membresía válidas por 1 mes',
@@ -420,7 +420,7 @@ class PackageNewSeeder extends Seeder
 
         // 24 clases FIT - Membresía (con membership_id = 2)
         $packageTwentyFourMembership = Package::create([
-            'name' => '24 clase FIT',
+            'name' => '24 clase',
             'slug' => '24-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 24 clases y membresía',
             'short_description' => '24 clases FIT con membresía válidas por 1 mes',
@@ -454,7 +454,7 @@ class PackageNewSeeder extends Seeder
 
         // 40 clases FIT - Membresía (con membership_id = 3)
         $packageFortyMembership = Package::create([
-            'name' => '40 clase FIT',
+            'name' => '40 clase',
             'slug' => '40-clase-fit-membresia',
             'description' => 'Paquete mensual de FIT con 40 clases y membresía',
             'short_description' => '40 clases FIT con membresía válidas por 1 mes',
@@ -489,38 +489,38 @@ class PackageNewSeeder extends Seeder
         // ========== PAQUETES REFORMER CON MEMBRESÍA ==========
 
         // 1 clase Reformer
-        $packageOneReformer = Package::create([
-            'name' => '1 clase',
-            'slug' => '1-clase-reformer',
-            'description' => 'Paquete básico de Reformer con 1 clase',
-            'short_description' => '1 clase Reformer válida por 1 mes',
-                'classes_quantity' => 1,
-            'price_soles' => 69.00,
-            'original_price_soles' => 80.00,
-            'buy_type' => 'affordable',
-                'mode_type' => 'presencial',
-                'billing_type' => 'one_time',
-            'type' => 'fixed',
-            'commercial_type' => 'basic',
-            'duration_in_months' => 1,
-            'start_date' => null,
-            'end_date' => null,
-                'is_virtual_access' => false,
-                'priority_booking_days' => 1,
-            'auto_renewal' => false,
-            'is_featured' => false,
-            'is_popular' => false,
-            'status' => 'active',
-            'display_order' => 15,
-            'features' => json_encode(['Acceso a clases Reformer', 'Equipamiento especializado', 'Instrucción personalizada']),
-            'restrictions' => json_encode(['Válido por 30 días']),
-            'target_audience' => 'beginner',
-            'membership_id' => 1,
-            'is_membresia' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $packageOneReformer->disciplines()->sync([2]);
+        // $packageOneReformer = Package::create([
+        //     'name' => '1 clase',
+        //     'slug' => '1-clase-reformer',
+        //     'description' => 'Paquete básico de Reformer con 1 clase',
+        //     'short_description' => '1 clase Reformer válida por 1 mes',
+        //         'classes_quantity' => 1,
+        //     'price_soles' => 69.00,
+        //     'original_price_soles' => 80.00,
+        //     'buy_type' => 'affordable',
+        //         'mode_type' => 'presencial',
+        //         'billing_type' => 'one_time',
+        //     'type' => 'fixed',
+        //     'commercial_type' => 'basic',
+        //     'duration_in_months' => 1,
+        //     'start_date' => null,
+        //     'end_date' => null,
+        //         'is_virtual_access' => false,
+        //         'priority_booking_days' => 1,
+        //     'auto_renewal' => false,
+        //     'is_featured' => false,
+        //     'is_popular' => false,
+        //     'status' => 'active',
+        //     'display_order' => 15,
+        //     'features' => json_encode(['Acceso a clases Reformer', 'Equipamiento especializado', 'Instrucción personalizada']),
+        //     'restrictions' => json_encode(['Válido por 30 días']),
+        //     'target_audience' => 'beginner',
+        //     'membership_id' => 1,
+        //     'is_membresia' => true,
+        //     'created_at' => now(),
+        //     'updated_at' => now(),
+        // ]);
+        // $packageOneReformer->disciplines()->sync([2]);
 
         // 4 clases Reformer
         $packageFourReformer = Package::create([

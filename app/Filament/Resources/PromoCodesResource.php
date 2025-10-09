@@ -65,6 +65,16 @@ class PromoCodesResource extends Resource
                             ->disabled()
                             ->visible(fn (string $operation): bool => $operation === 'edit')
                             ->helperText('El código se genera automáticamente al guardar'),
+                        Forms\Components\Select::make('type')
+                            ->label('Tipo de Promoción')
+                            ->required()
+                            ->options([
+                                'consumption' => 'Por Consumo',
+                                'season' => 'Por Temporada',
+                            ])
+                            ->default('consumption')
+                            ->live()
+                            ->helperText('Consumo: se aplica al momento de la compra. Temporada: solo válido en fechas específicas'),
                         Forms\Components\Select::make('status')
                             ->label('Estado')
                             ->required()
@@ -75,6 +85,27 @@ class PromoCodesResource extends Resource
                             ->default('active'),
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make('Vigencia de Temporada')
+                    ->description('Configura las fechas de validez para promociones por temporada')
+                    ->schema([
+                        Forms\Components\DateTimePicker::make('start_date')
+                            ->label('Fecha de Inicio')
+                            ->native(false)
+                            ->displayFormat('d/m/Y H:i')
+                            ->seconds(false)
+                            ->helperText('Fecha y hora desde cuando la promoción es válida'),
+                        Forms\Components\DateTimePicker::make('end_date')
+                            ->label('Fecha de Fin')
+                            ->native(false)
+                            ->displayFormat('d/m/Y H:i')
+                            ->seconds(false)
+                            ->after('start_date')
+                            ->helperText('Fecha y hora hasta cuando la promoción es válida'),
+                    ])
+                    ->columns(2)
+                    ->visible(fn (Forms\Get $get): bool => $get('type') === 'season')
+                    ->collapsed(),
             ]);
     }
  public static function table(Table $table): Table
@@ -83,36 +114,71 @@ class PromoCodesResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('name_supplier')
                     ->label('Proveedor')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('initial')
-                    ->label('Inicial')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('code')
                     ->label('Código')
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->weight('bold'),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Tipo')
+                    ->badge()
+                    ->color(fn (string $state): string => match($state) {
+                        'consumption' => 'info',
+                        'season' => 'warning',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match($state) {
+                        'consumption' => 'Consumo',
+                        'season' => 'Temporada',
+                    }),
+                Tables\Columns\TextColumn::make('start_date')
+                    ->label('Inicio')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->toggleable()
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('end_date')
+                    ->label('Fin')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->toggleable()
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
                     ->color(fn (string $state): string => match($state) {
                         'active' => 'success',
                         'inactive' => 'danger',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match($state) {
+                        'active' => 'Activo',
+                        'inactive' => 'Inactivo',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado el')
-                    ->dateTime()
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Actualizado el')
-                    ->dateTime()
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tipo')
+                    ->options([
+                        'consumption' => 'Por Consumo',
+                        'season' => 'Por Temporada',
+                    ]),
                 Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
                     ->options([
                         'active' => 'Activo',
                         'inactive' => 'Inactivo',

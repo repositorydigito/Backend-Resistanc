@@ -34,12 +34,15 @@ class PackageDiscountsRelationManager extends RelationManager
                         Forms\Components\Select::make('package_id')
                             ->label('Paquete')
                             ->options(function () {
-                                return Package::with('discipline')
+                                return Package::with('disciplines')
                                     ->where('status', 'active')
+                                    ->orderBy('is_membresia', 'desc') // Membresías primero
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(function ($package) {
-                                        $label = $package->name . ' - ' . ($package->discipline->name ?? 'Sin disciplina') . ' (' . $package->classes_quantity . ' clases) - S/ ' . number_format($package->price_soles, 2);
+                                        $disciplinesNames = $package->disciplines->pluck('name')->join(', ') ?: 'Sin disciplina';
+                                        $type = $package->is_membresia ? '📋 Membresía' : '📦 Paquete';
+                                        $label = $type . ' - ' . $package->name . ' - ' . $disciplinesNames . ' (' . $package->classes_quantity . ' clases) - S/ ' . number_format($package->price_soles, 2);
                                         return [$package->id => $label];
                                     });
                             })
@@ -122,11 +125,18 @@ class PackageDiscountsRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('discipline.name')
-                    ->label('Disciplina')
-                    ->getStateUsing(fn ($record) => $record->discipline->name ?? 'N/A')
+                Tables\Columns\TextColumn::make('is_membresia')
+                    ->label('Tipo')
+                    ->badge()
+                    ->getStateUsing(fn ($record) => $record->is_membresia ? 'Membresía' : 'Paquete')
+                    ->color(fn ($record) => $record->is_membresia ? 'warning' : 'info')
+                    ->icon(fn ($record) => $record->is_membresia ? 'heroicon-o-rectangle-stack' : 'heroicon-o-cube'),
+
+                Tables\Columns\TextColumn::make('disciplines')
+                    ->label('Disciplinas')
+                    ->getStateUsing(fn ($record) => $record->disciplines->pluck('name')->join(', ') ?: 'N/A')
                     ->searchable()
-                    ->sortable(),
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('price_soles')
                     ->label('Precio Original')
@@ -176,16 +186,19 @@ class PackageDiscountsRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('discipline_id')
+                Tables\Filters\SelectFilter::make('is_membresia')
+                    ->label('Tipo')
+                    ->options([
+                        1 => 'Membresía',
+                        0 => 'Paquete',
+                    ])
+                    ->placeholder('Todos'),
+                Tables\Filters\SelectFilter::make('disciplines')
                     ->label('Disciplina')
-                    ->options(function () {
-                        return Discipline::all()
-                            ->mapWithKeys(function ($discipline) {
-                                return [$discipline->id => $discipline->name];
-                            });
-                    })
+                    ->relationship('disciplines', 'name')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->multiple(),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()

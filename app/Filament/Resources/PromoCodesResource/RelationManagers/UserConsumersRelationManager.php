@@ -62,31 +62,46 @@ class UserConsumersRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('pivot.monto')
-                    ->label('Monto Consumido')
+                Tables\Columns\TextColumn::make('pivot.package_id')
+                    ->label('Paquete')
+                    ->getStateUsing(function ($record) {
+                        $packageId = $record->pivot->package_id ?? null;
+                        if (!$packageId) return 'N/A';
+                        $package = \App\Models\Package::find($packageId);
+                        return $package?->name ?? 'Paquete no encontrado';
+                    })
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('pivot.original_price')
+                    ->label('Precio Original')
+                    ->money('PEN')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('pivot.discount_applied')
+                    ->label('Descuento')
+                    ->suffix('%')
+                    ->badge()
+                    ->color('warning')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('pivot.final_price')
+                    ->label('Precio Final')
                     ->money('PEN')
                     ->sortable()
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('pivot.notes')
-                    ->label('Notas')
-                    ->limit(50)
-                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
-                        $state = $column->getState();
-                        return strlen($state) > 50 ? $state : null;
-                    }),
+                Tables\Columns\TextColumn::make('pivot.monto')
+                    ->label('Monto Pagado')
+                    ->money('PEN')
+                    ->sortable()
+                    ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('pivot.created_at')
                     ->label('Fecha de Consumo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
-
-                Tables\Columns\TextColumn::make('pivot.updated_at')
-                    ->label('Última Actualización')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -119,6 +134,6 @@ class UserConsumersRelationManager extends RelationManager
             ->emptyStateHeading('Sin consumos registrados')
             ->emptyStateDescription('Los consumos se registran automáticamente cuando los usuarios utilizan este código promocional a través de la aplicación')
             ->emptyStateIcon('heroicon-o-users')
-            ->defaultSort('pivot.created_at', 'desc');
+            ->defaultSort('promocodes_user.created_at', 'desc');
     }
 }
