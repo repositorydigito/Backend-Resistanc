@@ -17,7 +17,7 @@ class CategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'image_path' => $this->image_path ? asset('storage/' . $this->image_path) : null,
+            'image_path' => $this->image_path ? asset('storage/' . $this->image_path) : asset('default/icon.png'),
             'description' => $this->description,
         ];
     }

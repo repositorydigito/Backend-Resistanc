@@ -18,7 +18,7 @@ class PostResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'image_path' => $this->image_path ? asset('storage/' . $this->image_path) : null,
+            'image_path' => $this->image_path ? asset('storage/' . $this->image_path) : asset('default/post.jpg'),
             'content' => $this->content,
             'date_published' => $this->date_published ?
                 Carbon::parse($this->date_published)->format('d \d\e F \d\e Y') :
