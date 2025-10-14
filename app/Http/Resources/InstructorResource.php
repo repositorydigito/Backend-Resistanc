@@ -28,7 +28,7 @@ class InstructorResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'profile_image' => $this->profile_image ? asset('storage/') . '/' . $this->profile_image : null,
+            'profile_image' => $this->profile_image ? asset('storage/') . '/' . $this->profile_image : asset('default/entrenador.png'),
             'specialties' => $this->specialties,
             'bio' => $this->bio,
             'certifications' => $this->certifications,
