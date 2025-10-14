@@ -22,8 +22,9 @@ return new class extends Migration
             $table->enum('status', [
                 'available',    // Disponible
                 'reserved',     // Reservado
+                'lost',         // Perdido
                 'occupied',     // Ocupado
-                'Completed',    // Completado
+                'completed',    // Completado
                 'blocked'       // Bloqueado
             ])->default('available')->comment('Estado del asiento en la clase');
 

@@ -35,282 +35,74 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                // Sección de Información del Cliente
-                Forms\Components\Section::make('Información del Cliente')
-                    ->description('Datos del cliente que realiza el pedido')
+                Forms\Components\Section::make('Información del Pedido')
                     ->schema([
+                        Forms\Components\TextInput::make('order_number')
+                            ->label('Número de Orden')
+                            ->disabled()
+                            ->maxLength(255),
+
                         Forms\Components\Select::make('user_id')
-                            ->label('Cliente')
-                            ->options(function () {
-                                return User::whereHas('roles', function ($query) {
-                                    $query->where('name', 'Cliente');
-                                })->pluck('name', 'id');
-                            })
+                            ->label('Usuario')
+                            ->relationship('user', 'name')
                             ->searchable()
                             ->required()
-                            ->placeholder('Selecciona un cliente'),
-                    ])
-                    ->columns(1),
+                            ->disabled(),
 
-                // Sección de Información del Pedido
-                Forms\Components\Section::make('Información del Pedido')
-                    ->description('Detalles básicos del pedido')
+                        Forms\Components\TextInput::make('user.name')
+                            ->label('Nombre del Usuario')
+                            ->disabled()
+                            ->maxLength(255),
+
+                        Forms\Components\TextInput::make('user.email')
+                            ->label('Email del Usuario')
+                            ->disabled()
+                            ->email()
+                            ->maxLength(255),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Estado del Pedido')
                     ->schema([
-                        // Forms\Components\TextInput::make('order_number')
-                        //     ->label('Número de Pedido')
-                        //     ->required()
-                        //     ->maxLength(20)
-                        //     ->placeholder('ORD-001'),
-
-                        Forms\Components\Select::make('order_type')
-                            ->label('Tipo de Pedido')
-                            ->options([
-                                'purchase' => 'Compra',
-                                'booking_extras' => 'Extras de Reserva',
-                                'subscription' => 'Suscripción',
-                                'gift' => 'Regalo',
-                            ])
-                            ->required()
-                            ->default('purchase'),
-
-
                         Forms\Components\Select::make('status')
-                            ->label('Estado del Pedido')
+                            ->label('Estado')
                             ->options([
                                 'pending' => 'Pendiente',
                                 'confirmed' => 'Confirmado',
-                                'processing' => 'Procesando',
                                 'preparing' => 'Preparando',
                                 'ready' => 'Listo',
                                 'delivered' => 'Entregado',
                                 'cancelled' => 'Cancelado',
-                                'refunded' => 'Reembolsado',
                             ])
-                            ->required()
-                            ->default('pending'),
+                            ->required(),
+                    ])->columns(1),
 
-                        // Forms\Components\Select::make('payment_status')
-                        //     ->label('Estado del Pago')
-                        //     ->options([
-                        //         'pending' => 'Pendiente',
-                        //         'authorized' => 'Autorizado',
-                        //         'paid' => 'Pagado',
-                        //         'partially_paid' => 'Parcialmente Pagado',
-                        //         'failed' => 'Fallido',
-                        //         'refunded' => 'Reembolsado',
-                        //     ])
-                        //     ->required()
-                        //     ->default('pending'),
-                    ])
-                    ->columns(2),
-
-                // Sección de Productos
-                Forms\Components\Section::make('Productos del Pedido')
-                    ->description('Agregar productos al pedido')
+                Forms\Components\Section::make('Montos')
                     ->schema([
-                        Forms\Components\Repeater::make('order_items')
-                            ->label('Productos')
-                            ->relationship('orderItems')
-                            ->schema([
-                                Forms\Components\Select::make('product_id')
-                                    ->label('Producto')
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->options(Product::where('status', 'active')->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->required()
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set, $get) {
-                                        $product = Product::find($state);
-                                        $unitPrice = $product?->price_soles ?? 0;
-                                        $quantity = $get('quantity') ?? 1;
-
-                                        $set('unit_price_soles', $unitPrice);
-                                        $set('total_price_soles', $unitPrice * $quantity);
-                                    }),
-
-                                Forms\Components\TextInput::make('quantity')
-                                    ->label('Cantidad')
-                                    ->numeric()
-                                    ->required()
-                                    ->default(1)
-                                    ->minValue(1)
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set, $get) {
-                                        $unitPrice = $get('unit_price_soles') ?? 0;
-                                        $quantity = $state ?? 1;
-                                        $set('total_price_soles', $unitPrice * $quantity);
-                                    }),
-
-                                Forms\Components\TextInput::make('unit_price_soles')
-                                    ->label('Precio Unitario (S/)')
-                                    ->numeric()
-                                    ->required()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->prefix('S/'),
-
-                                Forms\Components\TextInput::make('total_price_soles')
-                                    ->label('Total (S/)')
-                                    ->numeric()
-                                    ->required()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->prefix('S/'),
-
-                                Forms\Components\Textarea::make('notes')
-                                    ->label('Notas del Producto')
-                                    ->rows(2)
-                                    ->placeholder('Notas especiales para este producto...'),
-                            ])
-                            ->columns(5)
-                            ->defaultItems(1)
-                            ->addActionLabel('Agregar Producto')
-                            ->reorderable(false)
-                            ->collapsible()
-                            ->live()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                // Recalcular subtotal cuando cambien los productos
-                                $subtotal = 0;
-                                if (is_array($state)) {
-                                    foreach ($state as $item) {
-                                        if (isset($item['total_price_soles']) && is_numeric($item['total_price_soles'])) {
-                                            $subtotal += (float) $item['total_price_soles'];
-                                        }
-                                    }
-                                }
-                                $set('subtotal_soles', $subtotal);
-
-                                // Recalcular total final
-                                $tax = $get('tax_amount_soles') ?? 0;
-                                $shipping = $get('shipping_amount_soles') ?? 0;
-                                $discount = $get('discount_amount_soles') ?? 0;
-                                $set('total_amount_soles', $subtotal + $tax + $shipping - $discount);
-                            }),
-                    ]),
-
-                // Sección de Cálculos
-                Forms\Components\Section::make('Cálculos del Pedido')
-                    ->description('Totales y descuentos')
-                    ->schema([
-                        Forms\Components\TextInput::make('subtotal_soles')
-                            ->label('Subtotal (S/)')
-                            ->numeric()
-                            ->required()
-                            ->prefix('S/')
-                            ->default(0.00)
-                            ->disabled()
-                            ->dehydrated(),
-
-                        Forms\Components\TextInput::make('tax_amount_soles')
-                            ->label('IGV (S/)')
-                            ->numeric()
-                            ->default(0.00)
-                            ->debounce(500)
-                            ->prefix('S/')
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $subtotal = $get('subtotal_soles') ?? 0;
-                                $tax = $state ?? 0;
-                                $shipping = $get('shipping_amount_soles') ?? 0;
-                                $discount = $get('discount_amount_soles') ?? 0;
-                                $set('total_amount_soles', $subtotal + $tax + $shipping - $discount);
-                            }),
-
-                        Forms\Components\TextInput::make('shipping_amount_soles')
-                            ->label('Envío (S/)')
-                            ->numeric()
-                            ->default(0.00)
-                            ->prefix('S/')
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $subtotal = $get('subtotal_soles') ?? 0;
-                                $tax = $get('tax_amount_soles') ?? 0;
-                                $shipping = $state ?? 0;
-                                $discount = $get('discount_amount_soles') ?? 0;
-                                $set('total_amount_soles', $subtotal + $tax + $shipping - $discount);
-                            }),
-
-                        Forms\Components\TextInput::make('discount_amount_soles')
-                            ->label('Descuento (S/)')
-                            ->numeric()
-                            ->default(0.00)
-                            ->prefix('S/')
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $subtotal = $get('subtotal_soles') ?? 0;
-                                $tax = $get('tax_amount_soles') ?? 0;
-                                $shipping = $get('shipping_amount_soles') ?? 0;
-                                $discount = $state ?? 0;
-                                $set('total_amount_soles', $subtotal + $tax + $shipping - $discount);
-                            }),
-
                         Forms\Components\TextInput::make('total_amount_soles')
-                            ->label('Total Final (S/)')
+                            ->label('Total a Pagar (S/)')
                             ->numeric()
-                            ->required()
-                            ->prefix('S/')
-                            ->default(0.00)
                             ->disabled()
-                            ->dehydrated(),
-                    ])
-                    ->columns(2),
+                            ->prefix('S/')
+                            ->extraAttributes(['class' => 'font-bold text-xl']),
+                    ])->columns(1),
 
-                // Sección de Entrega
-                Forms\Components\Section::make('Información de Entrega')
-                    ->description('Detalles de entrega del pedido')
+                Forms\Components\Section::make('Información Adicional')
                     ->schema([
-                        Forms\Components\Select::make('delivery_method')
-                            ->label('Método de Entrega')
-                            ->options([
-                                'pickup' => 'Recojo en Tienda',
-                                'delivery' => 'Delivery',
-                                'express' => 'Express',
-                            ])
-                            ->required()
-                            ->default('pickup'),
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Notas del Pedido')
+                            ->rows(2),
+                    ])->columns(1),
 
-                        Forms\Components\DatePicker::make('delivery_date')
-                            ->label('Fecha de Entrega')
-                            ->minDate(now()),
+                Forms\Components\Section::make('Fechas del Pedido')
+                    ->schema([
+                        Forms\Components\DateTimePicker::make('created_at')
+                            ->label('Pedido Creado')
+                            ->disabled(),
 
-                        Forms\Components\TextInput::make('delivery_time_slot')
-                            ->label('Horario de Entrega')
-                            ->maxLength(50)
-                            ->placeholder('Ej: 14:00 - 16:00'),
-
-                        Forms\Components\Textarea::make('delivery_address')
-                            ->label('Dirección de Entrega')
-                            ->rows(3)
-                            ->placeholder('Dirección completa para delivery...'),
-
-                        Forms\Components\Textarea::make('special_instructions')
-                            ->label('Instrucciones Especiales')
-                            ->rows(3)
-                            ->placeholder('Instrucciones especiales para la entrega...'),
-                    ])
-                    ->columns(2),
-
-                // Sección de Información Adicional
-                // Forms\Components\Section::make('Información Adicional')
-                //     ->description('Códigos promocionales y notas')
-                //     ->schema([
-                //         Forms\Components\TextInput::make('promocode_used')
-                //             ->label('Código Promocional')
-                //             ->maxLength(50)
-                //             ->placeholder('Código de descuento...'),
-
-                //         Forms\Components\TextInput::make('currency')
-                //             ->label('Moneda')
-                //             ->maxLength(3)
-                //             ->default('PEN')
-                //             ->disabled(),
-
-                //         Forms\Components\Textarea::make('notes')
-                //             ->label('Notas Generales')
-                //             ->rows(3)
-                //             ->placeholder('Notas adicionales sobre el pedido...'),
-                //     ])
-                //     ->columns(2),
+                        Forms\Components\DateTimePicker::make('delivered_at')
+                            ->label('Entregado en')
+                            ->disabled(),
+                    ])->columns(2),
             ]);
     }
 
@@ -319,82 +111,70 @@ class OrderResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('order_number')
-                    ->label('Número de Pedido')
+                    ->label('N° Orden')
                     ->searchable()
                     ->sortable()
-                    ->copyable(),
+                    ->copyable()
+                    ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Cliente')
+                    ->label('Usuario')
                     ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('user.email')
+                    ->label('Email')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\BadgeColumn::make('status')
+                    ->label('Estado')
+                    ->colors([
+                        'warning' => 'pending',
+                        'info' => 'confirmed',
+                        'primary' => 'preparing',
+                        'success' => 'ready',
+                        'success' => 'delivered',
+                        'danger' => 'cancelled',
+                    ])
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => 'Pendiente',
+                        'confirmed' => 'Confirmado',
+                        'preparing' => 'Preparando',
+                        'ready' => 'Listo',
+                        'delivered' => 'Entregado',
+                        'cancelled' => 'Cancelado',
+                        default => $state,
+                    })
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('order_type')
-                    ->label('Tipo')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'online' => 'success',
-                        'presencial' => 'info',
-                        'telefono' => 'warning',
-                        'whatsapp' => 'success',
-                        default => 'gray',
-                    }),
-
 
                 Tables\Columns\TextColumn::make('total_amount_soles')
                     ->label('Total')
                     ->money('PEN')
                     ->sortable()
+                    ->weight('bold')
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Estado')
+                Tables\Columns\TextColumn::make('order_items_count')
+                    ->label('Productos')
+                    ->counts('orderItems')
+                    ->sortable()
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'confirmed' => 'info',
-                        'processing' => 'primary',
-                        'preparing' => 'info',
-                        'ready' => 'success',
-                        'delivered' => 'success',
-                        'cancelled' => 'danger',
-                        'refunded' => 'gray',
-                        default => 'gray',
-                    }),
-
-                Tables\Columns\TextColumn::make('payment_status')
-                    ->label('Pago')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'authorized' => 'info',
-                        'paid' => 'success',
-                        'partially_paid' => 'warning',
-                        'failed' => 'danger',
-                        'refunded' => 'gray',
-                        default => 'gray',
-                    }),
-
-                Tables\Columns\TextColumn::make('delivery_method')
-                    ->label('Entrega')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pickup' => 'info',
-                        'delivery' => 'primary',
-                        'express' => 'success',
-                        default => 'gray',
-                    }),
-
-                Tables\Columns\TextColumn::make('delivery_date')
-                    ->label('Fecha Entrega')
-                    ->date()
-                    ->sortable(),
+                    ->color('info'),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
-                    ->dateTime()
+                    ->label('Pedido Creado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->weight('bold'),
+
+                Tables\Columns\TextColumn::make('delivered_at')
+                    ->label('Entregado en')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->color('success')
+                    ->placeholder('Pendiente'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -402,36 +182,42 @@ class OrderResource extends Resource
                     ->options([
                         'pending' => 'Pendiente',
                         'confirmed' => 'Confirmado',
-                        'processing' => 'Procesando',
                         'preparing' => 'Preparando',
                         'ready' => 'Listo',
                         'delivered' => 'Entregado',
                         'cancelled' => 'Cancelado',
-                        'refunded' => 'Reembolsado',
                     ]),
 
-                Tables\Filters\SelectFilter::make('payment_status')
-                    ->label('Estado del Pago')
-                    ->options([
-                        'pending' => 'Pendiente',
-                        'authorized' => 'Autorizado',
-                        'paid' => 'Pagado',
-                        'partially_paid' => 'Parcialmente Pagado',
-                        'failed' => 'Fallido',
-                        'refunded' => 'Reembolsado',
-                    ]),
-
-                Tables\Filters\SelectFilter::make('delivery_method')
-                    ->label('Método de Entrega')
-                    ->options([
-                        'pickup' => 'Recojo en Tienda',
-                        'delivery' => 'Delivery',
-                        'express' => 'Express',
-                    ]),
+                Tables\Filters\Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label('Desde'),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label('Hasta'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('mark_delivered')
+                    ->label('Marcar como Entregado')
+                    ->icon('heroicon-o-check-circle')
+                    ->action(function (Order $record): void {
+                        $record->update(['status' => 'delivered', 'delivered_at' => now()]);
+                    })
+                    ->requiresConfirmation()
+                    ->color('success')
+                    ->visible(fn (Order $record): bool => $record->status !== 'delivered'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -444,7 +230,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            // RelationManagers\OrderItemsRelationManager::class,
+            RelationManagers\OrderItemsRelationManager::class,
         ];
     }
 
@@ -452,9 +238,12 @@ class OrderResource extends Resource
     {
         return [
             'index' => Pages\ListOrders::route('/'),
-            'create' => Pages\CreateOrder::route('/create'),
             'view' => Pages\ViewOrder::route('/{record}'),
-            'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false; // No permitir crear pedidos desde el admin (solo desde la app)
     }
 }

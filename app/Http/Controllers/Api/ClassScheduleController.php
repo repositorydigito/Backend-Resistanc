@@ -642,43 +642,54 @@ final class ClassScheduleController extends Controller
     }
 
     /**
-     * Liberar/cancelar reserva de asientos usando el ID de class_schedule_seat
+     * Liberar/cancelar todas las reservas de asientos del usuario en un horario específico
      *
      */
     public function releaseSeats(Request $request)
     {
         try {
             // Validar datos de entrada
-            $request->validate([
-                'class_schedule_seat_ids' => 'required|array|min:1|max:50',
-                'class_schedule_seat_ids.*' => 'required|integer|exists:class_schedule_seat,id'
+            $validated = $request->validate([
+                'class_schedule_id' => 'required|integer|exists:class_schedules,id'
             ]);
 
             $userId = Auth::id();
-            $assignmentIds = $request->validated()['class_schedule_seat_ids'];
+            $classScheduleId = $validated['class_schedule_id'];
 
             // Usar transacción para asegurar consistencia
-            return DB::transaction(function () use ($assignmentIds, $userId) {
+            return DB::transaction(function () use ($classScheduleId, $userId) {
 
-                // Obtener las asignaciones que pertenecen al usuario autenticado
-                $assignments = ClassScheduleSeat::whereIn('id', $assignmentIds)
+                // Obtener el horario de clase y verificar su estado
+                $classSchedule = ClassSchedule::findOrFail($classScheduleId);
+
+                // Verificar que el horario está en estado 'scheduled'
+                if ($classSchedule->status !== 'scheduled') {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'No se pueden liberar asientos en un horario que no está programado',
+                        'datoAdicional' => [
+                            'current_status' => $classSchedule->status,
+                            'required_status' => 'scheduled'
+                        ]
+                    ], 200);
+                }
+
+                // Obtener todas las asignaciones del usuario en este horario
+                $assignments = ClassScheduleSeat::where('class_schedules_id', $classScheduleId)
                     ->where('user_id', $userId) // Solo puede liberar sus propias reservas
                     ->lockForUpdate()
                     ->get();
 
-                // Verificar que todas las asignaciones existen y pertenecen al usuario
-                $foundIds = $assignments->pluck('id')->toArray();
-                $missingIds = array_diff($assignmentIds, $foundIds);
-
-                if (!empty($missingIds)) {
-
+                // Verificar si el usuario tiene asientos reservados
+                if ($assignments->isEmpty()) {
                     return response()->json([
                         'exito' => false,
                         'codMensaje' => 0,
-                        'mensajeUsuario' => 'Algunos asientos no pueden ser liberados (no existen o no te pertenecen)',
+                        'mensajeUsuario' => 'No tienes asientos reservados en este horario',
                         'datoAdicional' => [
-                            'invalid_assignment_ids' => $missingIds,
-                            'valid_assignment_ids' => $foundIds
+                            'class_schedule_id' => $classScheduleId,
+                            'user_id' => $userId
                         ]
                     ], 200);
                 }
@@ -752,12 +763,12 @@ final class ClassScheduleController extends Controller
                 }
 
                 // Preparar respuesta exitosa
-
                 return response()->json([
                     'exito' => true,
                     'codMensaje' => 1,
                     'mensajeUsuario' => 'Reservas liberadas exitosamente',
                     'datoAdicional' =>  [
+                        'class_schedule_id' => $classScheduleId,
                         'released_seats' => $releasedSeats,
                         'release_summary' => [
                             'total_released' => count($releasedSeats),
@@ -772,7 +783,7 @@ final class ClassScheduleController extends Controller
             // Log del error para debugging
             Log::error('Error al liberar asientos', [
                 'user_id' => Auth::id(),
-                'assignment_ids' => $request->input('class_schedule_seat_ids', []),
+                'class_schedule_id' => $request->input('class_schedule_id'),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -780,7 +791,7 @@ final class ClassScheduleController extends Controller
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Algunos asientos no pueden ser liberados (no existen o no te pertenecen)',
+                'mensajeUsuario' => 'Error interno al liberar asientos',
                 'datoAdicional' => $e->getMessage()
             ], 200);
         }

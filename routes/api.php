@@ -172,7 +172,17 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
     Route::post('/cart/show', [DrinkController::class, 'showToCart'])->name('show-to-cart');
     Route::post('/cart/remove', [DrinkController::class, 'removeFromCart'])->name('remove-from-cart');
     Route::post('/cart/update-quantity', [DrinkController::class, 'updateCartQuantity'])->name('update-quantity');
+    Route::post('/cart/confirm', [DrinkController::class, 'confirmCart'])->name('confirm-cart');
 });
+
+// Órdenes de bebidas
+Route::prefix('juice-orders')->name('juice-orders.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/my-orders', [DrinkController::class, 'myOrders'])->name('my-orders');
+    Route::post('/show', [DrinkController::class, 'showOrder'])->name('show');
+    Route::post('/update-status', [DrinkController::class, 'updateOrderStatus'])->name('update-status');
+});
+// Fin órdenes de bebidas
+
 // Fin bebidas
 
 
@@ -216,11 +226,11 @@ Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(fun
 
 // Carrito de compras
 Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [ShoppingCartController::class, 'show'])->name('show');
+    Route::post('/', [ShoppingCartController::class, 'show'])->name('show');
     Route::post('/add', [ShoppingCartController::class, 'add'])->name('add');
     Route::post('/remove', [ShoppingCartController::class, 'remove'])->name('remove');
-    Route::put('/update-quantity', [ShoppingCartController::class, 'updateQuantity'])->name('update-quantity');
-    Route::delete('/clear', [ShoppingCartController::class, 'clear'])->name('clear');
+    Route::post('/update-quantity', [ShoppingCartController::class, 'updateQuantity'])->name('update-quantity');
+    Route::post('/clear', [ShoppingCartController::class, 'clear'])->name('clear');
     Route::post('/confirm', [ShoppingCartController::class, 'confirm'])->name('confirm');
 });
 // Fin carrito
@@ -230,13 +240,13 @@ Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum
 // Fin carrito shake
 
 
-// Rutas de Pedidos
+// Rutas de Pedidos de Productos
 Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [OrderController::class, 'show'])->name('show');
-    Route::get('/{order}', [OrderController::class, 'show'])->name('show');
-    Route::post('/', [OrderController::class, 'store'])->name('store');
+    Route::post('/my-orders', [OrderController::class, 'index'])->name('my-orders');
+    Route::post('/create', [OrderController::class, 'store'])->name('store');
+    Route::post('/show', [OrderController::class, 'show'])->name('show');
 });
-// Fin rutas de Pedidos
+// Fin rutas de Pedidos de Productos
 
 
 // Pasarela de pago
@@ -254,6 +264,9 @@ Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(
 // Reservas de calzado
 Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(function () {
     Route::post('/', [FootwearController::class, 'index'])->name('index');
+    Route::post('/availability', [FootwearController::class, 'getAvailabilityForSchedule'])->name('availability');
+    Route::post('/my-reservations', [FootwearController::class, 'getMyReservationsForSchedule'])->name('my-reservations');
     Route::post('/class-schedule', [FootwearController::class, 'indexClassSchedule'])->name('index-class-schedule');
     Route::post('/reserve', [FootwearController::class, 'reserve'])->name('reserve');
+    Route::post('/update-reservation', [FootwearController::class, 'updateReservation'])->name('update-reservation');
 });

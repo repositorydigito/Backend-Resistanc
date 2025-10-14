@@ -137,18 +137,21 @@ final class ShoppingCart extends Model
     public function convertToOrder(): Order
     {
         $subtotal = $this->items->sum('total_price');
-        $taxAmount = $subtotal * 0.18; // IGV 18%
-        $totalAmount = $subtotal + $taxAmount;
+        $totalAmount = $subtotal; // Simplificado sin impuestos
 
         $order = Order::create([
             'user_id' => $this->user_id,
-            'order_number' => 'RST-' . date('Y') . '-' . str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT),
+            'order_number' => 'ORD-' . strtoupper(\Illuminate\Support\Str::random(10)),
             'status' => 'pending',
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'total_amount' => $totalAmount,
+            'subtotal_soles' => $subtotal,
+            'tax_amount_soles' => 0,
+            'shipping_amount_soles' => 0,
+            'discount_amount_soles' => 0,
+            'total_amount_soles' => $totalAmount,
             'currency' => 'PEN',
-            'payment_status' => 'pending',
+            'payment_status' => 'paid', // Ya viene pagado desde la app
+            'delivery_method' => 'pickup',
+            'order_type' => 'purchase',
         ]);
 
         // Convert cart items to order items
@@ -159,8 +162,9 @@ final class ShoppingCart extends Model
                 'quantity' => $cartItem->quantity,
                 'unit_price' => $cartItem->unit_price,
                 'total_price' => $cartItem->total_price,
+                'unit_price_soles' => $cartItem->unit_price,
+                'total_price_soles' => $cartItem->total_price,
                 'product_name' => $cartItem->product->name,
-                'product_sku' => $cartItem->productVariant ? $cartItem->productVariant->full_sku : $cartItem->product->sku,
             ]);
         }
 

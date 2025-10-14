@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\OrderResource\RelationManagers;
+namespace App\Filament\Resources\JuiceOrderResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -10,20 +10,20 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class OrderItemsRelationManager extends RelationManager
+class DetailsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'orderItems';
+    protected static string $relationship = 'details';
 
     protected static ?string $title = 'Detalles del Pedido';
 
-    protected static ?string $recordTitleAttribute = 'product_name';
+    protected static ?string $recordTitleAttribute = 'drink_name';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('product_name')
-                    ->label('Nombre del Producto')
+                Forms\Components\TextInput::make('drink_name')
+                    ->label('Nombre de la Bebida')
                     ->disabled()
                     ->required(),
 
@@ -45,20 +45,22 @@ class OrderItemsRelationManager extends RelationManager
                     ->disabled()
                     ->prefix('S/'),
 
-                Forms\Components\Textarea::make('notes')
-                    ->label('Notas del Producto')
+                Forms\Components\KeyValue::make('ingredients_info')
+                    ->label('Ingredientes de la Bebida')
                     ->disabled()
-                    ->rows(2),
+                    ->addActionLabel('Agregar Ingrediente')
+                    ->keyLabel('Tipo')
+                    ->valueLabel('Ingredientes'),
             ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('product_name')
+            ->recordTitleAttribute('drink_name')
             ->columns([
-                Tables\Columns\TextColumn::make('product_name')
-                    ->label('Producto')
+                Tables\Columns\TextColumn::make('drink_name')
+                    ->label('Bebida')
                     ->searchable()
                     ->weight('bold')
                     ->wrap(),
@@ -81,19 +83,6 @@ class OrderItemsRelationManager extends RelationManager
                     ->weight('bold')
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('notes')
-                    ->label('Notas')
-                    ->limit(30)
-                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
-                        $state = $column->getState();
-                        if (strlen($state) <= 30) {
-                            return null;
-                        }
-                        return $state;
-                    })
-                    ->placeholder('Sin notas')
-                    ->toggleable(),
-
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Agregado')
                     ->dateTime('d/m/Y H:i')
@@ -104,21 +93,16 @@ class OrderItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                // No permitir crear items manualmente
+                // No permitir crear detalles manualmente
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
-                // No permitir eliminar items en bulk
+                // No permitir eliminar detalles en bulk
             ])
-            ->emptyStateHeading('Sin productos en el pedido')
-            ->emptyStateDescription('Este pedido no tiene productos registrados.')
+            ->emptyStateHeading('Sin detalles de pedido')
+            ->emptyStateDescription('Este pedido no tiene bebidas registradas.')
             ->defaultSort('created_at', 'asc');
-    }
-
-    public function canCreate(): bool
-    {
-        return false;
     }
 }

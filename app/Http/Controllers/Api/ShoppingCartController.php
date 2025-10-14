@@ -8,7 +8,7 @@ use App\Models\ShoppingCart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use Error;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +26,7 @@ class ShoppingCartController extends Controller
         $user = Auth::user();
 
         if (!$user) {
-            throw new Error('Usuario no autenticado');
+            throw new \Exception('Usuario no autenticado');
         }
 
         // Buscar carrito activo del usuario
@@ -50,9 +50,8 @@ class ShoppingCartController extends Controller
 
     /**
      * Mostrar los productos del carrito del usuario autenticado
-     *
      */
-    public function show(Request $request)
+    public function show(Request $request): JsonResponse
     {
         try {
             $cart = $this->getOrCreateActiveCart();
@@ -65,7 +64,7 @@ class ShoppingCartController extends Controller
 
             return response()->json([
                 'exito' => true,
-                'codMensaje' => 0,
+                'codMensaje' => 1,
                 'mensajeUsuario' => 'Carrito obtenido exitosamente',
                 'datoAdicional' => [
                     'cart' => [
@@ -89,7 +88,7 @@ class ShoppingCartController extends Controller
                                 'id' => $item->product->id,
                                 'name' => $item->product->name,
                                 'sku' => $item->product->sku,
-                                'img_url' =>$item->product->img_url ? asset('storage/' . $item->product->img_url) : null,
+                                'img_url' => $item->product->img_url ? asset('storage/' . $item->product->img_url) : null,
                             ],
                             'variant' => $item->productVariant ? [
                                 'id' => $item->productVariant->id,
@@ -101,13 +100,12 @@ class ShoppingCartController extends Controller
                     }),
                 ],
             ], 200);
-
-        } catch (Error $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'exito' => false,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Error al mostrar los productos del carrito',
-                'datoAdicional' => $e->getMessage(),
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener el carrito',
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -115,7 +113,7 @@ class ShoppingCartController extends Controller
     /**
      * Agregar producto al carrito del usuario
      */
-    public function add(Request $request)
+    public function add(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -134,17 +132,21 @@ class ShoppingCartController extends Controller
 
                 // Verificar que la variante pertenece al producto
                 if ($variant->product_id !== $product->id) {
-                    throw new Error('La variante no pertenece al producto especificado');
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'La variante no pertenece al producto especificado',
+                        'datoAdicional' => null,
+                    ], 200);
                 }
             }
-
 
             // Agregar item al carrito
             $cartItem = $cart->addItem($product, $request->quantity, $variant);
 
             return response()->json([
                 'exito' => true,
-                'codMensaje' => 0,
+                'codMensaje' => 1,
                 'mensajeUsuario' => 'Producto agregado al carrito exitosamente',
                 'datoAdicional' => [
                     'cart_item' => [
@@ -157,13 +159,19 @@ class ShoppingCartController extends Controller
                     'cart_items_count' => $cart->total_items,
                 ],
             ], 200);
-
-        } catch (Error $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'exito' => false,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Error al agregar el producto al carrito',
-                'datoAdicional' => $e->getMessage(),
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al agregar producto al carrito',
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -171,7 +179,7 @@ class ShoppingCartController extends Controller
     /**
      * Eliminar producto específico del carrito
      */
-    public function remove(Request $request)
+    public function remove(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -184,7 +192,12 @@ class ShoppingCartController extends Controller
             $cartItem = $cart->items()->where('id', $request->cart_item_id)->first();
 
             if (!$cartItem) {
-                throw new Error('El item no pertenece a tu carrito');
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'El item no pertenece a tu carrito',
+                    'datoAdicional' => null,
+                ], 200);
             }
 
             // Eliminar el item
@@ -192,7 +205,7 @@ class ShoppingCartController extends Controller
 
             return response()->json([
                 'exito' => true,
-                'codMensaje' => 0,
+                'codMensaje' => 1,
                 'mensajeUsuario' => 'Producto eliminado del carrito exitosamente',
                 'datoAdicional' => [
                     'cart_total' => $cart->total_amount,
@@ -200,13 +213,19 @@ class ShoppingCartController extends Controller
                     'is_empty' => $cart->is_empty,
                 ],
             ], 200);
-
-        } catch (Error $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'exito' => false,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Error al eliminar el producto del carrito',
-                'datoAdicional' => $e->getMessage(),
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al eliminar producto del carrito',
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -214,7 +233,7 @@ class ShoppingCartController extends Controller
     /**
      * Actualizar cantidad de un producto en el carrito
      */
-    public function updateQuantity(Request $request)
+    public function updateQuantity(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -228,7 +247,12 @@ class ShoppingCartController extends Controller
             $cartItem = $cart->items()->where('id', $request->cart_item_id)->first();
 
             if (!$cartItem) {
-                throw new Error('El item no pertenece a tu carrito');
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'El item no pertenece a tu carrito',
+                    'datoAdicional' => null,
+                ], 200);
             }
 
             // Verificar stock
@@ -237,11 +261,21 @@ class ShoppingCartController extends Controller
 
             if (!$product->requires_variants) {
                 if ($product->stock_quantity < $request->quantity) {
-                    throw new Error('Stock insuficiente para este producto');
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Stock insuficiente para este producto',
+                        'datoAdicional' => null,
+                    ], 200);
                 }
             } else if ($variant) {
                 if ($variant->stock_quantity < $request->quantity) {
-                    throw new Error('Stock insuficiente para esta variante');
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Stock insuficiente para esta variante',
+                        'datoAdicional' => null,
+                    ], 200);
                 }
             }
 
@@ -254,7 +288,7 @@ class ShoppingCartController extends Controller
 
             return response()->json([
                 'exito' => true,
-                'codMensaje' => 0,
+                'codMensaje' => 1,
                 'mensajeUsuario' => 'Cantidad actualizada exitosamente',
                 'datoAdicional' => [
                     'cart_item' => [
@@ -265,13 +299,19 @@ class ShoppingCartController extends Controller
                     'cart_total' => $cart->total_amount,
                 ],
             ], 200);
-
-        } catch (Error $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'exito' => false,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Error al actualizar la cantidad',
-                'datoAdicional' => $e->getMessage(),
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al actualizar cantidad',
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -279,7 +319,7 @@ class ShoppingCartController extends Controller
     /**
      * Limpiar todo el carrito del usuario
      */
-    public function clear(Request $request)
+    public function clear(Request $request): JsonResponse
     {
         try {
             $cart = $this->getOrCreateActiveCart();
@@ -289,7 +329,7 @@ class ShoppingCartController extends Controller
 
             return response()->json([
                 'exito' => true,
-                'codMensaje' => 0,
+                'codMensaje' => 1,
                 'mensajeUsuario' => 'Carrito limpiado exitosamente',
                 'datoAdicional' => [
                     'cart_total' => $cart->total_amount,
@@ -297,13 +337,12 @@ class ShoppingCartController extends Controller
                     'is_empty' => $cart->is_empty,
                 ],
             ], 200);
-
-        } catch (Error $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'exito' => false,
-                'codMensaje' => 1,
+                'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al limpiar el carrito',
-                'datoAdicional' => $e->getMessage(),
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -311,13 +350,18 @@ class ShoppingCartController extends Controller
     /**
      * Confirmar carrito y crear orden
      */
-    public function confirm(Request $request)
+    public function confirm(Request $request): JsonResponse
     {
         try {
             $cart = $this->getOrCreateActiveCart();
 
             if ($cart->is_empty) {
-                throw new Error('No puedes confirmar un carrito vacío');
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No puedes confirmar un carrito vacío',
+                    'datoAdicional' => null,
+                ], 200);
             }
 
             // Convertir carrito a orden
@@ -337,7 +381,7 @@ class ShoppingCartController extends Controller
 
             return response()->json([
                 'exito' => true,
-                'codMensaje' => 0,
+                'codMensaje' => 1,
                 'mensajeUsuario' => 'Orden creada exitosamente',
                 'datoAdicional' => [
                     'order' => [
@@ -353,13 +397,12 @@ class ShoppingCartController extends Controller
                     ],
                 ],
             ], 200);
-
-        } catch (Error $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'exito' => false,
-                'codMensaje' => 1,
+                'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al confirmar el carrito',
-                'datoAdicional' => $e->getMessage(),
+                'datoAdicional' => null,
             ], 200);
         }
     }

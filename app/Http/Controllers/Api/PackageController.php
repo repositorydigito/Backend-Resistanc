@@ -149,7 +149,7 @@ final class PackageController extends Controller
                         ->orWhere('expiry_date', '<', now());
                 })
                 ->orderBy('expiry_date', 'desc')
-                ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.disciplines:id,name,display_name']);
+                ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.disciplines:id,name,display_name,icon_url,color_hex,order']);
 
             // Filtro por disciplina (nuevo)
             if ($request->filled('discipline_id')) {

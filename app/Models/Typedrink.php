@@ -11,10 +11,12 @@ class Typedrink extends Model
         'image_url',
         'ico_url',
         'price',
-        'is_active'
+        'is_active',
+        'price_soles'
     ];
 
     protected $casts = [
+        'price_soles' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

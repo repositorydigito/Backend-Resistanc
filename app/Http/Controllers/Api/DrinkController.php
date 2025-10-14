@@ -19,6 +19,7 @@ use Error;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @tags Bebidas
@@ -94,9 +95,8 @@ final class DrinkController extends Controller
     /**
      * Lista todas las bases de bebidas disponibles
      */
-    public function baseDrinks()
+    public function baseDrinks(Request $request): JsonResponse
     {
-
         try {
             $bases = Basedrink::where('is_active', true)->get();
 
@@ -106,32 +106,21 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => 'Bases de bebidas listadas exitosamente',
                 'datoAdicional' => BasedrinkResource::collection($bases),
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 2,
-                'mensajeUsuario' => 'Error al listar las bases de bebidas',
-                'datoAdicional' => $e->errors(),
-            ], 200);
         } catch (\Throwable $e) {
-
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Error inesperado al listar las bases de bebidas',
-                'datoAdicional' => $e->getMessage(),
+                'mensajeUsuario' => 'Error al listar las bases de bebidas',
+                'datoAdicional' => null,
             ], 200);
         }
     }
 
     /**
      * Lista todos los sabores de bebidas disponibles
-     *
      */
-
-    public function flavorDrinks()
+    public function flavorDrinks(Request $request): JsonResponse
     {
-
         try {
             $flavors = Flavordrink::where('is_active', true)->get();
 
@@ -141,20 +130,12 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => 'Sabores de bebidas listados exitosamente',
                 'datoAdicional' => FlavordrinkResource::collection($flavors),
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 2,
-                'mensajeUsuario' => 'Error al listar los sabores de bebidas',
-                'datoAdicional' => $e->errors(),
-            ], 200);
         } catch (\Throwable $e) {
-
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Error inesperado al listar los sabores de bebidas',
-                'datoAdicional' => $e->getMessage(),
+                'mensajeUsuario' => 'Error al listar los sabores de bebidas',
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -162,10 +143,8 @@ final class DrinkController extends Controller
     /**
      * Lista todos los tipos de bebidas disponibles
      */
-
-    public function typeDrinks()
+    public function typeDrinks(Request $request): JsonResponse
     {
-
         try {
             $types = Typedrink::where('is_active', true)->get();
 
@@ -175,20 +154,12 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => 'Tipos de bebidas listados exitosamente',
                 'datoAdicional' => TypedrinkResource::collection($types),
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 2,
-                'mensajeUsuario' => 'Error al listar los tipos de bebidas',
-                'datoAdicional' => $e->errors(),
-            ], 200);
         } catch (\Throwable $e) {
-
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Error inesperado al listar los tipos de bebidas',
-                'datoAdicional' => $e->getMessage(),
+                'mensajeUsuario' => 'Error al listar los tipos de bebidas',
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -196,10 +167,8 @@ final class DrinkController extends Controller
 
     /**
      * Añade una bebida al carrito del usuario autenticado
-
      */
-
-    public function addToCart(Request $request)
+    public function addToCart(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -321,6 +290,14 @@ final class DrinkController extends Controller
                 if ($request->filled('type_id')) {
                     $drink->typesdrinks()->attach($request->type_id);
                 }
+
+                // Recargar relaciones y calcular precios
+                $drink->load(['basesdrinks', 'flavordrinks', 'typesdrinks']);
+                $drink->update([
+                    'drink_name' => $drink->generateDrinkName(),
+                    'drink_combination' => $drink->generateDrinkCombination(),
+                    'total_price_soles' => $drink->calculateTotalPrice()
+                ]);
             }
 
             // Buscar el último carrito del usuario que NO tenga juice_order_id asociado
@@ -359,12 +336,19 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => 'Bebida añadida al carrito exitosamente',
                 'datoAdicional' => new JuiceCartCodesResource($cart),
             ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
         } catch (\Throwable $e) {
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al añadir bebida al carrito',
-                'datoAdicional' => $e->getMessage(),
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -373,8 +357,7 @@ final class DrinkController extends Controller
     /**
      * Muestra el carrito del usuario autenticado
      */
-
-    public function showToCart(Request $request)
+    public function showToCart(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->id;
@@ -409,7 +392,7 @@ final class DrinkController extends Controller
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener el carrito',
-                'datoAdicional' => $e->getMessage(),
+                'datoAdicional' => null,
             ], 200);
         }
     }
@@ -417,7 +400,7 @@ final class DrinkController extends Controller
     /**
      * Actualiza la cantidad de una o varias bebidas en el carrito del usuario autenticado
      */
-    public function updateCartQuantity(Request $request)
+    public function updateCartQuantity(Request $request): JsonResponse
     {
         try {
             // Validar si es actualización individual o masiva
@@ -550,16 +533,15 @@ final class DrinkController extends Controller
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al actualizar cantidad en el carrito',
-                'datoAdicional' => $e->getMessage(),
+                'datoAdicional' => null,
             ], 200);
         }
     }
 
     /**
      * Remueve una bebida del carrito del usuario autenticado
-
      */
-    public function removeFromCart(Request $request)
+    public function removeFromCart(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -626,12 +608,377 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => $message,
                 'datoAdicional' => new JuiceCartCodesResource($cart),
             ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
         } catch (\Throwable $e) {
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al remover bebida del carrito',
-                'datoAdicional' => $e->getMessage(),
+                'datoAdicional' => null,
+            ], 200);
+        }
+    }
+
+    /**
+     * Confirmar carrito de bebidas y crear orden
+     */
+    public function confirmCart(Request $request): JsonResponse
+    {
+        try {
+            // Validar datos de entrada
+            $request->validate([
+                'notes' => 'nullable|string|max:500',
+            ]);
+
+            $userId = $request->user()->id;
+
+            // Buscar el carrito activo del usuario
+            $cart = JuiceCartCodes::where('user_id', $userId)
+                ->whereNull('juice_order_id')
+                ->where('is_used', false)
+                ->with(['drinks.basesdrinks', 'drinks.flavordrinks', 'drinks.typesdrinks'])
+                ->latest('created_at')
+                ->first();
+
+            if (!$cart || $cart->drinks->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No hay carrito activo o está vacío',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            // Obtener datos del usuario para historial
+            $user = $request->user();
+
+            return DB::transaction(function () use ($request, $cart, $user, $userId) {
+                // Calcular totales
+                $subtotal = 0;
+                $orderDetails = [];
+
+                foreach ($cart->drinks as $drink) {
+                    // Asegurar que el precio se calcule correctamente
+                    $drink->load(['basesdrinks', 'flavordrinks', 'typesdrinks']);
+
+                    // Generar información histórica de la bebida
+                    $drinkName = $drink->drink_name ?: $drink->generateDrinkName();
+                    $drinkCombination = $drink->drink_combination ?: $drink->generateDrinkCombination();
+
+                    // Calcular precio correctamente
+                    $unitPrice = $drink->total_price_soles ?: $drink->calculateTotalPrice();
+
+                    // Si el precio sigue siendo 0, calcular manualmente
+                    if ($unitPrice == 0) {
+                        $unitPrice = $drink->base_price_soles + $drink->typesdrinks->sum('price');
+                    }
+
+                    $quantity = $drink->pivot->quantity;
+                    $totalPrice = $unitPrice * $quantity;
+
+                    $subtotal += $totalPrice;
+
+                    $orderDetails[] = [
+                        'drink_id' => $drink->id,
+                        'quantity' => $quantity,
+                        'drink_name' => $drinkName,
+                        'drink_combination' => $drinkCombination,
+                        'unit_price_soles' => $unitPrice,
+                        'total_price_soles' => $totalPrice,
+                        'ingredients_info' => [
+                            'bases' => $drink->basesdrinks->pluck('name')->toArray(),
+                            'flavors' => $drink->flavordrinks->pluck('name')->toArray(),
+                            'types' => $drink->typesdrinks->pluck('name')->toArray(),
+                        ]
+                    ];
+                }
+
+                // Calcular totales finales
+                $totalAmount = $subtotal;
+
+                // Crear la orden (contra entrega y ya pagado)
+                $order = \App\Models\JuiceOrder::create([
+                    'user_id' => $userId,
+                    'user_name' => $user->name,
+                    'user_email' => $user->email,
+                    'subtotal_soles' => $subtotal,
+                    'tax_amount_soles' => 0,
+                    'discount_amount_soles' => 0,
+                    'total_amount_soles' => $totalAmount,
+                    'currency' => 'PEN',
+                    'status' => 'pending',
+                    'payment_status' => 'paid', // Ya viene pagado desde la app
+                    'delivery_method' => 'pickup', // Todos contra entrega
+                    'notes' => $request->notes,
+                    'payment_method_name' => 'App',
+                    'estimated_ready_at' => now()->addMinutes(count($orderDetails) * 5), // 5 min por bebida
+                ]);
+
+                // Crear detalles de la orden
+                foreach ($orderDetails as $detail) {
+                    $order->details()->create($detail);
+                }
+
+                // Marcar carrito como usado y asociar con la orden
+                $cart->update([
+                    'is_used' => true,
+                    'juice_order_id' => $order->id,
+                ]);
+
+                // Cargar relaciones para la respuesta
+                $order->load(['details', 'user']);
+
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Pedido confirmado exitosamente',
+                    'datoAdicional' => [
+                        'order' => [
+                            'id' => $order->id,
+                            'order_number' => $order->order_number,
+                            'status' => $order->status,
+                            'payment_status' => $order->payment_status,
+                            'subtotal_soles' => $order->subtotal_soles,
+                            'total_amount_soles' => $order->total_amount_soles,
+                            'estimated_ready_at' => $order->estimated_ready_at->format('Y-m-d H:i:s'),
+                            'delivery_method' => $order->delivery_method,
+                            'created_at' => $order->created_at->format('Y-m-d H:i:s'),
+                        ],
+                        'items' => $order->details->map(function ($detail) {
+                            return [
+                                'drink_name' => $detail->drink_name,
+                                'quantity' => $detail->quantity,
+                                'unit_price' => $detail->unit_price_soles,
+                                'total_price' => $detail->total_price_soles,
+                                'special_instructions' => $detail->special_instructions,
+                            ];
+                        }),
+                        'cart' => [
+                            'code' => $cart->code,
+                            'is_used' => true,
+                        ]
+                    ],
+                ], 200);
+
+            });
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al confirmar el pedido',
+                'datoAdicional' => null,
+            ], 200);
+        }
+    }
+
+    /**
+     * Obtener órdenes del usuario
+     */
+    public function myOrders(Request $request): JsonResponse
+    {
+        try {
+            $userId = $request->user()->id;
+
+            $orders = \App\Models\JuiceOrder::where('user_id', $userId)
+                ->with(['details'])
+                ->orderBy('created_at', 'desc')
+                ->paginate($request->integer('per_page', 15));
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Órdenes obtenidas exitosamente',
+                'datoAdicional' => [
+                    'orders' => $orders->map(function ($order) {
+                        return [
+                            'id' => $order->id,
+                            'order_number' => $order->order_number,
+                            'status' => $order->status,
+                            'payment_status' => $order->payment_status,
+                            'total_amount_soles' => $order->total_amount_soles,
+                            'estimated_ready_at' => $order->estimated_ready_at?->format('Y-m-d H:i:s'),
+                            'delivery_method' => $order->delivery_method,
+                            'created_at' => $order->created_at->format('Y-m-d H:i:s'),
+                            'items_count' => $order->details->sum('quantity'),
+                        ];
+                    }),
+                    'pagination' => [
+                        'current_page' => $orders->currentPage(),
+                        'total_pages' => $orders->lastPage(),
+                        'per_page' => $orders->perPage(),
+                        'total' => $orders->total(),
+                    ]
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener órdenes',
+                'datoAdicional' => null,
+            ], 200);
+        }
+    }
+
+    /**
+     * Mostrar una orden específica
+     */
+    public function showOrder(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'order_id' => 'required|integer|exists:juice_orders,id',
+            ]);
+
+            $userId = $request->user()->id;
+            $orderId = $request->integer('order_id');
+
+            $order = \App\Models\JuiceOrder::where('id', $orderId)
+                ->where('user_id', $userId)
+                ->with(['details'])
+                ->first();
+
+            if (!$order) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Orden no encontrada',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Orden obtenida exitosamente',
+                'datoAdicional' => [
+                    'order' => [
+                        'id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'status' => $order->status,
+                        'payment_status' => $order->payment_status,
+                        'subtotal_soles' => $order->subtotal_soles,
+                        'tax_amount_soles' => $order->tax_amount_soles,
+                        'discount_amount_soles' => $order->discount_amount_soles,
+                        'total_amount_soles' => $order->total_amount_soles,
+                        'currency' => $order->currency,
+                        'delivery_method' => $order->delivery_method,
+                        'special_instructions' => $order->special_instructions,
+                        'notes' => $order->notes,
+                        'payment_method_name' => $order->payment_method_name,
+                        'estimated_ready_at' => $order->estimated_ready_at?->format('Y-m-d H:i:s'),
+                        'ready_at' => $order->ready_at?->format('Y-m-d H:i:s'),
+                        'delivered_at' => $order->delivered_at?->format('Y-m-d H:i:s'),
+                        'created_at' => $order->created_at->format('Y-m-d H:i:s'),
+                        'confirmed_at' => $order->confirmed_at?->format('Y-m-d H:i:s'),
+                        'preparing_at' => $order->preparing_at?->format('Y-m-d H:i:s'),
+                    ],
+                    'items' => $order->details->map(function ($detail) {
+                        return [
+                            'drink_name' => $detail->drink_name,
+                            'quantity' => $detail->quantity,
+                            'unit_price_soles' => $detail->unit_price_soles,
+                            'total_price_soles' => $detail->total_price_soles,
+                            'special_instructions' => $detail->special_instructions,
+                            'ingredients_info' => $detail->ingredients_info,
+                            'drink_combination' => $detail->drink_combination,
+                        ];
+                    }),
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener la orden',
+                'datoAdicional' => null,
+            ], 200);
+        }
+    }
+
+    /**
+     * Actualizar estado de una orden (solo para admin)
+     */
+    public function updateOrderStatus(Request $request): JsonResponse
+    {
+        try {
+            // Validar que el usuario tenga permisos de admin
+            if (!$request->user()->hasRole('admin')) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes permisos para realizar esta acción',
+                    'datoAdicional' => null,
+                ], 403);
+            }
+
+            $request->validate([
+                'order_id' => 'required|integer|exists:juice_orders,id',
+                'status' => 'required|string|in:pending,confirmed,preparing,ready,delivered,cancelled',
+                'notes' => 'nullable|string|max:500',
+            ]);
+
+            $orderId = $request->integer('order_id');
+            $order = \App\Models\JuiceOrder::findOrFail($orderId);
+
+            // Actualizar estado
+            $order->updateStatus($request->status);
+
+            // Agregar notas si se proporcionan
+            if ($request->filled('notes')) {
+                $currentNotes = $order->notes ? $order->notes . "\n" : '';
+                $order->update([
+                    'notes' => $currentNotes . "[" . now()->format('Y-m-d H:i:s') . "] " . $request->notes
+                ]);
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Estado de orden actualizado exitosamente',
+                'datoAdicional' => [
+                    'order' => [
+                        'id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'status' => $order->status,
+                        'updated_at' => $order->updated_at->format('Y-m-d H:i:s'),
+                    ]
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al actualizar el estado de la orden',
+                'datoAdicional' => null,
             ], 200);
         }
     }

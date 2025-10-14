@@ -20,7 +20,35 @@ return new class extends Migration
                 ->constrained('users')
                 ->onDelete('cascade')->comment('ID del usuario que realiza el pedido');
 
+            // Datos históricos del usuario (como texto para integridad)
+            $table->string('user_name', 255)->nullable()->comment('Nombre del usuario al momento del pedido');
+            $table->string('user_email', 255)->nullable()->comment('Email del usuario al momento del pedido');
 
+            // Campos de precios y montos
+            $table->decimal('subtotal_soles', 10, 2)->default(0.00)->comment('Subtotal en soles');
+            $table->decimal('tax_amount_soles', 10, 2)->default(0.00)->comment('Monto de impuestos en soles');
+            $table->decimal('discount_amount_soles', 10, 2)->default(0.00)->comment('Monto de descuento en soles');
+            $table->decimal('total_amount_soles', 10, 2)->default(0.00)->comment('Monto total en soles');
+            $table->string('currency', 3)->default('PEN')->comment('Moneda del pedido');
+
+            // Estados del pedido
+            $table->enum('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'])->default('pending')->comment('Estado del pedido');
+            $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])->default('pending')->comment('Estado del pago');
+
+            // Información de entrega
+            $table->enum('delivery_method', ['pickup', 'delivery'])->default('pickup')->comment('Método de entrega');
+            $table->text('special_instructions')->nullable()->comment('Instrucciones especiales del pedido');
+            $table->text('notes')->nullable()->comment('Notas adicionales del pedido');
+
+            // Información del método de pago (como texto para integridad)
+            $table->string('payment_method_name', 255)->nullable()->comment('Nombre del método de pago al momento del pedido');
+
+            // Timestamps de estados
+            $table->timestamp('estimated_ready_at')->nullable()->comment('Tiempo estimado de preparación');
+            $table->timestamp('confirmed_at')->nullable()->comment('Momento de confirmación del pedido');
+            $table->timestamp('preparing_at')->nullable()->comment('Momento en que comenzó la preparación');
+            $table->timestamp('ready_at')->nullable()->comment('Momento en que el pedido estuvo listo');
+            $table->timestamp('delivered_at')->nullable()->comment('Momento de entrega del pedido');
 
             $table->timestamps();
         });

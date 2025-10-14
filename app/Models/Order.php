@@ -12,7 +12,6 @@ final class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-
         'order_number',
         'order_type',
         'subtotal_soles',
@@ -30,12 +29,9 @@ final class Order extends Model
         'special_instructions',
         'promocode_used',
         'notes',
-
+        'delivered_at',
         'items',
-
-        // Relaciones
         'user_id',
-
     ];
 
     protected $casts = [
@@ -46,6 +42,7 @@ final class Order extends Model
         'total_amount_soles' => 'decimal:2',
         'delivery_address' => 'array',
         'delivery_date' => 'date',
+        'delivered_at' => 'datetime',
     ];
 
     /**

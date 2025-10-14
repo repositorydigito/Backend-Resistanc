@@ -375,6 +375,20 @@ class ClassScheduleResource extends Resource
                     ->getStateUsing(fn($record) => $record->seatAssignments()->whereIn('status', ['reserved', 'occupied'])->count())
                     ->badge()
                     ->color('danger'),
+
+                Tables\Columns\TextColumn::make('completed_seats_count')
+                    ->label('Completados')
+                    ->getStateUsing(fn($record) => $record ? $record->seatAssignments()->where('status', 'completed')->count() : 0)
+                    ->badge()
+                    ->color('success')
+                    ->visible(fn($record) => $record && in_array($record->status, ['completed'])),
+
+                Tables\Columns\TextColumn::make('lost_seats_count')
+                    ->label('Perdidos')
+                    ->getStateUsing(fn($record) => $record ? $record->seatAssignments()->where('status', 'lost')->count() : 0)
+                    ->badge()
+                    ->color('gray')
+                    ->visible(fn($record) => $record && in_array($record->status, ['completed'])),
                 // Tables\Columns\TextColumn::make('available_spots')
                 //     ->label('Lugares Disponibles')
                 //     ->numeric()
@@ -438,6 +452,58 @@ class ClassScheduleResource extends Resource
                     ])->default('scheduled'),
             ])
             ->actions([
+                Tables\Actions\Action::make('start_class')
+                    ->label('Iniciar Clase')
+                    ->icon('heroicon-o-play')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status === 'scheduled')
+                    ->requiresConfirmation()
+                    ->modalHeading('Iniciar Clase')
+                    ->modalDescription('¿Estás seguro de que quieres iniciar esta clase? Los asientos reservados se marcarán como ocupados.')
+                    ->action(function ($record) {
+                        // Cambiar estado del horario a 'in_progress'
+                        $record->update(['status' => 'in_progress']);
+
+                        // Cambiar todos los asientos reservados a ocupados
+                        $record->seatAssignments()
+                            ->where('status', 'reserved')
+                            ->update(['status' => 'occupied']);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Clase iniciada')
+                            ->body('La clase ha sido iniciada. Los asientos reservados ahora están ocupados.')
+                            ->success()
+                            ->send();
+                    }),
+
+                Tables\Actions\Action::make('finish_class')
+                    ->label('Finalizar Clase')
+                    ->icon('heroicon-o-stop')
+                    ->color('warning')
+                    ->visible(fn ($record) => $record->status === 'in_progress')
+                    ->requiresConfirmation()
+                    ->modalHeading('Finalizar Clase')
+                    ->modalDescription('¿Estás seguro de que quieres finalizar esta clase? Los asientos ocupados se marcarán como completados y los no ocupados como perdidos.')
+                    ->action(function ($record) {
+                        // Cambiar estado del horario a 'completed'
+                        $record->update(['status' => 'completed']);
+
+                        // Cambiar asientos ocupados a completados
+                        $record->seatAssignments()
+                            ->where('status', 'occupied')
+                            ->update(['status' => 'completed']);
+
+                        // Cambiar asientos reservados (que no se ocuparon) a perdidos
+                        $record->seatAssignments()
+                            ->where('status', 'reserved')
+                            ->update(['status' => 'lost']);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Clase finalizada')
+                            ->body('La clase ha sido finalizada. Los asientos ocupados están completados y los no ocupados están marcados como perdidos.')
+                            ->success()
+                            ->send();
+                    }),
 
                 Tables\Actions\EditAction::make(),
             ])

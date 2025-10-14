@@ -25,6 +25,18 @@ return new class extends Migration
 
             $table->integer('quantity');
 
+            // Datos históricos de la bebida (como texto para integridad)
+            $table->string('drink_name', 255)->nullable()->comment('Nombre completo de la bebida al momento del pedido');
+            $table->json('drink_combination')->nullable()->comment('Combinación de ingredientes al momento del pedido');
+
+            // Campos de precios (como texto para integridad)
+            $table->decimal('unit_price_soles', 10, 2)->default(0.00)->comment('Precio unitario al momento del pedido');
+            $table->decimal('total_price_soles', 10, 2)->default(0.00)->comment('Precio total del item');
+
+            // Información adicional
+            $table->text('special_instructions')->nullable()->comment('Instrucciones especiales para esta bebida');
+            $table->json('ingredients_info')->nullable()->comment('Información detallada de ingredientes');
+
             $table->timestamps();
         });
     }

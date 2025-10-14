@@ -14,8 +14,10 @@ final class OrderItem extends Model
         'quantity',
         'unit_price',
         'total_price',
-
-        // Relaciones
+        'unit_price_soles',
+        'total_price_soles',
+        'product_name',
+        'notes',
         'order_id',
         'product_id',
         'product_variant_id',
@@ -25,6 +27,8 @@ final class OrderItem extends Model
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'unit_price_soles' => 'decimal:2',
+        'total_price_soles' => 'decimal:2',
     ];
 
     /**
