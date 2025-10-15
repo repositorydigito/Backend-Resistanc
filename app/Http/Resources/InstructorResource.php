@@ -46,7 +46,7 @@ class InstructorResource extends JsonResource
                 return [
                     'id' => $discipline->id,
                     'name' => $discipline->name,
-                    'icon_url' => $discipline->icon_url ? asset('storage/') . '/' . $discipline->icon_url : null,
+                    'icon_url' => $discipline->icon_url ? asset('storage/') . '/' . $discipline->icon_url : asset('default/icon.png'),
                     'color_hex' => $discipline->color_hex,
                 ];
             }),

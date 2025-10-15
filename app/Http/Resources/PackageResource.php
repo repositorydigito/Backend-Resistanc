@@ -41,7 +41,7 @@ class PackageResource extends JsonResource
             'updated_at' => $this->updated_at?->toISOString(),
             'color_hex' => $this->color_hex,
             'commercial_type' => $this->commercial_type,
-            'icon_url' =>  $this->icon_url ?  asset('storage/' . $this->icon_url)  : '', // Ensure the URL is absolute
+            'icon_url' =>  $this->icon_url ?  asset('storage/' . $this->icon_url)  : asset('default/icon.png'), // Ensure the URL is absolute
 
             'is_membresia' => $this->is_membresia,
             // Computed attributes using model accessors
@@ -67,7 +67,7 @@ class PackageResource extends JsonResource
                         'id' => $discipline->id,
                         'name' => $discipline->name,
                         'display_name' => $discipline->display_name,
-                        'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
+                        'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : asset('default/icon.png'),
                         'color_hex' => $discipline->color_hex,
                         'is_active' => $discipline->is_active,
                         'order' => $discipline->order,
@@ -96,7 +96,7 @@ class PackageResource extends JsonResource
                         'name' => $this->membership->discipline->name ?? null,
                         'icon_url' => $this->membership->discipline && $this->membership->discipline->icon_url
                             ? asset('storage/' . $this->membership->discipline->icon_url)
-                            : null,
+                            : asset('default/icon.png'),
                         'quantity' => $this->membership->discipline_quantity ?? 0
                     ]
                 ];
