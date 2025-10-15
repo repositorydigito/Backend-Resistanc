@@ -304,13 +304,13 @@ final class ClassScheduleController extends Controller
                     'id' => $classSchedule->class->id,
                     'name' => $classSchedule->class->name,
                     'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
-                    'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : null,
-                    'discipline_img_seat' => $classSchedule->class->discipline->image_seat ? asset('storage/') . '/' . $classSchedule->class->discipline->image_seat : null,
+                    'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : asset('default/icon.png'),
+                    'discipline_img_seat' => $classSchedule->class->discipline->image_seat ? asset('storage/') . '/' . $classSchedule->class->discipline->image_seat : asset('default/icon.png'),
                 ],
                 'instructor' => [
                     'id' => $classSchedule->instructor->id,
                     'name' => $classSchedule->instructor->name,
-                    'profile_image' => $classSchedule->instructor->profile_image ? asset('storage/') . '/' . $classSchedule->instructor->profile_image : null,
+                    'profile_image' => $classSchedule->instructor->profile_image ? asset('storage/') . '/' . $classSchedule->instructor->profile_image : asset('default/entrenador.jpg'),
                 ],
                 'seat_map' => $seatMapData['seat_grid'] ?? [],
                 'summary' => [
