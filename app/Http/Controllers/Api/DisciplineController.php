@@ -128,7 +128,7 @@ final class DisciplineController extends Controller
                             'id' => $discipline->id,
                             'name' => $discipline->name,
                             'display_name' => $discipline->display_name,
-                            'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : null,
+                            'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : asset('default/icon.png'),
                             'color_hex' => $discipline->color_hex,
                             'order' => $discipline->order,
                         ];
