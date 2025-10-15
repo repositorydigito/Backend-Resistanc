@@ -23,12 +23,12 @@ class ClassScheduleResource extends JsonResource
                 'color_hex' => $this->class->color_hex,
                 'img_url' => $this->class->img_url ? asset('storage/') . '/' . $this->class->img_url : asset('default/class.jpg'),
                 'discipline' => $this->class->discipline->name,
-                'discipline_img' => $this->class->discipline->icon_url ? asset('storage/') . '/' . $this->class->discipline->icon_url : null,
+                'discipline_img' => $this->class->discipline->icon_url ? asset('storage/') . '/' . $this->class->discipline->icon_url : asset('default/icon.png'),
             ],
             'instructor' => [
                 'id' => $this->instructor->id,
                 'name' => $this->instructor->name,
-                'profile_image' =>  $this->instructor->profile_image ? asset('storage/') . '/' . $this->instructor->profile_image : null,
+                'profile_image' =>  $this->instructor->profile_image ? asset('storage/') . '/' . $this->instructor->profile_image : asset('default/entrenador.jpg'),
                 'rating_average' => round($this->instructor->rating_average, 1),
                 'is_head_coach' => $this->instructor->is_head_coach,
             ],
@@ -51,7 +51,7 @@ class ClassScheduleResource extends JsonResource
             'is_holiday_schedule' => $this->is_holiday_schedule,
             'status' => $this->status,
             'theme' => $this->theme,
-            'img_url' => $this->img_url ? asset('storage/') . '/' . $this->img_url : null,
+            'img_url' => $this->img_url ? asset('storage/') . '/' . $this->img_url : asset('default/class.jpg'),
 
 
             // Contadores de asientos
