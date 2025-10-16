@@ -17,32 +17,6 @@ class PaymentController extends Controller
 {
     /**
      * Lista los métodos de pago del usuario autenticado
-     *
-     * @summary Listar métodos de pago del usuario
-     * @operationId getPaymentMethods
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Métodos de pago obtenidos exitosamente",
-     *   "datoAdicional": [
-     *     {
-     *       "id": 1,
-     *       "payment_type": "credit_card",
-     *       "provider": "visa",
-     *       "card_last_four": "****1234",
-     *       "card_brand": "Visa",
-     *       "card_holder_name": "Juan Pérez",
-     *       "is_default": true,
-     *       "status": "active",
-     *       "display_name": "Visa ****1234",
-     *       "can_use": true
-     *     }
-     *   ]
-     * }
      */
     public function index(Request $request)
     {
@@ -116,40 +90,6 @@ class PaymentController extends Controller
 
     /**
      * Crea un nuevo método de pago para el usuario autenticado
-     *
-     * @summary Crear método de pago
-     * @operationId createPaymentMethod
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam payment_type string required Tipo de método de pago (credit_card, debit_card, bank_transfer, digital_wallet, crypto). Example: credit_card
-     * @bodyParam provider string Proveedor del método de pago. Example: visa
-     * @bodyParam card_last_four string Últimos 4 dígitos de la tarjeta. Example: 1234
-     * @bodyParam card_brand string Marca de la tarjeta. Example: Visa
-     * @bodyParam card_holder_name string Nombre del titular. Example: Juan Pérez
-     * @bodyParam card_expiry_month integer Mes de expiración (1-12). Example: 12
-     * @bodyParam card_expiry_year integer Año de expiración. Example: 2025
-     * @bodyParam bank_name string Nombre del banco. Example: BCP
-     * @bodyParam account_number_masked string Número de cuenta enmascarado. Example: ****1234
-     * @bodyParam is_default boolean Marcar como método predeterminado. Example: false
-     * @bodyParam billing_address object Dirección de facturación. Example: {"street": "Av. Principal 123"}
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Método de pago creado exitosamente",
-     *   "datoAdicional": {
-     *     "id": 2,
-     *     "payment_type": "credit_card",
-     *     "provider": "visa",
-     *     "card_last_four": "****5678",
-     *     "card_brand": "Visa",
-     *     "display_name": "Visa ****5678",
-     *     "is_default": false,
-     *     "status": "active"
-     *   }
-     * }
      */
     public function store(Request $request)
     {
@@ -232,28 +172,7 @@ class PaymentController extends Controller
 
     /**
      * Obtiene un método de pago específico del usuario autenticado
-     *
-     * @summary Obtener método de pago específico
-     * @operationId getPaymentMethod
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Método de pago obtenido exitosamente",
-     *   "datoAdicional": {
-     *     "id": 1,
-     *     "payment_type": "credit_card",
-     *     "provider": "visa",
-     *     "card_last_four": "****1234",
-     *     "card_brand": "Visa",
-     *     "display_name": "Visa ****1234",
-     *     "is_default": true,
-     *     "status": "active"
-     *   }
-     * }
+
      */
     public function show($id)
     {
@@ -299,34 +218,6 @@ class PaymentController extends Controller
 
     /**
      * Actualiza un método de pago específico del usuario autenticado
-     *
-     * @summary Actualizar método de pago
-     * @operationId updatePaymentMethod
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam payment_type string Tipo de método de pago. Example: credit_card
-     * @bodyParam provider string Proveedor del método de pago. Example: visa
-     * @bodyParam card_holder_name string Nombre del titular. Example: Juan Pérez
-     * @bodyParam is_default boolean Marcar como método predeterminado. Example: true
-     * @bodyParam billing_address object Dirección de facturación. Example: {"street": "Av. Principal 123"}
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Método de pago actualizado exitosamente",
-     *   "datoAdicional": {
-     *     "id": 1,
-     *     "payment_type": "credit_card",
-     *     "provider": "visa",
-     *     "card_last_four": "****1234",
-     *     "display_name": "Visa ****1234",
-     *     "is_default": true,
-     *     "status": "active"
-     *   }
-     * }
      */
     public function update(Request $request, $id)
     {

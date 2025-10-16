@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AuthRedController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ClassScheduleController;
+use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DisciplineController;
 use App\Http\Controllers\Api\DrinkController;
 use App\Http\Controllers\Api\FavoriteController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Api\UserPackageController;
 use App\Http\Controllers\Api\UserPayMethodController;
 use App\Http\Controllers\Api\WaitingController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\StoreOrderController;
 use App\Http\Controllers\Api\PasarelaController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShoppingCartController;
@@ -42,15 +45,14 @@ Route::post('/test', [TestController::class, 'status'])->name('test.status');
 
 // Logueo con redes sociales
 // Socials
-Route::prefix('social-login')->name('social-login.')->group(function () {
+Route::prefix('auth')->name('social-login.')->group(function () {
     // Facebook
-    Route::get('/facebook', [AuthController::class, 'redirectToFacebook'])->name('facebook.redirect');
-    Route::post('/social-login/facebook-token', [AuthController::class, 'loginWithFacebookToken']);
+    Route::get('facebook/redirect', [AuthRedController::class, 'facebookRedirect']);
+    Route::get('facebook/callback', [AuthRedController::class, 'facebookCallback']);
+    Route::post('facebook/token', [AuthRedController::class, 'facebookTokenLogin']);
+    Route::get('facebook/url', [AuthRedController::class, 'getFacebookAuthUrl']);
     // Fin facebook
-    // Google
-    Route::get('/google', [AuthController::class, 'redirectToGoogle'])->name('google.redirect');
-    Route::post('/social-login/google-token', [AuthController::class, 'loginWithGoogleToken']);
-    // Fin google
+
 });
 // Fin socials
 // Fin logueo con redes sociales
@@ -89,6 +91,13 @@ Route::prefix('home')->name('home.')->middleware('auth:sanctum')->group(function
     Route::get('/', [HomeController::class, 'index'])->name('index');
 });
 // Fin home
+
+// Empresa
+Route::prefix('company')->name('company.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [CompanyController::class, 'show'])->name('show');
+});
+// Fin Empresa
+
 
 // Paquetes
 Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(function () {
@@ -247,6 +256,12 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
     Route::post('/show', [OrderController::class, 'show'])->name('show');
 });
 // Fin rutas de Pedidos de Productos
+
+// Rutas de Pedidos Unificados (Shakes + Productos)
+Route::prefix('store-orders')->name('store-orders.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [StoreOrderController::class, 'index'])->name('index');
+});
+// Fin rutas de Pedidos Unificados
 
 
 // Pasarela de pago

@@ -219,14 +219,25 @@ class CompanyResource extends Resource
                 Tables\Columns\TextColumn::make('social_networks')
                     ->label('Redes Sociales')
                     ->formatStateUsing(function ($state) {
-                        if (!$state || empty($state)) {
+                        // Validar que sea array y no esté vacío
+                        if (!is_array($state) || empty($state)) {
                             return 'Sin redes sociales';
                         }
-                        if (!is_array($state)) {
-                            return 'Sin redes sociales';
-                        }
+
                         $count = count($state);
-                        $names = array_column($state, 'name');
+                        $names = [];
+
+                        // Validar que cada elemento sea un array con el campo 'name'
+                        foreach ($state as $network) {
+                            if (is_array($network) && isset($network['name'])) {
+                                $names[] = $network['name'];
+                            }
+                        }
+
+                        if (empty($names)) {
+                            return 'Sin redes sociales';
+                        }
+
                         return $count . ' red(es): ' . implode(', ', $names);
                     })
                     ->searchable(false)

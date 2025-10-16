@@ -64,17 +64,28 @@ class OrderResource extends Resource
                 Forms\Components\Section::make('Estado del Pedido')
                     ->schema([
                         Forms\Components\Select::make('status')
-                            ->label('Estado')
+                            ->label('Estado del Pedido')
                             ->options([
                                 'pending' => 'Pendiente',
                                 'confirmed' => 'Confirmado',
                                 'preparing' => 'Preparando',
-                                'ready' => 'Listo',
+                                'ready' => 'Listo para Recoger',
                                 'delivered' => 'Entregado',
                                 'cancelled' => 'Cancelado',
                             ])
                             ->required(),
-                    ])->columns(1),
+
+                        Forms\Components\Select::make('payment_status')
+                            ->label('Estado de Pago')
+                            ->options([
+                                'pending' => 'Pendiente',
+                                'paid' => 'Pagado',
+                                'failed' => 'Fallido',
+                                'refunded' => 'Reembolsado',
+                            ])
+                            ->required()
+                            ->disabled(),
+                    ])->columns(2),
 
                 Forms\Components\Section::make('Montos')
                     ->schema([
@@ -93,14 +104,14 @@ class OrderResource extends Resource
                             ->rows(2),
                     ])->columns(1),
 
-                Forms\Components\Section::make('Fechas del Pedido')
+                Forms\Components\Section::make('Información de Entrega')
                     ->schema([
+                        Forms\Components\Placeholder::make('delivery_method_info')
+                            ->label('Método de Entrega')
+                            ->content('Contra entrega (Pickup)'),
+
                         Forms\Components\DateTimePicker::make('created_at')
                             ->label('Pedido Creado')
-                            ->disabled(),
-
-                        Forms\Components\DateTimePicker::make('delivered_at')
-                            ->label('Entregado en')
                             ->disabled(),
                     ])->columns(2),
             ]);
@@ -168,13 +179,6 @@ class OrderResource extends Resource
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->weight('bold'),
-
-                Tables\Columns\TextColumn::make('delivered_at')
-                    ->label('Entregado en')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->color('success')
-                    ->placeholder('Pendiente'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -213,7 +217,7 @@ class OrderResource extends Resource
                     ->label('Marcar como Entregado')
                     ->icon('heroicon-o-check-circle')
                     ->action(function (Order $record): void {
-                        $record->update(['status' => 'delivered', 'delivered_at' => now()]);
+                        $record->update(['status' => 'delivered']);
                     })
                     ->requiresConfirmation()
                     ->color('success')

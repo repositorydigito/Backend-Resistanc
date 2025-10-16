@@ -807,10 +807,11 @@ final class ClassScheduleController extends Controller
 
             // Validar parámetros de filtro
             $request->validate([
-                'status' => 'sometimes|string|in:reserved,occupied,completed',
+                'status' => 'sometimes|array',
+                'status.*' => 'string|in:reserved,occupied,completed,lost',
                 'date_from' => 'sometimes|date',
                 'date_to' => 'sometimes|date|after_or_equal:date_from',
-                // 'upcoming' => 'sometimes|boolean',
+                'upcoming' => 'sometimes|boolean',
                 'per_page' => 'sometimes|integer|min:1|max:50',
                 'page' => 'sometimes|integer|min:1'
             ]);
@@ -820,21 +821,25 @@ final class ClassScheduleController extends Controller
                 'class.discipline',
                 'instructor',
                 'studio',
-                'classScheduleSeats' => function ($q) use ($userId) {
+                'classScheduleSeats' => function ($q) use ($userId, $request) {
                     $q->where('user_id', $userId)->with('seat');
+                    // Si se especifica status (uno o varios), filtrar los asientos
+                    if ($request->filled('status')) {
+                        $statuses = is_array($request->status) ? $request->status : [$request->status];
+                        $q->whereIn('status', $statuses);
+                    }
                 }
             ])
-                ->whereHas('classScheduleSeats', function ($q) use ($userId) {
+                ->whereHas('classScheduleSeats', function ($q) use ($userId, $request) {
                     $q->where('user_id', $userId);
+                    // Si se especifica status (uno o varios), filtrar solo esos asientos
+                    if ($request->filled('status')) {
+                        $statuses = is_array($request->status) ? $request->status : [$request->status];
+                        $q->whereIn('status', $statuses);
+                    }
                 });
 
-            // Aplicar filtros
-            if ($request->filled('status')) {
-                $query->whereHas('classScheduleSeats', function ($q) use ($request, $userId) {
-                    $q->where('user_id', $userId)->where('status', $request->status);
-                });
-            }
-
+            // Aplicar filtros de fecha
             if ($request->filled('date_from')) {
                 $query->where('scheduled_date', '>=', $request->date_from);
             }
@@ -843,9 +848,10 @@ final class ClassScheduleController extends Controller
                 $query->where('scheduled_date', '<=', $request->date_to);
             }
 
-            // if ($request->boolean('upcoming')) {
-            //     $query->where('scheduled_date', '>=', now()->toDateString());
-            // }
+            // Filtro para clases próximas (futuras)
+            if ($request->boolean('upcoming', false)) {
+                $query->where('scheduled_date', '>=', now()->toDateString());
+            }
 
             // Aplicar paginación si se solicita
             if ($request->has('per_page')) {

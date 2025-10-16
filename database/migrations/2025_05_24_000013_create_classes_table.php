@@ -25,6 +25,7 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false)->comment('Si la clase es destacada');
             $table->enum('status', ['active', 'inactive', 'draft'])->default('active')->comment('Estado de la clase');
             $table->string('img_url')->nullable()->comment('URL de la imagen de la clase');
+            $table->string('icon_url')->nullable()->comment('URL del icono de la clase');
 
 
             $table->string('color_hex')->nullable()->comment('Color de la clase');

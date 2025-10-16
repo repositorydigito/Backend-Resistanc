@@ -22,7 +22,7 @@ class OrderItemsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('product_name')
+                Forms\Components\TextInput::make('product.name')
                     ->label('Nombre del Producto')
                     ->disabled()
                     ->required(),
@@ -33,22 +33,17 @@ class OrderItemsRelationManager extends RelationManager
                     ->disabled()
                     ->required(),
 
-                Forms\Components\TextInput::make('unit_price_soles')
+                Forms\Components\TextInput::make('unit_price')
                     ->label('Precio Unitario (S/)')
                     ->numeric()
                     ->disabled()
                     ->prefix('S/'),
 
-                Forms\Components\TextInput::make('total_price_soles')
+                Forms\Components\TextInput::make('total_price')
                     ->label('Precio Total (S/)')
                     ->numeric()
                     ->disabled()
                     ->prefix('S/'),
-
-                Forms\Components\Textarea::make('notes')
-                    ->label('Notas del Producto')
-                    ->disabled()
-                    ->rows(2),
             ]);
     }
 
@@ -57,11 +52,12 @@ class OrderItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('product_name')
             ->columns([
-                Tables\Columns\TextColumn::make('product_name')
+                Tables\Columns\TextColumn::make('product.name')
                     ->label('Producto')
                     ->searchable()
                     ->weight('bold')
-                    ->wrap(),
+                    ->wrap()
+                    ->placeholder('Producto no encontrado'),
 
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Cantidad')
@@ -69,30 +65,17 @@ class OrderItemsRelationManager extends RelationManager
                     ->badge()
                     ->color('primary'),
 
-                Tables\Columns\TextColumn::make('unit_price_soles')
+                Tables\Columns\TextColumn::make('unit_price')
                     ->label('Precio Unit.')
                     ->money('PEN')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('total_price_soles')
+                Tables\Columns\TextColumn::make('total_price')
                     ->label('Total')
                     ->money('PEN')
                     ->sortable()
                     ->weight('bold')
                     ->color('success'),
-
-                Tables\Columns\TextColumn::make('notes')
-                    ->label('Notas')
-                    ->limit(30)
-                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
-                        $state = $column->getState();
-                        if (strlen($state) <= 30) {
-                            return null;
-                        }
-                        return $state;
-                    })
-                    ->placeholder('Sin notas')
-                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Agregado')
@@ -114,7 +97,7 @@ class OrderItemsRelationManager extends RelationManager
             ])
             ->emptyStateHeading('Sin productos en el pedido')
             ->emptyStateDescription('Este pedido no tiene productos registrados.')
-            ->defaultSort('created_at', 'asc');
+            ->defaultSort('unit_price', 'asc');
     }
 
     public function canCreate(): bool

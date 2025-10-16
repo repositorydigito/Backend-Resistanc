@@ -139,6 +139,19 @@ final class ShoppingCart extends Model
         $subtotal = $this->items->sum('total_price');
         $totalAmount = $subtotal; // Simplificado sin impuestos
 
+        // Preparar items para el campo JSON
+        $itemsForJson = [];
+        foreach ($this->items as $cartItem) {
+            $itemsForJson[] = [
+                'product_id' => $cartItem->product_id,
+                'product_name' => $cartItem->product->name,
+                'product_sku' => $cartItem->productVariant ? $cartItem->productVariant->full_sku : $cartItem->product->sku,
+                'quantity' => $cartItem->quantity,
+                'unit_price' => $cartItem->unit_price,
+                'total_price' => $cartItem->total_price,
+            ];
+        }
+
         $order = Order::create([
             'user_id' => $this->user_id,
             'order_number' => 'ORD-' . strtoupper(\Illuminate\Support\Str::random(10)),
@@ -152,6 +165,8 @@ final class ShoppingCart extends Model
             'payment_status' => 'paid', // Ya viene pagado desde la app
             'delivery_method' => 'pickup',
             'order_type' => 'purchase',
+            'payment_method_name' => 'App',
+            'items' => $itemsForJson, // Campo JSON requerido
         ]);
 
         // Convert cart items to order items
@@ -162,9 +177,6 @@ final class ShoppingCart extends Model
                 'quantity' => $cartItem->quantity,
                 'unit_price' => $cartItem->unit_price,
                 'total_price' => $cartItem->total_price,
-                'unit_price_soles' => $cartItem->unit_price,
-                'total_price_soles' => $cartItem->total_price,
-                'product_name' => $cartItem->product->name,
             ]);
         }
 

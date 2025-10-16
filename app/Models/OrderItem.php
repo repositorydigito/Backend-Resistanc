@@ -14,10 +14,6 @@ final class OrderItem extends Model
         'quantity',
         'unit_price',
         'total_price',
-        'unit_price_soles',
-        'total_price_soles',
-        'product_name',
-        'notes',
         'order_id',
         'product_id',
         'product_variant_id',
@@ -27,8 +23,6 @@ final class OrderItem extends Model
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
-        'unit_price_soles' => 'decimal:2',
-        'total_price_soles' => 'decimal:2',
     ];
 
     /**
@@ -60,7 +54,7 @@ final class OrderItem extends Model
      */
     public function calculateTotal(): float
     {
-        return $this->quantity * $this->unit_price_soles;
+        return $this->quantity * $this->unit_price;
     }
 
     /**
@@ -68,6 +62,14 @@ final class OrderItem extends Model
      */
     public function updateTotal(): void
     {
-        $this->update(['total_price_soles' => $this->calculateTotal()]);
+        $this->update(['total_price' => $this->calculateTotal()]);
+    }
+
+    /**
+     * Get the product name from the relationship.
+     */
+    public function getProductNameAttribute(): string
+    {
+        return $this->product ? $this->product->name : 'Producto no encontrado';
     }
 }

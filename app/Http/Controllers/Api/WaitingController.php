@@ -571,8 +571,9 @@ final class WaitingController extends Controller
                     'id' => $classSchedule->class->id,
                     'name' => $classSchedule->class->name,
                     'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
-                    'img_url' => $classSchedule->class->img_url ? asset('storage/') . '/' . $classSchedule->class->img_url : null,
-                    'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : null,
+                    'img_url' => $classSchedule->class->img_url ? asset('storage/') . '/' . $classSchedule->class->img_url : asset('default/class.jpg'),
+                    'icon_url' => $classSchedule->class->icon_url ? asset('storage/') . '/' . $classSchedule->class->icon_url : asset('default/icon.png'),
+                    'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : asset('default/icon.png'),
                 ],
                 'instructor' => [
                     'id' => $classSchedule->instructor->id,

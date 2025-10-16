@@ -55,6 +55,18 @@ class ClassModelResource extends Resource
                             ->imageResizeTargetHeight(600)
                             ->image()
                             ->columnSpanFull(),
+                        Forms\Components\FileUpload::make('icon_url')
+                            ->label('Icono')
+                            ->disk('public')
+                            ->directory('clases')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 5) // 5 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(800)
+                            ->imageResizeTargetHeight(600)
+                            ->image()
+                            ->columnSpanFull(),
 
                         Forms\Components\Select::make('discipline_id')
                             ->searchable()

@@ -29,8 +29,8 @@ final class Order extends Model
         'special_instructions',
         'promocode_used',
         'notes',
-        'delivered_at',
         'items',
+        'payment_method_name',
         'user_id',
     ];
 
@@ -41,8 +41,8 @@ final class Order extends Model
         'discount_amount_soles' => 'decimal:2',
         'total_amount_soles' => 'decimal:2',
         'delivery_address' => 'array',
+        'items' => 'array', // Campo JSON para historial de items
         'delivery_date' => 'date',
-        'delivered_at' => 'datetime',
     ];
 
     /**

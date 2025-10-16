@@ -25,33 +25,29 @@ class CompanySeeder extends Seeder
             'phone_whassap' => '+51 987654321',
             'phone_help' => '+51 987654321',
             'email' => 'info@rsistance.com',
-            'logo_path' => '',
-            'signature_image' => '',
-            'social_networks' => json_encode([
+            'logo_path' => null,
+            'signature_image' => null,
+            'social_networks' => [
                 ["name" => "Facebook", "url" => "https://facebook.com/rsistance"],
                 ["name" => "Instagram", "url" => "https://instagram.com/rsistance"],
                 ["name" => "Twitter", "url" => "https://twitter.com/rsistance"]
-            ]),
+            ],
 
             'is_production' => false,
 
-            'sol_user_production' => '',
-            'sol_user_password_production' => '',
-            'cert_path_production' => '',
+            'sol_user_production' => null,
+            'sol_user_password_production' => null,
+            'cert_path_production' => null,
 
-            'client_id_production' => '',
-            'client_secret_production' => '',
+            'client_id_production' => null,
+            'client_secret_production' => null,
 
-            'sol_user_evidence' => '',
-            'sol_user_password_evidence' => '',
-            'cert_path_evidence' => '',
+            'sol_user_evidence' => null,
+            'sol_user_password_evidence' => null,
+            'cert_path_evidence' => null,
 
-            'client_id_evidence' => '',
-            'client_secret_evidence' => '',
-
-
-            'created_at' => now(),
-            'updated_at' => now(),
+            'client_id_evidence' => null,
+            'client_secret_evidence' => null,
         ]);
     }
 }

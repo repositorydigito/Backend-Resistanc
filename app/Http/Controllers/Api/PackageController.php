@@ -274,6 +274,44 @@ final class PackageController extends Controller
                 ? now()->addMonths($package->duration_in_months)
                 : now()->addDays($package->validity_days ?? 30);
 
+            // Verificar si el paquete tiene una membresía asociada con beneficios
+            $membershipData = null;
+            $giftOrderId = null;
+
+            if ($package->membership_id && $package->membership) {
+                $membership = $package->membership;
+
+                // Calcular fecha de expiración de la membresía basada en su duración
+                $membershipExpiryDate = now()->addMonths($membership->duration);
+
+                // Si la membresía tiene beneficios de disciplina (clases gratis)
+                if (
+                    $membership->is_benefit_discipline &&
+                    $membership->discipline_id &&
+                    $membership->discipline_quantity > 0
+                ) {
+                    // Crear UserMembership para las clases gratis
+                    $membershipData = UserMembership::create([
+                        'user_id' => $userId,
+                        'membership_id' => $membership->id,
+                        'discipline_id' => $membership->discipline_id,
+                        'total_free_classes' => $membership->discipline_quantity,
+                        'used_free_classes' => 0,
+                        'remaining_free_classes' => $membership->discipline_quantity,
+                        'activation_date' => now(),
+                        'expiry_date' => $membershipExpiryDate,
+                        'status' => 'active',
+                        'source_package_id' => $package->id,
+                        'notes' => "Clases gratis otorgadas por la compra del paquete: {$package->name} (Duración membresía: {$membership->duration} meses)",
+                    ]);
+                }
+
+                // Si la membresía tiene beneficios de shake, crear pedido de regalo
+                if ($membership->is_benefit_shake && $membership->shake_quantity > 0) {
+                    $giftOrderId = $this->createGiftShakeOrder($userId, $request->user(), $membership->shake_quantity, $package->name);
+                }
+            }
+
             // Crear el UserPackage usando transacción
             DB::beginTransaction();
             try {
@@ -292,40 +330,9 @@ final class PackageController extends Controller
                     'activation_date' => now(),
                     'expiry_date' => $expiryDate,
                     'status' => 'active',
+                    'gift_order_id' => $giftOrderId, // Pedido de regalo si aplica
                     'notes' => $request->notes ?? 'Compra realizada desde la aplicación',
                 ]);
-
-                // Verificar si el paquete tiene una membresía asociada con clases gratis
-                $membershipData = null;
-                if ($package->membership_id && $package->membership) {
-                    $membership = $package->membership;
-
-                    // Si la membresía tiene beneficios de disciplina (clases gratis)
-                    if (
-                        $membership->is_benefit_discipline &&
-                        $membership->discipline_id &&
-                        $membership->discipline_quantity > 0
-                    ) {
-
-                        // Calcular fecha de expiración de la membresía basada en su duración
-                        $membershipExpiryDate = now()->addMonths($membership->duration);
-
-                        // Crear UserMembership para las clases gratis
-                        $membershipData = UserMembership::create([
-                            'user_id' => $userId,
-                            'membership_id' => $membership->id,
-                            'discipline_id' => $membership->discipline_id,
-                            'total_free_classes' => $membership->discipline_quantity,
-                            'used_free_classes' => 0,
-                            'remaining_free_classes' => $membership->discipline_quantity,
-                            'activation_date' => now(),
-                            'expiry_date' => $membershipExpiryDate, // Fecha de expiración basada en la duración de la membresía
-                            'status' => 'active',
-                            'source_package_id' => $package->id,
-                            'notes' => "Clases gratis otorgadas por la compra del paquete: {$package->name} (Duración membresía: {$membership->duration} meses)",
-                        ]);
-                    }
-                }
 
                 // Registrar uso del código promocional si se usó
                 if ($promoCodeUsed && $promoCodeData) {
@@ -728,6 +735,67 @@ final class PackageController extends Controller
                 'error' => $e->getMessage()
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Crear pedido de regalo de shakes para membresía
+     */
+    private function createGiftShakeOrder(int $userId, $user, int $shakeQuantity, string $packageName): ?int
+    {
+        try {
+            // Crear el pedido de regalo
+            $giftOrder = \App\Models\JuiceOrder::create([
+                'user_id' => $userId,
+                'user_name' => $user->name,
+                'user_email' => $user->email,
+                'subtotal_soles' => 0,
+                'tax_amount_soles' => 0,
+                'discount_amount_soles' => 0,
+                'total_amount_soles' => 0, // Gratis
+                'currency' => 'PEN',
+                'status' => 'pending',
+                'payment_status' => 'paid', // Ya viene pagado como regalo
+                'delivery_method' => 'pickup',
+                'notes' => "Shakes de regalo por compra del paquete: {$packageName} (Cantidad: {$shakeQuantity})",
+                'payment_method_name' => 'Regalo por Membresía',
+                'estimated_ready_at' => now()->addMinutes(5),
+            ]);
+
+            // Crear detalles del pedido (shakes genéricos)
+            for ($i = 0; $i < $shakeQuantity; $i++) {
+                $giftOrder->details()->create([
+                    'drink_id' => null, // No hay drink específico, es un regalo genérico
+                    'quantity' => 1,
+                    'drink_name' => 'Shake de Regalo',
+                    'drink_combination' => 'Shake gratuito incluido con tu membresía',
+                    'unit_price_soles' => 0,
+                    'total_price_soles' => 0,
+                    'ingredients_info' => [
+                        'bases' => ['Shake de Regalo'],
+                        'flavors' => ['Sabor a elección'],
+                        'types' => ['Gratuito']
+                    ]
+                ]);
+            }
+
+            Log::info('Pedido de regalo de shakes creado', [
+                'user_id' => $userId,
+                'order_id' => $giftOrder->id,
+                'shake_quantity' => $shakeQuantity,
+                'package_name' => $packageName
+            ]);
+
+            return $giftOrder->id;
+
+        } catch (\Exception $e) {
+            Log::error('Error creando pedido de regalo de shakes', [
+                'user_id' => $userId,
+                'shake_quantity' => $shakeQuantity,
+                'package_name' => $packageName,
+                'error' => $e->getMessage()
+            ]);
+            return null;
         }
     }
 }

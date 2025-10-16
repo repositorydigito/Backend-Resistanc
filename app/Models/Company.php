@@ -43,7 +43,7 @@ class Company extends Model
 
     ];
 
-        protected $casts = [
+    protected $casts = [
         'social_networks' => 'array', // Esto convierte automáticamente el JSON a array
         'is_production' => 'boolean',
     ];

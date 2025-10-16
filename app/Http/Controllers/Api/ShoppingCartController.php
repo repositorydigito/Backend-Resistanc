@@ -113,13 +113,21 @@ class ShoppingCartController extends Controller
     /**
      * Agregar producto al carrito del usuario
      */
-    public function add(Request $request): JsonResponse
+    public function add(Request $request)
     {
         try {
+            // Log para debug
+            \Log::info('ShoppingCart Add Request', [
+                'all_data' => $request->all(),
+                'json_data' => $request->json()->all(),
+                'input_product_id' => $request->input('product_id'),
+                'input_quantity' => $request->input('quantity'),
+            ]);
+
             $request->validate([
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1',
-                'product_variant_id' => 'nullable|exists:product_variants,id',
+                'product_variant_id' => 'sometimes|exists:product_variants,id',
             ]);
 
             $cart = $this->getOrCreateActiveCart();

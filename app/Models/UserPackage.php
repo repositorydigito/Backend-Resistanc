@@ -34,6 +34,7 @@ final class UserPackage extends Model
         // 'auto_renew',
         'renewal_price',
         // 'benefits_included',
+        'gift_order_id',
         'notes',
     ];
 
@@ -100,6 +101,14 @@ final class UserPackage extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    /**
+     * Get the gift order associated with this package (shakes gratis por membresía).
+     */
+    public function giftOrder(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\JuiceOrder::class, 'gift_order_id');
     }
 
     /**

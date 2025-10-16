@@ -67,80 +67,133 @@ class OrderController extends Controller
     }
 
     /**
-     * Crea un nuevo pedido
+     * Confirma el carrito de compras y crea la orden
+     * Flujo: ShoppingCart -> Order (igual que shakes: JuiceCartCodes -> JuiceOrder)
      */
     public function store(Request $request): JsonResponse
     {
         try {
+            // Validar datos de entrada
             $request->validate([
-                'order_items' => 'required|array|min:1',
-                'order_items.*.product_id' => 'required|integer|exists:products,id',
-                'order_items.*.quantity' => 'required|integer|min:1',
-                'order_items.*.notes' => 'nullable|string|max:500',
                 'notes' => 'nullable|string|max:500',
+                'delivery_method' => 'sometimes|string|in:pickup,delivery',
             ]);
 
             $userId = $request->user()->id;
+            $user = $request->user();
 
-            return DB::transaction(function () use ($request, $userId) {
+            // Buscar el carrito activo del usuario
+            $cart = \App\Models\ShoppingCart::where('user_id', $userId)
+                ->where('status', 'active')
+                ->with(['items.product', 'items.productVariant'])
+                ->first();
+
+            if (!$cart || $cart->items->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No hay carrito activo o está vacío',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            return DB::transaction(function () use ($request, $cart, $user, $userId) {
+                // Calcular totales
                 $subtotal = 0;
                 $orderItemsData = [];
+                $itemsForJson = [];
 
-                foreach ($request->order_items as $item) {
-                    $product = Product::findOrFail($item['product_id']);
-                    $totalPrice = $product->price_soles * $item['quantity'];
+                foreach ($cart->items as $cartItem) {
+                    $product = $cartItem->product;
+                    $variant = $cartItem->productVariant;
+
+                    $unitPrice = $cartItem->unit_price;
+                    $totalPrice = $cartItem->total_price;
                     $subtotal += $totalPrice;
 
+                    // Para la tabla order_items (relacional)
                     $orderItemsData[] = [
                         'product_id' => $product->id,
-                        'quantity' => $item['quantity'],
-                        'unit_price_soles' => $product->price_soles,
-                        'total_price_soles' => $totalPrice,
-                        'product_name' => $product->name, // Para historial
-                        'notes' => $item['notes'] ?? null,
+                        'product_variant_id' => $variant?->id,
+                        'quantity' => $cartItem->quantity,
+                        'unit_price' => $unitPrice,
+                        'total_price' => $totalPrice,
+                    ];
+
+                    // Para el campo JSON items (requerido por la migración)
+                    $itemsForJson[] = [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'product_sku' => $variant ? $variant->full_sku : $product->sku,
+                        'quantity' => $cartItem->quantity,
+                        'unit_price' => $unitPrice,
+                        'total_price' => $totalPrice,
                     ];
                 }
 
+                // Crear la orden
                 $order = Order::create([
                     'order_number' => 'ORD-' . strtoupper(Str::random(10)),
                     'user_id' => $userId,
                     'subtotal_soles' => $subtotal,
+                    'tax_amount_soles' => 0,
+                    'shipping_amount_soles' => 0,
+                    'discount_amount_soles' => 0,
                     'total_amount_soles' => $subtotal,
+                    'currency' => 'PEN',
                     'order_type' => 'purchase',
                     'status' => 'pending',
                     'payment_status' => 'paid', // Ya viene pagado desde la app
-                    'delivery_method' => 'pickup', // Todos contra entrega
+                    'delivery_method' => $request->input('delivery_method', 'pickup'),
                     'notes' => $request->notes,
-                    'delivered_at' => null,
+                    'items' => $itemsForJson, // Campo JSON requerido
                 ]);
 
-                $order->orderItems()->createMany($orderItemsData);
+                    // Crear items de la orden
+                    $order->orderItems()->createMany($orderItemsData);
 
-                $order->load(['orderItems.product', 'user']);
+                    // Marcar carrito como convertido y limpiarlo
+                    $cart->update(['status' => 'converted']);
+                    $cart->items()->delete();
+
+                    // Crear nuevo carrito activo para el usuario
+                    \App\Models\ShoppingCart::create([
+                        'user_id' => $userId,
+                        'session_id' => session()->getId(),
+                        'status' => 'active',
+                        'total_amount' => 0,
+                        'item_count' => 0,
+                    ]);
+
+                    // Cargar relaciones para la respuesta
+                    $order->load(['orderItems.product', 'orderItems.productVariant', 'user']);
 
                 return response()->json([
                     'exito' => true,
                     'codMensaje' => 1,
-                    'mensajeUsuario' => 'Pedido creado exitosamente',
+                    'mensajeUsuario' => 'Pedido confirmado exitosamente',
                     'datoAdicional' => [
                         'order' => [
                             'id' => $order->id,
                             'order_number' => $order->order_number,
                             'status' => $order->status,
                             'payment_status' => $order->payment_status,
-                            'total_amount_soles' => $order->total_amount_soles,
+                            'subtotal_soles' => number_format($order->subtotal_soles, 2, '.', ''),
+                            'total_amount_soles' => number_format($order->total_amount_soles, 2, '.', ''),
                             'delivery_method' => $order->delivery_method,
                             'created_at' => $order->created_at->format('Y-m-d H:i:s'),
                         ],
                         'items' => $order->orderItems->map(function ($item) {
                             return [
+                                'id' => $item->id,
                                 'product_name' => $item->product_name,
+                                'product_sku' => $item->product_sku,
                                 'quantity' => $item->quantity,
-                                'unit_price_soles' => $item->unit_price_soles,
-                                'total_price_soles' => $item->total_price_soles,
-                                'notes' => $item->notes,
+                                'unit_price_soles' => number_format($item->unit_price_soles, 2, '.', ''),
+                                'total_price_soles' => number_format($item->total_price_soles, 2, '.', ''),
                             ];
                         }),
+                        'cart_cleared' => true,
                     ],
                 ], 200);
             });
@@ -155,8 +208,8 @@ class OrderController extends Controller
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Error al crear el pedido',
-                'datoAdicional' => null,
+                'mensajeUsuario' => 'Error al confirmar el pedido',
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }

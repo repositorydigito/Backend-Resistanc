@@ -41,6 +41,12 @@ final class HomeController extends Controller
         // Paquetes activos del usuario
         $activePackagesCount = $user->getActivePackagesCount();
 
+        // Obtener grupos de disciplinas con clases disponibles
+        $disciplineGroupsWithClasses = $this->getDisciplineGroupsWithAvailableClasses($user);
+
+        // Obtener cantidad de shakes disponibles
+        $availableShakesCount = $this->getAvailableShakesCount($user);
+
         // Instructores activos con disciplina
         $instructors = Instructor::with('disciplines')
             ->whereHas('disciplines', fn($q) => $q->where('status', 'active'))
@@ -48,12 +54,15 @@ final class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        $disciplines = Discipline::
-            orderBy('order', 'asc')
+        $disciplines = Discipline::orderBy('order', 'asc')
             ->get();
 
 
         $classSchedulesMe = $user->upcomingSeatReservations()
+            ->where(function ($query) {
+                $query->where('status', 'scheduled')
+                      ->orWhere('status', 'in_progress');
+            })
             ->whereHas('classSchedule.class', fn($q) => $q->where('status', 'active'))
             ->whereHas('classSchedule.studio', fn($q) => $q->where('status', 'active'))
             ->with(['classSchedule.class', 'classSchedule.studio', 'seat'])
@@ -95,11 +104,10 @@ final class HomeController extends Controller
                         'availableClassesCount' => $availableClassesCount,
                         'availableClassesByDiscipline' => $availableClassesByDiscipline,
                         'activePackagesCount' => $activePackagesCount,
+                        'disciplineGroupsWithClasses' => $disciplineGroupsWithClasses,
+                        'availableShakesCount' => $availableShakesCount,
                     ],
-                    'contact' => $user->contact ? [
-                        'phone' => $user->contact->phone,
-                        'address' => $user->contact->address,
-                    ] : [],
+
                     'paymentMethods' => $user->paymentMethods ? $user->paymentMethods->map(function ($method) {
                         return [
                             'id' => $method->id,
@@ -128,7 +136,153 @@ final class HomeController extends Controller
         ]);
     }
 
+    /**
+     * Obtener grupos de disciplinas con clases disponibles del usuario
+     */
+    private function getDisciplineGroupsWithAvailableClasses($user): array
+    {
+        // 1. Obtener TODOS los paquetes activos del sistema con sus disciplinas
+        $allPackages = \App\Models\Package::query()
+            ->with(['disciplines'])
+            ->where('buy_type', 'affordable')
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->where('type', 'fixed')
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->where('type', 'temporary')
+                            ->where('start_date', '<=', now())
+                            ->where('end_date', '>=', now());
+                    });
+            })
+            ->get();
 
+        // 2. Crear grupos únicos de disciplinas (inicialmente con 0 clases)
+        $disciplineGroups = [];
+        $groupCounter = 0;
 
+        foreach ($allPackages as $package) {
+            if (!$package->disciplines || $package->disciplines->isEmpty()) {
+                continue;
+            }
 
+            $disciplineIds = $package->disciplines->pluck('id')->sort()->values()->toArray();
+            $groupKey = implode('-', $disciplineIds);
+
+            if (!isset($disciplineGroups[$groupKey])) {
+                $groupCounter++;
+                $disciplineGroups[$groupKey] = [
+                    'id' => $groupCounter,
+                    'group_key' => $groupKey,
+                    'disciplines' => [],
+                    'disciplines_count' => count($disciplineIds),
+                    'available_classes' => 0,
+                    'group_name' => '',
+                ];
+
+                foreach ($package->disciplines as $discipline) {
+                    $disciplineGroups[$groupKey]['disciplines'][] = [
+                        'id' => $discipline->id,
+                        'name' => $discipline->name,
+                        'display_name' => $discipline->display_name,
+                        'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : asset('default/icon.png'),
+                        'color_hex' => $discipline->color_hex,
+                        'order' => $discipline->order,
+                    ];
+                }
+
+                usort($disciplineGroups[$groupKey]['disciplines'], function ($a, $b) {
+                    return $a['order'] <=> $b['order'];
+                });
+            }
+        }
+
+        // 3. Obtener paquetes del usuario
+        $userPackages = $user->userPackages()
+            ->with(['package.disciplines'])
+            ->where('status', 'active')
+            ->where('expiry_date', '>', now())
+            ->where('remaining_classes', '>', 0)
+            ->get();
+
+        // 4. Sumar las clases disponibles del usuario a cada grupo
+        foreach ($userPackages as $userPackage) {
+            if (!$userPackage->package || !$userPackage->package->disciplines) {
+                continue;
+            }
+
+            $disciplineIds = $userPackage->package->disciplines->pluck('id')->sort()->values()->toArray();
+            $groupKey = implode('-', $disciplineIds);
+
+            if (isset($disciplineGroups[$groupKey])) {
+                $disciplineGroups[$groupKey]['available_classes'] += $userPackage->remaining_classes;
+            }
+        }
+
+        // 5. Obtener membresías del usuario
+        $userMemberships = $user->userMemberships()
+            ->with(['discipline'])
+            ->where('status', 'active')
+            ->where('expiry_date', '>', now())
+            ->where('remaining_free_classes', '>', 0)
+            ->get();
+
+        // 6. Sumar las clases de membresías a los grupos correspondientes
+        foreach ($userMemberships as $userMembership) {
+            if (!$userMembership->discipline) {
+                continue;
+            }
+
+            $disciplineId = $userMembership->discipline_id;
+
+            foreach ($disciplineGroups as $groupKey => &$group) {
+                $existingDisciplineIds = array_column($group['disciplines'], 'id');
+                if (in_array($disciplineId, $existingDisciplineIds)) {
+                    $group['available_classes'] += $userMembership->remaining_free_classes;
+                    break;
+                }
+            }
+        }
+
+        // 7. Generar nombres descriptivos
+        foreach ($disciplineGroups as &$group) {
+            $disciplineNames = array_column($group['disciplines'], 'display_name');
+            $group['group_name'] = count($disciplineNames) === 1
+                ? $disciplineNames[0]
+                : implode(' + ', $disciplineNames);
+        }
+
+        // 8. Ordenar: primero los que tienen clases (descendente), luego los que no tienen
+        uasort($disciplineGroups, function ($a, $b) {
+            if (($a['available_classes'] > 0) !== ($b['available_classes'] > 0)) {
+                return ($b['available_classes'] > 0) <=> ($a['available_classes'] > 0);
+            }
+            if ($a['available_classes'] !== $b['available_classes']) {
+                return $b['available_classes'] <=> $a['available_classes'];
+            }
+            return $a['group_name'] <=> $b['group_name'];
+        });
+
+        return array_values($disciplineGroups);
+    }
+
+    /**
+     * Obtener cantidad de shakes disponibles del usuario desde pedidos pendientes (incluyendo regalos por membresía)
+     */
+    private function getAvailableShakesCount($user): int
+    {
+        $totalShakes = 0;
+
+        // Contar todos los pedidos de shake pendientes (gratuitos y regalos)
+        $pendingShakeOrders = \App\Models\JuiceOrder::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->where('total_amount_soles', 0) // Solo pedidos gratuitos/regalos
+            ->withCount('details')
+            ->get();
+
+        foreach ($pendingShakeOrders as $order) {
+            $totalShakes += $order->details_count; // Cantidad de bebidas en el pedido
+        }
+
+        return $totalShakes;
+    }
 }
