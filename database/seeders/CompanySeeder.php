@@ -27,11 +27,22 @@ class CompanySeeder extends Seeder
             'email' => 'info@rsistance.com',
             'logo_path' => null,
             'signature_image' => null,
-            'social_networks' => [
-                ["name" => "Facebook", "url" => "https://facebook.com/rsistance"],
-                ["name" => "Instagram", "url" => "https://instagram.com/rsistance"],
-                ["name" => "Twitter", "url" => "https://twitter.com/rsistance"]
-            ],
+            // 'social_networks' => [
+            //     ["name" => "Facebook", "url" => "https://facebook.com/rsistance"],
+            //     ["name" => "Instagram", "url" => "https://instagram.com/rsistance"],
+            //     ["name" => "Twitter", "url" => "https://twitter.com/rsistance"]
+            // ],
+
+            // Nuevos campos de redes sociales
+            'facebook_url' => 'https://facebook.com/rsistance',
+            'instagram_url' => 'https://instagram.com/rsistance',
+            'twitter_url' => 'https://twitter.com/rsistance',
+            'linkedin_url' => 'https://linkedin.com/company/rsistance',
+            'youtube_url' => 'https://youtube.com/c/rsistance',
+            'tiktok_url' => 'https://tiktok.com/@rsistance',
+            'whatsapp_url' => 'https://wa.me/51987654321',
+            'website_url' => 'https://rsistance.com',
+
 
             'is_production' => false,
 

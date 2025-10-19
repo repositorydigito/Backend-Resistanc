@@ -21,6 +21,18 @@ class Company extends Model
         'signature_image', // Ruta de la imagen de la firma
         'social_networks', // Redes sociales
 
+        // Redes sociales
+        'facebook_url',
+        'instagram_url',
+        'twitter_url',
+        'linkedin_url',
+        'youtube_url',
+        'tiktok_url',
+        'whatsapp_url',
+        'website_url',
+
+
+
         // Facturacion greenter
         'is_production',
 

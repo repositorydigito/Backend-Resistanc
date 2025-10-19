@@ -14,7 +14,7 @@ class PrivacityController extends Controller
     public function index()
     {
 
-        $membresias = Membership::all();
+        
         $disciplines = Discipline::all();
 
         return view('client.privacy-policy', compact('membresias', 'disciplines'));

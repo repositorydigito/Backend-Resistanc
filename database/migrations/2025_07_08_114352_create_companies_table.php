@@ -27,6 +27,20 @@ return new class extends Migration
             $table->string('signature_image')->nullable()->comment('Ruta de la imagen de la firma');
             $table->json('social_networks')->nullable()->comment('Redes sociales');
 
+
+
+
+            // Redes sociales individuales
+            $table->string('facebook_url')->nullable()->comment('URL de Facebook');
+            $table->string('instagram_url')->nullable()->comment('URL de Instagram');
+            $table->string('twitter_url')->nullable()->comment('URL de Twitter');
+            $table->string('linkedin_url')->nullable()->comment('URL de LinkedIn');
+            $table->string('youtube_url')->nullable()->comment('URL de YouTube');
+            $table->string('tiktok_url')->nullable()->comment('URL de TikTok');
+            $table->string('whatsapp_url')->nullable()->comment('URL de WhatsApp');
+            $table->string('website_url')->nullable()->comment('URL del sitio web');
+
+
             // Facturacion con Greenter
             $table->boolean('is_production')->default(false)->comment('Para que empiece a facturar');
 

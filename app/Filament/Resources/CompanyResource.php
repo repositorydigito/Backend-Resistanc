@@ -29,7 +29,7 @@ class CompanyResource extends Resource
 
     protected static ?int $navigationSort = 29;
 
-   public static function canCreate(): bool
+    public static function canCreate(): bool
     {
         return Company::count() === 0;
     }
@@ -111,33 +111,52 @@ class CompanyResource extends Resource
                     ->columns(2)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Redes Sociales')
-                    ->description('Configuración de redes sociales de la empresa')
+
+                Forms\Components\Section::make('Redes Sociales - URLs Individuales')
+                    ->description('Enlaces a las redes sociales de la empresa')
                     ->schema([
-                        Forms\Components\Repeater::make('social_networks')
-                            ->label('Redes Sociales')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->label('Nombre de la Red Social')
-                                    ->required()
-                                    ->placeholder('Ej: Facebook, Instagram, Twitter')
-                                    ->maxLength(50),
-                                Forms\Components\TextInput::make('url')
-                                    ->label('Enlace/URL')
-                                    ->required()
-                                    ->url()
-                                    ->placeholder('Ej: https://www.facebook.com/rsistance')
-                                    ->maxLength(255),
-                            ])
-                            ->columns(2)
-                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'Nueva Red Social')
-                            ->addActionLabel('Agregar Red Social')
-                            ->reorderable(true)
-                            ->collapsible()
-                            ->cloneable()
-                            ->defaultItems(0)
-                            ->helperText('Agrega las redes sociales de tu empresa con sus respectivos enlaces'),
+                        Forms\Components\TextInput::make('facebook_url')
+                            ->label('Facebook URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://facebook.com/empresa'),
+                        Forms\Components\TextInput::make('instagram_url')
+                            ->label('Instagram URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://instagram.com/empresa'),
+                        Forms\Components\TextInput::make('twitter_url')
+                            ->label('Twitter URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://twitter.com/empresa'),
+                        Forms\Components\TextInput::make('linkedin_url')
+                            ->label('LinkedIn URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://linkedin.com/company/empresa'),
+                        Forms\Components\TextInput::make('youtube_url')
+                            ->label('YouTube URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://youtube.com/empresa'),
+                        Forms\Components\TextInput::make('tiktok_url')
+                            ->label('TikTok URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://tiktok.com/@empresa'),
+                        Forms\Components\TextInput::make('whatsapp_url')
+                            ->label('WhatsApp URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://wa.me/51987654321'),
+                        Forms\Components\TextInput::make('website_url')
+                            ->label('Sitio Web URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->placeholder('Ej: https://empresa.com'),
                     ])
+                    ->columns(2)
                     ->collapsible(),
 
                 Forms\Components\Section::make('Configuración de Facturación (Greenter)')
@@ -198,7 +217,7 @@ class CompanyResource extends Resource
     }
 
 
-  public static function table(Table $table): Table
+    public static function table(Table $table): Table
     {
         return $table
             ->columns([

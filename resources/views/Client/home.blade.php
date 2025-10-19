@@ -1,299 +1,450 @@
 <x-app>
 
-{{-- Hero --}}
-<section class="hero" id="inicio">
-    <div class="containerBanner">
-        <h1>TRAIN <span class="light">YOUR</span> RSISTANC.</h1>
-        <h1><span class="light">LIVE</span> UNSTOPPABLE.</h1>
-        <p>Clases que te transforman. Energía que te eleva. Una comunidad que te empuja a más.</p>
-        <a href="#membresias" class="btn btn-primary">EMPIEZA HOY</a>
-        <a href="#disciplinas" class="btn btn-outline">RESERVA TU CLASE DE PRUEBA</a>
-    </div>
-</section>
+    @push('css')
+        <!-- Swiper CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-{{-- Disciplinas --}}
-@if($disciplines->count() > 0)
-<section class="section" id="disciplinas">
-    <div class="containerDisciplines">
-        <h2 class="section-title"><span class="light">ELIGE CÓMO QUIERES</span> MOVERTE</h2>
+        <style>
+            * {
+                /* outline: 1px solid red; */
+            }
 
-        <div class="carousel-container">
-            <div class="carousel-items" id="carousel">
-                @foreach($disciplines as $index => $discipline)
-                    <div class="carousel-item">
-                        <div class="card">
-                            <div class="logoStudio1">
-                                <img src="/image/logos/logoBlancoR.svg" alt="logo">
-                                <h3>{{ $discipline->name }}</h3>
+            .hero {
+
+                background:
+                    linear-gradient(88deg, #B66F37 26.73%, rgba(157, 90, 169, 0.90) 48.98%, rgba(181, 130, 190, 0.70) 68.44%, rgba(255, 255, 255, 0.00) 83.14%),
+                    url({{ asset('image/pages/banner1.png') }});
+                background-size: cover;
+                background-position: center;
+            }
+
+            /* Estilos personalizados para Swiper */
+            .swiper {
+                width: 100%;
+                padding: 20px 0;
+            }
+
+            .swiper-slide {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .swiper-button-next,
+            .swiper-button-prev {
+                color: #B66F37;
+            }
+
+            .swiper-pagination-bullet-active {
+                background: #B66F37;
+            }
+
+            .main {
+                /* background: #d0d7d6b7; */
+            }
+
+            .card__discipline {
+
+                height: 300px;
+                color: #fff;
+                border-radius: 30px;
+                padding: 1.5rem;
+                display: grid;
+                align-content: flex-end;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .card__discipline::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.301);
+                z-index: 10;
+            }
+
+            .card__discipline>* {
+                z-index: 11;
+            }
+
+            .discipline__description {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                font-size: 1rem;
+                font-weight: 200;
+            }
+
+            .card__benef {
+                height: 450px;
+                color: #fff
+            }
+
+            .card__benef--one {
+
+                background: url({{ asset('image/pages/banner_one.png') }});
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: cover;
+            }
+
+            .card__benef--two {
+                background-repeat: no-repeat;
+                background-size: cover;
+
+
+                background: linear-gradient(180deg, rgba(157, 90, 169, 0.50) 7.07%, rgba(163, 107, 182, 0.50) 51.03%, rgba(49, 44, 54, 0.5) 93.98%), url({{ asset('image/pages/cyclingGroup.png') }});
+
+                background-position: center;
+            }
+
+            .store__img {
+                background-position: end;
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+
+            .direccion__detl {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+
+            }
+
+            .direccion__detl img {
+                height: 30px;
+                width: 30px;
+            }
+
+            .direccion__detl span {
+                font-size: 1.2rem;
+                font-weight: 100;
+            }
+
+            .card__services {
+                height: 250px;
+                /* background: red; */
+                padding: 1.2rem;
+                border-radius: 20px;
+                align-content: end;
+                color: #fff;
+                position: relative;
+                overflow: hidden;
+            }
+             .card__services::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.301);
+                z-index: 10;
+            }
+
+            .card__services > * {
+                  position: relative;
+                z-index: 11;
+            }
+
+            .servicescard__title {
+                display: flex;
+                /* gap: .7rem; */
+                font-size: 1.9rem;
+                font-weight: 600;
+
+
+            }
+
+            .faqcontainer{
+                background: #ffffff44;
+            }
+        </style>
+    @endpush
+
+    {{-- Hero --}}
+    <section class="hero h-[calc(100vh-8rem)] items-center justify-center content-center pt-6">
+        <div class="container ">
+
+            <div class="grid gap-8 w-full  lg:w-8/12 text-white">
+                <h1 class="text-6xl  font-extrabold tracking-[8px]">TRAIN <span class="font-light">YOUR </span>RSISTANC.
+                    <span class="font-light">LIVE</span> UNSTOPPABLE.
+                </h1>
+                <p class="text-2xl max-w-xl">Clases que te transforman. Energía que te eleva. Una comunidad que te empuja
+                    a más.</p>
+
+
+                <div class="flex gap-4 ">
+
+                    <a href="#membresias" class="btn btn__one">EMPIEZA HOY</a>
+                    <a href="#disciplinas" class="btn btn__two">RESERVA TU CLASE DE PRUEBA</a>
+                </div>
+
+
+            </div>
+
+
+
+        </div>
+    </section>
+
+
+    <main class="main flex flex-col gap-8 py-8">
+
+
+
+        {{-- Disciplinas --}}
+        @if ($disciplines->count() > 0)
+            <section class="section " id="disciplinas">
+                <div class="container">
+                    <div class="bg-white p-9 rounded-3xl">
+
+                        <h2 class="text-2xl font-extrabold"><span class="font-normal">ELIGE CÓMO QUIERES</span> MOVERTE
+                        </h2>
+
+                        <div class="swiper disciplinesSwiper">
+                            <div class="swiper-wrapper">
+                                @foreach ($disciplines as $index => $discipline)
+                                    <div class="swiper-slide card__discipline"
+                                        style="background: url({{ $discipline->image_url ?? asset('default/discipline.png') }});           background-position: center;
+                background-repeat: no-repeat;
+                background-size: cover;">
+                                        <div class="grid gap-3">
+                                            <div class="flex items-center gap-2">
+                                                <img src="/image/logos/logoBlancoR.svg" alt="logo">
+                                                <h3 class="uppercase font-bold text-lg">{{ $discipline->name }}</h3>
+                                            </div>
+                                            @if ($discipline->description)
+                                                <p class="discipline__description">{{ $discipline->description }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
                             </div>
-                            @if($discipline->description)
-                                <p>{{ $discipline->description }}</p>
-                            @endif
+
+                            <!-- Navegación -->
+                            {{-- <div class="swiper-button-next"></div>
+                            <div class="swiper-button-prev"></div> --}}
+
+                            <!-- Paginación -->
+                            {{-- <div class="swiper-pagination"></div> --}}
                         </div>
                     </div>
-                @endforeach
-            </div>
 
-            <div class="carousel-controls">
-                <button class="carousel-nav carousel-nav-left" onclick="prevSlide()">←</button>
-                <button class="carousel-nav carousel-nav-right" onclick="nextSlide()">→</button>
-            </div>
-        </div>
-    </div>
-</section>
-@endif
+                </div>
+            </section>
+        @endif
 
-{{-- Paquetes y Beneficios --}}
-<section class="section section-packages" id="paquetes">
-    <div class="container">
-        <div class="gridCards">
-            <div class="package-card card-brown">
-                <h3><span class="light">PAQUETES</span></h3>
-                <h3><span class="light">QUE SE ADAPTAN</span></h3>
-                <h3>A TU RITMO.</h3>
-                <br>
-                <p class="dark">Desde 1 hasta 40 clases.</p>
-                <div class="package-details">
-                    <p><span class="light">Mixea disciplinas, suma puntos,</span></p>
-                    <p><span class="light">sube de nivel.</span></p>
-                </div>
-                <a href="#membresias" class="btn btn-outline">VER PAQUETES →</a>
-            </div>
-            <div class="package-card card-purple">
-                <h3><span class="light">MÁS</span> RESISTANCE, <span class="light">MÁS</span> REWARDS.</h3>
-                <br>
-                <p class="dark">Entrenar tiene beneficios reales:</p>
-                <div class="package-details">
-                    <p><span class="light">Early access, descuentos y shakes gratis</span></p>
-                    <p><span class="light">alcanzando la categoría </span>GOLD y BLACK.</p>
-                </div>
-                <a href="#beneficios" class="btn btn-outline">VER BENEFICIOS →</a>
-            </div>
-        </div>
-    </div>
-</section>
+        {{-- Paquetes y Beneficios --}}
+        <section class="section section-packages" id="paquetes">
+            <div class="container">
+                <div class="flex flex-wrap gap-6">
+                    <div
+                        class="card__benef card__benef--one p-8 rounded-3xl grid gap-3 justify-start justify-items-start content-end w-full lg:max-w-96">
+                        <h3 class="text-4xl font-light leading-tight">PAQUETES <br> QUE SE ADAPTAN <span
+                                class="grid font-extrabold">A TU RITMO.</span></h3>
 
-{{-- Servicios --}}
-@if($disciplines->count() > 0)
-<section class="section" id="servicios">
-    <div class="containerDisciplines">
-        <h2 class="titleServicios">SERVICIOS</h2>
-        <h3 class="subtitleServicios"><span class="light">Explora lo que hace única tu experiencia en</span> R STUDIO<span class="light">, dentro y fuera del training floor.</span></h3>
-        <div class="gridServicios">
-            @foreach($disciplines as $discipline)
-            <div class="card">
-                <div class="logoStudio1">
-                    <img src="/image/logos/logoBlancoR.svg" alt="logo">
-                    <h3>{{ $discipline->name }}</h3>
-                </div>
-                @if($discipline->description)
-                <p>{{ $discipline->description }}</p>
-                @endif
-                <div class="logoStudio">
-                    <span class="light">⚡Shake it, wear it, own it.</span>
+                        <p class="dark text-lg font-medium">Desde 1 hasta 40 clases.</p>
+                        <div class="font-light text-lg">
+                            <p>Mixea disciplinas, suma puntos,
+                                sube de nivel.</p>
+                        </div>
+                        <a href="#membresias" class="font-extrabold text-xl">VER PAQUETES →</a>
+                    </div>
+                    <div
+                        class="card__benef card__benef--two flex-1 bg-slate-500 rounded-3xl p-8 grid gap-3 justify-start justify-items-start content-end ">
+                        <h3 class="text-4xl font-extrabold leading-tight"><span class="font-light">MÁS</span>
+                            RESISTANCE, <span class="font-light">MÁS</span> REWARDS.</h3>
+
+                        <p class="dark text-lg font-medium">Entrenar tiene beneficios reales:</p>
+                        <div class="package-details">
+                            <p><span class="font-light">Early access, descuentos y shakes gratis</span></p>
+                            <p class="font-extrabold"><span class="font-light">alcanzando la categoría </span>GOLD y
+                                BLACK.</p>
+                        </div>
+                        <a href="#beneficios" class="font-extrabold text-xl ">VER BENEFICIOS →</a>
+                    </div>
                 </div>
             </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-@endif
+        </section>
 
-{{-- Descarga --}}
-<section class="section" id="descarga">
-    <div class="containerDescarga">
-        <img src="/image/pages/vistaCel.svg" alt="descarga">
-        <div class="textDescarga">
-            <h1>TU RSISTANC <span class="light">VA CONTIGO.</span></h1>
-            <h3><span class="light">Reserva, compra, suma puntos y ve tu progreso desde nuestra app.</span></h3>
-            <h3>Simple, rápida, tuya.</h3>
-            <br>
-            <div>
-                <img src="/image/logos/iconos/ios.svg" alt="ios">
-                <img src="/image/logos/iconos/android.svg" alt="android">
-            </div>
-        </div>
-    </div>
-</section>
+        {{-- Servicios --}}
+        @if ($services->count() > 0)
+            <section class="section" id="servicios">
+                <div class="container">
+                    <div class="services grid gap-2 bg-white p-9 rounded-3xl ">
+                        <h2 class="text-2xl font-extrabold">SERVICIOS</h2>
+                        <h3 class="font-bold text-lg"><span class="font-light">Explora lo que hace única tu experiencia
+                                en</span> R
+                            STUDIO<span class="font-light">, dentro y fuera del training floor.</span></h3>
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            @foreach ($services as $service)
+                                <div class="card__services" style="background: url({{ $service->image_url ?? asset('default/discipline.png') }}); background-position: center;
+                background-repeat: no-repeat;
+                background-size: cover;">
+                                    <div class="servicescard__title">
+                                        <img src="/image/logos/logoBlancoR.svg" alt="logo">
+                                        <h3>{{ $service->title }}</h3>
+                                    </div>
+                                    @if ($discipline->description)
+                                        <p>{{ $service->description }}</p>
+                                    @endif
 
-{{-- Direccion --}}
-<section class="section" id="direccion">
-    <div class="containerDireccion">        
-        <div class="textDireccion">
-            <h1><span class="light">ENCUENTRA</span></h1>
-            <div class="logoStudio1">
-                <img src="/image/logos/iconos/logor.svg" alt="logo">
-                <h1>STUDIO</h1>
-            </div>
-            <h3><span class="light">Ubicado en Surco, diseñado para que te muevas libre y con flow.</span></h3>
-            <br>
-            <div class="logoStudio">
-                <img src="/image/logos/iconos/iconomapa.svg" alt="mapa">
-                <span class="light">Avenida Surco 123, Santiago de Surco, Lima, Perú</span>
-            </div>
-            <div class="logoStudio">
-                <img src="/image/logos/iconos/iconocel.svg" alt="celular">
-                <span class="light">+51 966532455</span>
-            </div>
-            <div class="logoStudio">
-                <img src="/image/logos/iconos/iconomail.svg" alt="correo">
-                <span class="light">hola@rsistanc.com</span>
-            </div>
-        </div>
-        <a href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú" target="_blank" rel="noopener noreferrer">
-            <img src="/image/pages/mapa.svg" alt="Mapa de Studio" class="mapaStudio">
-        </a>
-    </div>
-</section>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
 
-{{-- FAQ --}}
-<section class="section" id="faq">
-    <div class="containerFaq">
-        <h2 class="section-title">FAQs</h2>
-        <p class="faq-subtitle">¿Tienes dudas? Resolvemos todo.</p>
-
-        <div class="faq-container">
-            <details class="faq-item">
-                <summary class="faq-question">
-                    ¿Qué incluye mi membresía RSISTANC?
-                </summary>
-                <div class="faq-answer">
-                    Tu membresía te da acceso a nuestras cuatro disciplinas: Cycling, Reformer, Pilates y Box. Además, acumulas puntos con cada clase que puedes canjear por recompensas exclusivas. Gestiona todo desde nuestra app.
                 </div>
-            </details>
+            </section>
+        @endif
 
-            <details class="faq-item">
-                <summary class="faq-question">
-                    ¿Ofrecen clases de prueba para nuevos miembros?
-                </summary>
-                <div class="faq-answer">
-                    Sí, ofrecemos clases de prueba gratuitas para nuevos miembros. Solo necesitas registrarte en nuestra app y reservar tu clase desde allí.
+        {{-- Descarga --}}
+        <section class="section" id="descarga">
+            <div class="container">
+
+                <div
+                    class="grid grid-cols-1 xl:grid-cols-2 justify-center content-center justify-items-center items-center gap-6 bg-white p-9 rounded-3xl ">
+
+
+                    <img class="store__img" src="/image/pages/vistaCel.svg" alt="descarga">
+                    <div class="grid gap-2">
+                        <h2 class="text-4xl font-extrabold">TU RSISTANC <span class="font-light">VA CONTIGO.</span></h2>
+                        <h3><span class="text-xl font-light">Reserva, compra, suma puntos y ve tu progreso desde nuestra
+                                app.</span>
+                        </h3>
+                        <h3 class="font-bold text-lg">Simple, rápida, tuya.</h3>
+
+                        <div class="flex gap-3 mt-5">
+                            <img src="/image/logos/iconos/ios.svg" alt="ios">
+                            <img src="/image/logos/iconos/android.svg" alt="android">
+                        </div>
+                    </div>
                 </div>
-            </details>
-
-            <details class="faq-item">
-                <summary class="faq-question">
-                    ¿Dónde se encuentran los estudios de RSISTANC?
-                </summary>
-                <div class="faq-answer">
-                    Nuestro estudio principal está ubicado en Avenida Surco 123, Santiago de Surco, Lima, Perú. Pronto abriremos más sedes en otras zonas.
-                </div>
-            </details>
-
-            <details class="faq-item">
-                <summary class="faq-question">
-                    ¿Puedo combinar diferentes clases en mi paquete?
-                </summary>
-                <div class="faq-answer">
-                    Sí, puedes mixear cualquier combinación de clases según tu preferencia. Elige entre Cycling, Reformer, Pilates y Box sin límites.
-                </div>
-            </details>
-
-            <details class="faq-item">
-                <summary class="faq-question">
-                    ¿Cómo puedo reservar una clase?
-                </summary>
-                <div class="faq-answer">
-                    Reserva tu clase desde nuestra app móvil o web. Solo selecciona la fecha, hora y disciplina, y listo. ¡Tu lugar ya está asegurado!
-                </div>
-            </details>
-        </div>
-    </div>
-</section>
-
-<!-- {{-- Membresías --}}
-@if($membresias->count() > 0)
-<section class="section section-alt" id="membresias">
-    <div class="container">
-        <h2 class="section-title">Nuestras Membresías</h2>
-        <div class="grid">
-            @foreach($membresias as $membresia)
-            <div class="card membership-card">
-                <h3>{{ $membresia->name }}</h3>
-                <div class="price">${{ number_format($membresia->price, 0) }}</div>
-                @if($membresia->description)
-                <p>{{ $membresia->description }}</p>
-                @endif
-                <ul class="features">
-                    <li>✓ Acceso completo al gimnasio</li>
-                    <li>✓ Asesoría personalizada</li>
-                    <li>✓ Clases grupales incluidas</li>
-                </ul>
-                <a href="#contacto" class="btn btn-primary">Elegir Plan</a>
             </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-@endif
+        </section>
 
-{{-- Disciplinas --}}
-@if($disciplines->count() > 0)
-<section class="section" id="disciplinas">
-    <div class="container">
-        <h2 class="section-title">Disciplinas Disponibles</h2>
-        <div class="grid">
-            @foreach($disciplines as $discipline)
-            <div class="card">
-                <h3>{{ $discipline->name }}</h3>
-                @if($discipline->description)
-                <p>{{ $discipline->description }}</p>
-                @endif
+        {{-- Direccion --}}
+        <section class="section" id="direccion">
+            <div class="container">
+                <div class="flex gap-6 flex-wrap items-center bg-white p-9 rounded-3xl">
+                    <div class="flex-1 grid gap-4">
+                        <div class="text-5xl grid gap-2">
+                            <h1><span class="font-extralight">ENCUENTRA</span></h1>
+                            <div class="flex gap-3 font-extrabold">
+                                <img class="w-10" src="/image/logos/iconos/logor.svg" alt="logo">
+                                <h2>STUDIO</h2>
+                            </div>
+                        </div>
+
+                        <p class="text-xl">Ubicado en Surco, diseñado para que te muevas libre y con flow.</p>
+
+                        <div class="direccion__detl">
+                            <img src="/image/logos/iconos/iconomapa.svg" alt="mapa">
+                            <span class="light">Avenida Surco 123, Santiago de Surco, Lima, Perú</span>
+                        </div>
+                        <div class="direccion__detl">
+                            <img src="/image/logos/iconos/iconocel.svg" alt="celular">
+                            <span class="light">+51 966532455</span>
+                        </div>
+                        <div class="direccion__detl">
+                            <img src="/image/logos/iconos/iconomail.svg" alt="correo">
+                            <span class="light">hola@rsistanc.com</span>
+                        </div>
+                    </div>
+                    <a href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú"
+                        target="_blank" rel="noopener noreferrer">
+                        <img src="/image/pages/mapa.svg" alt="Mapa de Studio" class="mapaStudio">
+                    </a>
+                </div>
+
             </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-@endif
+        </section>
 
-{{-- CTA --}}
-<section class="hero" id="contacto">
-    <div class="container">
-        <h2>¿Listo para empezar?</h2>
-        <p>Tu transformación comienza hoy</p>
-        <a href="tel:+123456789" class="btn btn-primary">Llamar Ahora</a>
-        <a href="mailto:info@resistance.com" class="btn btn-outline">Enviar Email</a>
-    </div>
-</section> -->
+        {{-- FAQ --}}
+        <section class="section" id="faq">
+            <div class="container">
+                <div class="faqcontainer p-9 rounded-3xl">
 
-<script>
-let slideIndex = 0;
-const carousel = document.getElementById('carousel');
-const items = carousel.querySelectorAll('.carousel-item');
-let slidesPerView = window.innerWidth < 768 ? 1 : 3;
+                    <div class="text-center grid gap-3 mb-5">
+                        <h2 class="font-semibold text-3xl">FAQs</h2>
+                        <p class="font-light text-lg">¿Tienes dudas? Resolvemos todo.</p>
+                    </div>
+                    <div class="faq-container grid gap-3">
 
-function updateSlides() {
-    const slideWidth = carousel.offsetWidth / slidesPerView;
-    carousel.scrollLeft = slideIndex * slideWidth;
-}
+                        @foreach ($faqs as $faq)
+                            <details class="p-5 bg-white rounded-2xl">
+                                <summary class="font-semibold text-lg">
+                                    {{ $faq->question }}
+                                </summary>
+                                <div class="faq-answer">
+                                    {{ $faq->answer }}
+                                </div>
+                            </details>
+                        @endforeach
+                    </div>
 
-function nextSlide() {
-    if (slideIndex < items.length - slidesPerView) {
-        slideIndex++;
-        updateSlides();
-    }
-}
+                </div>
+            </div>
+        </section>
 
-function prevSlide() {
-    if (slideIndex > 0) {
-        slideIndex--;
-        updateSlides();
-    }
-}
+    </main>
 
-function handleResize() {
-    const newSlidesPerView = window.innerWidth < 768 ? 1 : 3;
-    if (newSlidesPerView !== slidesPerView) {
-        slidesPerView = newSlidesPerView;
-        updateSlides();
-    }
-}
 
-document.addEventListener('DOMContentLoaded', function () {
-    updateSlides();
+    @push('js')
+        <!-- Swiper JS -->
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-    window.addEventListener('resize', handleResize);
-});
-</script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Inicializar Swiper para las disciplinas
+                const swiper = new Swiper('.disciplinesSwiper', {
+                    slidesPerView: 1,
+                    spaceBetween: 20,
+                    loop: true,
+                    autoplay: {
+                        delay: 3000,
+                        disableOnInteraction: false,
+                    },
+                    pagination: {
+                        el: '.swiper-pagination',
+                        clickable: true,
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                    breakpoints: {
+
+                        562: {
+                            slidesPerView: 1,
+                            spaceBetween: 20,
+                        },
+
+                        700: {
+                            slidesPerView: 2,
+                            spaceBetween: 20,
+                        },
+
+                        840: {
+                            slidesPerView: 3,
+                            spaceBetween: 20,
+                        },
+                        1200: {
+                            slidesPerView: 4,
+                            spaceBetween: 20,
+                        },
+                    },
+                });
+            });
+        </script>
+    @endpush
+
+
+
 
 </x-app>

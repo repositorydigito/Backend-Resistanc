@@ -10,8 +10,6 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/privacity', [PrivacityController::class, 'index'])->name('privacity');
 
-Route::get('/terms', [TermsController::class, 'index'])->name('terms');
-
 // Ruta de prueba simple
 Route::get('/test', function () {
     return 'Ruta de prueba funcionando';
@@ -69,5 +67,3 @@ Route::post('/email/verification-notification', function () {
 })->name('verification.send');
 
 
-Route::get('webhook/github', [\App\Http\Controllers\WebHook::class, 'github']);
-Route::post('webhook/github', [\App\Http\Controllers\WebHook::class, 'github']);

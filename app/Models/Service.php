@@ -35,20 +35,20 @@ class Service extends Model
     }
 
     // Helper method to get image URL
-    public function getImageUrlAttribute(): string
-    {
-        if (!$this->image) {
-            return '/image/logos/logoBlancoR.svg'; // Default image
-        }
+    // public function getImageUrlAttribute(): string
+    // {
+    //     if (!$this->image) {
+    //         return '/image/logos/logoBlancoR.svg'; // Default image
+    //     }
 
-        if (filter_var($this->image, FILTER_VALIDATE_URL)) {
-            return $this->image;
-        }
+    //     if (filter_var($this->image, FILTER_VALIDATE_URL)) {
+    //         return $this->image;
+    //     }
 
-        if (str_starts_with($this->image, '/')) {
-            return $this->image;
-        }
+    //     if (str_starts_with($this->image, '/')) {
+    //         return $this->image;
+    //     }
 
-        return asset('storage/' . $this->image);
-    }
+    //     return asset('storage/' . $this->image);
+    // }
 }
