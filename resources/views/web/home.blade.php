@@ -327,7 +327,7 @@
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             @foreach ($services as $service)
                                 <div class="card__services"
-                                    style="background: url({{ $service->image ?? asset('default/discipline.png') }}); background-position: center;
+                                    style="background: url({{ $service->imagen ? 'storage/' . $service->imagen : asset('default/discipline.png') }}); background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
                                     <div class="servicescard__title flex gap-3 items-center">
