@@ -252,7 +252,7 @@
                             <div class="swiper-wrapper">
                                 @foreach ($disciplines as $index => $discipline)
                                     <div class="swiper-slide card__discipline"
-                                        style="background: url({{ $discipline->image_url ?? asset('default/discipline.png') }});           background-position: center;
+                                        style="background: url({{ $discipline->image_url ? 'storage/' . $discipline->image_url : asset('default/discipline.png') }});           background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
                                         <div class="grid gap-3">
