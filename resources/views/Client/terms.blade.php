@@ -16,7 +16,7 @@
     <section class="hero h-[calc(100vh-8rem)] items-center justify-center content-center pt-6">
         <div class="container ">
 
-            <div data-aos="fade-up" class="grid gap-8 w-full   text-white">
+            <div  data-aos="fade-up" class="grid gap-8 w-full   text-white">
                 <h1 class="text-6xl  font-extrabold tracking-[8px] uppercase">
                     Términos y condiciones de uso de servicios en RSISTANC STUDIO
                 </h1>

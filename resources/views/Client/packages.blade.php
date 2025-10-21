@@ -6,7 +6,7 @@
 
                 background:
                                                                                                     linear-gradient(88deg, #B66F37 26.73%, rgba(157, 90, 169, 0.90) 48.98%, rgba(181, 130, 190, 0.70) 68.44%, rgba(255, 255, 255, 0.00) 83.14%),
-                                                                                                    url({{ asset('image/pages/banner1.png') }});
+                                                                                                     url({{ asset('image/pages/banner1.png') }});
                 background-size: cover;
                 background-position: center;
             }
