@@ -133,7 +133,7 @@
                 <div data-aos="fade-left" class="grid gap-4  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 py-12">
                     <div class="footer-logo">
                         <img class="max-w-64" src="{{ asset('image/logos/logorsistanc.svg') }}" alt="RSISTANC Logo">
-                        <div class="social-icons">
+                        <div class="social-icons flex flex-wrap">
                             @if ($company->instagram_url)
                                 <a class="bg-black" href="{{ $company->instagram_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-instagram"></i>
