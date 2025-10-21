@@ -135,7 +135,8 @@
                 position: relative;
                 overflow: hidden;
             }
-             .card__services::before {
+
+            .card__services::before {
                 content: "";
                 position: absolute;
                 top: 0;
@@ -146,8 +147,8 @@
                 z-index: 10;
             }
 
-            .card__services > * {
-                  position: relative;
+            .card__services>* {
+                position: relative;
                 z-index: 11;
             }
 
@@ -160,7 +161,7 @@
 
             }
 
-            .faqcontainer{
+            .faqcontainer {
                 background: #ffffff44;
             }
 
@@ -256,7 +257,8 @@
                 background-size: cover;">
                                         <div class="grid gap-3">
                                             <div class="flex items-center gap-2">
-                                            <img src="{{ $discipline->icon_url ?? asset('image/logos/logoBlancoR.svg') }}" alt="logo">
+                                                <img src="{{ $discipline->icon_url ? 'storage/' . $discipline->icon_url : asset('image/logos/logoBlancoR.svg') }}"
+                                                    alt="logo">
                                                 <h3 class="uppercase font-bold text-lg">{{ $discipline->name }}</h3>
                                             </div>
                                             @if ($discipline->description)
@@ -324,7 +326,8 @@
                             STUDIO<span class="font-light">, dentro y fuera del training floor.</span></h3>
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             @foreach ($services as $service)
-                                <div class="card__services" style="background: url({{ $service->image_url ?? asset('default/discipline.png') }}); background-position: center;
+                                <div class="card__services"
+                                    style="background: url({{ $service->image_url ?? asset('default/discipline.png') }}); background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
                                     <div class="servicescard__title flex gap-3 items-center">
@@ -374,7 +377,7 @@
             <div class="container">
                 <div class="flex gap-6 flex-wrap items-center bg-white p-9 rounded-3xl">
                     <div data-aos="fade-right" class="flex-1 grid gap-4">
-                        <div  class="text-5xl grid gap-2">
+                        <div class="text-5xl grid gap-2">
                             <h1><span class="font-extralight">ENCUENTRA</span></h1>
                             <div class="flex gap-3 font-extrabold">
                                 <img class="w-10" src="/image/logos/iconos/logor.svg" alt="logo">
@@ -397,7 +400,8 @@
                             <span class="light">hola@rsistanc.com</span>
                         </div>
                     </div>
-                    <a data-aos="fade-left" href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú"
+                    <a data-aos="fade-left"
+                        href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú"
                         target="_blank" rel="noopener noreferrer">
                         <img src="/image/pages/mapa.svg" alt="Mapa de Studio" class="mapaStudio">
                     </a>
