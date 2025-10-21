@@ -29,6 +29,6 @@ class PackageController extends Controller
                 ->count(),
         ];
 
-        return view('client.packages', compact('membreships', 'stats'));
+        return view('web.packages', compact('membreships', 'stats'));
     }
 }

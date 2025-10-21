@@ -14,17 +14,15 @@ class PrivacityController extends Controller
 
     public function privacy()
     {
-
-
         $privacies = LegalPolicy::where('type', 'privacy')->get();
 
-        return view('client.privacity', compact('privacies'));
+        return view('web.privacity', compact('privacies'));
     }
 
     public function terms()
     {
         $terms = LegalPolicy::where('type', 'term')->get();
 
-        return view('client.terms', compact('terms'));
+        return view('web.terms', compact('terms'));
     }
 }

@@ -23,7 +23,7 @@ class HomeController extends Controller
         $services = Service::orderBy('order', 'asc')->where('is_active', true)->get();
         $faqs = Faq::orderBy('order', 'asc')->where('is_active', true)->get();
 
-        return view('client.home', compact('membresias', 'disciplines', 'company', 'services','faqs'));
+        return view('web.home', compact('membresias', 'disciplines', 'company', 'services','faqs'));
     }
 
 }
