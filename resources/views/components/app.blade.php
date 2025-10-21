@@ -43,6 +43,12 @@
     {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> --}}
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+
+    {{-- aos scroll --}}
+
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    {{-- Fin aos scroll --}}
+
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else
@@ -58,13 +64,12 @@
     @stack('css')
 
     <style>
-
-
-        .footer__title h4{
+        .footer__title h4 {
             font-weight: 500;
             font-size: 1.2rem
         }
-        .footer__title ul{
+
+        .footer__title ul {
             display: grid;
             gap: .4rem;
         }
@@ -80,12 +85,12 @@
 
     <header class="header py-2 absolute top-1 left-0 w-full border-white border-b">
         <div class="container contenido">
-            <nav class="flex justify-between">
+            <nav data-aos="fade-right" class="flex justify-between">
                 <a href="{{ route('home') }}" class="logo">
                     <img src="{{ asset('image/logos/logoblanco.svg') }}" alt="Resistance Logo" width="200">
                 </a>
 
-                <a href="#contacto" class="btn btn__one">EMPIEZA HOY</a>
+                <a href="{{ route('package') }}" class="btn btn__one">EMPIEZA HOY</a>
 
             </nav>
         </div>
@@ -100,7 +105,7 @@
             <div class="grid ">
 
 
-                <div class="grid gap-4  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 py-12">
+                <div data-aos="fade-left" class="grid gap-4  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 py-12">
                     <div class="footer-logo">
                         <img class="max-w-64" src="{{ asset('image/logos/logorsistanc.svg') }}" alt="RSISTANC Logo">
                         <div class="social-icons">
@@ -180,9 +185,15 @@
                         </ul>
                     </div>
                 </div>
+
+                @php
+                    $currentYear = date('Y');
+                @endphp
+
                 <div class="text-center flex flex-wrap justify-center lg:justify-between py-2 items-center">
-                    <p>&copy; 2025 RSISTANC. Todos los derechos reservados.</p>
-                    <p><a href="privacity">Políticas de Privacidad</a> | <a href="terms">Términos y Condiciones</a>
+                    <p>&copy; {{ $currentYear }} RSISTANC. Todos los derechos reservados.</p>
+                    <p><a href="{{ route('privacity') }}">Políticas de Privacidad</a> | <a
+                            href="{{ route('term') }}">Términos y Condiciones</a>
                     </p>
                 </div>
 
@@ -191,6 +202,20 @@
     </footer>
 
     @stack('js')
+
+    {{-- aos scroll --}}
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    {{-- Fin aos scroll --}}
+
+    <script>
+        AOS.init({
+            once: true, // Esta es la opción clave - la animación solo ocurrirá una vez
+            duration: 800, // Duración de la animación en ms
+            offset: 100, // Cuándo se debe activar la animación (px desde la parte superior)
+            easing: 'ease-in-out', // Tipo de easing
+        });
+    </script>
 </body>
 
 </html>

@@ -13,17 +13,14 @@ return new class extends Migration
     {
         Schema::create('legal_policies', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['privacy', 'terms']); // privacy = Políticas de Privacidad, terms = Términos y Condiciones
-            $table->string('title');
-            $table->string('subtitle')->nullable();
+            $table->enum('type', ['privacy', 'term'])->comment('Politicas y terminos'); // privacy = Políticas de Privacidad, terms = Términos y Condiciones
+            $table->string('title')->comment('Titulo del termino o politica');
             $table->longText('content')->nullable()->comment('Campo obsoleto - no se usa en el formulario');
-            $table->boolean('is_active')->default(true);
-            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->boolean('is_active')->default(true)->comment('Es activo o no esta activo ');
+
             $table->timestamps();
 
             $table->index('type');
-            $table->unique(['type', 'is_active']); // Solo una política activa por tipo
-            $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 

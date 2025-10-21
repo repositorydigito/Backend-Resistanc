@@ -1,44 +1,58 @@
 <x-app>
+
+    @push('css')
+        <style>
+            .hero {
+                background:
+                    linear-gradient(91deg, rgba(176, 105, 76, 0.70) -12.38%, rgba(162, 103, 180, 0.70) 27.49%, rgba(174, 159, 176, 0.70) 56.83%, rgba(106, 111, 74, 0.70) 80.27%, rgba(33, 106, 176, 0.70) 127.38%),
+                    url({{ asset('image/pages/banner1.png') }});
+                background-size: cover;
+                background-position: center;
+            }
+        </style>
+    @endpush
+
     {{-- Hero --}}
-<section class="hero" id="inicio">
-    <div class="containerBanner">
-        <h1>TÉRMINOS Y CONDICIONES</h1>
-        <h1>DE USO DE SERVICIOS EN</h1>
-        <h1>RSISTANC STUDIO</h1>
-    </div>
-</section>
+    <section class="hero h-[calc(100vh-8rem)] items-center justify-center content-center pt-6">
+        <div class="container ">
+
+            <div data-aos="fade-up" class="grid gap-8 w-full   text-white">
+                <h1 class="text-6xl  font-extrabold tracking-[8px] uppercase">
+                    Términos y condiciones de uso de servicios en RSISTANC STUDIO
+                </h1>
+
+
+            </div>
+
+
+
+        </div>
+    </section>
+
 
     {{-- FAQ --}}
-<section class="section" id="faq">
-    <div class="containerFaq">
-        <div class="faq-container">
-            <details class="faq-item">
-                <summary class="faq-question">
-                    Política de Servicios y Modalidades de R STUDIO
-                </summary>
-                <div class="faq-answer">
-                    Tu membresía te da acceso a nuestras cuatro disciplinas: Cycling, Reformer, Pilates y Box. Además, acumulas puntos con cada clase que puedes canjear por recompensas exclusivas. Gestiona todo desde nuestra app.
-                </div>
-            </details>
+    <section class="privacy py-24" id="faq">
+        <div class="container">
 
-            <details class="faq-item">
-                <summary class="faq-question">
-                    Política de Venta y Distribución de Productos Físicos
-                </summary>
-                <div class="faq-answer">
-                    Sí, ofrecemos clases de prueba gratuitas para nuevos miembros. Solo necesitas registrarte en nuestra app y reservar tu clase desde allí.
-                </div>
-            </details>
+            <div class="privacy__container grid gap-3 ckeditor">
 
-            <details class="faq-item">
-                <summary class="faq-question">
-                    Política de Reservas, Cancelaciones y Devoluciones
-                </summary>
-                <div class="faq-answer">
-                    Tu membresía te da acceso a nuestras cuatro disciplinas: Cycling, Reformer, Pilates y Box. Además, acumulas puntos con cada clase que puedes canjear por recompensas exclusivas. Gestiona todo desde nuestra app.
-                </div>
-            </details>
+                @foreach ($terms as $term)
+                    <details class="faq-item p-5 bg-white rounded-2xl">
+                        <summary class="faq-question text-lg">
+                            {{ $term->title }}
+                        </summary>
+                        <div class="faq-answer">
+                            {!! $term->content !!}
+                        </div>
+                    </details>
+                @endforeach
+
+
+
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+
+    @push('js')
+    @endpush
 </x-app>

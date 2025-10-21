@@ -110,3 +110,76 @@ body {
     ); */
     border-top: 1px solid #fff;
 }
+
+.ckeditor h1,
+.ckeditor h2,
+.ckeditor h3,
+.ckeditor h4,
+.ckeditor h5,
+.ckeditor h6,
+.ckeditor p,
+.ckeditor ul,
+.ckeditor ol,
+.ckeditor li,
+.ckeditor blockquote,
+.ckeditor table,
+.ckeditor th,
+.ckeditor td,
+.ckeditor strong,
+.ckeditor em,
+.ckeditor a {
+    all: revert !important;
+}
+
+.ckeditor h1 {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin: 1rem 0 !important;
+}
+
+.ckeditor h2 {
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    margin: 0.875rem 0 !important;
+}
+
+.ckeditor h3 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    margin: 0.75rem 0 !important;
+}
+
+.ckeditor p {
+    margin: 0.5rem 0 !important;
+    line-height: 1.6 !important;
+}
+
+.ckeditor ul,
+.ckeditor ol {
+    margin: 0.5rem 0 !important;
+    padding-left: 2rem !important;
+}
+
+.ckeditor li {
+    margin: 0.25rem 0 !important;
+}
+
+.ckeditor strong {
+    font-weight: 700 !important;
+}
+
+.ckeditor em {
+    font-style: italic !important;
+}
+
+.ckeditor a {
+    color: #3b82f6 !important;
+    text-decoration: underline !important;
+}
+
+.ckeditor blockquote {
+    border-left: 4px solid #e5e7eb !important;
+    padding-left: 1rem !important;
+    margin: 1rem 0 !important;
+    font-style: italic !important;
+}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Client\HomeController;
+use App\Http\Controllers\Client\PackageController;
 use App\Http\Controllers\Client\PrivacityController;
 use App\Http\Controllers\Client\TermsController;
 use Illuminate\Support\Facades\Route;
@@ -8,7 +9,9 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/privacity', [PrivacityController::class, 'index'])->name('privacity');
+Route::get('/privacity', [PrivacityController::class, 'privacy'])->name('privacity');
+Route::get('/terms', [PrivacityController::class, 'terms'])->name('term');
+Route::get('/packages', [PackageController::class, 'index'])->name('package');
 
 // Ruta de prueba simple
 Route::get('/test', function () {
@@ -65,5 +68,3 @@ Route::post('/email/verification-notification', function () {
 
     return back()->with('success', 'Email de verificación enviado.');
 })->name('verification.send');
-
-

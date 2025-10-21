@@ -163,6 +163,47 @@
             .faqcontainer{
                 background: #ffffff44;
             }
+
+            /* Estilos personalizados para FAQ */
+            .faq-container details {
+                position: relative;
+            }
+
+            .faq-container details summary {
+                list-style: none;
+                cursor: pointer;
+                position: relative;
+                padding-right: 40px;
+            }
+
+            .faq-container details summary::-webkit-details-marker {
+                display: none;
+            }
+
+            .faq-container details summary::before {
+                content: '+';
+                position: absolute;
+                right: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 24px;
+                font-weight: bold;
+                color: #B66F37;
+                transition: all 0.3s ease;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(182, 111, 55, 0.1);
+            }
+
+            .faq-container details[open] summary::before {
+                content: '−';
+                background: radial-gradient(128.53% 138.92% at 7.28% -1.41%, #CD6134 0%, #925035 29.32%, #9142AA 66.83%, #A267B4 100%);
+                color: white;
+            }
         </style>
     @endpush
 
@@ -170,7 +211,7 @@
     <section class="hero h-[calc(100vh-8rem)] items-center justify-center content-center pt-6">
         <div class="container ">
 
-            <div class="grid gap-8 w-full  lg:w-8/12 text-white">
+            <div data-aos="fade-up" class="grid gap-8 w-full  lg:w-8/12 text-white">
                 <h1 class="text-6xl  font-extrabold tracking-[8px]">TRAIN <span class="font-light">YOUR </span>RSISTANC.
                     <span class="font-light">LIVE</span> UNSTOPPABLE.
                 </h1>
@@ -201,7 +242,7 @@
         @if ($disciplines->count() > 0)
             <section class="section " id="disciplinas">
                 <div class="container">
-                    <div class="bg-white p-9 rounded-3xl">
+                    <div data-aos="fade-up-left" class="bg-white p-9 rounded-3xl">
 
                         <h2 class="text-2xl font-extrabold"><span class="font-normal">ELIGE CÓMO QUIERES</span> MOVERTE
                         </h2>
@@ -243,7 +284,7 @@
         <section class="section section-packages" id="paquetes">
             <div class="container">
                 <div class="flex flex-wrap gap-6">
-                    <div
+                    <div data-aos="fade-down-right"
                         class="card__benef card__benef--one p-8 rounded-3xl grid gap-3 justify-start justify-items-start content-end w-full lg:max-w-96">
                         <h3 class="text-4xl font-light leading-tight">PAQUETES <br> QUE SE ADAPTAN <span
                                 class="grid font-extrabold">A TU RITMO.</span></h3>
@@ -255,7 +296,7 @@
                         </div>
                         <a href="#membresias" class="font-extrabold text-xl">VER PAQUETES →</a>
                     </div>
-                    <div
+                    <div data-aos="fade-down-left"
                         class="card__benef card__benef--two flex-1 bg-slate-500 rounded-3xl p-8 grid gap-3 justify-start justify-items-start content-end ">
                         <h3 class="text-4xl font-extrabold leading-tight"><span class="font-light">MÁS</span>
                             RESISTANCE, <span class="font-light">MÁS</span> REWARDS.</h3>
@@ -276,7 +317,7 @@
         @if ($services->count() > 0)
             <section class="section" id="servicios">
                 <div class="container">
-                    <div class="services grid gap-2 bg-white p-9 rounded-3xl ">
+                    <div data-aos="fade-up" class="services grid gap-2 bg-white p-9 rounded-3xl ">
                         <h2 class="text-2xl font-extrabold">SERVICIOS</h2>
                         <h3 class="font-bold text-lg"><span class="font-light">Explora lo que hace única tu experiencia
                                 en</span> R
@@ -311,8 +352,8 @@
                     class="grid grid-cols-1 xl:grid-cols-2 justify-center content-center justify-items-center items-center gap-6 bg-white p-9 rounded-3xl ">
 
 
-                    <img class="store__img" src="/image/pages/vistaCel.svg" alt="descarga">
-                    <div class="grid gap-2">
+                    <img data-aos="fade-up" class="store__img" src="/image/pages/vistaCel.svg" alt="descarga">
+                    <div data-aos="fade-up" class="grid gap-2">
                         <h2 class="text-4xl font-extrabold">TU RSISTANC <span class="font-light">VA CONTIGO.</span></h2>
                         <h3><span class="text-xl font-light">Reserva, compra, suma puntos y ve tu progreso desde nuestra
                                 app.</span>
@@ -332,8 +373,8 @@
         <section class="section" id="direccion">
             <div class="container">
                 <div class="flex gap-6 flex-wrap items-center bg-white p-9 rounded-3xl">
-                    <div class="flex-1 grid gap-4">
-                        <div class="text-5xl grid gap-2">
+                    <div data-aos="fade-right" class="flex-1 grid gap-4">
+                        <div  class="text-5xl grid gap-2">
                             <h1><span class="font-extralight">ENCUENTRA</span></h1>
                             <div class="flex gap-3 font-extrabold">
                                 <img class="w-10" src="/image/logos/iconos/logor.svg" alt="logo">
@@ -356,7 +397,7 @@
                             <span class="light">hola@rsistanc.com</span>
                         </div>
                     </div>
-                    <a href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú"
+                    <a data-aos="fade-left" href="https://www.google.com/maps?q=Avenida+Surco+123,+Santiago+de+Surco,+Lima,+Perú"
                         target="_blank" rel="noopener noreferrer">
                         <img src="/image/pages/mapa.svg" alt="Mapa de Studio" class="mapaStudio">
                     </a>
@@ -377,11 +418,11 @@
                     <div class="faq-container grid gap-3">
 
                         @foreach ($faqs as $faq)
-                            <details class="p-5 bg-white rounded-2xl">
+                            <details data-aos="flip-up" class="p-5 bg-white rounded-2xl">
                                 <summary class="font-semibold text-lg">
                                     {{ $faq->question }}
                                 </summary>
-                                <div class="faq-answer">
+                                <div class="faq-answer font-light">
                                     {{ $faq->answer }}
                                 </div>
                             </details>
