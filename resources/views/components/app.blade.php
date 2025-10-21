@@ -40,7 +40,7 @@
 
     <!-- Estilos personalizados (después de Tailwind) -->
     {{-- <link rel="stylesheet" href="{{ asset('css/styles.css') }}"> --}}
-    {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 
@@ -72,6 +72,31 @@
         .footer__title ul {
             display: grid;
             gap: .4rem;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-icons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgb(0, 0, 0);
+            border-radius: 50%;
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .social-icons a:hover {
+            background: radial-gradient(128.53% 138.92% at 7.28% -1.41%, #CD6134 0%, #925035 29.32%, #9142AA 66.83%, #A267B4 100%);
+            transform: translateY(-2px);
         }
     </style>
 
@@ -109,44 +134,44 @@
                     <div class="footer-logo">
                         <img class="max-w-64" src="{{ asset('image/logos/logorsistanc.svg') }}" alt="RSISTANC Logo">
                         <div class="social-icons">
-                            @if (isset($company->instagram_url) && $company->instagram_url)
-                                <a href="{{ $company->instagram_url }}" target="_blank" rel="noopener noreferrer">
+                            @if ($company->instagram_url)
+                                <a class="bg-black" href="{{ $company->instagram_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-instagram"></i>
                                 </a>
                             @endif
 
-                            @if (isset($company->facebook_url) && $company->facebook_url)
-                                <a href="{{ $company->facebook_url }}" target="_blank" rel="noopener noreferrer">
+                            @if ($company->facebook_url)
+                                <a class="bg-black" href="{{ $company->facebook_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-facebook"></i>
                                 </a>
                             @endif
 
-                            @if (isset($company->tiktok_url) && $company->tiktok_url)
-                                <a href="{{ $company->tiktok_url }}" target="_blank" rel="noopener noreferrer">
+                            @if ($company->tiktok_url)
+                                <a class="bg-black" href="{{ $company->tiktok_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-tiktok"></i>
                                 </a>
                             @endif
 
-                            @if (isset($company->youtube_url) && $company->youtube_url)
-                                <a href="{{ $company->youtube_url }}" target="_blank" rel="noopener noreferrer">
+                            @if ($company->youtube_url)
+                                <a class="bg-black" href="{{ $company->youtube_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-youtube"></i>
                                 </a>
                             @endif
 
-                            @if (isset($company->linkedin_url) && $company->linkedin_url)
-                                <a href="{{ $company->linkedin_url }}" target="_blank" rel="noopener noreferrer">
+                            @if ($company->linkedin_url)
+                                <a class="bg-black" href="{{ $company->linkedin_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-linkedin"></i>
                                 </a>
                             @endif
 
                             @if ($company->twitter_url)
-                                <a href="{{ $company->twitter_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->twitter_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-twitter"></i>
                                 </a>
                             @endif
 
-                            @if (isset($company->whatsapp_url) && $company->whatsapp_url)
-                                <a href="{{ $company->whatsapp_url }}" target="_blank" rel="noopener noreferrer">
+                            @if ($company->whatsapp_url)
+                                <a class="bg-black" href="{{ $company->whatsapp_url }}" target="_blank" rel="noopener noreferrer">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                             @endif
@@ -161,7 +186,7 @@
                             <li><a href="#">Reservar</a></li>
                             <li><a href="#">Paquetes</a></li>
                             <li><a href="#">Servicios</a></li>
-                            <li><a href="#">Rewards</a></li>
+                            {{-- <li><a href="#">Rewards</a></li> --}}
                             <li><a href="#">Clase de Prueba</a></li>
                         </ul>
                     </div>
