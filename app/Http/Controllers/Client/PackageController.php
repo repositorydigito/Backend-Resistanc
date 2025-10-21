@@ -14,7 +14,7 @@ class PackageController extends Controller
         // Obtener membresías para la sección de beneficios
         $membreships = Membership::with(['discipline'])
             ->where('is_active', true)
-            ->orderBy('name')
+            ->orderBy('level')
             ->get();
 
         // Obtener estadísticas generales
