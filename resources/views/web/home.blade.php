@@ -251,12 +251,12 @@
                             <div class="swiper-wrapper">
                                 @foreach ($disciplines as $index => $discipline)
                                     <div class="swiper-slide card__discipline"
-                                        style="background: url({{ $discipline->icon_url ?? asset('default/discipline.png') }});           background-position: center;
+                                        style="background: url({{ $discipline->image_url ?? asset('default/discipline.png') }});           background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
                                         <div class="grid gap-3">
                                             <div class="flex items-center gap-2">
-                                                <img src="/image/logos/logoBlancoR.svg" alt="logo">
+                                                <img src=" {{ $discipline->icon_url ?? asset('image/logos/logoBlancoR.svg') }}" alt="logo">
                                                 <h3 class="uppercase font-bold text-lg">{{ $discipline->name }}</h3>
                                             </div>
                                             @if ($discipline->description)
@@ -327,7 +327,7 @@
                                 <div class="card__services" style="background: url({{ $service->image_url ?? asset('default/discipline.png') }}); background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
-                                    <div class="servicescard__title">
+                                    <div class="servicescard__title flex gap-3 items-center">
                                         <img src="/image/logos/logoBlancoR.svg" alt="logo">
                                         <h3>{{ $service->title }}</h3>
                                     </div>
