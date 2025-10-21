@@ -76,7 +76,7 @@
 
         .social-icons {
             display: flex;
-            gap: 1rem;
+            gap: .5rem;
             margin-top: 1rem;
         }
 
@@ -84,8 +84,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
+            /* padding: .9rem; */
             background: rgb(0, 0, 0);
             border-radius: 50%;
             color: white;
@@ -93,6 +94,9 @@
             transition: all 0.3s ease;
             text-decoration: none;
         }
+         .social-icons a i{
+            font-size: .9rem;
+         }
 
         .social-icons a:hover {
             background: radial-gradient(128.53% 138.92% at 7.28% -1.41%, #CD6134 0%, #925035 29.32%, #9142AA 66.83%, #A267B4 100%);
