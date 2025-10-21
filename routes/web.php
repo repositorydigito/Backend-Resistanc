@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Client\HomeController;
-use App\Http\Controllers\Client\PackageController;
-use App\Http\Controllers\Client\PrivacityController;
-use App\Http\Controllers\Client\TermsController;
+use App\Http\Controllers\client\HomeController;
+use App\Http\Controllers\client\PackageController;
+use App\Http\Controllers\client\PrivacityController;
+use App\Http\Controllers\client\TermsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
