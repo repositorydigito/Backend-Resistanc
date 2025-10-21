@@ -9,6 +9,48 @@
                 background-size: cover;
                 background-position: center;
             }
+
+            /* Estilos personalizados para FAQ */
+            .privacy__container details {
+                position: relative;
+            }
+
+            .privacy__container details summary {
+                list-style: none;
+                cursor: pointer;
+                position: relative;
+                padding-right: 40px;
+                font-weight: 600;
+            }
+
+            .privacy__container details summary::-webkit-details-marker {
+                display: none;
+            }
+
+            .privacy__container details summary::before {
+                content: '+';
+                position: absolute;
+                right: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 24px;
+                font-weight: bold;
+                color: #B66F37;
+                transition: all 0.3s ease;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(182, 111, 55, 0.1);
+            }
+
+            .privacy__container details[open] summary::before {
+                content: '−';
+                background: radial-gradient(128.53% 138.92% at 7.28% -1.41%, #CD6134 0%, #925035 29.32%, #9142AA 66.83%, #A267B4 100%);
+                color: white;
+            }
         </style>
     @endpush
 
