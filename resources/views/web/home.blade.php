@@ -256,7 +256,7 @@
                 background-size: cover;">
                                         <div class="grid gap-3">
                                             <div class="flex items-center gap-2">
-                                                <img src=" {{ $discipline->icon_url ?? asset('image/logos/logoBlancoR.svg') }}" alt="logo">
+                                            <img src="{{ $discipline->icon_url ?? asset('image/logos/logoBlancoR.svg') }}" alt="logo">
                                                 <h3 class="uppercase font-bold text-lg">{{ $discipline->name }}</h3>
                                             </div>
                                             @if ($discipline->description)
