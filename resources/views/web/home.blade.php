@@ -372,6 +372,10 @@
             </div>
         </section>
 
+        @php
+            $company = \App\Models\Company::first();
+        @endphp
+
         {{-- Direccion --}}
         <section class="section" id="direccion">
             <div class="container">
@@ -389,15 +393,15 @@
 
                         <div class="direccion__detl">
                             <img src="/image/logos/iconos/iconomapa.svg" alt="mapa">
-                            <span class="light">Avenida Surco 123, Santiago de Surco, Lima, Perú</span>
+                            <span class="light"> {{ $company->address }} </span>
                         </div>
                         <div class="direccion__detl">
                             <img src="/image/logos/iconos/iconocel.svg" alt="celular">
-                            <span class="light">+51 966532455</span>
+                            <span class="light"> {{ $company->phone_help }}</span>
                         </div>
                         <div class="direccion__detl">
                             <img src="/image/logos/iconos/iconomail.svg" alt="correo">
-                            <span class="light">hola@rsistanc.com</span>
+                            <span class="light">{{ $company->email }}</span>
                         </div>
                     </div>
                     <a data-aos="fade-left"
