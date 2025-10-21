@@ -318,7 +318,7 @@
             <section class="section" id="servicios">
                 <div class="container">
                     <div data-aos="fade-up" class="services grid gap-2 bg-white p-9 rounded-3xl ">
-                        <h2 class="text-2xl font-extrabold">SERVICIOS</h2>
+                        <h2 class="text-2xl font-extrabold">SERVICIOS </h2>
                         <h3 class="font-bold text-lg"><span class="font-light">Explora lo que hace única tu experiencia
                                 en</span> R
                             STUDIO<span class="font-light">, dentro y fuera del training floor.</span></h3>
