@@ -222,8 +222,8 @@
 
                 <div class="flex gap-4 ">
 
-                    <a href="#membresias" class="btn btn__one">EMPIEZA HOY</a>
-                    <a href="#disciplinas" class="btn btn__two">RESERVA TU CLASE DE PRUEBA</a>
+                    <a href="{{ route('package') }}" class="btn btn__one">EMPIEZA HOY</a>
+                    <a href="#descarga" class="btn btn__two">RESERVA TU CLASE DE PRUEBA</a>
                 </div>
 
 
