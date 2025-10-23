@@ -223,7 +223,8 @@
                                 alt="logo"> --}}
 
                             {{-- Produccion --}}
-                            <img class="card__img--logo" src="{{ $company->logo_path }}" alt="Logo-rsistanc">
+                            <img class="card__img--logo" src="{{ 'storage/' . $company->logo_path }}"
+                                alt="Logo-rsistanc">
                         @else
                             {{-- Desarrollo --}}
                             {{-- <img class="card__img--logo"
@@ -280,7 +281,8 @@
                                 src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png"
                                 alt=""> --}}
                             {{-- Produccion --}}
-                            <img class="footer__firma" src="{{ $company->signature_image }}" alt="firma">
+                            <img class="footer__firma" src="{{ 'storage/' . $company->signature_image }}"
+                                alt="firma">
                         @else
                             {{-- Desarrollo --}}
                             {{-- <img class="footer__firma"
