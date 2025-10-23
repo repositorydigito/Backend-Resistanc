@@ -105,16 +105,16 @@
             background: linear-gradient(91deg, rgba(176, 105, 76, 0.70) -12.38%, rgba(162, 103, 180, 0.70) 27.49%, rgba(174, 159, 176, 0.70) 56.83%, rgba(106, 111, 74, 0.70) 80.27%, rgba(33, 106, 176, 0.70) 127.38%);
         }
 
-        /* .card__imgs img {
+        .card__imgs img {
             width: 100%;
-        } */
+        }
 
         .card__img--logo {
             height: 80px;
             max-width: 250px;
+
+
             margin: auto;
-            /* margin-bottom: 1rem; */
-            padding-bottom: 1rem;
             object-fit: contain;
 
         }
