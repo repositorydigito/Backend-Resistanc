@@ -113,7 +113,8 @@
             height: 80px;
             max-width: 250px;
             margin: auto;
-            margin-bottom: 1rem;
+            /* margin-bottom: 1rem; */
+            padding-bottom: 1rem;
             object-fit: contain;
 
         }
