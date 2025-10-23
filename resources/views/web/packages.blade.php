@@ -195,7 +195,7 @@
                                     <span class="flex items-center gap-2">
                                         <img style="filter: brightness(0) saturate(100%) invert(19%) sepia(24%) saturate(395%) hue-rotate(168deg) brightness(92%) contrast(89%);"
                                             class="h-4"
-                                            src="{{ $membreship->discipline->icon_url ?? asset('image/pages/logo.png') }}"
+                                            src="{{ 'storage/' . $membreship->discipline->icon_url ?? asset('image/pages/logo.png') }}"
                                             alt=""> 1 clase de {{ $membreship->discipline->name }}
                                     </span>
                                 @endif

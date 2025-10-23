@@ -13,272 +13,306 @@
             box-sizing: border-box;
         }
 
-        body {
+        html {
             background: #EFF0F2;
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
         }
 
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border: 2px dotted #B8C5D1;
-            border-radius: 20px;
-            overflow: hidden;
+        .main {
+            background: #4a6cb0;
+            height: 100vh;
+            width: 100vw;
+            color: #5D6D7A;
         }
 
-        .header {
+        .code__content {
+
+            display: grid;
+            justify-content: center;
+            justify-items: center;
+
+        }
+
+        .code {
+            background: linear-gradient(94deg, #E7D4D8 0%, #E5D7EA 28.85%, #E7DFE9 50.48%, #D9D9D2 69.71%, #CDD6D7 100%);
+            padding: .5rem 1rem;
+            align-items: center;
+            border-radius: 16px;
+            font-size: 1.7rem;
+            letter-spacing: .8rem;
+            font-weight: 500;
             text-align: center;
-            padding: 30px 20px 20px;
-            background: white;
-        }
-
-        .logo {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #B8A8C8;
-            letter-spacing: 2px;
-        }
-
-        .hero-section {
-            background: linear-gradient(135deg, #FF6B6B 0%, #8B5CF6 100%);
-            padding: 40px 30px;
-            position: relative;
-            border-radius: 0 0 20px 20px;
-        }
-
-        .heart-icon {
-            position: absolute;
-            top: 20px;
-            left: 30px;
-            width: 30px;
-            height: 30px;
-        }
-
-        .hero-title {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            line-height: 1.2;
-            margin: 20px 0 0 50px;
-        }
-
-        .hero-logo {
-            position: absolute;
-            bottom: 20px;
-            right: 30px;
-            font-size: 1.2rem;
-            color: white;
-            font-weight: bold;
-        }
-
-        .main-content {
-            padding: 40px 30px;
-            text-align: center;
-        }
-
-        .main-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #B0694C;
-            margin-bottom: 20px;
-        }
-
-        .greeting {
-            font-size: 1.1rem;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .description {
-            font-size: 1rem;
-            color: #666;
-            margin-bottom: 30px;
-        }
-
-        .code-label {
-            font-size: 1rem;
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .code-box {
-            background: #F5F5F5;
-            border: 2px solid #E0E0E0;
-            border-radius: 12px;
-            padding: 15px 30px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #333;
-            letter-spacing: 3px;
             display: inline-block;
-            margin: 0 auto 30px;
-            min-width: 200px;
+            justify-content: center;
+            justify-items: center;
+            /* max-width: 150px; */
+            /* width: 150px; */
+            margin: auto;
         }
 
-        .disclaimer {
-            font-size: 0.9rem;
-            color: #888;
-            margin-bottom: 30px;
+        .main {
+            display: grid;
+            padding: 2rem;
         }
 
-        .separator {
-            height: 3px;
-            background: linear-gradient(135deg, #FF6B6B 0%, #8B5CF6 100%);
-            margin: 30px 0;
+        .fondo {
+
+            background: #EFF0F2;
+            display: grid;
+            justify-content: center;
+            align-content: center;
+            padding: 5rem 2rem;
         }
 
-        .footer {
-            padding: 30px;
+        .card {
+            background: #fff;
+            border-radius: 30px;
+            max-width: 550px;
+            width: 550px;
+            margin: auto;
+            padding: 1.5rem;
+        }
+
+        .card__content--negrita {
+            font-weight: 600;
+            color: #B0694C;
+            background: #fff;
+        }
+
+        .card__title {
             text-align: center;
-            background: white;
+            font-size: 2rem;
+            margin: 1rem 0;
         }
 
-        .family-text {
-            font-family: 'Brush Script MT', cursive;
-            font-size: 1.5rem;
-            background: linear-gradient(135deg, #FF6B6B 0%, #8B5CF6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
+        .card__title--negrita {
+            color: #B0694C;
+            font-weight: 800;
         }
 
-        .footer-text {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 20px;
+        .card__saludo {
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            text-align: center;
         }
 
-        .social-icons {
-            display: flex;
+        .card__body>* {
+            text-align: center;
+        }
+
+        .linea {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(91deg, rgba(176, 105, 76, 0.70) -12.38%, rgba(162, 103, 180, 0.70) 27.49%, rgba(174, 159, 176, 0.70) 56.83%, rgba(106, 111, 74, 0.70) 80.27%, rgba(33, 106, 176, 0.70) 127.38%);
+        }
+
+        .card__imgs img {
+            width: 100%;
+        }
+
+        .card__img--logo {
+            height: 80px;
+            margin: auto;
+            margin-bottom: 1rem;
+            object-fit: contain;
+
+        }
+
+        .card__body p {
+            font-size: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: 200;
+            color: #5D6D7A;
+        }
+
+        .nota p {
+            margin: 1rem 0;
+            font-size: 1rem;
+            font-weight: 200;
+            color: #5D6D7A;
+            text-align: center;
+        }
+
+        .footer__correo {
+            display: grid;
             justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
+            justify-items: center;
         }
 
-        .social-icon {
-            width: 30px;
-            height: 30px;
-            background: linear-gradient(135deg, #FF6B6B 0%, #8B5CF6 100%);
-            border-radius: 50%;
-            display: flex;
+        .footer__firma {
+            height: 100px;
+            margin: auto;
+            object-fit: contain;
+        }
+
+        .footer__text {
+            font-weight: 100;
+            text-align: center;
+            max-width: 280px;
+            margin: auto;
+            color: #5D6D7A;
+        }
+
+        .redes {
+            display: inline-block;
+            gap: .5rem;
+            justify-content: center;
+            justify-items: center;
+            align-content: center;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
+            margin: auto;
+            padding: 1rem 0;
+            /* background: red; */
         }
 
-        .address {
-            font-size: 0.9rem;
-            color: #666;
-            margin: 20px 0;
+        .red__social img {
+            height: 20px;
+            width: 20px;
+            object-position: center;
+            display: inline-block;
+            object-fit: contain;
         }
 
-        .unsubscribe {
-            color: #8B5CF6;
-            text-decoration: none;
-            font-size: 0.9rem;
+        .footer__direccion {
+            max-width: 150px;
+            font-size: 1rem;
+            text-align: center;
+            margin: auto;
         }
 
-        .bottom-logo {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #FF6B6B 0%, #8B5CF6 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px auto 0;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            .email-container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-
-            .hero-title {
-                font-size: 1.4rem;
-                margin-left: 40px;
-            }
-
-            .main-title {
-                font-size: 1.6rem;
-            }
-
-            .code-box {
-                font-size: 1.2rem;
-                padding: 12px 20px;
-                min-width: 150px;
-            }
+        .footer__logo {
+            margin-top: 1rem;
+            width: 85px;
+            object-fit: contain;
+            margin: auto;
         }
     </style>
 </head>
 
+@php
+    $company = \App\Models\Company::first();
+@endphp
+
 <body>
-    <div class="email-container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">ЯSISTANC</div>
-        </div>
+    <main class="main">
 
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <img src="https://via.placeholder.com/30x30/FFFFFF/FFFFFF?text=♥" alt="Heart Icon" class="heart-icon">
-            <div class="hero-title">
-                ESTAMOS AQUÍ<br>
-                PARA AYUDARTE<br>
-                A VOLVER
+        <div class="fondo">
+            <div class="card">
+
+                <div class="card__content">
+
+                    <div class="card__imgs">
+
+                        {{-- Produccion --}}
+                        {{-- <img class="card__img--logo" src="" alt="">
+                        <img class="card__img--target" src="" alt=""> --}}
+
+                        {{-- Desarrollo --}}
+                        <img class="card__img--logo"
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Logos.svg/1200px-Logos.svg.png"
+                            alt="">
+                        <img class="card__img--target"
+                            src="https://media.united.com/assets/m/4beccaf8e41c8b87/original/UNTD24_ClubCard_LgType_MKTG_Card_RGB_2000x1260.png"
+                            alt="">
+                    </div>
+
+
+                    <h2 class="card__title">
+                        ¡DON’T <span class="card__title--negrita">WORRY!</span>
+                    </h2>
+
+                    <h1 class="card__saludo">Hola {{ $user->name }}, </h1>
+
+                    <div class="card__body">
+                        {{-- {!! $data->body !!}
+                         --}}
+                        <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+                        <p>Tu código de verificación es:</p>
+
+                    </div>
+                    <div class="code__content">
+                        <span class="code">
+                            {{ $code }}
+                        </span>
+                    </div>
+
+                    <div class="nota">
+                        <p>Nota: Si no creaste esta cuenta, por favor ignora este mensaje.</p>
+                    </div>
+
+                    <div class="linea"></div>
+                    <div class="footer__correo">
+                        <img class="footer__firma"
+                            src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png" alt="">
+
+                        <p class="footer__text">
+                            Estás recibiendo este correo electrónico porque te registraste a través de nuestro app.
+                        </p>
+                        <div class="redes">
+
+                            {{-- Facebook --}}
+                            @if ($company->facebook_url)
+                                <a class="red__social" href="{{ $company->facebook_url }}">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="facebook-rsistanc">
+                                </a>
+                            @endif
+
+                            {{-- Instagram --}}
+                            @if ($company->instagram_url)
+                                <a class="red__social" href="{{ $company->instagram_url }}">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Instagram-rsistanc">
+                                </a>
+                            @endif
+
+                            {{-- Twiter --}}
+                            @if ($company->twitter_url)
+                                <a class="red__social" href="{{ $company->twitter_url }}">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Twiter-rsistanc">
+                                </a>
+                            @endif
+                            {{-- linkedin --}}
+                            @if ($company->linkedin_url)
+                                <a class="red__social" href="{{ $company->linkedin_url }}">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="linkedin-rsistanc">
+                                </a>
+                            @endif
+                            {{-- Youtube --}}
+                            @if ($company->youtube_url)
+                                <a class="red__social" href="{{ $company->youtube_url }}">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Youtube-rsistanc">
+                                </a>
+                            @endif
+
+                            {{-- Tiktok --}}
+                            @if ($company->tiktok_url)
+                                <a class="red__social" href="{{ $company->tiktok_url }}">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Tiktok-rsistanc">
+                                </a>
+                            @endif
+
+                        </div>
+
+                        <p class="footer__direccion"> {{ $company->address }} </p>
+                        <img class="footer__logo"
+                            src="https://e7.pngegg.com/pngimages/415/762/png-clipart-circle-crescent-logo-circle-white-logo.png"
+                            alt="">
+                    </div>
+
+                </div>
+
+
             </div>
-            <div class="hero-logo">ЯSISTANC</div>
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <h1 class="main-title">¡DON'T WORRY!</h1>
 
-            <p class="greeting">Hola {{ $user->name }},</p>
 
-            <p class="description">Recibimos una solicitud para restablecer tu contraseña.</p>
-
-            <p class="code-label">Tu código de verificación es:</p>
-
-            <div class="code-box">{{ $code }}</div>
-
-            <p class="disclaimer">Nota: Si no creaste esta cuenta, por favor ignora este mensaje.</p>
-        </div>
-
-        <!-- Separator -->
-        <div class="separator"></div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <div class="family-text">Rsistane Family</div>
-
-            <p class="footer-text">Estás recibiendo este correo electrónico porque te registraste a través de nuestro sitio web.</p>
-
-            <div class="social-icons">
-                <div class="social-icon">♪</div>
-                <div class="social-icon">📺</div>
-                <div class="social-icon">🎵</div>
-                <div class="social-icon">📷</div>
-                <div class="social-icon">f</div>
-                <div class="social-icon">in</div>
-            </div>
-
-            <p class="address">Avenida Surco 123, Santiago de Surco, Lima 15052</p>
-
-            <a href="#" class="unsubscribe">Unsubscribe</a>
-
-            <div class="bottom-logo">Я</div>
-        </div>
-    </div>
+    </main>
 </body>
 
 </html>
