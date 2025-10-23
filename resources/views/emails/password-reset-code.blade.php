@@ -281,7 +281,7 @@
                                 src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png"
                                 alt=""> --}}
                             {{-- Produccion --}}
-                            <img class="footer__firma" src="{{ 'storage/' . $company->signature_image }}"
+                            <img class="footer__firma" src="{{ asset('storage/' . $company->signature_image) }}"
                                 alt="firma">
                         @else
                             {{-- Desarrollo --}}
