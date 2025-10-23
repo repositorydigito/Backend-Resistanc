@@ -106,6 +106,7 @@
         }
 
         .card__imgs img {
+            display: grid;
             width: 100%;
         }
 
