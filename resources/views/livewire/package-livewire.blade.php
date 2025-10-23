@@ -159,12 +159,12 @@
                         <div class="text-center">
                             <div class="flex flex-col justify-start items-start ">
                                 <span class="text-3xl font-semibold text-gray-800">S/
-                                    {{ number_format($package->price_soles / $package->classes_quantity, 0) }}</span>
+                                    {{ number_format($package->price_soles / $package->classes_quantity, 2) }}</span>
 
                                 <span class="line-through text-lg ">S/
-                                    {{ number_format($package->original_price_soles / $package->classes_quantity, 0) }}
+                                    {{ number_format($package->original_price_soles / $package->classes_quantity, 2) }}
                                 </span>
-                                <span> (S/{{ number_format($package->price_soles, 0) }}
+                                <span> (S/{{ number_format($package->price_soles, 2) }}
 
                                     @if ($package->is_membresia)
                                         la membresia
