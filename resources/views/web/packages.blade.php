@@ -94,9 +94,9 @@
 
             @media (max-width: 768px) {
                 .categorias__list {
-                    background: #ffffff6e;
+
                     padding: 1rem;
-                    border-radius: 3rem;
+                    border-radius: 2rem;
                 }
             }
         </style>
@@ -107,7 +107,7 @@
         <div class="container ">
 
             <div data-aos="fade-up" class="grid gap-8 w-full  text-white">
-                <h1 class="text-6xl  font-extrabold tracking-[8px]"><span class="font-light">CONOCE NUESTROS </span> <br>
+                <h1 class="text-4xl lg:text-6xl  font-extrabold tracking-[8px]"><span class="font-light">CONOCE NUESTROS </span> <br>
                     PAQUETES & BENEFICIOS
                 </h1>
 
@@ -127,7 +127,7 @@
     <div class="paquetes py-16">
         <div class="paquetes__container container">
             <div class="text-center grid gap-3 mb-5">
-                <h2 class="text-6xl font-extralight text-center mb-16 ">ENTRENA CON LOS MEJORES <br> <span
+                <h2 class="text-4xl lg:text-6xl font-extralight text-center mb-16 ">ENTRENA CON LOS MEJORES <br> <span
                         class="font-bold"> PAQUETES DE CLASES</span></h2>
 
             </div>
@@ -142,9 +142,9 @@
 
             <div class="categorias__content">
 
-                <h1 class="text-xl lg:text-6xl font-extralight text-center mb-16">Y DISFRUTA LOS MEJORES <br> <span
-                        class="font-bold flex gap-2 items-center justify-center">BENEFICIOS DE <img
-                            class=" lg:h-12 object-contain w-auto inline-block"
+                <h1 class="text-4xl lg:text-6xl font-extralight text-center mb-16">Y DISFRUTA LOS MEJORES <br> <span
+                        class="font-bold flex flex-wrap gap-2 items-center justify-center">BENEFICIOS DE <img
+                            class="h-8 lg:h-12 object-contain w-auto inline-block"
                             src="{{ asset('image/logos/rsistanclogo.png') }}" alt=""></span></h1>
 
 
