@@ -111,6 +111,7 @@
 
         .card__img--logo {
             height: 80px;
+            max-width: 250px;
             margin: auto;
             margin-bottom: 1rem;
             object-fit: contain;
