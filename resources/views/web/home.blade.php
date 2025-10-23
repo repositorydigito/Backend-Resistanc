@@ -326,18 +326,27 @@
                             STUDIO<span class="font-light">, dentro y fuera del training floor.</span></h3>
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             @foreach ($services as $service)
+                                @php
+                                    // Limpiar el path de la imagen
+                                    $imagePath = $service->image ? trim($service->image, '/') : null;
+                                    $backgroundImage = $imagePath
+                                        ? asset('storage/' . $imagePath)
+                                        : asset('default/discipline.png');
+                                @endphp
+
                                 <div class="card__services"
-                                    style="background: url({{ $service->image ? asset('storage/' . $service->image) : asset('default/discipline.png') }}); background-position: center;
+                                    style="background: url('{{ $backgroundImage }}');
+                background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
                                     <div class="servicescard__title flex gap-3 items-center">
                                         <img src="/image/logos/logoBlancoR.svg" alt="logo">
                                         <h3>{{ $service->title }}</h3>
                                     </div>
-                                    @if ($discipline->description)
+                                    @if ($service->description)
+                                        <!-- Cambiado de $discipline a $service -->
                                         <p>{{ $service->description }}</p>
                                     @endif
-
                                 </div>
                             @endforeach
                         </div>
