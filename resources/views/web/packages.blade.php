@@ -5,8 +5,8 @@
             .hero {
 
                 background:
-                                                                                                    linear-gradient(88deg, #B66F37 26.73%, rgba(157, 90, 169, 0.90) 48.98%, rgba(181, 130, 190, 0.70) 68.44%, rgba(255, 255, 255, 0.00) 83.14%),
-                                                                                                     url({{ asset('image/pages/banner1.png') }});
+                    linear-gradient(88deg, #B66F37 26.73%, rgba(157, 90, 169, 0.90) 48.98%, rgba(181, 130, 190, 0.70) 68.44%, rgba(255, 255, 255, 0.00) 83.14%),
+                    url({{ asset('image/pages/banner1.png') }});
                 background-size: cover;
                 background-position: center;
             }
@@ -91,6 +91,14 @@
             .discipline-filter::-webkit-scrollbar-thumb:hover {
                 background: #7c3aed;
             }
+
+            @media (max-width: 768px) {
+                .categorias__list {
+                    background: #ffffff6e;
+                    padding: 1rem;
+                    border-radius: 3rem;
+                }
+            }
         </style>
     @endpush
 
@@ -134,13 +142,13 @@
 
             <div class="categorias__content">
 
-                <h1 class="text-6xl font-extralight text-center mb-16">Y DISFRUTA LOS MEJORES <br> <span
+                <h1 class="text-xl lg:text-6xl font-extralight text-center mb-16">Y DISFRUTA LOS MEJORES <br> <span
                         class="font-bold flex gap-2 items-center justify-center">BENEFICIOS DE <img
-                            class="h-12 object-contain w-auto inline-block"
+                            class=" lg:h-12 object-contain w-auto inline-block"
                             src="{{ asset('image/logos/rsistanclogo.png') }}" alt=""></span></h1>
 
 
-                <div class="categorias__list grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <div class="categorias__list grid content-start  grid-cols-1 gap-6 lg:grid-cols-3">
                     @foreach ($membreships as $membreship)
                         <div class="categoria__item bg-white p-6 rounded-3xl grid gap-1 content-start cursor-pointer"
                             style="border: 2px solid {{ $membreship->color_hex ?? '#9D5AA9' }}; --color-rgb: {{ $membreship->color_rgb ?? '157, 90, 150' }};">
@@ -174,33 +182,35 @@
                                 {{ $membreship->description }}
                             </p>
 
-                            <div class="border-t-2 mt-5 grid gap-2 pt-3 font-light text-gray-600"
-                                style="border-color: {{ $membreship->color_hex ?? '#9D5AA9' }};">
-                                @if ($membreship->classes_before)
-                                    <span class="flex items-center gap-2">
+                            @if ($membreship->classes_before || $membreship->is_benefit_shake || $membreship->is_benefit_discipline)
+                                <div class="border-t-2 mt-5 grid  gap-2 pt-3 font-light text-gray-600"
+                                    style="border-color: {{ $membreship->color_hex ?? '#9D5AA9' }};">
+                                    @if ($membreship->classes_before)
+                                        <span class="flex items-center gap-2">
 
-                                        <img class="h-4" src="{{ asset('image/logos/calendario.png') }}"
-                                            alt=""> Acceso a clases
-                                        {{ $membreship->classes_before }} días antes
-                                    </span>
-                                @endif
-                                @if ($membreship->is_benefit_shake)
-                                    <span class="flex items-center gap-2">
-                                        <img class="h-4" src="{{ asset('image/logos/shake.png') }}" alt="">
-                                        {{ $membreship->shake_quantity }} shakes gratis
-                                    </span>
-                                @endif
+                                            <img class="h-4" src="{{ asset('image/logos/calendario.png') }}"
+                                                alt=""> Acceso a clases
+                                            {{ $membreship->classes_before }} días antes
+                                        </span>
+                                    @endif
+                                    @if ($membreship->is_benefit_shake)
+                                        <span class="flex items-center gap-2">
+                                            <img class="h-4" src="{{ asset('image/logos/shake.png') }}"
+                                                alt="">
+                                            {{ $membreship->shake_quantity }} shakes gratis
+                                        </span>
+                                    @endif
 
-                                @if ($membreship->is_benefit_discipline)
-                                    <span class="flex items-center gap-2">
-                                        <img style="filter: brightness(0) saturate(100%) invert(19%) sepia(24%) saturate(395%) hue-rotate(168deg) brightness(92%) contrast(89%);"
-                                            class="h-4"
-                                            src="{{ 'storage/' . $membreship->discipline->icon_url ?? asset('image/pages/logo.png') }}"
-                                            alt=""> 1 clase de {{ $membreship->discipline->name }}
-                                    </span>
-                                @endif
-                            </div>
-
+                                    @if ($membreship->is_benefit_discipline)
+                                        <span class="flex items-center gap-2">
+                                            <img style="filter: brightness(0) saturate(100%) invert(19%) sepia(24%) saturate(395%) hue-rotate(168deg) brightness(92%) contrast(89%);"
+                                                class="h-4"
+                                                src="{{ 'storage/' . $membreship->discipline->icon_url ?? asset('image/pages/logo.png') }}"
+                                                alt=""> 1 clase de {{ $membreship->discipline->name }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     @endforeach
                 </div>
