@@ -180,8 +180,13 @@
             margin: auto;
         }
 
+
         .footer__logo {
-            margin-top: 1rem;
+            margin: auto;
+        }
+
+        .footer__logo img {
+            padding-top: 1rem;
             width: 85px;
             object-fit: contain;
             margin: auto;
@@ -208,12 +213,38 @@
                         <img class="card__img--target" src="" alt=""> --}}
 
                         {{-- Desarrollo --}}
-                        <img class="card__img--logo"
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Logos.svg/1200px-Logos.svg.png"
-                            alt="">
-                        <img class="card__img--target"
+
+
+
+                        @if ($company->logo_path)
+                            {{-- Desarrollo  --}}
+                            {{-- <img class="card__img--logo"
+                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Logos.svg/1200px-Logos.svg.png"
+                                alt="logo"> --}}
+
+                            {{-- Produccion --}}
+                            <img class="card__img--logo" src="{{ $company->logo_path }}" alt="Logo-rsistanc">
+                        @else
+                            {{-- Desarrollo --}}
+                            {{-- <img class="card__img--logo"
+                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Logos.svg/1200px-Logos.svg.png"
+                                alt="logo"> --}}
+
+                            {{-- Produccion --}}
+                            <img class="card__img--logo" src="{{ asset('image/emails/logos/logo-correo.png') }}"
+                                alt="">
+                        @endif
+
+
+                        {{-- Desarrollo --}}
+                        {{-- <img class="card__img--target"
                             src="https://media.united.com/assets/m/4beccaf8e41c8b87/original/UNTD24_ClubCard_LgType_MKTG_Card_RGB_2000x1260.png"
-                            alt="">
+                            alt="card"> --}}
+
+                        {{-- PRODUCCION --}}
+                        <img class="card__img--target"
+                            src="{{ asset('image/emails/recuperacionContrasenia/ayuda-rsistanc.png') }}" alt="card">
+
                     </div>
 
 
@@ -242,8 +273,25 @@
 
                     <div class="linea"></div>
                     <div class="footer__correo">
-                        <img class="footer__firma"
-                            src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png" alt="">
+
+                        @if ($company->signature_image)
+                            {{-- Desarrollo --}}
+                            {{-- <img class="footer__firma"
+                                src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png"
+                                alt=""> --}}
+                            {{-- Produccion --}}
+                            <img class="footer__firma" src="{{ $company->signature_image }}" alt="firma">
+                        @else
+                            {{-- Desarrollo --}}
+                            {{-- <img class="footer__firma"
+                                src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png"
+                                alt=""> --}}
+
+                            {{-- Produccion --}}
+                            <img class="footer__firma" src="{{ asset('image/emails/firma.png') }}" alt="firma">
+                        @endif
+
+
 
                         <p class="footer__text">
                             Estás recibiendo este correo electrónico porque te registraste a través de nuestro app.
@@ -253,55 +301,90 @@
                             {{-- Facebook --}}
                             @if ($company->facebook_url)
                                 <a class="red__social" href="{{ $company->facebook_url }}">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="facebook-rsistanc">
+                                    {{-- Desarrollo --}}
+                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="facebook-rsistanc"> --}}
+                                    {{-- Produccion --}}
+                                    <img src="{{ asset('image/redes/facebook.png') }}" alt="facebook-rsistanc">
                                 </a>
                             @endif
 
                             {{-- Instagram --}}
                             @if ($company->instagram_url)
                                 <a class="red__social" href="{{ $company->instagram_url }}">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Instagram-rsistanc">
+
+                                    {{-- Desarrollo --}}
+                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Instagram-rsistanc"> --}}
+                                    {{-- Produccion --}}
+                                    <img src="{{ asset('image/redes/instagram.png') }}" alt="facebook-rsistanc">
+
                                 </a>
                             @endif
 
                             {{-- Twiter --}}
                             @if ($company->twitter_url)
                                 <a class="red__social" href="{{ $company->twitter_url }}">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Twiter-rsistanc">
+                                    {{-- Desarrollo --}}
+                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Twiter-rsistanc"> --}}
+
+                                    {{-- Produccion --}}
+                                    <img src="{{ asset('image/redes/new-twitter.png') }}" alt="Twiter-rsistanc">
                                 </a>
                             @endif
                             {{-- linkedin --}}
                             @if ($company->linkedin_url)
                                 <a class="red__social" href="{{ $company->linkedin_url }}">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="linkedin-rsistanc">
+                                    {{-- Desarrollo --}}
+                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="linkedin-rsistanc"> --}}
+
+                                    {{-- Produccion --}}
+                                    <img src="{{ asset('image/redes/linkedin.png') }}" alt="Twiter-rsistanc">
+
                                 </a>
                             @endif
                             {{-- Youtube --}}
                             @if ($company->youtube_url)
                                 <a class="red__social" href="{{ $company->youtube_url }}">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Youtube-rsistanc">
+
+                                    {{-- Desarrollo --}}
+                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                    alt="Youtube-rsistanc"> --}}
+
+                                    {{-- Produccion --}}
+                                    <img src="{{ asset('image/redes/youtube.png') }}" alt="Youtube-rsistanc">
+
                                 </a>
                             @endif
 
                             {{-- Tiktok --}}
                             @if ($company->tiktok_url)
                                 <a class="red__social" href="{{ $company->tiktok_url }}">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Tiktok-rsistanc">
+                                    {{-- Desarrollo --}}
+                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
+                                        alt="Tiktok-rsistanc"> --}}
+
+                                    {{-- Produccion --}}
+                                    <img src="{{ asset('image/redes/tiktok.png') }}" alt="tiktok-rsistanc">
                                 </a>
                             @endif
 
                         </div>
 
                         <p class="footer__direccion"> {{ $company->address }} </p>
-                        <img class="footer__logo"
-                            src="https://e7.pngegg.com/pngimages/415/762/png-clipart-circle-crescent-logo-circle-white-logo.png"
-                            alt="">
+                        <div class="footer__logo">
+
+                            {{-- Desarrollo --}}
+                            {{-- <img class=""
+                                src="https://e7.pngegg.com/pngimages/415/762/png-clipart-circle-crescent-logo-circle-white-logo.png"
+                                alt="Logo-footer"> --}}
+
+                            {{-- Produccion --}}
+                            <img src="{{ asset('image/emails/logo-rsistanc-correo.png') }}" alt="">
+                        </div>
+
                     </div>
 
                 </div>

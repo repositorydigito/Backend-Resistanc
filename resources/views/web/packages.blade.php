@@ -110,19 +110,9 @@
                 <h1 class="text-4xl lg:text-6xl  font-extrabold tracking-[8px]"><span class="font-light">CONOCE NUESTROS </span> <br>
                     PAQUETES & BENEFICIOS
                 </h1>
-
-
-
             </div>
-
-
-
         </div>
     </section>
-
-
-
-
 
     <div class="paquetes py-16">
         <div class="paquetes__container container">
