@@ -296,7 +296,7 @@
                             <p>Mixea disciplinas, suma puntos,
                                 sube de nivel.</p>
                         </div>
-                        <a href="#membresias" class="font-extrabold text-xl">VER PAQUETES →</a>
+                        <a href="{{ route('package') }}" class="font-extrabold text-xl">VER PAQUETES →</a>
                     </div>
                     <div data-aos="fade-down-left"
                         class="card__benef card__benef--two flex-1 bg-slate-500 rounded-3xl p-8 grid gap-3 justify-start justify-items-start content-end ">
@@ -309,7 +309,7 @@
                             <p class="font-extrabold"><span class="font-light">alcanzando la categoría </span>GOLD y
                                 BLACK.</p>
                         </div>
-                        <a href="#beneficios" class="font-extrabold text-xl ">VER BENEFICIOS →</a>
+                        <a href="{{ route('package') }}" class="font-extrabold text-xl ">VER BENEFICIOS →</a>
                     </div>
                 </div>
             </div>
