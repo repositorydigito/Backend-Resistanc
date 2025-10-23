@@ -141,6 +141,7 @@
 
         .footer__firma {
             height: 100px;
+            max-width: 250px;
             margin: auto;
             object-fit: contain;
         }
@@ -223,7 +224,7 @@
                                 alt="logo"> --}}
 
                             {{-- Produccion --}}
-                            <img class="card__img--logo" src="{{ 'storage/' . $company->logo_path }}"
+                            <img class="card__img--logo" src="{{ asset('storage/' . $company->logo_path) }}"
                                 alt="Logo-rsistanc">
                         @else
                             {{-- Desarrollo --}}
