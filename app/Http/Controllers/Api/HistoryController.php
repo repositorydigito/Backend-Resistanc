@@ -18,7 +18,7 @@ class HistoryController extends Controller
 
             // 1. Obtener clases completadas del usuario (status = 'Completed')
             $completedClasses = \App\Models\ClassScheduleSeat::with([
-                'classSchedule.class.disciplines',
+                'classSchedule.class.discipline',
                 'seat',
                 'userPackage'
             ])
@@ -42,11 +42,14 @@ class HistoryController extends Controller
                     continue;
                 }
 
-                $disciplines = $classSchedule->class->disciplines;
-
-                if (!$disciplines || $disciplines->isEmpty()) {
+                // Use discipline (singular) and convert to collection
+                $discipline = $classSchedule->class->discipline;
+                if (!$discipline) {
                     continue;
                 }
+
+                // Create collection with single discipline
+                $disciplines = collect([$discipline]);
 
                 $disciplineIds = $disciplines->pluck('id')->sort()->values()->toArray();
                 $groupKey = implode('-', $disciplineIds);
@@ -75,13 +78,19 @@ class HistoryController extends Controller
             }
 
             // 5. Combinar todos los grupos con los completados
-            foreach ($allGroupsData as $groupKey => &$group) {
-                $group['completed_count'] = $completedByGroupsData[$groupKey]['completed_count'] ?? 0;
-                $group['classes'] = $completedByGroupsData[$groupKey]['classes'] ?? [];
-
+            foreach ($allGroupsData as $groupKey => $group) {
                 // Inicializar contador por disciplina dentro del grupo
-                foreach ($group['disciplines'] as &$discipline) {
-                    $discipline['completed_count_in_group'] = 0;
+                foreach ($group['disciplines'] as $index => $discipline) {
+                    $allGroupsData[$groupKey]['disciplines'][$index]['completed_count_in_group'] = 0;
+                }
+
+                // Si este grupo tiene clases completadas, asignarlas
+                if (isset($completedByGroupsData[$groupKey])) {
+                    $allGroupsData[$groupKey]['completed_count'] = $completedByGroupsData[$groupKey]['completed_count'];
+                    $allGroupsData[$groupKey]['classes'] = $completedByGroupsData[$groupKey]['classes'];
+                } else {
+                    $allGroupsData[$groupKey]['completed_count'] = 0;
+                    $allGroupsData[$groupKey]['classes'] = [];
                 }
             }
 
@@ -89,22 +98,20 @@ class HistoryController extends Controller
             foreach ($completedClasses as $classScheduleSeat) {
                 $classSchedule = $classScheduleSeat->classSchedule;
 
-                if (!$classSchedule || !$classSchedule->class || !$classSchedule->class->disciplines) {
+                if (!$classSchedule || !$classSchedule->class || !$classSchedule->class->discipline) {
                     continue;
                 }
 
-                $disciplines = $classSchedule->class->disciplines;
-                $disciplineIds = $disciplines->pluck('id')->sort()->values()->toArray();
-                $groupKey = implode('-', $disciplineIds);
+                // Use discipline (singular) and convert to collection
+                $discipline = $classSchedule->class->discipline;
+                $completedDisciplineId = $discipline->id;
 
-                // Si está en algún grupo, incrementar el contador de cada disciplina
-                if (isset($allGroupsData[$groupKey])) {
-                    foreach ($disciplines as $discipline) {
-                        foreach ($allGroupsData[$groupKey]['disciplines'] as &$groupDiscipline) {
-                            if ($groupDiscipline['id'] === $discipline->id) {
-                                $groupDiscipline['completed_count_in_group']++;
-                                break;
-                            }
+                // Buscar en TODOS los grupos si esta disciplina está presente
+                foreach ($allGroupsData as $groupKey => $group) {
+                    foreach ($group['disciplines'] as $index => $groupDiscipline) {
+                        if ($groupDiscipline['id'] === $completedDisciplineId) {
+                            $allGroupsData[$groupKey]['disciplines'][$index]['completed_count_in_group']++;
+                            break;
                         }
                     }
                 }
@@ -113,9 +120,9 @@ class HistoryController extends Controller
             $groupsData = $allGroupsData;
 
             // Generar nombres descriptivos para los grupos
-            foreach ($groupsData as &$group) {
+            foreach ($groupsData as $groupKey => $group) {
                 $disciplineNames = array_column($group['disciplines'], 'display_name');
-                $group['group_name'] = count($disciplineNames) === 1
+                $groupsData[$groupKey]['group_name'] = count($disciplineNames) === 1
                     ? $disciplineNames[0]
                     : implode(' + ', $disciplineNames);
             }
@@ -137,24 +144,41 @@ class HistoryController extends Controller
             foreach ($completedClasses as $classScheduleSeat) {
                 $classSchedule = $classScheduleSeat->classSchedule;
 
-                if (!$classSchedule || !$classSchedule->class || !$classSchedule->class->disciplines) {
+                if (!$classSchedule || !$classSchedule->class || !$classSchedule->class->discipline) {
                     continue;
                 }
 
-                foreach ($classSchedule->class->disciplines as $discipline) {
-                    $disciplineId = $discipline->id;
-
-                    if (!isset($completedByDiscipline[$disciplineId])) {
-                        $completedByDiscipline[$disciplineId] = [
-                            'discipline_id' => $disciplineId,
-                            'discipline_name' => $discipline->name,
-                            'discipline_display_name' => $discipline->display_name,
-                            'completed_count' => 0,
-                        ];
-                    }
-
-                    $completedByDiscipline[$disciplineId]['completed_count']++;
+                // Use discipline (singular)
+                $discipline = $classSchedule->class->discipline;
+                if (!$discipline) {
+                    continue;
                 }
+
+                $disciplineId = $discipline->id;
+
+                if (!isset($completedByDiscipline[$disciplineId])) {
+                    $completedByDiscipline[$disciplineId] = [
+                        'discipline_id' => $disciplineId,
+                        'discipline_name' => $discipline->name,
+                        'discipline_display_name' => $discipline->display_name,
+                        'completed_count' => 0,
+                        'classes' => [],
+                    ];
+                }
+
+                $completedByDiscipline[$disciplineId]['completed_count']++;
+
+                // Agregar detalles de la clase completada
+                $completedByDiscipline[$disciplineId]['classes'][] = [
+                    'id' => $classSchedule->id,
+                    'class_name' => $classSchedule->class->name,
+                    'scheduled_date' => $classSchedule->scheduled_date->format('Y-m-d'),
+                    'start_time' => $classSchedule->start_time,
+                    'end_time' => $classSchedule->end_time,
+                    'completed_at' => $classSchedule->updated_at->format('Y-m-d H:i:s'),
+                    'seat_code' => $classScheduleSeat->code ?? null,
+                    'attendance_notes' => $classScheduleSeat->attendance_notes ?? null,
+                ];
             }
 
             // Ordenar disciplinas por cantidad completada

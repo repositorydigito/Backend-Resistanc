@@ -47,9 +47,15 @@ final class UserProfile extends Model
         'medical_conditions',
         'fitness_goals',
         'adress',
+        'address',
         'phone',
         'is_active',
         'observations',
+        'fiscal_address',
+        'district',
+        'province',
+        'department',
+        'ubigeo',
         // Relaciones
         'user_id',
     ];

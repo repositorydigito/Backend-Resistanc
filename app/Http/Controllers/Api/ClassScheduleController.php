@@ -36,9 +36,37 @@ final class ClassScheduleController extends Controller
             $validated = $request->validated(); // Esto funciona si ya tienes el Form Request configurado
 
             $query = ClassSchedule::query()
-                ->where('scheduled_date', '>=', now())
                 ->where('status', 'scheduled')
                 ->with(['class', 'instructor', 'studio']);
+
+            // 🎯 Calcular la fecha mínima basada en la membresía del usuario
+            $userId = Auth::id();
+
+            if ($userId) {
+                // Obtener todas las membresías activas del usuario
+                $userMemberships = \App\Models\UserMembership::where('user_id', $userId)
+                    ->where('status', 'active')
+                    ->where('expiry_date', '>=', now())
+                    ->whereHas('membership')
+                    ->with('membership')
+                    ->get();
+
+                if ($userMemberships->isNotEmpty()) {
+                    // Encontrar el máximo classes_before entre todas las membresías
+                    $maxClassesBefore = $userMemberships->max(function ($userMembership) {
+                        return $userMembership->membership->classes_before ?? 0;
+                    });
+
+                    if ($maxClassesBefore > 0) {
+                        // Si el usuario tiene membresía con classes_before, puede ver clases desde hoy + X días adelante
+                        // Ejemplo: si classes_before = 7, puede ver clases hasta 7 días en el futuro
+                        $query->where('scheduled_date', '<=', now()->addDays($maxClassesBefore));
+                    }
+                }
+            }
+
+            // Si no tiene membresía o classes_before = 0, solo mostrar clases de hoy en adelante
+            $query->where('scheduled_date', '>=', now()->toDateString());
 
             // Filtros opcionales
             if ($request->filled('class_id')) {
@@ -671,6 +699,28 @@ final class ClassScheduleController extends Controller
                         'datoAdicional' => [
                             'current_status' => $classSchedule->status,
                             'required_status' => 'scheduled'
+                        ]
+                    ], 200);
+                }
+
+                // 🚫 Validar que NO se pueda cancelar si falta menos de 1 hora para iniciar
+                $scheduledDate = $classSchedule->scheduled_date instanceof \Carbon\Carbon
+                    ? $classSchedule->scheduled_date->format('Y-m-d')
+                    : $classSchedule->scheduled_date;
+
+                $startDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $classSchedule->start_time);
+                $oneHourBefore = $startDateTime->copy()->subHour();
+
+                if (now()->greaterThanOrEqualTo($oneHourBefore)) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'No se puede cancelar la reserva. La clase inicia en menos de 1 hora',
+                        'datoAdicional' => [
+                            'reason' => 'too_close_to_start',
+                            'start_time' => $startDateTime->toDateTimeString(),
+                            'one_hour_before' => $oneHourBefore->toDateTimeString(),
+                            'current_time' => now()->toDateTimeString()
                         ]
                     ], 200);
                 }

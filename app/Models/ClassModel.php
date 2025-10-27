@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Collection;
 
 final class ClassModel extends Model
 {
@@ -54,6 +56,7 @@ final class ClassModel extends Model
     {
         return $this->belongsTo(Discipline::class);
     }
+
 
 
     public function schedules(): HasMany

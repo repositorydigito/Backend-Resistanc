@@ -31,6 +31,9 @@ final class Order extends Model
         'notes',
         'items',
         'payment_method_name',
+        'mercadopago_preference_id',
+        'mercadopago_payment_id',
+        'mercadopago_init_point_url',
         'user_id',
     ];
 

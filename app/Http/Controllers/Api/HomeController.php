@@ -70,9 +70,40 @@ final class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        $classSchedules = ClassSchedule::with(['class', 'studio'])
+        // 🎯 Calcular la fecha máxima basada en la membresía del usuario
+        $maxScheduledDate = null;
+
+        // Obtener todas las membresías activas del usuario
+        $userMemberships = $user->userMemberships()
+            ->where('status', 'active')
+            ->where('expiry_date', '>=', now())
+            ->whereHas('membership')
+            ->with('membership')
+            ->get();
+
+        if ($userMemberships->isNotEmpty()) {
+            // Encontrar el máximo classes_before entre todas las membresías
+            $maxClassesBefore = $userMemberships->max(function ($userMembership) {
+                return $userMembership->membership->classes_before ?? 0;
+            });
+
+            if ($maxClassesBefore > 0) {
+                // Si el usuario tiene membresía con classes_before, puede ver clases hasta X días en el futuro
+                // Ejemplo: si classes_before = 7, puede ver clases hasta 7 días en el futuro
+                $maxScheduledDate = now()->addDays($maxClassesBefore)->toDateString();
+            }
+        }
+
+        $classSchedulesQuery = ClassSchedule::with(['class', 'studio'])
             ->where('scheduled_date', '>=', now()->toDateString())
-            ->where('status', 'scheduled')
+            ->where('status', 'scheduled');
+
+        // Aplicar límite de membresía si existe
+        if ($maxScheduledDate) {
+            $classSchedulesQuery->where('scheduled_date', '<=', $maxScheduledDate);
+        }
+
+        $classSchedules = $classSchedulesQuery
             ->orderBy('scheduled_date', 'asc')
             ->orderBy('start_time', 'asc')
             ->limit(10)

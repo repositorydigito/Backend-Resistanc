@@ -56,6 +56,10 @@ final class User extends Authenticatable implements MustVerifyEmail
         'facebook_id',
         'google_id',
         'avatar',
+        'document_type',
+        'document_number',
+        'business_name',
+        'is_company',
     ];
 
     /**
@@ -187,6 +191,7 @@ final class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_company' => 'boolean',
         ];
     }
 
