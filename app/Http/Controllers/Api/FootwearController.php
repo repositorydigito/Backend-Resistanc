@@ -894,4 +894,105 @@ class FootwearController extends Controller
             ], 200);
         }
     }
+
+    /**
+     * Cancelar reservas de calzado para una clase específica
+     */
+    public function cancelReservation(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'class_schedules_id' => 'required|exists:class_schedules,id'
+            ]);
+
+            $userId = Auth::id();
+            $classScheduleId = $validated['class_schedules_id'];
+
+            // Obtener el horario
+            $classSchedule = ClassSchedule::with(['class', 'instructor', 'studio'])
+                ->findOrFail($classScheduleId);
+
+            // Obtener todas las reservas del usuario en este horario
+            $reservations = FootwearReservation::where('class_schedules_id', $classScheduleId)
+                ->where('user_client_id', $userId)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->get();
+
+            if ($reservations->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes reservas de calzado en esta clase',
+                    'datoAdicional' => [
+                        'class_schedule_info' => [
+                            'id' => $classSchedule->id,
+                            'class_name' => $classSchedule->class->name ?? 'N/A',
+                            'scheduled_date' => $classSchedule->scheduled_date,
+                            'start_time' => $classSchedule->start_time,
+                            'end_time' => $classSchedule->end_time
+                        ],
+                        'reservations_canceled' => 0
+                    ]
+                ], 200);
+            }
+
+            // Obtener IDs de reservas a cancelar para el resumen
+            $reservationIds = $reservations->pluck('id')->toArray();
+
+            // Cancelar todas las reservas
+            $canceledCount = FootwearReservation::whereIn('id', $reservationIds)
+                ->where('user_client_id', $userId)
+                ->update(['status' => 'canceled']);
+
+            // Obtener información de las reservas antes de cancelarlas para el resumen
+            $canceledReservations = $reservations;
+
+            $canceledBySize = [];
+            foreach ($canceledReservations as $reservation) {
+                $footwear = Footwear::find($reservation->footwear_id);
+                if ($footwear && $footwear->size) {
+                    $size = $footwear->size;
+                    if (!isset($canceledBySize[$size])) {
+                        $canceledBySize[$size] = 0;
+                    }
+                    $canceledBySize[$size]++;
+                }
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Reservas de calzado canceladas exitosamente',
+                'datoAdicional' => [
+                    'class_schedule_info' => [
+                        'id' => $classSchedule->id,
+                        'class_name' => $classSchedule->class->name ?? 'N/A',
+                        'scheduled_date' => $classSchedule->scheduled_date,
+                        'start_time' => $classSchedule->start_time,
+                        'end_time' => $classSchedule->end_time
+                    ],
+                    'reservations_canceled' => $canceledCount,
+                    'summary' => [
+                        'total_reservations_canceled' => $canceledCount,
+                        'sizes_canceled' => $canceledBySize
+                    ]
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al cancelar las reservas de calzado',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
+    }
 }

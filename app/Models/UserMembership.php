@@ -11,7 +11,69 @@ class UserMembership extends Model
 {
     use HasFactory;
 
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($userMembership) {
+            if (empty($userMembership->code)) {
+                $userMembership->code = static::generateUniqueCode();
+            }
+        });
+    }
+
+    /**
+     * Generate a unique code similar to a credit card number.
+     * Format: XXXX-XXXX-XXXX-XXXX (16 digits with hyphens)
+     */
+    public static function generateUniqueCode(): string
+    {
+        $maxAttempts = 100; // Prevent infinite loops
+        $attempts = 0;
+
+        do {
+            // Generate 16 random digits
+            $digits = '';
+            for ($i = 0; $i < 16; $i++) {
+                $digits .= mt_rand(0, 9);
+            }
+
+            // Format as XXXX-XXXX-XXXX-XXXX
+            $code = substr($digits, 0, 4) . '-' .
+                   substr($digits, 4, 4) . '-' .
+                   substr($digits, 8, 4) . '-' .
+                   substr($digits, 12, 4);
+
+            $attempts++;
+
+            // If we've tried too many times, add a timestamp to ensure uniqueness
+            if ($attempts >= $maxAttempts) {
+                $timestamp = (string) time();
+                $code = substr($digits, 0, 4) . '-' .
+                       substr($digits, 4, 4) . '-' .
+                       substr($digits, 8, 4) . '-' .
+                       substr($timestamp, -4);
+                break;
+            }
+
+        } while (static::where('code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Get the code without hyphens (raw digits only).
+     */
+    public function getCodeDigitsAttribute(): string
+    {
+        return str_replace('-', '', $this->code);
+    }
+
     protected $fillable = [
+        'code',
         'user_id',
         'membership_id',
         'discipline_id',

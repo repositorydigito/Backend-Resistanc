@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\StudioController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\JuiceCartCodeController;
+use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductVariantApiController;
 use App\Http\Controllers\Api\TagController;
@@ -248,6 +249,13 @@ Route::prefix('shopping-cart')->name('shopping-cart.')->middleware('auth:sanctum
 
 // Fin carrito shake
 
+// Membresías
+Route::prefix('memberships')->name('memberships.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/my-memberships', [MembershipController::class, 'getMyMemberships'])->name('my-memberships');
+    Route::post('/check-status', [MembershipController::class, 'checkMembershipStatus'])->name('check-status');
+    Route::post('/summary', [MembershipController::class, 'getMembershipSummary'])->name('summary');
+});
+// Fin membresías
 
 // Rutas de Pedidos de Productos
 Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function () {
@@ -284,4 +292,5 @@ Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(
     Route::post('/class-schedule', [FootwearController::class, 'indexClassSchedule'])->name('index-class-schedule');
     Route::post('/reserve', [FootwearController::class, 'reserve'])->name('reserve');
     Route::post('/update-reservation', [FootwearController::class, 'updateReservation'])->name('update-reservation');
+    Route::post('/cancel-reservation', [FootwearController::class, 'cancelReservation'])->name('cancel-reservation');
 });
