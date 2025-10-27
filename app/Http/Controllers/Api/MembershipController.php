@@ -48,10 +48,22 @@ class MembershipController extends Controller
             // Cargar los datos de la membresía
             $membership->load('membership', 'discipline', 'sourcePackage');
 
+            // Obtener información del usuario y su perfil
+            $user = Auth::user();
+            $userProfile = $user->profile;
+
             $formattedMembership = [
                 'id' => $membership->id,
                 'code' => $membership->code, // Código de membresía (formato tarjeta: XXXX-XXXX-XXXX-XXXX)
                 'code_digits' => $membership->code_digits, // Código sin guiones
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'code' => $user->code,
+                    'birth_date' => $userProfile?->birth_date ? $userProfile->birth_date->format('Y-m-d') : null,
+                    'birth_date_formatted' => $userProfile?->birth_date ? $userProfile->birth_date->format('d/m/Y') : null,
+                ],
                 'membership' => [
                     'id' => $membership->membership->id ?? null,
                     'name' => $membership->membership->name ?? 'N/A',

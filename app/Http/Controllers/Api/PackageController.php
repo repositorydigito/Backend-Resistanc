@@ -414,7 +414,7 @@ final class PackageController extends Controller
 
             $memberships = UserMembership::with(['membership', 'discipline'])
                 ->where('user_id', $userId)
-                ->where('is_active', true)
+                ->where('status', 'active')
                 ->where('expiry_date', '>', now())
                 ->where('remaining_free_classes', '>', 0)
                 ->orderBy('expiry_date', 'asc')
@@ -497,7 +497,7 @@ final class PackageController extends Controller
             // Obtener membresías activas y vigentes del usuario
             $userMembershipsQuery = $user->userMemberships()
                 ->with(['membership', 'discipline'])
-                ->where('is_active', true)
+                ->where('status', 'active')
                 ->where('remaining_free_classes', '>', 0)
                 ->where('expiry_date', '>', now()) // Solo membresías vigentes
                 ->where('activation_date', '<=', now()); // Solo membresías activadas

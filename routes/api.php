@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DisciplineController;
 use App\Http\Controllers\Api\DrinkController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\FootwearController;
+use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\PackageController;
@@ -256,6 +257,12 @@ Route::prefix('memberships')->name('memberships.')->middleware('auth:sanctum')->
     Route::post('/summary', [MembershipController::class, 'getMembershipSummary'])->name('summary');
 });
 // Fin membresías
+
+// Historial
+Route::prefix('history')->name('history.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/classes', [HistoryController::class, 'getClassHistory'])->name('classes');
+});
+// Fin historial
 
 // Rutas de Pedidos de Productos
 Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function () {
