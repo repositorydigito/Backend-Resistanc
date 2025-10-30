@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('password')->nullable()->comment('Contrasenia del usuario');
             $table->string('google_id')->nullable()->comment('id del logueo por google');
             $table->string('facebook_id')->nullable()->comment('id del logueo por facebook');
+             $table->string('avatar')->nullable()->comment('URL del avatar del usuario');
             $table->rememberToken();
             $table->timestamps();
         });

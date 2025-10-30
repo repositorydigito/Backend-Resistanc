@@ -29,9 +29,23 @@ return new class extends Migration
             // $table->json('benefits_included')->nullable()->comment('Beneficios específicos incluidos');
             $table->text('notes')->nullable()->comment('Notas adicionales sobre el paquete');
 
+            $table->decimal('real_amount_paid_soles', 10, 2)->nullable()->comment('Monto real pagado (después de descuentos)');
+            $table->decimal('original_package_price_soles', 10, 2)->nullable()->comment('Precio original del paquete');
+            $table->string('promo_code_used')->nullable()->comment('Código promocional usado');
+            $table->decimal('discount_percentage', 5, 2)->nullable()->comment('Porcentaje de descuento aplicado');
+
+
+
+
             // Relaciones
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('package_id')->constrained('packages')->onDelete('restrict');
+
+            $table->foreignId('gift_order_id')
+                ->nullable()
+                ->constrained('juice_orders')
+                ->onDelete('set null')
+                ->comment('ID del pedido de regalo asociado (shakes gratis por membresía)');
 
             // Índices
             $table->index(['user_id', 'status']);

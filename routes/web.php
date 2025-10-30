@@ -35,12 +35,12 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
     if ($user->hasVerifiedEmail()) {
-        return view('auth.verification-success', ['message' => 'Tu email ya ha sido verificado anteriormente.']);
+        return view('auth.verification-success', ['message' => 'Tu email ya ha sido verificado anteriormente. Puedes ingresar al app sin complicaciones!']);
     }
 
     $user->markEmailAsVerified();
 
-    return view('auth.verification-success', ['message' => '¡Tu email ha sido verificado correctamente!']);
+    return view('auth.verification-success', ['message' => '¡Tu email ha sido verificado correctamente. Puedes ingresar al app sin complicaciones!']);
 })->name('verification.verify');
 
 // Ruta para reenviar email de verificación (pública, pero con throttling)

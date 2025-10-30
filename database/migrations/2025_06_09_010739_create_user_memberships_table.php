@@ -14,10 +14,9 @@ return new class extends Migration
         Schema::create('user_memberships', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('membership_id')->constrained()->onDelete('cascade');
-            $table->foreignId('discipline_id')->nullable()->constrained()->onDelete('set null');
 
+
+            $table->string('code', 20)->unique()->nullable()->comment('Código único de membresía (formato tarjeta: XXXX-XXXX-XXXX-XXXX)');
             // Clases gratis de la membresía
             $table->integer('total_free_classes')->default(0)->comment('Total de clases gratis otorgadas');
             $table->integer('used_free_classes')->default(0)->comment('Clases gratis utilizadas');
@@ -29,15 +28,22 @@ return new class extends Migration
 
             // Estado
             $table->enum('status', ['active', 'expired', 'pending', 'suspended', 'cancelled'])
-                  ->default('active')
-                  ->comment('Estado de la membresía');
+                ->default('active')
+                ->comment('Estado de la membresía');
 
             // Referencia al paquete que otorgó esta membresía
-            $table->foreignId('source_package_id')->nullable()->constrained('packages')->onDelete('set null')
-                  ->comment('ID del paquete que otorgó esta membresía');
+
 
             // Notas adicionales
             $table->text('notes')->nullable()->comment('Notas adicionales sobre la membresía');
+
+
+            // Relaciones
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('source_package_id')->nullable()->constrained('packages')->onDelete('set null')
+                ->comment('ID del paquete que otorgó esta membresía');
+            $table->foreignId('membership_id')->constrained()->onDelete('cascade');
+            $table->foreignId('discipline_id')->nullable()->constrained()->onDelete('set null');
 
             $table->timestamps();
 

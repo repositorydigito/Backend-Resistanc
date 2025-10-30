@@ -16,8 +16,6 @@ return new class extends Migration
 
             $table->string('code')->unique()->comment('Código único del asiento en la clase');
 
-
-
             // 📊 Estados del asiento
             $table->enum('status', [
                 'available',    // Disponible
@@ -31,6 +29,16 @@ return new class extends Migration
             // 📅 Timestamps
             $table->timestamp('reserved_at')->nullable();
             $table->timestamp('expires_at')->nullable(); // Para reservas temporales
+
+
+            $table->foreignId('user_membership_id')
+                ->nullable()
+                ->constrained('user_memberships')
+                ->onDelete('set null')
+                ->comment('ID de la membresía utilizada para esta reserva');
+
+
+
 
 
             // Relaciones
@@ -63,6 +71,8 @@ return new class extends Migration
             $table->index(['class_schedules_id', 'status']);
             $table->index(['user_id', 'status']);
             $table->index('expires_at');
+            // Índice para mejorar consultas
+            $table->index(['user_membership_id', 'status']);
 
             $table->timestamps();
         });

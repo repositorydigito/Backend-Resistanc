@@ -47,7 +47,6 @@ final class UserProfile extends Model
         'medical_conditions',
         'fitness_goals',
         'adress',
-        'address',
         'phone',
         'is_active',
         'observations',

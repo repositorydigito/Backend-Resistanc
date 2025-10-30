@@ -119,7 +119,10 @@
             padding: 0;
             margin: 0;
             box-sizing: border-box;
+            /* outline: 1px solid red; */
         }
+
+
 
         html {
             background: #EFF0F2;
@@ -187,7 +190,7 @@
 
         .card__title {
             text-align: center;
-            font-size: 2rem;
+            font-size: 1.7rem;
             margin: 1rem 0;
         }
 
@@ -195,11 +198,12 @@
             color: #B0694C;
             font-weight: 800;
             margin: auto;
-            text-align: center
+            text-align: center;
+            font-size: 1.7rem;
         }
 
         .card__saludo {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             margin: 1rem 0;
             text-align: center;
         }
@@ -229,14 +233,21 @@
 
         }
 
+        .card__body {
+            display: grid;
+            /* flex-direction: column; */
+            gap: .6rem;
+        }
+
         .card__body p {
             font-size: .9rem;
             text-align: center;
-            margin-bottom: 1rem;
-            font-weight: 200;
+            margin-bottom: 13rem;
+            font-weight: 100;
             color: #5D6D7A;
             max-width: 450px;
             margin: auto;
+            margin-bottom: .6rem;
         }
 
         .nota p {
@@ -307,10 +318,36 @@
             margin: auto;
         }
 
-        .logo__studio img{
+        .logo__studio img {
             height: 2rem;
             /* width: 2rem; */
             object-fit: contain;
+        }
+
+        .card__title--img {
+            margin: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+
+        .verificacion__btn {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .verificacion__btn a {
+
+            all: unset;
+        }
+
+        .verificacion__btn--enlace {
+            margin: auto;
+
+            padding: .5rem 1rem;
+            background: #899830;
+            color: #fff;
+            border-radius: 30px;
         }
     </style>
 </head>
@@ -370,12 +407,17 @@
                     </div>
 
 
-                    <h2 class="card__title">
-                        ¡Bienvenido/a a la comunidad
-                    </h2>
-                    <h2 class="card__title--negrita logo__studio" style="display: flex; gap:.8rem;"> <img
-                            class="" src="{{ asset('image/emails/logos/icon.png') }}" alt="">
-                        STUDIO</h2>
+                    <div class="">
+                        <h2 class="card__title">
+                            ¡Bienvenido/a a la comunidad
+                        </h2>
+                        <div class="card__title--img">
+                            <img class="" src="{{ asset('image/emails/logos/icon.png') }}" alt="">
+                            <h2 class="card__title--negrita logo__studio" style="">STUDIO</h2>
+                        </div>
+                    </div>
+
+
 
                     <h1 class="card__saludo">Hola {{ $user->name }}, </h1>
 
@@ -389,7 +431,10 @@
                     </div>
 
 
-                    <a href="{{ $verificationUrl }}" class="button">Verificar mi cuenta</a>
+                    <div class="verificacion__btn">
+                        <a href="{{ $verificationUrl }}" class="verificacion__btn--enlace">Verificar mi cuenta</a>
+                    </div>
+
 
                     <p>Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu navegador:</p>
                     <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
