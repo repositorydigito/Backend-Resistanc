@@ -281,34 +281,36 @@ final class PackageController extends Controller
             if ($package->membership_id && $package->membership) {
                 $membership = $package->membership;
 
-                // Calcular fecha de expiración de la membresía basada en su duración
-                $membershipExpiryDate = now()->addMonths($membership->duration);
+                // Calcular fecha de expiración de la membresía basada en su duración (fallback seguro)
+                $membershipExpiryDate = now()->addMonths((int) ($membership->duration ?? 0));
 
-                // Si la membresía tiene beneficios de disciplina (clases gratis)
-                if (
-                    $membership->is_benefit_discipline &&
-                    $membership->discipline_id &&
-                    $membership->discipline_quantity > 0
-                ) {
-                    // Crear UserMembership para las clases gratis
-                    $membershipData = UserMembership::create([
-                        'user_id' => $userId,
-                        'membership_id' => $membership->id,
-                        'discipline_id' => $membership->discipline_id,
-                        'total_free_classes' => $membership->discipline_quantity,
-                        'used_free_classes' => 0,
-                        'remaining_free_classes' => $membership->discipline_quantity,
-                        'activation_date' => now(),
-                        'expiry_date' => $membershipExpiryDate,
-                        'status' => 'active',
-                        'source_package_id' => $package->id,
-                        'notes' => "Clases gratis otorgadas por la compra del paquete: {$package->name} (Duración membresía: {$membership->duration} meses)",
-                    ]);
-                }
+                // Determinar beneficios de disciplina
+                $hasDisciplineBenefit = (bool) ($membership->is_benefit_discipline ?? false);
+                $disciplineId = $hasDisciplineBenefit ? ($membership->discipline_id ?? null) : null;
+                $disciplineQuantity = ($hasDisciplineBenefit && $disciplineId && ($membership->discipline_quantity ?? 0) > 0)
+                    ? (int) $membership->discipline_quantity
+                    : 0;
+
+                // Crear SIEMPRE la membresía del usuario (incluso si no otorga clases gratis)
+                $membershipData = UserMembership::create([
+                    'user_id' => $userId,
+                    'membership_id' => $membership->id,
+                    'discipline_id' => $disciplineId,
+                    'total_free_classes' => $disciplineQuantity,
+                    'used_free_classes' => 0,
+                    'remaining_free_classes' => $disciplineQuantity,
+                    'activation_date' => now(),
+                    'expiry_date' => $membershipExpiryDate,
+                    'status' => 'active',
+                    'source_package_id' => $package->id,
+                    'notes' => $disciplineQuantity > 0
+                        ? "Clases gratis otorgadas por la compra del paquete: {$package->name} (Duración membresía: {$membership->duration} meses)"
+                        : "Membresía otorgada por la compra del paquete: {$package->name} (sin clases gratis)",
+                ]);
 
                 // Si la membresía tiene beneficios de shake, crear pedido de regalo
-                if ($membership->is_benefit_shake && $membership->shake_quantity > 0) {
-                    $giftOrderId = $this->createGiftShakeOrder($userId, $request->user(), $membership->shake_quantity, $package->name);
+                if (($membership->is_benefit_shake ?? false) && ($membership->shake_quantity ?? 0) > 0) {
+                    $giftOrderId = $this->createGiftShakeOrder($userId, $request->user(), (int) $membership->shake_quantity, $package->name);
                 }
             }
 
@@ -367,11 +369,14 @@ final class PackageController extends Controller
                 if ($membershipData) {
                     $responseData['membership'] = [
                         'id' => $membershipData->id,
-                        'membership_name' => $membershipData->membership->name,
-                        'discipline_name' => $membershipData->discipline->name,
+                        'code' => $membershipData->code,
+                        'membership_name' => $membershipData->membership->name ?? null,
+                        'membership_level' => $membershipData->membership->level ?? null,
+                        'discipline_id' => $membershipData->discipline_id,
+                        'discipline_name' => $membershipData->discipline->name ?? null,
                         'total_free_classes' => $membershipData->total_free_classes,
                         'remaining_free_classes' => $membershipData->remaining_free_classes,
-                        'expiry_date' => $membershipData->expiry_date->format('Y-m-d'),
+                        'expiry_date' => $membershipData->expiry_date?->format('Y-m-d'),
                         'status' => $membershipData->status,
                     ];
                 }
