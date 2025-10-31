@@ -78,6 +78,8 @@ final class WaitingController extends Controller
                     'class' => [
                         'id' => $schedule->class->id,
                         'name' => $schedule->class->name,
+                        'color_hex' => $schedule->class->color_hex,
+                        'icon_url' => $schedule->class->icon_url ? asset('storage/') . '/' . $schedule->class->icon_url : asset('default/icon.png'),
                         'discipline' => $schedule->class->discipline->name ?? 'N/A',
                         'img_url' => $schedule->class->img_url ? asset('storage/') . '/' . $schedule->class->img_url : asset('default/class.jpg'),
                         'discipline_img' => $schedule->class->discipline->icon_url ? asset('storage/') . '/' . $schedule->class->discipline->icon_url : asset('default/icon.png'),
@@ -404,7 +406,18 @@ final class WaitingController extends Controller
             // Obtener la cantidad total de asientos disponibles en los paquetes del usuario
             $disciplineId = $classSchedule->class->discipline_id;
             $availablePackages = $packageValidationService->getUserAvailablePackagesForDiscipline($userId, $disciplineId);
-            $totalAvailableSeats = $availablePackages->sum('remaining_classes');
+            
+            // También obtener membresías disponibles (directas + del grupo de disciplinas)
+            $availableMemberships = $packageValidationService->getUserAvailableMembershipsForDiscipline($userId, $disciplineId);
+            
+            // 🎯 Obtener membresías adicionales cuya disciplina está en el grupo de disciplinas de los paquetes del usuario
+            $membershipsFromPackageGroups = $packageValidationService->getUserMembershipsFromPackageDisciplineGroups($userId, $disciplineId);
+            
+            // Combinar ambas colecciones (membresías directas + membresías del grupo de paquetes)
+            $availableMemberships = $availableMemberships->merge($membershipsFromPackageGroups)->unique('id');
+            
+            // Calcular total de clases disponibles (paquetes + membresías)
+            $totalAvailableSeats = $availablePackages->sum('remaining_classes') + $availableMemberships->sum('remaining_free_classes');
 
             // Verificar si la cantidad solicitada excede los asientos disponibles
             $totalRequestedEntries = $existingWaitingCount + $quantity;
@@ -419,28 +432,55 @@ final class WaitingController extends Controller
                         'requested_quantity' => $quantity,
                         'total_requested' => $totalRequestedEntries,
                         'max_allowed' => $totalAvailableSeats,
-                        'available_packages_count' => count($packageValidation['available_packages'])
+                        'available_packages_count' => $availablePackages->count(),
+                        'available_memberships_count' => $availableMemberships->count()
                     ]
                 ], 200);
             }
 
             // Log de validación exitosa para debugging
-            Log::info('Usuario agregado a lista de espera - paquetes validados', [
+            Log::info('Usuario agregado a lista de espera - paquetes validados (SIN consumir clases)', [
                 'user_id' => $userId,
                 'schedule_id' => $classScheduleId,
                 'quantity' => $quantity,
                 'discipline_required' => $packageValidation['discipline_required'],
-                'available_packages_count' => count($packageValidation['available_packages'])
+                'available_packages_count' => $availablePackages->count(),
+                'available_memberships_count' => $availableMemberships->count(),
+                'total_available_seats' => $totalAvailableSeats
             ]);
 
             // Crear múltiples entradas en la lista de espera con la misma fecha de creación
+            // NO CONSUMIR CLASES - Solo guardar el user_package_id que se usaría
             $createdEntries = [];
             $currentTime = now();
-
+            
+            // Ordenar paquetes y membresías por fecha de expiración (los que expiran antes primero)
+            $allPackages = $availablePackages->sortBy('expiry_date')->values();
+            $allMemberships = $availableMemberships->sortBy('expiry_date')->values();
+            
+            // Combinar paquetes y membresías para asignar a cada entrada
+            // Priorizar paquetes sobre membresías, y dentro de cada tipo, los que expiran antes
+            $packageIndex = 0;
+            $membershipIndex = 0;
+            
             for ($i = 0; $i < $quantity; $i++) {
+                // NO CONSUMIR CLASES - Solo guardar referencia al paquete/membresía que se usaría
+                $userPackageId = null;
+                
+                // Intentar asignar paquete primero, si hay disponibles
+                if ($packageIndex < $allPackages->count()) {
+                    $userPackageId = $allPackages[$packageIndex]->id;
+                    $packageIndex++;
+                } elseif ($membershipIndex < $allMemberships->count()) {
+                    // Si no hay más paquetes, no asignar user_package_id para membresías
+                    // (las membresías se procesarán al asignar asiento si hay disponibilidad)
+                    $membershipIndex++;
+                }
+                
                 $waitingEntry = WaitingClass::create([
                     'class_schedules_id' => $classScheduleId,
                     'user_id' => $userId,
+                    'user_package_id' => $userPackageId, // Guardar referencia al paquete que se usaría (null para membresías)
                     'status' => 'waiting',
                     'created_at' => $currentTime,
                     'updated_at' => $currentTime,
@@ -462,8 +502,10 @@ final class WaitingController extends Controller
                     ],
                     'package_validation' => [
                         'discipline_required' => $packageValidation['discipline_required'],
-                        'available_packages_count' => count($packageValidation['available_packages']),
-                        'note' => 'Los paquetes no se consumen hasta que reserves un asiento'
+                        'available_packages_count' => $availablePackages->count(),
+                        'available_memberships_count' => $availableMemberships->count(),
+                        'total_available_seats' => $totalAvailableSeats,
+                        'note' => 'Los paquetes NO se consumen al agregar a la lista de espera. Se consumirán solo cuando se asigne un asiento o cuando la clase empiece si el usuario no está presente.'
                     ]
                 ]
             ], 200);

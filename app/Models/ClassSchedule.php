@@ -205,6 +205,34 @@ final class ClassSchedule extends Model
                     ]);
                 }
             }
+
+            // Verificar si se canceló la clase directamente (sin usar el método cancel())
+            // También verificar si is_cancelled cambió a true
+            if (($classSchedule->wasChanged('status') && 
+                $classSchedule->status === 'cancelled' && 
+                $classSchedule->getOriginal('status') !== 'cancelled') ||
+                ($classSchedule->wasChanged('is_cancelled') && 
+                $classSchedule->is_cancelled === true &&
+                $classSchedule->getOriginal('is_cancelled') !== true)) {
+                
+                // Asegurarse de que el status también esté en 'cancelled'
+                if ($classSchedule->status !== 'cancelled') {
+                    $classSchedule->status = 'cancelled';
+                    $classSchedule->saveQuietly(); // Guardar sin disparar eventos para evitar loops
+                }
+                
+                // Cancelar automáticamente las reservas de zapatos
+                $reason = $classSchedule->cancellation_reason ?? 'Clase cancelada';
+                try {
+                    $classSchedule->cancelFootwearReservations($reason);
+                } catch (\Exception $e) {
+                    Log::error('Error cancelando reservas de zapatos desde evento updated', [
+                        'class_schedule_id' => $classSchedule->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
         });
     }
 
@@ -427,11 +455,70 @@ final class ClassSchedule extends Model
      */
     public function cancel(string $reason): void
     {
+        // Actualizar el estado de la clase
         $this->update([
             'is_cancelled' => true,
             'cancellation_reason' => $reason,
             'status' => 'cancelled',
         ]);
+
+        // Cancelar automáticamente todas las reservas de zapatos asociadas a esta clase
+        $this->cancelFootwearReservations($reason);
+    }
+
+    /**
+     * Cancelar todas las reservas de zapatos asociadas a esta clase.
+     */
+    public function cancelFootwearReservations(?string $reason = null): int
+    {
+        // Cargar la relación class si no está cargada
+        if (!$this->relationLoaded('class')) {
+            $this->load('class');
+        }
+
+        // Obtener todas las reservas de zapatos pendientes o confirmadas para esta clase
+        // Cargar la relación footwear para obtener información del tamaño
+        $footwearReservations = \App\Models\FootwearReservation::where('class_schedules_id', $this->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->with('footwear')
+            ->get();
+
+        if ($footwearReservations->isEmpty()) {
+            Log::info('No hay reservas de zapatos para cancelar', [
+                'class_schedule_id' => $this->id
+            ]);
+            return 0;
+        }
+
+        // Agrupar por talla ANTES de cancelar para el log
+        $canceledBySize = [];
+        foreach ($footwearReservations as $reservation) {
+            $footwear = $reservation->footwear;
+            if ($footwear && $footwear->size) {
+                $size = $footwear->size;
+                if (!isset($canceledBySize[$size])) {
+                    $canceledBySize[$size] = 0;
+                }
+                $canceledBySize[$size]++;
+            }
+        }
+
+        // Cancelar todas las reservas
+        $canceledCount = \App\Models\FootwearReservation::where('class_schedules_id', $this->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->update(['status' => 'canceled']);
+
+        Log::info('Reservas de zapatos canceladas automáticamente por cancelación de clase', [
+            'class_schedule_id' => $this->id,
+            'class_name' => $this->class->name ?? 'N/A',
+            'scheduled_date' => $this->scheduled_date,
+            'start_time' => $this->start_time,
+            'cancellation_reason' => $reason,
+            'total_reservations_canceled' => $canceledCount,
+            'canceled_by_size' => $canceledBySize
+        ]);
+
+        return $canceledCount;
     }
 
     /**
@@ -786,6 +873,14 @@ final class ClassSchedule extends Model
                     ->orWhere('status', 'notified')
                     ->orWhere('status', 'confirmed');
             });
+    }
+
+    /**
+     * Get all waiting classes entries (without status filter).
+     */
+    public function waitingClasses(): HasMany
+    {
+        return $this->hasMany(WaitingClass::class, 'class_schedules_id');
     }
     /**
      * Get the substitute instructor for this schedule.

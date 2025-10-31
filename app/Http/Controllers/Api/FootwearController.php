@@ -10,6 +10,7 @@ use Error;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -710,6 +711,7 @@ class FootwearController extends Controller
                 'footwear_sizes.*.quantity' => 'required|integer|min:1|max:10',
             ]);
 
+            $userId = Auth::id();
             $classSchedule = ClassSchedule::findOrFail($validated['class_schedules_id']);
 
             $fechaClase = $classSchedule->scheduled_date;
@@ -718,13 +720,8 @@ class FootwearController extends Controller
             $inicioClase = $fechaClase . ' ' . $horaInicio;
             $finClase = $fechaClase . ' ' . $horaFin;
 
-            // Contar disponibilidad real (libres) e IDs por talla solicitada y recolectar faltantes
-            $disponiblesPorTalla = [];
-            $idsLibresPorTalla = [];
-            $tallasFaltantes = [];
-            $tallasConCantidad = [];
-
             // Agrupar tallas y cantidades solicitadas
+            $tallasConCantidad = [];
             foreach ($validated['footwear_sizes'] as $item) {
                 $talla = $item['size'];
                 $cantidad = $item['quantity'];
@@ -735,78 +732,31 @@ class FootwearController extends Controller
                 $tallasConCantidad[$talla] += $cantidad;
             }
 
-            foreach ($tallasConCantidad as $talla => $cantidadSolicitada) {
-                $footwears = \App\Models\Footwear::where('size', $talla)
-                    ->where('status', 'available')
-                    ->get();
+            // 🎯 Usar transacción para prevenir condiciones de carrera
+            return DB::transaction(function () use ($classSchedule, $userId, $tallasConCantidad, $inicioClase, $finClase, $fechaClase) {
+                // Validar disponibilidad DENTRO de la transacción con locks
+                $disponiblesPorTalla = [];
+                $tallasFaltantes = [];
 
-                $libres = 0;
-                $idsLibres = [];
-                foreach ($footwears as $footwear) {
-                    $yaReservado = \App\Models\FootwearReservation::where('footwear_id', $footwear->id)
-                        ->where('class_schedules_id', $classSchedule->id)
-                        ->whereIn('status', ['pending', 'confirmed'])
-                        ->exists();
-                    if ($yaReservado) continue;
-
-                    $enUso = \App\Models\FootwearLoan::where('footwear_id', $footwear->id)
-                        ->where('status', 'in_use')
-                        ->where(function ($query) use ($inicioClase, $finClase) {
-                            $query->where('loan_date', '<', $finClase)
-                                ->where(function ($q2) use ($inicioClase) {
-                                    $q2->whereNull('return_date')
-                                        ->orWhere('return_date', '>', $inicioClase);
-                                });
-                        })
-                        ->exists();
-                    if ($enUso) continue;
-
-                    $libres++;
-                    $idsLibres[] = $footwear->id;
-                }
-                $disponiblesPorTalla[$talla] = $libres;
-                $idsLibresPorTalla[$talla] = $idsLibres;
-                if ($libres < $cantidadSolicitada) {
-                    $tallasFaltantes[] = $talla;
-                }
-            }
-
-            if (!empty($tallasFaltantes)) {
-                return response()->json([
-                    'exito' => false,
-                    'codMensaje' => 0,
-                    'mensajeUsuario' => "No hay suficiente stock para las tallas: " . implode(', ', $tallasFaltantes) . ".",
-                    'datoAdicional' => [
-                        'sizes_requested' => $tallasConCantidad,
-                        'sizes_available' => $disponiblesPorTalla,
-                        'sizes_missing' => $tallasFaltantes,
-                    ],
-
-                ], 200);
-            }
-
-            $reservas = [];
-            $calzadosReservados = [];
-
-            // Crear reservas por cada talla y cantidad solicitada
-            foreach ($tallasConCantidad as $talla => $cantidadSolicitada) {
-                for ($i = 0; $i < $cantidadSolicitada; $i++) {
-                    // Buscar todos los calzados disponibles de esa talla que no hayan sido ya reservados en este ciclo
+                foreach ($tallasConCantidad as $talla => $cantidadSolicitada) {
+                    // 🔒 Bloquear filas durante la verificación para prevenir race conditions
                     $footwears = \App\Models\Footwear::where('size', $talla)
                         ->where('status', 'available')
-                        ->whereNotIn('id', $calzadosReservados)
+                        ->lockForUpdate() // Bloquear filas durante la transacción
                         ->get();
 
-                    $footwearLibre = null;
-
+                    $libres = 0;
                     foreach ($footwears as $footwear) {
+                        // Verificar si ya está reservado (dentro de la transacción)
                         $yaReservado = \App\Models\FootwearReservation::where('footwear_id', $footwear->id)
                             ->where('class_schedules_id', $classSchedule->id)
                             ->whereIn('status', ['pending', 'confirmed'])
+                            ->lockForUpdate() // Bloquear consulta de reservas también
                             ->exists();
 
                         if ($yaReservado) continue;
 
+                        // Verificar si está en uso
                         $enUso = \App\Models\FootwearLoan::where('footwear_id', $footwear->id)
                             ->where('status', 'in_use')
                             ->where(function ($query) use ($inicioClase, $finClase) {
@@ -816,76 +766,126 @@ class FootwearController extends Controller
                                             ->orWhere('return_date', '>', $inicioClase);
                                     });
                             })
+                            ->lockForUpdate() // Bloquear consulta de préstamos también
                             ->exists();
 
                         if ($enUso) continue;
 
-                        $footwearLibre = $footwear;
-                        break;
-                    }
-                    if (!$footwearLibre) {
-                        return response()->json([
-                            'exito' => false,
-                            'codMensaje' => 0,
-                            'mensajeUsuario' => "No hay suficiente calzado disponible en la talla $talla para ese horario.",
-                            'datoAdicional' => [
-                                'size_requested' => $talla,
-                                'sizes_available' => $disponiblesPorTalla,
-                            ],
-                        ], 200);
+                        $libres++;
                     }
 
-                    $date = $classSchedule->scheduled_date;
-
-                    $reserva = \App\Models\FootwearReservation::create([
-                        'reservation_date' => now(),
-                    'scheduled_date' => $date,
-                    'expiration_date' => $date,
-                    'status' => 'pending',
-                    'class_schedules_id' => $classSchedule->id,
-                    'footwear_id' => $footwearLibre->id,
-                    'user_client_id' => Auth::id(),
-                    'user_id' => Auth::id(),
-                ]);
-
-                    $reservas[] = $reserva;
-                    $calzadosReservados[] = $footwearLibre->id;
+                    $disponiblesPorTalla[$talla] = $libres;
+                    if ($libres < $cantidadSolicitada) {
+                        $tallasFaltantes[] = $talla;
+                    }
                 }
-            }
 
-            // Agrupar reservas por talla para el resumen
-            $reservasPorTalla = [];
-            foreach ($reservas as $reserva) {
-                $footwear = \App\Models\Footwear::find($reserva->footwear_id);
-                if ($footwear) {
-                    $talla = $footwear->size;
-                    if (!isset($reservasPorTalla[$talla])) {
-                        $reservasPorTalla[$talla] = 0;
-                    }
-                    $reservasPorTalla[$talla]++;
+                // Si no hay suficiente disponibilidad, retornar error
+                if (!empty($tallasFaltantes)) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => "No hay suficiente stock para las tallas: " . implode(', ', $tallasFaltantes) . ".",
+                        'datoAdicional' => [
+                            'sizes_requested' => $tallasConCantidad,
+                            'sizes_available' => $disponiblesPorTalla,
+                            'sizes_missing' => $tallasFaltantes,
+                        ],
+                    ], 200);
                 }
-            }
 
-            return response()->json([
-                'exito' => true,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Reservas de calzado creadas exitosamente.',
-                'datoAdicional' => [
-                    'reservations' => $reservas,
-                    'summary' => [
-                        'total_reservations' => count($reservas),
-                        'sizes_reserved' => $reservasPorTalla,
-                        'class_schedule_info' => [
-                            'id' => $classSchedule->id,
-                            'class_name' => $classSchedule->class->name ?? 'N/A',
-                            'scheduled_date' => $classSchedule->scheduled_date,
-                            'start_time' => $classSchedule->start_time,
-                            'end_time' => $classSchedule->end_time
-                        ]
-                    ]
-                ]
-            ], 200);
+                // Crear reservas por cada talla y cantidad solicitada
+                $reservas = [];
+                $calzadosReservados = [];
+
+                foreach ($tallasConCantidad as $talla => $cantidadSolicitada) {
+                    for ($i = 0; $i < $cantidadSolicitada; $i++) {
+                        // 🔒 Buscar calzados disponibles con lock dentro de la transacción
+                        $footwears = \App\Models\Footwear::where('size', $talla)
+                            ->where('status', 'available')
+                            ->whereNotIn('id', $calzadosReservados)
+                            ->lockForUpdate() // Bloquear filas
+                            ->get();
+
+                        $footwearLibre = null;
+
+                        foreach ($footwears as $footwear) {
+                            // 🔒 Verificar disponibilidad dentro de la transacción con lock
+                            $yaReservado = \App\Models\FootwearReservation::where('footwear_id', $footwear->id)
+                                ->where('class_schedules_id', $classSchedule->id)
+                                ->whereIn('status', ['pending', 'confirmed'])
+                                ->lockForUpdate()
+                                ->exists();
+
+                            if ($yaReservado) continue;
+
+                            $enUso = \App\Models\FootwearLoan::where('footwear_id', $footwear->id)
+                                ->where('status', 'in_use')
+                                ->where(function ($query) use ($inicioClase, $finClase) {
+                                    $query->where('loan_date', '<', $finClase)
+                                        ->where(function ($q2) use ($inicioClase) {
+                                            $q2->whereNull('return_date')
+                                                ->orWhere('return_date', '>', $inicioClase);
+                                        });
+                                })
+                                ->lockForUpdate()
+                                ->exists();
+
+                            if ($enUso) continue;
+
+                            $footwearLibre = $footwear;
+                            break;
+                        }
+
+                        // Si no se encontró calzado disponible, hacer rollback
+                        if (!$footwearLibre) {
+                            DB::rollBack();
+                            return response()->json([
+                                'exito' => false,
+                                'codMensaje' => 0,
+                                'mensajeUsuario' => "No hay suficiente calzado disponible en la talla $talla para ese horario.",
+                                'datoAdicional' => [
+                                    'size_requested' => $talla,
+                                    'sizes_available' => $disponiblesPorTalla,
+                                    'note' => 'El calzado pudo haber sido reservado por otro usuario al mismo tiempo'
+                                ],
+                            ], 200);
+                        }
+
+                        // Crear la reserva dentro de la transacción
+                        $reserva = \App\Models\FootwearReservation::create([
+                            'reservation_date' => now(),
+                            'scheduled_date' => $fechaClase,
+                            'expiration_date' => $fechaClase,
+                            'status' => 'pending',
+                            'class_schedules_id' => $classSchedule->id,
+                            'footwear_id' => $footwearLibre->id,
+                            'user_client_id' => $userId,
+                            'user_id' => $userId,
+                        ]);
+
+                        $reservas[] = $reserva;
+                        $calzadosReservados[] = $footwearLibre->id;
+                    }
+                }
+
+                // Si todo fue exitoso, la transacción se commitea automáticamente
+                return $this->formatReservationResponse($reservas, $classSchedule);
+            });
+
         } catch (\Throwable $e) {
+            // Si hay un error, hacer rollback si estamos en una transacción
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            Log::error('Error al crear reserva de calzado', [
+                'user_id' => Auth::id(),
+                'class_schedule_id' => $validated['class_schedules_id'] ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 1,
@@ -893,6 +893,45 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->getMessage(),
             ], 200);
         }
+    }
+
+    /**
+     * Formatear respuesta de reservas (método auxiliar)
+     */
+    private function formatReservationResponse(array $reservas, ClassSchedule $classSchedule): JsonResponse
+    {
+        // Agrupar reservas por talla para el resumen
+        $reservasPorTalla = [];
+        foreach ($reservas as $reserva) {
+            $footwear = \App\Models\Footwear::find($reserva->footwear_id);
+            if ($footwear) {
+                $talla = $footwear->size;
+                if (!isset($reservasPorTalla[$talla])) {
+                    $reservasPorTalla[$talla] = 0;
+                }
+                $reservasPorTalla[$talla]++;
+            }
+        }
+
+        return response()->json([
+            'exito' => true,
+            'codMensaje' => 1,
+            'mensajeUsuario' => 'Reservas de calzado creadas exitosamente.',
+            'datoAdicional' => [
+                'reservations' => $reservas,
+                'summary' => [
+                    'total_reservations' => count($reservas),
+                    'sizes_reserved' => $reservasPorTalla,
+                    'class_schedule_info' => [
+                        'id' => $classSchedule->id,
+                        'class_name' => $classSchedule->class->name ?? 'N/A',
+                        'scheduled_date' => $classSchedule->scheduled_date,
+                        'start_time' => $classSchedule->start_time,
+                        'end_time' => $classSchedule->end_time
+                    ]
+                ]
+            ]
+        ], 200);
     }
 
     /**

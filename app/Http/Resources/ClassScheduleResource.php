@@ -14,7 +14,18 @@ class ClassScheduleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $diasSemana = [
+            'Monday' => 'LUNES',
+            'Tuesday' => 'MARTES',
+            'Wednesday' => 'MIÉRCOLES',
+            'Thursday' => 'JUEVES',
+            'Friday' => 'VIERNES',
+            'Saturday' => 'SÁBADO',
+            'Sunday' => 'DOMINGO'
+        ];
 
+        $diaIngles = $this->scheduled_date->format('l');
+        $diaNumero = $this->scheduled_date->format('d');
         return [
             'id' => $this->id,
             'class' => [
@@ -39,14 +50,15 @@ class ClassScheduleResource extends JsonResource
                 'location' => $this->studio->location,
             ],
             'scheduled_date' => $this->scheduled_date->format('d/m/Y'),
+            // 'scheduled_date' => $diasSemana[$diaIngles] . ' ' . $diaNumero,
             'start_time' => \Carbon\Carbon::parse($this->start_time)->format('H:i'), // ✅ Convierte a Carbon primero
             'end_time' => \Carbon\Carbon::parse($this->end_time)->format('H:i'),   // ✅ Convierte a Car
             'max_capacity' => $this->max_capacity,
             'available_spots' => $this->available_spots,
-            'booked_spots' => $this->booked_spots,
+            // 'booked_spots' => $this->booked_spots,
             'waitlist_spots' => $this->waitlist_spots,
-            'booking_opens_at' => $this->booking_opens_at?->format('d/m/Y H:i'),
-            'booking_closes_at' => $this->booking_closes_at?->format('d/m/Y H:i'),
+            // 'booking_opens_at' => $this->booking_opens_at?->format('d/m/Y H:i'),
+            // 'booking_closes_at' => $this->booking_closes_at?->format('d/m/Y H:i'),
             'cancellation_deadline' => $this->cancellation_deadline?->format('d/m/Y H:i'),
             'special_notes' => $this->special_notes,
             'is_holiday_schedule' => $this->is_holiday_schedule,

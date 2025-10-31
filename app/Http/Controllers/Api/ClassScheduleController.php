@@ -9,6 +9,7 @@ use App\Http\Resources\ClassScheduleResource;
 use App\Http\Resources\ClassScheduleSeatResource;
 use App\Models\ClassSchedule;
 use App\Models\ClassScheduleSeat;
+use App\Models\FootwearReservation;
 use App\Models\WaitingClass;
 use App\Services\PackageValidationService;
 use Error;
@@ -465,7 +466,15 @@ final class ClassScheduleController extends Controller
                 $classSchedule->load(['class.discipline']);
                 $disciplineId = $classSchedule->class->discipline_id;
                 $availablePackages = $packageValidationService->getUserAvailablePackagesForDiscipline($userId, $disciplineId);
+
+                // Obtener membresías directas para la disciplina
                 $availableMemberships = $packageValidationService->getUserAvailableMembershipsForDiscipline($userId, $disciplineId);
+
+                // 🎯 Obtener membresías adicionales cuya disciplina está en el grupo de disciplinas de los paquetes del usuario
+                $membershipsFromPackageGroups = $packageValidationService->getUserMembershipsFromPackageDisciplineGroups($userId, $disciplineId);
+
+                // Combinar ambas colecciones (membresías directas + membresías del grupo de paquetes)
+                $availableMemberships = $availableMemberships->merge($membershipsFromPackageGroups)->unique('id');
 
                 // Calcular total de asientos disponibles (paquetes + membresías)
                 $totalAvailableSeats = $availablePackages->sum('remaining_classes') + $availableMemberships->sum('remaining_free_classes');
@@ -812,6 +821,45 @@ final class ClassScheduleController extends Controller
                     ];
                 }
 
+                // 🎯 Cancelar automáticamente las reservas de zapatos del usuario para esta clase
+                $footwearReservations = FootwearReservation::where('class_schedules_id', $classScheduleId)
+                    ->where('user_client_id', $userId)
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->get();
+
+                $canceledFootwearCount = 0;
+                $canceledFootwearBySize = [];
+
+                if ($footwearReservations->isNotEmpty()) {
+                    // Cargar relaciones para obtener información de tallas
+                    $footwearReservations->load('footwear');
+
+                    // Agrupar por talla antes de cancelar
+                    foreach ($footwearReservations as $reservation) {
+                        $footwear = $reservation->footwear;
+                        if ($footwear && $footwear->size) {
+                            $size = $footwear->size;
+                            if (!isset($canceledFootwearBySize[$size])) {
+                                $canceledFootwearBySize[$size] = 0;
+                            }
+                            $canceledFootwearBySize[$size]++;
+                        }
+                    }
+
+                    // Cancelar todas las reservas de zapatos
+                    $canceledFootwearCount = FootwearReservation::where('class_schedules_id', $classScheduleId)
+                        ->where('user_client_id', $userId)
+                        ->whereIn('status', ['pending', 'confirmed'])
+                        ->update(['status' => 'canceled']);
+
+                    Log::info('Reservas de zapatos canceladas automáticamente al liberar asientos', [
+                        'class_schedule_id' => $classScheduleId,
+                        'user_id' => $userId,
+                        'total_reservations_canceled' => $canceledFootwearCount,
+                        'canceled_by_size' => $canceledFootwearBySize
+                    ]);
+                }
+
                 // Preparar respuesta exitosa
                 return response()->json([
                     'exito' => true,
@@ -825,7 +873,12 @@ final class ClassScheduleController extends Controller
                             'user_id' => $userId,
                             'released_at' => $releasedAt->toISOString()
                         ],
-                        'refunded_packages' => $refundedPackages
+                        'refunded_packages' => $refundedPackages,
+                        'footwear_cancellation' => [
+                            'total_reservations_canceled' => $canceledFootwearCount,
+                            'canceled_by_size' => $canceledFootwearBySize,
+                            'note' => 'Las reservas de zapatos fueron canceladas automáticamente al liberar los asientos'
+                        ]
                     ]
                 ], 200);
             });
@@ -1114,14 +1167,48 @@ final class ClassScheduleController extends Controller
 
             $validation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
 
+            // Calcular resumen de paquetes con múltiples disciplinas
+            $availablePackages = $validation['available_packages'] ?? [];
+            $availableMemberships = $validation['available_memberships'] ?? [];
+
+            // 🎯 Las membresías ya incluyen tanto las directas como las del grupo de disciplinas de los paquetes
+            // (manejado automáticamente por validateUserPackagesForSchedule)
+            $summary = [
+                'total_available_packages' => count($availablePackages),
+                'total_available_memberships' => count($availableMemberships),
+                'multi_discipline_packages' => collect($availablePackages)->where('is_multi_discipline', true)->count(),
+                'single_discipline_packages' => collect($availablePackages)->where('is_multi_discipline', false)->count(),
+            ];
+
+            // 🎯 Determinar si puede reservar: debe haber paquetes o membresías disponibles
+            // Incluso si validateUserPackagesForSchedule retorna valid: false, si hay paquetes o membresías, puede reservar
+            $canReserve = (count($availablePackages) > 0 || count($availableMemberships) > 0) || $validation['valid'];
+
+            // Log para debugging
+            Log::info('Verificación de disponibilidad de paquetes', [
+                'user_id' => $userId,
+                'schedule_id' => $classSchedule->id,
+                'discipline_required' => $validation['discipline_required'],
+                'validation_valid' => $validation['valid'],
+                'available_packages_count' => count($availablePackages),
+                'available_memberships_count' => count($availableMemberships),
+                'can_reserve' => $canReserve,
+            ]);
+
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
-                'mensajeUsuario' => 'Horario disponible para el paquete',
+                'mensajeUsuario' => $canReserve
+                    ? 'Horario disponible para el paquete'
+                    : $validation['message'],
                 'datoAdicional' => [
-                    'can_reserve' => $validation['valid'],
+                    'can_reserve' => $canReserve,
                     'discipline_required' => $validation['discipline_required'],
-                    'available_packages' => $validation['available_packages']
+                    'available_packages' => $availablePackages,
+                    'available_memberships' => $validation['available_memberships'] ?? [],
+                    'validation_message' => $validation['message'] ?? 'Validación completada',
+                    'summary' => $summary,
+                    'note' => 'Los paquetes con múltiples disciplinas (is_multi_discipline: true) pueden usarse para cualquier disciplina incluida en el paquete'
                 ]
             ], 200);
         } catch (\Exception $e) {
