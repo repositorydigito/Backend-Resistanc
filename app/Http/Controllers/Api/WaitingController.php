@@ -438,55 +438,68 @@ final class WaitingController extends Controller
                 ], 200);
             }
 
-            // Log de validación exitosa para debugging
-            Log::info('Usuario agregado a lista de espera - paquetes validados (SIN consumir clases)', [
+            // Usar transacción para asegurar consistencia al consumir clases
+            $createdEntries = [];
+            $consumedPackages = [];
+            $consumedMemberships = [];
+            $currentTime = now();
+            $disciplineId = $classSchedule->class->discipline_id;
+
+            \Illuminate\Support\Facades\DB::transaction(function () use (
+                $quantity, 
+                $userId, 
+                $classScheduleId, 
+                $disciplineId, 
+                $packageValidationService,
+                $currentTime,
+                &$createdEntries,
+                &$consumedPackages,
+                &$consumedMemberships
+            ) {
+                // Crear múltiples entradas en la lista de espera consumiendo clases inmediatamente
+                for ($i = 0; $i < $quantity; $i++) {
+                    // Consumir clase priorizando membresías sobre paquetes
+                    $consumptionResult = $packageValidationService->consumeClassFromBestOption($userId, $disciplineId);
+                    
+                    if (!$consumptionResult['success']) {
+                        throw new \Exception($consumptionResult['message'] ?? 'No se pudo consumir la clase');
+                    }
+
+                    $userPackageId = null;
+                    
+                    // Guardar información de lo que se consumió
+                    if (isset($consumptionResult['consumed_membership'])) {
+                        // Se consumió de una membresía
+                        $consumedMemberships[] = $consumptionResult['consumed_membership'];
+                        $userPackageId = null; // Las membresías no se guardan en user_package_id
+                    } elseif (isset($consumptionResult['consumed_package'])) {
+                        // Se consumió de un paquete
+                        $consumedPackages[] = $consumptionResult['consumed_package'];
+                        $userPackageId = $consumptionResult['consumed_package']['id'];
+                    }
+                    
+                    $waitingEntry = WaitingClass::create([
+                        'class_schedules_id' => $classScheduleId,
+                        'user_id' => $userId,
+                        'user_package_id' => $userPackageId, // Guardar ID del paquete si se usó, null si fue membresía
+                        'status' => 'waiting',
+                        'created_at' => $currentTime,
+                        'updated_at' => $currentTime,
+                    ]);
+                    
+                    $createdEntries[] = $waitingEntry;
+                }
+            });
+
+            // Log de consumo exitoso
+            Log::info('Usuario agregado a lista de espera - clases consumidas', [
                 'user_id' => $userId,
                 'schedule_id' => $classScheduleId,
                 'quantity' => $quantity,
                 'discipline_required' => $packageValidation['discipline_required'],
-                'available_packages_count' => $availablePackages->count(),
-                'available_memberships_count' => $availableMemberships->count(),
-                'total_available_seats' => $totalAvailableSeats
+                'consumed_packages_count' => count($consumedPackages),
+                'consumed_memberships_count' => count($consumedMemberships),
             ]);
-
-            // Crear múltiples entradas en la lista de espera con la misma fecha de creación
-            // NO CONSUMIR CLASES - Solo guardar el user_package_id que se usaría
-            $createdEntries = [];
-            $currentTime = now();
-            
-            // Ordenar paquetes y membresías por fecha de expiración (los que expiran antes primero)
-            $allPackages = $availablePackages->sortBy('expiry_date')->values();
-            $allMemberships = $availableMemberships->sortBy('expiry_date')->values();
-            
-            // Combinar paquetes y membresías para asignar a cada entrada
-            // Priorizar paquetes sobre membresías, y dentro de cada tipo, los que expiran antes
-            $packageIndex = 0;
-            $membershipIndex = 0;
-            
-            for ($i = 0; $i < $quantity; $i++) {
-                // NO CONSUMIR CLASES - Solo guardar referencia al paquete/membresía que se usaría
-                $userPackageId = null;
-                
-                // Intentar asignar paquete primero, si hay disponibles
-                if ($packageIndex < $allPackages->count()) {
-                    $userPackageId = $allPackages[$packageIndex]->id;
-                    $packageIndex++;
-                } elseif ($membershipIndex < $allMemberships->count()) {
-                    // Si no hay más paquetes, no asignar user_package_id para membresías
-                    // (las membresías se procesarán al asignar asiento si hay disponibilidad)
-                    $membershipIndex++;
-                }
-                
-                $waitingEntry = WaitingClass::create([
-                    'class_schedules_id' => $classScheduleId,
-                    'user_id' => $userId,
-                    'user_package_id' => $userPackageId, // Guardar referencia al paquete que se usaría (null para membresías)
-                    'status' => 'waiting',
-                    'created_at' => $currentTime,
-                    'updated_at' => $currentTime,
-                ]);
-                $createdEntries[] = $waitingEntry;
-            }
 
             return response()->json([
                 'exito' => true,
@@ -500,12 +513,11 @@ final class WaitingController extends Controller
                         'max_allowed_entries' => $totalAvailableSeats,
                         'remaining_entries' => $totalAvailableSeats - ($existingWaitingCount + $quantity)
                     ],
-                    'package_validation' => [
-                        'discipline_required' => $packageValidation['discipline_required'],
-                        'available_packages_count' => $availablePackages->count(),
-                        'available_memberships_count' => $availableMemberships->count(),
-                        'total_available_seats' => $totalAvailableSeats,
-                        'note' => 'Los paquetes NO se consumen al agregar a la lista de espera. Se consumirán solo cuando se asigne un asiento o cuando la clase empiece si el usuario no está presente.'
+                    'consumption_details' => [
+                        'consumed_packages' => $consumedPackages,
+                        'consumed_memberships' => $consumedMemberships,
+                        'total_consumed' => count($consumedPackages) + count($consumedMemberships),
+                        'note' => 'Las clases han sido consumidas inmediatamente al agregar a la lista de espera. Si el usuario abandona la lista o se cancela, se deberá reembolsar manualmente.'
                     ]
                 ]
             ], 200);
@@ -724,11 +736,38 @@ final class WaitingController extends Controller
             // Contar cuántas entradas se van a eliminar
             $entriesToDelete = $waitingEntries->count();
 
-            // Eliminar todas las entradas del usuario en la lista de espera para esta clase
-            $deletedCount = WaitingClass::where('class_schedules_id', $classScheduleId)
-                ->where('user_id', $userId)
-                ->where('status', 'waiting')
-                ->delete();
+            // Reembolsar clases consumidas antes de eliminar
+            $refundedPackages = [];
+            $packageValidationService = new PackageValidationService();
+
+            \Illuminate\Support\Facades\DB::transaction(function () use (
+                $waitingEntries,
+                $userId,
+                $classScheduleId,
+                $packageValidationService,
+                &$refundedPackages
+            ) {
+                // Reembolsar clases de paquetes (las que tienen user_package_id)
+                foreach ($waitingEntries as $entry) {
+                    if ($entry->user_package_id) {
+                        // Reembolsar clase al paquete
+                        $refundResult = $packageValidationService->refundClassToPackage($entry->user_package_id, $userId);
+                        if ($refundResult['success']) {
+                            $refundedPackages[] = $refundResult['refunded_package'];
+                        }
+                    }
+                    // Nota: Si se consumió de una membresía, no podemos reembolsar automáticamente
+                    // porque no tenemos el user_membership_id guardado en la tabla
+                }
+
+                // Eliminar todas las entradas del usuario en la lista de espera para esta clase
+                WaitingClass::where('class_schedules_id', $classScheduleId)
+                    ->where('user_id', $userId)
+                    ->where('status', 'waiting')
+                    ->delete();
+            });
+
+            $deletedCount = $entriesToDelete;
 
             return response()->json([
                 'exito' => true,
@@ -737,7 +776,9 @@ final class WaitingController extends Controller
                 'datoAdicional' => [
                     'deleted_entries_count' => $deletedCount,
                     'class_schedule_id' => $classScheduleId,
-                    'note' => 'Se eliminaron todas las entradas del usuario en la lista de espera para esta clase'
+                    'refunded_packages' => $refundedPackages,
+                    'refunded_packages_count' => count($refundedPackages),
+                    'note' => 'Se eliminaron todas las entradas del usuario en la lista de espera para esta clase. Las clases de paquetes han sido reembolsadas. Si se consumieron clases de membresías, no se pueden reembolsar automáticamente.'
                 ]
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {

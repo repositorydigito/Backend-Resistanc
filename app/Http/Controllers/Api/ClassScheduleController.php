@@ -221,9 +221,9 @@ final class ClassScheduleController extends Controller
                     return [
                         'class_schedule_seat_id' => $seatAssignment->id,
                         'seat_id' => $seatAssignment->seats_id,
-                        'seat_number' => $seatAssignment->seat->seat_number,
-                        'row' => $seatAssignment->seat->row,
-                        'column' => $seatAssignment->seat->column,
+                        'seat_number' => $seatAssignment->seat?->seat_number ?? null,
+                        'row' => $seatAssignment->seat?->row ?? null,
+                        'column' => $seatAssignment->seat?->column ?? null,
                         'status' => $seatAssignment->status,
                         'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
                         'expires_at' => $seatAssignment->expires_at?->toISOString()
@@ -634,9 +634,9 @@ final class ClassScheduleController extends Controller
                         $reservedSeats[] = [
                             'class_schedule_seat_id' => $assignment->id,
                             'seat_id' => $assignment->seats_id,
-                            'seat_number' => $assignment->seat->seat_number,
-                            'row' => $assignment->seat->row,
-                            'column' => $assignment->seat->column,
+                            'seat_number' => $assignment->seat?->seat_number ?? null,
+                            'row' => $assignment->seat?->row ?? null,
+                            'column' => $assignment->seat?->column ?? null,
                             'status' => 'reserved',
                             'user_id' => $userId,
                             'reserved_at' => $reservedAt->toISOString(),
@@ -811,9 +811,9 @@ final class ClassScheduleController extends Controller
                     $releasedSeats[] = [
                         'class_schedule_seat_id' => $assignment->id,
                         'seat_id' => $assignment->seats_id,
-                        'seat_number' => $assignment->seat->seat_number,
-                        'row' => $assignment->seat->row,
-                        'column' => $assignment->seat->column,
+                        'seat_number' => $assignment->seat?->seat_number ?? null,
+                        'row' => $assignment->seat?->row ?? null,
+                        'column' => $assignment->seat?->column ?? null,
                         'previous_status' => $previousStatus,
                         'new_status' => 'available',
                         'released_at' => $releasedAt->toISOString(),
@@ -973,9 +973,9 @@ final class ClassScheduleController extends Controller
                         return [
                             'class_schedule_seat_id' => $seatAssignment->id,
                             'seat_id' => $seatAssignment->seats_id,
-                            'seat_number' => $seatAssignment->seat->seat_number,
-                            'row' => $seatAssignment->seat->row,
-                            'column' => $seatAssignment->seat->column,
+                            'seat_number' => $seatAssignment->seat?->seat_number ?? null,
+                            'row' => $seatAssignment->seat?->row ?? null,
+                            'column' => $seatAssignment->seat?->column ?? null,
                             'status' => $seatAssignment->status,
                             'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
                             'expires_at' => $seatAssignment->expires_at?->toISOString()
@@ -1047,9 +1047,9 @@ final class ClassScheduleController extends Controller
                         return [
                             'class_schedule_seat_id' => $seatAssignment->id,
                             'seat_id' => $seatAssignment->seats_id,
-                            'seat_number' => $seatAssignment->seat->seat_number,
-                            'row' => $seatAssignment->seat->row,
-                            'column' => $seatAssignment->seat->column,
+                            'seat_number' => $seatAssignment->seat?->seat_number ?? null,
+                            'row' => $seatAssignment->seat?->row ?? null,
+                            'column' => $seatAssignment->seat?->column ?? null,
                             'status' => $seatAssignment->status,
                             'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
                             'expires_at' => $seatAssignment->expires_at?->toISOString()
@@ -1285,9 +1285,9 @@ final class ClassScheduleController extends Controller
                 $seatData = [
                     'class_schedule_seat_id' => $seatAssignment->id,
                     'seat_id' => $seatAssignment->seats_id,
-                    'seat_number' => $seatAssignment->seat->seat_number,
-                    'row' => $seatAssignment->seat->row,
-                    'column' => $seatAssignment->seat->column,
+                    'seat_number' => $seatAssignment->seat?->seat_number ?? null,
+                    'row' => $seatAssignment->seat?->row ?? null,
+                    'column' => $seatAssignment->seat?->column ?? null,
                     'status' => $seatAssignment->status,
                     'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
                     'expires_at' => $seatAssignment->expires_at?->toISOString()

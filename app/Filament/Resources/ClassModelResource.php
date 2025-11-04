@@ -54,6 +54,9 @@ class ClassModelResource extends Resource
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
                             ->image()
+                            ->preserveFilenames()
+                            ->downloadable()
+                            ->deletable()
                             ->columnSpanFull(),
                         Forms\Components\FileUpload::make('icon_url')
                             ->label('Icono')
@@ -66,6 +69,9 @@ class ClassModelResource extends Resource
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
                             ->image()
+                            ->preserveFilenames()
+                            ->downloadable()
+                            ->deletable()
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('discipline_id')

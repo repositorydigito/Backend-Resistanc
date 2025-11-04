@@ -30,7 +30,7 @@ class PromoCodesResource extends Resource
     protected static ?int $navigationSort = 25;
 
 
-     public static function form(Form $form): Form
+    public static function form(Form $form): Form
     {
         return $form
             ->schema([
@@ -63,7 +63,7 @@ class PromoCodesResource extends Resource
                             ->maxLength(255)
                             ->placeholder('Se genera automáticamente')
                             ->disabled()
-                            ->visible(fn (string $operation): bool => $operation === 'edit')
+                            ->visible(fn(string $operation): bool => $operation === 'edit')
                             ->helperText('El código se genera automáticamente al guardar'),
                         Forms\Components\Select::make('type')
                             ->label('Tipo de Promoción')
@@ -104,14 +104,19 @@ class PromoCodesResource extends Resource
                             ->helperText('Fecha y hora hasta cuando la promoción es válida'),
                     ])
                     ->columns(2)
-                    ->visible(fn (Forms\Get $get): bool => $get('type') === 'season')
+                    ->visible(fn(Forms\Get $get): bool => $get('type') === 'season')
                     ->collapsed(),
             ]);
     }
- public static function table(Table $table): Table
+    public static function table(Table $table): Table
     {
         return $table
             ->columns([
+
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
@@ -128,11 +133,11 @@ class PromoCodesResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
                     ->badge()
-                    ->color(fn (string $state): string => match($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'consumption' => 'info',
                         'season' => 'warning',
                     })
-                    ->formatStateUsing(fn (string $state): string => match($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'consumption' => 'Consumo',
                         'season' => 'Temporada',
                     }),
@@ -151,11 +156,11 @@ class PromoCodesResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
-                    ->color(fn (string $state): string => match($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'active' => 'success',
                         'inactive' => 'danger',
                     })
-                    ->formatStateUsing(fn (string $state): string => match($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'active' => 'Activo',
                         'inactive' => 'Inactivo',
                     }),

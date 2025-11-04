@@ -228,6 +228,18 @@ class SeatsRelationManager extends RelationManager
                     ->orderBy('column');
             })
             ->headerActions([
+                // 🆕 Botón para generar/actualizar números de asientos
+                Tables\Actions\Action::make('generateSeatNumbers')
+                    ->label('🔢 Generar Números de Asientos')
+                    ->icon('heroicon-o-hashtag')
+                    ->color('success')
+                    ->action(function () {
+                        $this->generateSeatNumbers();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Generar Números de Asientos')
+                    ->modalDescription('Esto actualizará los números de asientos basándose en fila y columna. Los asientos se ordenarán por fila y luego por columna, asignando números secuenciales del 1 en adelante. Esto actualiza los números para que se muestren correctamente en el mapa de asientos del frontend. ¿Continuar?'),
+
                 // Tables\Actions\Action::make('regenerate_seats')
                 //     ->label('Regenerar espacios')
                 //     ->icon('heroicon-o-arrow-path')
@@ -437,5 +449,43 @@ class SeatsRelationManager extends RelationManager
         $data['studio_id'] = $this->getOwnerRecord()->id;
 
         return $data;
+    }
+
+    /**
+     * Generar/actualizar números de asientos del estudio
+     */
+    protected function generateSeatNumbers(): void
+    {
+        $studio = $this->getOwnerRecord();
+        
+        try {
+            // Reordenar los números de asientos del estudio
+            $studio->reorderSeatNumbers();
+            
+            // Contar asientos actualizados
+            $seatsCount = $studio->seats()->whereNotNull('seat_number')->count();
+            $totalSeats = $studio->seats()->count();
+            
+            Notification::make()
+                ->title('Números de Asientos Actualizados')
+                ->body("Se actualizaron los números de asientos. {$seatsCount} de {$totalSeats} asientos tienen número asignado.")
+                ->success()
+                ->send();
+            
+            // Refrescar la tabla
+            $this->resetTable();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error al generar números de asientos', [
+                'studio_id' => $studio->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            Notification::make()
+                ->title('Error al Generar Números')
+                ->body("Error al actualizar números de asientos: " . $e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 }

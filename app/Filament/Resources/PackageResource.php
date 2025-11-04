@@ -265,9 +265,22 @@ class PackageResource extends Resource
         }
         return $table
             ->columns([
+
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_membresia')
+                    ->label('Pago Recurrente')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-badge')
+                    ->falseIcon('heroicon-o-x-mark')
+                    ->trueColor('success')
+                    ->falseColor('danger')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('classes_quantity')

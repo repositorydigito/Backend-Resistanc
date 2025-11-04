@@ -26,6 +26,32 @@ class EditClassSchedule extends EditRecord
         ];
     }
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
+        // Excluir el registro actual
+        $existing = \App\Models\ClassSchedule::where('class_id', $data['class_id'])
+            ->whereDate('scheduled_date', $data['scheduled_date'])
+            ->where('start_time', $data['start_time'])
+            ->where('status', '!=', 'cancelled') // Excluir cancelados
+            ->where('id', '!=', $this->record->id) // Excluir el registro actual
+            ->first();
+
+        if ($existing) {
+            $class = $existing->class->name ?? 'Clase';
+            Notification::make()
+                ->title('Error: Horario duplicado')
+                ->body("Ya existe otro horario para esta clase el {$data['scheduled_date']} a las {$data['start_time']}. Horario ID: {$existing->id}")
+                ->danger()
+                ->persistent()
+                ->send();
+            
+            $this->halt(); // Detener el proceso de actualización
+        }
+
+        return $data;
+    }
+
     protected function afterSave(): void
     {
         // Verificar si se cambió la sala

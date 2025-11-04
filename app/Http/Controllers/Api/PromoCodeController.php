@@ -97,6 +97,28 @@ class PromoCodeController extends Controller
                 ], 200);
             }
 
+            // Verificar si el usuario ya usó este código promocional con este paquete
+            $userId = Auth::id();
+            if ($userId) {
+                $alreadyUsed = $promoCode->users()
+                    ->where('user_id', $userId)
+                    ->wherePivot('package_id', $packageId)
+                    ->exists();
+
+                if ($alreadyUsed) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Ya has utilizado este código promocional para este paquete',
+                        'datoAdicional' => [
+                            'reason' => 'already_used',
+                            'code' => $promoCode->code,
+                            'package_id' => $packageId
+                        ]
+                    ], 200);
+                }
+            }
+
             // Calcular descuento
             $discount = $packageDiscount->pivot->discount ?? 0;
             $quantity = $packageDiscount->pivot->quantity ?? 0;

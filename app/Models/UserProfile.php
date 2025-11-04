@@ -78,6 +78,21 @@ final class UserProfile extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Eliminar el usuario asociado cuando se elimina el perfil
+        static::deleting(function (UserProfile $userProfile) {
+            if ($userProfile->user) {
+                $userProfile->user->delete();
+            }
+        });
+    }
+
     // En el modelo UserProfile
     public function getFullNameAttribute()
     {

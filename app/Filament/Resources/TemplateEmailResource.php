@@ -26,6 +26,8 @@ class TemplateEmailResource extends Resource
     protected static ?string $label = 'Plantilla de correo'; // Nombre en singular
     protected static ?string $pluralLabel = 'Plantillas de correo'; // Nombre en plural
 
+     protected static bool $shouldRegisterNavigation = false; // Oculta del menú
+
     protected static ?int $navigationSort = 26;
 
 

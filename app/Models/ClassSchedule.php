@@ -774,11 +774,11 @@ final class ClassSchedule extends Model
                         'exists' => true,
                         'seat_id' => $seat->id,
                         'assignment_id' => $assignment->id,
-                        'seat_number' => $seat->seat_number,
-                        'row' => $seat->row,
-                        'column' => $seat->column,
+                        'seat_number' => $seat->seat_number ?? null,
+                        'row' => $seat->row ?? null,
+                        'column' => $seat->column ?? null,
                         'status' => $assignment->status,
-                        'is_active' => $seat->is_active,
+                        'is_active' => $seat->is_active ?? false,
                         'user' => $assignment->user ? [
                             'id' => $assignment->user->id,
                             'name' => $assignment->user->name,
@@ -811,11 +811,11 @@ final class ClassSchedule extends Model
         $seatsByStatus = $seatAssignments->groupBy('status')->map(function ($assignments, $status) {
             return $assignments->map(function ($assignment) {
                 return [
-                    'id' => $assignment->seat->id,
+                    'id' => $assignment->seat?->id ?? null,
                     'assignment_id' => $assignment->id,
-                    'seat_number' => $assignment->seat->seat_number,
-                    'row' => $assignment->seat->row,
-                    'column' => $assignment->seat->column,
+                    'seat_number' => $assignment->seat?->seat_number ?? null,
+                    'row' => $assignment->seat?->row ?? null,
+                    'column' => $assignment->seat?->column ?? null,
                     'status' => $assignment->status,
                     'user' => $assignment->user ? [
                         'id' => $assignment->user->id,

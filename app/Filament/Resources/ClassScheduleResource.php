@@ -65,7 +65,29 @@ class ClassScheduleResource extends Resource
                             ->searchable()
                             ->preload()
                             ->live() // Reacciona a cambios
-                            ->afterStateUpdated(fn(Set $set) => $set('instructor_id', null)), // Limpiar instructor
+                            ->afterStateUpdated(fn(Set $set) => $set('instructor_id', null)) // Limpiar instructor
+                            ->rules([
+                                fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
+                                    // Nota: Esta validación es solo para feedback inmediato.
+                                    // La validación final se hace en mutateFormDataBeforeCreate/Save
+                                    $scheduledDate = $get('scheduled_date');
+                                    $startTime = $get('start_time');
+
+                                    if ($value && $scheduledDate && $startTime) {
+                                        $existing = \App\Models\ClassSchedule::where('class_id', $value)
+                                            ->whereDate('scheduled_date', $scheduledDate)
+                                            ->where('start_time', $startTime)
+                                            ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                            ->first();
+
+                                        if ($existing) {
+                                            $class = $existing->class->name ?? 'Clase';
+                                            $fail("Ya existe un horario para esta clase el {$scheduledDate} a las {$startTime}. Horario ID: {$existing->id}");
+                                        }
+                                    }
+                                },
+                            ]),
 
                         Forms\Components\Select::make('instructor_id')
                             ->label('Instructor')
@@ -212,7 +234,30 @@ class ClassScheduleResource extends Resource
                             ->maxDate(now()->addDays(30))
                             ->default(now())
                             ->label('Fecha Programada')
-                            ->required(),
+                            ->required()
+                            ->live() // Hacer reactivo para validar duplicados
+                            ->rules([
+                                fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
+                                    // Nota: Esta validación es solo para feedback inmediato.
+                                    // La validación final se hace en mutateFormDataBeforeCreate/Save
+                                    $classId = $get('class_id');
+                                    $startTime = $get('start_time');
+
+                                    if ($value && $classId && $startTime) {
+                                        $existing = \App\Models\ClassSchedule::where('class_id', $classId)
+                                            ->whereDate('scheduled_date', $value)
+                                            ->where('start_time', $startTime)
+                                            ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                            ->first();
+
+                                        if ($existing) {
+                                            $class = $existing->class->name ?? 'Clase';
+                                            $fail("Ya existe un horario para esta clase el {$value} a las {$startTime}. Horario ID: {$existing->id}");
+                                        }
+                                    }
+                                },
+                            ]),
 
                         Forms\Components\TimePicker::make('start_time')
                             ->label('Hora de Inicio')
@@ -225,7 +270,29 @@ class ClassScheduleResource extends Resource
                                     $set('end_time', null);
                                 }
                             })
-                            ->required(),
+                            ->required()
+                            ->rules([
+                                fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
+                                    // Nota: Esta validación es solo para feedback inmediato.
+                                    // La validación final se hace en mutateFormDataBeforeCreate/Save
+                                    $classId = $get('class_id');
+                                    $scheduledDate = $get('scheduled_date');
+
+                                    if ($value && $classId && $scheduledDate) {
+                                        $existing = \App\Models\ClassSchedule::where('class_id', $classId)
+                                            ->whereDate('scheduled_date', $scheduledDate)
+                                            ->where('start_time', $value)
+                                            ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                            ->first();
+
+                                        if ($existing) {
+                                            $class = $existing->class->name ?? 'Clase';
+                                            $fail("Ya existe un horario para esta clase el {$scheduledDate} a las {$value}. Horario ID: {$existing->id}");
+                                        }
+                                    }
+                                },
+                            ]),
 
                         Forms\Components\TimePicker::make('end_time')
                             ->label('Hora de Fin')
@@ -418,7 +485,7 @@ class ClassScheduleResource extends Resource
                         'completed' => 'Completado',
                         'cancelled' => 'Cancelado',
                         'postponed' => 'Pospuesto',
-                        default => ucfirst($state),
+                        // default => ucfirst($state),
                     })
                     ->color(fn(string $state): string => match ($state) {
                         'scheduled' => 'gray',
@@ -449,7 +516,7 @@ class ClassScheduleResource extends Resource
                         'completed' => 'Completado',
                         'cancelled' => 'Cancelado',
                         'postponed' => 'Pospuesto',
-                    ])->default('scheduled'),
+                    ]),
             ])
             ->actions([
                 Tables\Actions\Action::make('start_class')
