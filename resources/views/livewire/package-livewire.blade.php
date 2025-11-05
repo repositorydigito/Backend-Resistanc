@@ -53,7 +53,7 @@
 
         <!-- Filtros por grupo de disciplinas -->
         <div class="flex items-center justify-center mb-8 ">
-            <div class="flex items-center gap-4 px-4">
+            <div class="flex flex-wrap justify-center items-center gap-4 px-4">
                 @if (count($disciplineGroups) > 0)
                     @foreach ($disciplineGroups as $group)
                         <button wire:click="selectDisciplineGroup('{{ $group['group_key'] }}')"

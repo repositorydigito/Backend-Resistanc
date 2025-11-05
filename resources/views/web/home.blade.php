@@ -45,7 +45,7 @@
 
             .card__discipline {
 
-                height: 300px;
+                height: 280px;
                 color: #fff;
                 border-radius: 30px;
                 padding: 1.5rem;
@@ -70,13 +70,26 @@
                 z-index: 11;
             }
 
+            .discipline__title {
+                line-height: unset;
+
+            }
+
+            .discipline__icon {
+                width: 20;
+                height: 20px;
+                object-fit: contain;
+            }
+
             .discipline__description {
+                font-family: var(--font-two);
                 display: -webkit-box;
-                -webkit-line-clamp: 2;
+                -webkit-line-clamp: 3;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 font-size: 1rem;
-                font-weight: 200;
+                font-weight: 300;
+                letter-spacing: .05rem;
             }
 
             .card__benef {
@@ -118,15 +131,14 @@
             .direccion__detl img {
                 height: 30px;
                 width: 30px;
+                object-fit: contain;
             }
 
-            .direccion__detl span {
-                font-size: 1.2rem;
-                font-weight: 100;
-            }
+
 
             .card__services {
-                height: 250px;
+                height: 350px;
+                max-width: 250px;
                 /* background: red; */
                 padding: 1.2rem;
                 border-radius: 20px;
@@ -143,7 +155,7 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.301);
+                background: rgba(0, 0, 0, 0.356);
                 z-index: 10;
             }
 
@@ -205,32 +217,97 @@
                 background: radial-gradient(128.53% 138.92% at 7.28% -1.41%, #CD6134 0%, #925035 29.32%, #9142AA 66.83%, #A267B4 100%);
                 color: white;
             }
+
+            .card__rsistanc {
+                padding: 2rem;
+                border-radius: 25px;
+            }
+
+            .service__card {
+                min-height: 420px;
+                width: 100%;
+            }
+
+            .home__title {
+                font-size: 1.8rem;
+                font-weight: 900;
+            }
+
+            .home__parrafo {
+                font-size: 1.1rem;
+            }
+
+            @media (max-width: 575.98px) {
+                .card__rsistanc {
+                    padding: 1.2rem;
+                    border-radius: 15px;
+                }
+
+                .hero {
+
+                    background:
+                        linear-gradient(88deg, #B66F37 10.73%, rgba(157, 90, 169, 0.90) 48.98%, rgba(181, 130, 190, 0.70) 80.44%, rgba(255, 255, 255, 0.00) 150%),
+                        url({{ asset('image/pages/banner1.png') }});
+
+                    background-size: cover;
+                    background-position: start;
+
+                }
+
+                .home__title {
+                    font-size: 1.2rem;
+                    font-weight: 900;
+                }
+
+                .home__parrafo {
+                    font-size: .9rem;
+                }
+
+                .card__benef {
+                    min-height: 100px;
+                    color: #fff
+                }
+
+                .direccion__detl img {
+                    height: 25px;
+                    width: 25px;
+                }
+            }
+
+
+
+
+            /* Large devices (desktops, 992px and up) */
+            @media (max-width: 992px) {
+                /* Estilos para escritorios */
+            }
         </style>
     @endpush
 
     {{-- Hero --}}
-    <section class="hero h-[calc(100vh-8rem)] items-center justify-center content-center pt-6">
+    <section class="hero h-[calc(100vh-8rem)] items-center justify-center content-center pt-28 md:pt-6 lg:pt-6">
         <div class="container ">
 
-            <div data-aos="fade-up" class="grid gap-8 w-full  lg:w-8/12 text-white">
-                <h1 class="text-6xl  font-extrabold tracking-[8px]">TRAIN <span class="font-light">YOUR </span>RSISTANC.
+            <div data-aos="fade-up" class="grid gap-4 lg:gap-8 w-full  lg:w-9/12 text-white">
+                <h1
+                    class="text-center md:text-start justify-center sm:justify-start font-two text-[1.6rem] md:text-4xl lg:text-6xl  font-bold tracking-[6px] lg:tracking-[8px] flex flex-wrap ">
+                    TRAIN
+                    <span class="font-light">YOUR
+                    </span>RSISTANC.
                     <span class="font-light">LIVE</span> UNSTOPPABLE.
                 </h1>
-                <p class="text-2xl max-w-xl">Clases que te transforman. Energía que te eleva. Una comunidad que te empuja
+
+                <p class="font-two text-center md:text-start text-xl md:text-2xl lg:text-2xl lg:tracking-[.2rem] max-w-[650px] leading-[1.7]"
+                    style="font-weight: 200;">Clases que te transforman. Energía
+                    que te eleva. Una comunidad que te empuja
                     a más.</p>
 
-
-                <div class="flex gap-4 ">
+                <div class="grid md:flex flex-wrap gap-4 ">
 
                     <a href="{{ route('package') }}" class="btn btn__one">EMPIEZA HOY</a>
                     <a href="#descarga" class="btn btn__two">RESERVA TU CLASE DE PRUEBA</a>
                 </div>
-
-
             </div>
-
-
-
         </div>
     </section>
 
@@ -243,9 +320,10 @@
         @if ($disciplines->count() > 0)
             <section class="section " id="disciplinas">
                 <div class="container">
-                    <div data-aos="fade-up-left" class="bg-white p-9 rounded-3xl">
+                    <div data-aos="fade-up-left" class="bg-white card__rsistanc">
 
-                        <h2 class="text-2xl font-extrabold"><span class="font-normal">ELIGE CÓMO QUIERES</span> MOVERTE
+                        <h2 class="home__title title__color text-two"><span class="font-normal">ELIGE CÓMO
+                                QUIERES</span> MOVERTE
                         </h2>
 
                         <div class="swiper disciplinesSwiper">
@@ -255,11 +333,13 @@
                                         style="background: url({{ $discipline->image_url ? 'storage/' . $discipline->image_url : asset('default/discipline.png') }});           background-position: center;
                 background-repeat: no-repeat;
                 background-size: cover;">
-                                        <div class="grid gap-3">
+                                        <div class="grid gap-1">
                                             <div class="flex items-center gap-2">
-                                                <img src="{{ $discipline->icon_url ? 'storage/' . $discipline->icon_url : asset('image/logos/logoBlancoR.svg') }}"
+                                                <img class="discipline__icon"
+                                                    src="{{ $discipline->icon_url ? 'storage/' . $discipline->icon_url : asset('image/logos/logoBlancoR.svg') }}"
                                                     alt="logo">
-                                                <h3 class="uppercase font-bold text-lg">{{ $discipline->name }}</h3>
+                                                <h3 class="uppercase  text-xl text-two discipline__title">
+                                                    {{ $discipline->name }}</h3>
                                             </div>
                                             @if ($discipline->description)
                                                 <p class="discipline__description">{{ $discipline->description }}</p>
@@ -287,20 +367,20 @@
             <div class="container">
                 <div class="flex flex-wrap gap-6">
                     <div data-aos="fade-down-right"
-                        class="card__benef card__benef--one p-8 rounded-3xl grid gap-3 justify-start justify-items-start content-end w-full lg:max-w-96">
-                        <h3 class="text-4xl font-light leading-tight">PAQUETES <br> QUE SE ADAPTAN <span
-                                class="grid font-extrabold">A TU RITMO.</span></h3>
+                        class="card__benef card__benef--one card__rsistanc grid  gap-1 md:gap-3 justify-start justify-items-start content-end w-full lg:max-w-96">
+                        <h3 class="home__title leading-tight font-extralight" style="font-weight: 100;">PAQUETES <br>
+                            QUE SE ADAPTAN <span class="grid  home__title">A TU RITMO.</span></h3>
 
-                        <p class="dark text-lg font-medium">Desde 1 hasta 40 clases.</p>
+                        <p class="dark text-base lg:text-lg font-medium home__parrafo">Desde 1 hasta 40 clases.</p>
                         <div class="font-light text-lg">
-                            <p>Mixea disciplinas, suma puntos,
+                            <p class="home__parrafo">Mixea disciplinas, suma puntos,
                                 sube de nivel.</p>
                         </div>
                         <a href="{{ route('package') }}" class="font-extrabold text-xl">VER PAQUETES →</a>
                     </div>
                     <div data-aos="fade-down-left"
-                        class="card__benef card__benef--two flex-1 bg-slate-500 rounded-3xl p-8 grid gap-3 justify-start justify-items-start content-end ">
-                        <h3 class="text-4xl font-extrabold leading-tight"><span class="font-light">MÁS</span>
+                        class="card__benef card__benef--two flex-1 bg-slate-500 card__rsistanc grid gap-3 justify-start justify-items-start content-end ">
+                        <h3 class="home__title font-extrabold leading-tight"><span class="font-light">MÁS</span>
                             RESISTANCE, <span class="font-light">MÁS</span> REWARDS.</h3>
 
                         <p class="dark text-lg font-medium">Entrenar tiene beneficios reales:</p>
@@ -319,62 +399,170 @@
         @if ($services->count() > 0)
             <section class="section" id="servicios">
                 <div class="container">
-                    <div data-aos="fade-up" class="services grid gap-2 bg-white p-9 rounded-3xl ">
-                        <h2 class="text-2xl font-extrabold">SERVICIOS </h2>
-                        <h3 class="font-bold text-lg"><span class="font-light">Explora lo que hace única tu experiencia
-                                en</span> R
-                            STUDIO<span class="font-light">, dentro y fuera del training floor.</span></h3>
-                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                            @foreach ($services as $service)
-                                @php
-                                    // Limpiar el path de la imagen
-                                    $imagePath = $service->image ? trim($service->image, '/') : null;
-                                    $backgroundImage = $imagePath
-                                        ? asset('storage/' . $imagePath)
-                                        : asset('default/discipline.png');
-                                @endphp
+                    <div data-aos="fade-up" class="services grid gap-4 bg-white card__rsistanc">
+                        <div class="grid gap-2">
+                            <h2 class="home__title title__color uppercase text-two">Servicios
+                            </h2>
 
-                                <div class="card__services"
-                                    style="background: url('{{ $backgroundImage }}');
-                background-position: center;
-                background-repeat: no-repeat;
-                background-size: cover;">
-                                    <div class="servicescard__title flex gap-3 items-center">
-                                        <img src="/image/logos/logoBlancoR.svg" alt="logo">
-                                        <h3>{{ $service->title }}</h3>
-                                    </div>
-                                    @if ($service->description)
-                                        <!-- Cambiado de $discipline a $service -->
-                                        <p>{{ $service->description }}</p>
-                                    @endif
+                            <h3 class="font-bold home__parrafo text-two">
+                                <span class="font-light">Explora lo que hace única tu experiencia en</span> R
+                                STUDIO<span class="font-light">, dentro y fuera del training floor.</span>
+                            </h3>
+                        </div>
+
+                        {{-- Contenedor estilo historias de WhatsApp --}}
+                        <div class="relative">
+                            <div class="overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                                    style="scroll-snap-type: x mandatory; scroll-behavior: smooth;">
+                                    @foreach ($services as $service)
+                                        @php
+                                            // Limpiar el path de la imagen
+                                            $imagePath = $service->image ? trim($service->image, '/') : null;
+                                            $backgroundImage = $imagePath
+                                                ? asset('storage/' . $imagePath)
+                                                : asset('default/discipline.png');
+                                        @endphp
+
+                                        <div class="relative flex-shrink-0 service__card rounded-3xl overflow-hidden shadow-lg"
+                                            style="
+                                                background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5)), url('{{ $backgroundImage }}');
+                                                background-position: center;
+                                                background-repeat: no-repeat;
+                                                background-size: cover;
+                                                scroll-snap-align: start;
+                                            ">
+                                            {{-- Contenido superpuesto --}}
+                                            <div class="absolute inset-0 flex flex-col justify-end p-6 text-white z-10">
+                                                <div class="flex items-center gap-3 mb-3">
+                                                    <img src="/image/logos/logoBlancoR.svg" alt="logo"
+                                                        class="w-8 h-8 object-contain">
+                                                    <h3 class="text-xl font-bold">{{ $service->title }}</h3>
+                                                </div>
+                                                @if ($service->description)
+                                                    <p class="text-sm font-light leading-relaxed line-clamp-3">
+                                                        {{ $service->description }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            @endforeach
+                            </div>
                         </div>
                     </div>
-
                 </div>
             </section>
         @endif
+
+
+        {{-- @if ($services->count() > 0)
+            <section class="section" id="servicios">
+                <div class="container">
+                    <div data-aos="fade-up" class="services grid gap-4 bg-white card__rsistanc">
+                        <div class="grid gap-2">
+                            <h2 class="text-2xl font-extrabold">SERVICIOS</h2>
+                            <h3 class="font-bold text-lg">
+                                <span class="font-light">Explora lo que hace única tu experiencia en</span> R
+                                STUDIO<span class="font-light">, dentro y fuera del training floor.</span>
+                            </h3>
+                        </div>
+
+
+                        @php
+
+                            $columns = 4;
+                            $servicesChunks = [];
+
+
+                            foreach ($services as $index => $service) {
+                                $colIndex = $index % $columns;
+                                if (!isset($servicesChunks[$colIndex])) {
+                                    $servicesChunks[$colIndex] = [];
+                                }
+                                $servicesChunks[$colIndex][] = $service;
+                            }
+                        @endphp
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            @for ($col = 0; $col < $columns; $col++)
+                                <div class="grid gap-4">
+                                    @if (isset($servicesChunks[$col]))
+                                        @foreach ($servicesChunks[$col] as $serviceIndex => $service)
+                                            @php
+
+                                                $imagePath = $service->image ? trim($service->image, '/') : null;
+                                                $backgroundImage = $imagePath
+                                                    ? asset('storage/' . $imagePath)
+                                                    : asset('default/discipline.png');
+
+
+                                                $heights = [300, 250, 280, 320, 270];
+                                                $height = $heights[$serviceIndex % count($heights)] . 'px';
+                                            @endphp
+
+                                            <div class="relative rounded-lg overflow-hidden shadow-lg transition-transform "
+                                                style="
+                                                    min-height: {{ $height }};
+                                                    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5)), url('{{ $backgroundImage }}');
+                                                    background-position: center;
+                                                    background-repeat: no-repeat;
+                                                    background-size: cover;
+                                                ">
+
+                                                <div
+                                                    class="absolute inset-0 flex flex-col justify-end p-4 text-white z-10">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <img src="/image/logos/logoBlancoR.svg" alt="logo"
+                                                            class="w-6 h-6 object-contain">
+                                                        <h3 class="text-lg font-bold">{{ $service->title }}</h3>
+                                                    </div>
+                                                    @if ($service->description)
+                                                        <p class="text-xs font-light leading-relaxed line-clamp-2">
+                                                            {{ $service->description }}
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif --}}
 
         {{-- Descarga --}}
         <section class="section" id="descarga">
             <div class="container">
 
                 <div
-                    class="grid grid-cols-1 xl:grid-cols-2 justify-center content-center justify-items-center items-center gap-6 bg-white p-9 rounded-3xl ">
+                    class="grid grid-cols-1 xl:grid-cols-2 justify-center content-center justify-items-center items-center gap-6 bg-white card__rsistanc">
 
 
                     <img data-aos="fade-up" class="store__img" src="/image/pages/vistaCel.svg" alt="descarga">
                     <div data-aos="fade-up" class="grid gap-2">
-                        <h2 class="text-4xl font-extrabold">TU RSISTANC <span class="font-light">VA CONTIGO.</span></h2>
-                        <h3><span class="text-xl font-light">Reserva, compra, suma puntos y ve tu progreso desde nuestra
-                                app.</span>
-                        </h3>
+                        <h2 class="home__title text-two">TU RSISTANC <span class="font-light">VA CONTIGO.</span>
+                        </h2>
+
+                        <h4 class="font-extralight home__parrafo text-two ">Reserva, compra, suma puntos y ve tu
+                            progreso desde
+                            nuestra
+                            app.</h4>
                         <h3 class="font-bold text-lg">Simple, rápida, tuya.</h3>
 
-                        <div class="flex gap-3 mt-5">
-                            <img src="/image/logos/iconos/ios.svg" alt="ios">
-                            <img src="/image/logos/iconos/android.svg" alt="android">
+                        <div class="flex flex-wrap gap-3 mt-1">
+                            <a href="">
+                                <img src="/image/logos/iconos/ios.svg" alt="ios">
+                            </a>
+
+                            <a href="">
+                                <img src="/image/logos/iconos/android.svg" alt="android">
+                            </a>
+
+
                         </div>
                     </div>
                 </div>
@@ -388,29 +576,30 @@
         {{-- Direccion --}}
         <section class="section" id="direccion">
             <div class="container">
-                <div class="flex gap-6 flex-wrap items-center bg-white p-9 rounded-3xl">
-                    <div data-aos="fade-right" class="flex-1 grid gap-4">
-                        <div class="text-5xl grid gap-2">
-                            <h1><span class="font-extralight">ENCUENTRA</span></h1>
-                            <div class="flex gap-3 font-extrabold">
+                <div class="flex gap-6 flex-wrap items-center bg-white card__rsistanc">
+                    <div data-aos="fade-right" class="flex-1 grid gap-2 md:gap-4">
+                        <div class="text-2xl lg:text-5xl grid gap-2">
+                            <h1><span class="home__title">ENCUENTRANOS: </span></h1>
+                            {{-- <div class="flex gap-3 font-extrabold">
                                 <img class="w-10" src="/image/logos/iconos/logor.svg" alt="logo">
                                 <h2>STUDIO</h2>
-                            </div>
+                            </div> --}}
                         </div>
 
-                        <p class="text-xl">Ubicado en Surco, diseñado para que te muevas libre y con flow.</p>
+                        <p class="home__parrafo text-two mb-2 md:mb-0">Ubicado en Surco, diseñado para que te muevas libre y con
+                            flow.</p>
 
                         <div class="direccion__detl">
                             <img src="/image/logos/iconos/iconomapa.svg" alt="mapa">
-                            <span class="light"> {{ $company->address }} </span>
+                            <span class="home__parrafo"> {{ $company->address }} </span>
                         </div>
                         <div class="direccion__detl">
                             <img src="/image/logos/iconos/iconocel.svg" alt="celular">
-                            <span class="light"> {{ $company->phone_help }}</span>
+                            <span class="home__parrafo"> {{ $company->phone_help }}</span>
                         </div>
                         <div class="direccion__detl">
                             <img src="/image/logos/iconos/iconomail.svg" alt="correo">
-                            <span class="light">{{ $company->email }}</span>
+                            <span class="home__parrafo">{{ $company->email }}</span>
                         </div>
                     </div>
                     <a data-aos="fade-left"
@@ -426,20 +615,20 @@
         {{-- FAQ --}}
         <section class="section" id="faq">
             <div class="container">
-                <div class="faqcontainer p-9 rounded-3xl">
+                <div class="faqcontainer card__rsistanc">
 
                     <div class="text-center grid gap-3 mb-5">
-                        <h2 class="font-semibold text-3xl">FAQs</h2>
-                        <p class="font-light text-lg">¿Tienes dudas? Resolvemos todo.</p>
+                        <h2 class="font-semibold text-two home__title">FAQs</h2>
+                        <p class="font-light home__parrafo text-two">¿Tienes dudas? Resolvemos todo.</p>
                     </div>
                     <div class="faq-container grid gap-3">
 
                         @foreach ($faqs as $faq)
                             <details data-aos="flip-up" class="p-5 bg-white rounded-2xl">
-                                <summary class="font-semibold text-lg">
+                                <summary class=" title__color home__parrafo text-two font-semibold text-md">
                                     {{ $faq->question }}
                                 </summary>
-                                <div class="faq-answer font-light">
+                                <div class="faq-answer text-two title__color font-light text-sm mt-3">
                                     {{ $faq->answer }}
                                 </div>
                             </details>
@@ -480,21 +669,21 @@
 
                         562: {
                             slidesPerView: 1,
-                            spaceBetween: 20,
+                            spaceBetween: 13,
                         },
 
                         700: {
                             slidesPerView: 2,
-                            spaceBetween: 20,
+                            spaceBetween: 13,
                         },
 
                         840: {
                             slidesPerView: 3,
-                            spaceBetween: 20,
+                            spaceBetween: 13,
                         },
                         1200: {
                             slidesPerView: 4,
-                            spaceBetween: 20,
+                            spaceBetween: 13,
                         },
                     },
                 });

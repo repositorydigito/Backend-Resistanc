@@ -101,9 +101,23 @@
                 color: #A267B4;
             }
 
-            .andrea__color--gray{
+            .andrea__color--gray {
                 color: #303840;
                 letter-spacing: .4rem;
+            }
+
+            @media (max-width: 575.98px) {
+
+                .hero {
+
+                    background:
+                        linear-gradient(88deg, #B66F37 10.73%, rgba(157, 90, 169, 0.90) 48.98%, rgba(181, 130, 190, 0.70) 80.44%, rgba(255, 255, 255, 0.00) 150%),
+                        url({{ asset('image/pages/banner1.png') }});
+
+                    background-size: cover;
+                    background-position: start;
+
+                }
             }
 
             @media (max-width: 768px) {
@@ -117,11 +131,11 @@
     @endpush
 
     {{-- Hero --}}
-    <section class="hero h-[30rem] items-center justify-center content-center pt-6">
+    <section class="hero h-[30rem] items-center justify-center content-center pt-24 md:pt-6">
         <div class="container ">
 
             <div data-aos="fade-up" class="grid gap-8 w-full  text-white">
-                <h1 class="text-4xl lg:text-6xl  font-extrabold tracking-[8px]"><span class="font-light">CONOCE NUESTROS
+                <h1 class="text-3xl lg:text-6xl text-center  font-extrabold tracking-[8px]"><span class="font-light">CONOCE NUESTROS
                     </span> <br>
                     PAQUETES & BENEFICIOS
                 </h1>
@@ -132,9 +146,10 @@
     <div class="paquetes py-16">
         <div class="paquetes__container container">
             <div class="text-center grid gap-3 mb-16 ">
-                <h2 class="text-4xl lg:text-6xl font-extralight text-center  texto__andrea grid mb-4">ENTRENA CON
+                <h2 class="text-3xl lg:text-6xl font-extralight text-center  texto__andrea grid mb-4">ENTRENA CON
                     LOS MEJORES <br> </h2>
-                <span class="font-bold text-4xl lg:text-6xl andrea__color--gray"> PAQUETES DE <span class="andrea__color">CLASES</span></span>
+                <span class="font-bold text-4xl lg:text-6xl andrea__color--gray"> PAQUETES DE <span
+                        class="andrea__color">CLASES</span></span>
             </div>
             <!-- Componente Livewire -->
             @livewire('package-livewire')
@@ -147,9 +162,9 @@
 
             <div class="categorias__content">
 
-                <h1 class="text-4xl lg:text-6xl font-extralight text-center mb-16 texto__andrea grid gap-4">Y DISFRUTA LOS MEJORES <br> <span
-                        class="font-bold flex flex-wrap gap-2 items-center justify-center">BENEFICIOS DE <img
-                            class="h-8 lg:h-12 object-contain w-auto inline-block"
+                <h1 class="text-3xl lg:text-6xl font-extralight text-center mb-16 texto__andrea grid gap-4">Y DISFRUTA
+                    LOS MEJORES <br> <span class="font-bold flex flex-wrap gap-2 items-center justify-center">BENEFICIOS
+                        DE <img class="h-7 lg:h-12 object-contain w-auto inline-block"
                             src="{{ asset('image/logos/rsistanclogo.png') }}" alt=""></span></h1>
 
 

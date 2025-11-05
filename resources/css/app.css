@@ -1,24 +1,37 @@
-/* @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap"); */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+    font-family: "A Breathing";
+    src: url("../fonts/A-Breathing-Font.woff2") format("woff2"),
+        url("../fonts/A-Breathing-Font.woff") format("woff"),
+        url("../fonts/A-Breathing-Font.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 [x-cloak] {
     display: none;
 }
 
 :root {
     /* Colores */
-    --color-primary: #3b82f6;
+    --color-primary: #9142AA ;
     --color-secondary: #fbbf24;
     --color-accent: #4ade80;
     --color-neutral: #374151;
     --color-base-100: #ffffff;
     --color-base-200: #f3f4f6;
     --color-base-300: #e5e7eb;
+    --color-title-one: #303840;
     /* Fin colores */
 
     /* Tipografías */
-    --font-one: "Outfit", sans-serif;
+    --font-one: "A Breathing", sans-serif;
+    --font-two: "Outfit", sans-serif;
 
     /* Fin tipografías */
 }
@@ -28,8 +41,19 @@
 } */
 
 body {
-    font-family: "Outfit", system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: var(--font-one);
+}
+
+.title__color {
+    color: var(--color-title-one);
+}
+
+.font-two {
+    font-family: var(--font-two);
+}
+
+.font-one {
+    font-family: var(--font-one);
 }
 
 .container {
@@ -41,21 +65,26 @@ body {
 }
 
 .btn {
+    font-family: var(--font-two);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0.5rem 1rem;
-    font-size: .9rem;
+    font-size: 1rem;
+    line-height: normal;
     text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
 }
 
 .btn__one {
     text-transform: uppercase;
-    font-weight: 600;
+
     border: 1px solid #fff;
     background-color: white;
     color: #b66f37;
     border-radius: 30px;
+
     transition: all 0.2s ease;
 }
 
@@ -66,7 +95,7 @@ body {
 }
 .btn__two {
     text-transform: uppercase;
-    font-weight: 600;
+
     border: 1px solid #fff;
     border-radius: 30px;
     transition: all 0.2s ease;
@@ -85,9 +114,8 @@ body {
     text-transform: uppercase;
 }
 
-
-.background__primary{
-        background: linear-gradient(
+.background__primary {
+    background: linear-gradient(
         94deg,
         #cdd6d7 0%,
         #d9d9d2 30.29%,
@@ -96,7 +124,6 @@ body {
         #e7d4d8 100%
     );
 }
-
 
 .footer {
     /* padding: 20px; */
@@ -182,4 +209,25 @@ body {
     padding-left: 1rem !important;
     margin: 1rem 0 !important;
     font-style: italic !important;
+}
+.rsistanc__enlace{
+    transition: all .3s ease;
+}
+.rsistanc__enlace:hover{
+    color: var(--color-primary);
+}
+
+@media (max-width: 575.98px) {
+    .btn {
+        font-family: var(--font-two);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        font-size: .8rem;
+        line-height: normal;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 600;
+    }
 }

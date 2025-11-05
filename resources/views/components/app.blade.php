@@ -12,9 +12,9 @@
     <meta name="author" content="Resistance">
 
     <!-- Favicon y iconos para múltiples dispositivos -->
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('default/icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('default/icon.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('default/icon.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('image/pages/icon_nuevo.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('image/pages/icon_nuevo.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('image/pages/icon_nuevo.png') }}">
     <link rel="manifest" href="{{ asset('image/favicon/site.webmanifest') }}">
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
@@ -58,12 +58,21 @@
 
 
 
-
-
-
     @stack('css')
 
     <style>
+        * {
+            /* outline: 1px solid red; */
+        }
+
+        .footer__title {
+            display: grid;
+            justify-content: start;
+            align-content: flex-start;
+            text-align: start;
+            /* gap: .8rem; */
+        }
+
         .footer__title h4 {
             font-weight: 500;
             font-size: 1.2rem
@@ -72,6 +81,13 @@
         .footer__title ul {
             display: grid;
             gap: .4rem;
+        }
+
+        .footer__title ul li a {
+            /* color: white; */
+            text-decoration: none;
+            font-size: .9rem;
+            transition: all 0.3s ease;
         }
 
         .social-icons {
@@ -94,19 +110,31 @@
             transition: all 0.3s ease;
             text-decoration: none;
         }
-         .social-icons a i{
+
+        .social-icons a i {
             font-size: .9rem;
-         }
+        }
 
         .social-icons a:hover {
             background: radial-gradient(128.53% 138.92% at 7.28% -1.41%, #CD6134 0%, #925035 29.32%, #9142AA 66.83%, #A267B4 100%);
             transform: translateY(-2px);
         }
+
+        @media (max-width: 575.98px) {
+
+            .footer__title {
+                display: grid;
+                justify-content: center;
+                text-align: center;
+                /* gap: .8rem; */
+            }
+
+        }
     </style>
 
 </head>
 
-<body class="background__primary">
+<body class="background__primary overflow-x-hidden">
 
     @php
         $company = \App\Models\Company::first();
@@ -114,9 +142,10 @@
 
     <header class="header py-2 absolute top-1 left-0 w-full border-white border-b">
         <div class="container contenido">
-            <nav data-aos="fade-right" class="flex justify-between">
+            <nav data-aos="fade-right"
+                class=" py-3 lg:p-0 grid justify-center md:flex md:justify-between items-center gap-4">
                 <a href="{{ route('home') }}" class="logo">
-                    <img src="{{ asset('image/logos/logoblanco.svg') }}" alt="Resistance Logo" width="200">
+                    <img src="{{ asset('image/pages/logo-web.png') }}" alt="Resistance Logo" class="h-8">
                 </a>
 
                 <a href="{{ route('package') }}" class="btn btn__one">EMPIEZA HOY</a>
@@ -135,47 +164,54 @@
 
 
                 <div data-aos="fade-left" class="grid gap-4  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 py-12">
-                    <div class="footer-logo">
+                    <div class="footer-logo grid justify-center content-start">
                         <img class="max-w-64" src="{{ asset('image/logos/logorsistanc.svg') }}" alt="RSISTANC Logo">
                         <div class="social-icons flex flex-wrap">
                             @if ($company->instagram_url)
-                                <a class="bg-black" href="{{ $company->instagram_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->instagram_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-instagram"></i>
                                 </a>
                             @endif
 
                             @if ($company->facebook_url)
-                                <a class="bg-black" href="{{ $company->facebook_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->facebook_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-facebook"></i>
                                 </a>
                             @endif
 
                             @if ($company->tiktok_url)
-                                <a class="bg-black" href="{{ $company->tiktok_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->tiktok_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-tiktok"></i>
                                 </a>
                             @endif
 
                             @if ($company->youtube_url)
-                                <a class="bg-black" href="{{ $company->youtube_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->youtube_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-youtube"></i>
                                 </a>
                             @endif
 
                             @if ($company->linkedin_url)
-                                <a class="bg-black" href="{{ $company->linkedin_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->linkedin_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-linkedin"></i>
                                 </a>
                             @endif
 
                             @if ($company->twitter_url)
-                                <a class="bg-black" href="{{ $company->twitter_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->twitter_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-twitter"></i>
                                 </a>
                             @endif
 
                             @if ($company->whatsapp_url)
-                                <a class="bg-black" href="{{ $company->whatsapp_url }}" target="_blank" rel="noopener noreferrer">
+                                <a class="bg-black" href="{{ $company->whatsapp_url }}" target="_blank"
+                                    rel="noopener noreferrer">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                             @endif
@@ -220,9 +256,10 @@
                 @endphp
 
                 <div class="text-center flex flex-wrap justify-center lg:justify-between py-2 items-center">
-                    <p>&copy; {{ $currentYear }} RSISTANC. Todos los derechos reservados.</p>
-                    <p><a href="{{ route('privacity') }}">Políticas de Privacidad</a> | <a
-                            href="{{ route('term') }}">Términos y Condiciones</a>
+                    <p class="">&copy; {{ $currentYear }} RSISTANC. Todos los derechos reservados.</p>
+                    <p class=""><a class="rsistanc__enlace" href="{{ route('privacity') }}">Políticas de
+                            Privacidad</a> | <a class="rsistanc__enlace" href="{{ route('term') }}">Términos y
+                            Condiciones</a>
                     </p>
                 </div>
 
