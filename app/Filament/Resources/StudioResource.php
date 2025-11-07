@@ -50,14 +50,13 @@ class StudioResource extends Resource
                                     ->required()
                                     ->maxLength(100),
 
-                                Forms\Components\Select::make('studio_type')
-                                    ->label('Tipo de Sala')
-                                    ->options([
-                                        'cycling' => 'Ciclo',
-                                        'reformer' => 'Reformer',
-                                        'mat' => 'Mat',
-                                        'multipurpose' => 'Multipropósito',
-                                    ])
+                                // Agregar el campo para la relación muchos a muchos con disciplines
+                                Forms\Components\Select::make('disciplines')
+                                    ->label('Disciplinas')
+                                    ->relationship('disciplines', 'name') // 'name' es el campo que se mostrará
+                                    // ->multiple()
+                                    ->preload()
+                                    ->searchable()
                                     ->required(),
 
                                 Forms\Components\TextInput::make('location')
@@ -73,12 +72,12 @@ class StudioResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('max_capacity')
                                     ->label('Aforo total')
-                                    ->required()
+                                    // ->required()
                                     ->numeric(),
 
                                 Forms\Components\TextInput::make('capacity_per_seat')
                                     ->label('Espacios Disponibles')
-                                    ->required()
+                                    // ->required()
                                     ->numeric(),
 
                                 // Forms\Components\Select::make('addressing')

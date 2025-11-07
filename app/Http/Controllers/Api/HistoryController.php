@@ -216,19 +216,15 @@ class HistoryController extends Controller
      */
     private function getAvailableShakesCount($user): int
     {
-        // Contar todos los pedidos de shake pendientes (gratuitos y regalos)
+        // Contar todos los pedidos de shake no entregados (pagados o gratuitos)
         $pendingShakeOrders = \App\Models\JuiceOrder::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->where('total_amount_soles', 0) // Solo pedidos gratuitos/regalos
-            ->withCount('details')
+            ->whereNotIn('status', ['delivered', 'cancelled'])
+            ->with('details')
             ->get();
 
-        $totalShakes = 0;
-        foreach ($pendingShakeOrders as $order) {
-            $totalShakes += $order->details_count; // Cantidad de bebidas en el pedido
-        }
-
-        return $totalShakes;
+        return $pendingShakeOrders->sum(function ($order) {
+            return $order->details->sum('quantity');
+        });
     }
 
     /**
@@ -304,8 +300,7 @@ class HistoryController extends Controller
     private function getShakesBreakdown($user): array
     {
         $pendingShakeOrders = \App\Models\JuiceOrder::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->where('total_amount_soles', 0)
+            ->whereNotIn('status', ['delivered', 'cancelled'])
             ->with(['details'])
             ->get();
 
@@ -315,7 +310,7 @@ class HistoryController extends Controller
             $breakdown[] = [
                 'order_id' => $order->id,
                 'created_at' => $order->created_at->format('Y-m-d H:i:s'),
-                'total_shakes' => $order->details->count(),
+                'total_shakes' => $order->details->sum('quantity'),
                 'notes' => $order->notes,
             ];
         }

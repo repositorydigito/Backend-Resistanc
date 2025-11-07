@@ -11,6 +11,29 @@ final class Studio extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name',
+        'location',
+        'max_capacity',
+        'equipment_available',
+        'amenities',
+        'is_active',
+        'capacity_per_seat',
+        'addressing',
+        'row',
+        'column',
+    ];
+
+    protected $casts = [
+        'equipment_available' => 'array',
+        'amenities' => 'array',
+        'max_capacity' => 'integer',
+        'capacity_per_seat' => 'integer',
+        'is_active' => 'boolean',
+    ];
+
+
+
     /**
      * Boot the model and add event listeners.
      */
@@ -64,27 +87,6 @@ final class Studio extends Model
         });
     }
 
-    protected $fillable = [
-        'name',
-        'location',
-        'max_capacity',
-        'equipment_available',
-        'amenities',
-        'studio_type',
-        'is_active',
-        'capacity_per_seat',
-        'addressing',
-        'row',
-        'column',
-    ];
-
-    protected $casts = [
-        'equipment_available' => 'array',
-        'amenities' => 'array',
-        'max_capacity' => 'integer',
-        'capacity_per_seat' => 'integer',
-        'is_active' => 'boolean',
-    ];
 
     /**
      * Get the classes held in this studio.
@@ -338,7 +340,7 @@ final class Studio extends Model
 
         foreach ($seats as $seat) {
             $currentSeatNumber = $seat->seat_number;
-            
+
             // Update if seat_number is null or different from expected
             if ($currentSeatNumber === null || $currentSeatNumber !== $newSeatNumber) {
                 if ($currentSeatNumber === null) {
@@ -444,5 +446,11 @@ final class Studio extends Model
         }
 
         return $deleted;
+    }
+
+
+    public function disciplines()
+    {
+        return $this->belongsToMany(Discipline::class);
     }
 }

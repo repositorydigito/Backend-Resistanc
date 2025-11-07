@@ -45,7 +45,7 @@ class ClassScheduleResource extends Resource
                     ->columns(2)
                     ->schema([
 
-                         Forms\Components\FileUpload::make('img_url')
+                        Forms\Components\FileUpload::make('img_url')
                             ->label('Imagen')
                             ->disk('public')
                             ->directory('horarios')
@@ -65,7 +65,10 @@ class ClassScheduleResource extends Resource
                             ->searchable()
                             ->preload()
                             ->live() // Reacciona a cambios
-                            ->afterStateUpdated(fn(Set $set) => $set('instructor_id', null)) // Limpiar instructor
+                            ->afterStateUpdated(function (Set $set) {
+                                $set('instructor_id', null); // Limpiar instructor
+                                $set('studio_id', null); // Limpiar sala
+                            })
                             ->rules([
                                 fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
                                     // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
@@ -101,7 +104,7 @@ class ClassScheduleResource extends Resource
                                 }
 
                                 // Obtener la clase con su disciplina
-                                $class = \App\Models\ClassModel::find($classId);
+                                $class = \App\Models\ClassModel::with('discipline')->find($classId);
                                 if (!$class || !$class->discipline_id) {
                                     return [];
                                 }
@@ -116,36 +119,35 @@ class ClassScheduleResource extends Resource
                             ->searchable()
                             ->dehydrated() // ✅ AGREGAR ESTO - asegura que se envíe aunque esté disabled
                             ->disabled(fn(Get $get): bool => !filled($get('class_id')))
+                            ->live() // Reacciona a cambios
+                            ->afterStateUpdated(fn(Set $set) => $set('studio_id', null)) // Limpiar sala al cambiar instructor
                             ->helperText('Primero selecciona una clase para ver instructores disponibles'),
-
-
-                        Toggle::make('is_replaced')
-                            ->label('¿Sera remplazado?')
-                            ->live() // Hacer reactivo
-                            ->default(false)
-                            ->helperText('Marca si el instructor sera reemplazado. Si es así, selecciona un suplente.'), // Solo en crear/editar
-                        // Nuevo campo para suplente
-
-                        Select::make('substitute_instructor_id')
-                            ->label('Instructor Suplente')
-                            ->visible(fn(Get $get): bool => $get('is_replaced')) // Solo visible si es reemplazo
-                            ->options(function ($get) {
-                                $primary = $get('instructor_id');
-
-                                return \App\Models\Instructor::query()
-                                    ->where('status', 'active')
-                                    ->when($primary, fn($query) => $query->where('id', '!=', $primary))
-                                    ->pluck('name', 'id');
-                            })
-                            ->searchable()
-                            ->nullable()
-                            ->helperText('Seleccione un instructor suplente si es necesario'),
 
 
                         Forms\Components\Select::make('studio_id')
                             ->label('Sala/Estudio')
-                            ->relationship('studio', 'name')
                             ->required()
+                            ->options(function (Get $get) {
+                                $classId = $get('class_id');
+
+                                if (!$classId) {
+                                    return [];
+                                }
+
+                                // Obtener la clase con su disciplina
+                                $class = \App\Models\ClassModel::with('discipline')->find($classId);
+                                if (!$class || !$class->discipline_id) {
+                                    return [];
+                                }
+
+                                // Filtrar salas/estudios que tienen esa disciplina asociada
+                                return \App\Models\Studio::whereHas('disciplines', function ($query) use ($class) {
+                                    $query->where('discipline_id', $class->discipline_id);
+                                })
+                                    ->where('is_active', true) // Solo salas activas
+                                    ->pluck('name', 'id');
+                            })
+                            ->searchable()
                             ->disabled(function (Get $get, $record): bool {
                                 // Deshabilitar si no hay class_id seleccionado
                                 if (!filled($get('class_id'))) {
@@ -159,10 +161,13 @@ class ClassScheduleResource extends Resource
 
                                 return false;
                             })
-                            ->helperText(function ($record) {
+                            ->helperText(function (Get $get, $record) {
                                 if ($record && $record->seats()->wherePivotNotNull('user_id')->exists()) {
                                     $seatsCount = $record->seats()->wherePivotNotNull('user_id')->count();
                                     return "⚠️ No se puede cambiar la sala porque hay {$seatsCount} asiento(s) reservado(s) por usuarios";
+                                }
+                                if (!filled($get('class_id'))) {
+                                    return 'Primero selecciona una clase para ver salas disponibles';
                                 }
                                 return null;
                             })
@@ -309,10 +314,10 @@ class ClassScheduleResource extends Resource
                             ->afterStateUpdated(fn(Get $get, Set $set) => $set('max_capacity', $get('max_capacity')))
                             ->required(),
 
-                        Forms\Components\TextInput::make('max_capacity')
-                            ->label('Capacidad Máxima')
-                            ->required()
-                            ->numeric(),
+                        // Forms\Components\TextInput::make('max_capacity')
+                        //     ->label('Capacidad Máxima')
+                        //     ->required()
+                        //     ->numeric(),
 
                         // ✅ Campos que solo aparecen en EDITAR y son de SOLO LECTURA
                         Forms\Components\TextInput::make('available_spots')
@@ -341,12 +346,12 @@ class ClassScheduleResource extends Resource
                             ->disabled() // Solo lectura
                             ->dehydrated(false) // No se envía en el formulario
                             ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
-                        Forms\Components\DateTimePicker::make('booking_opens_at')
-                            ->label('Reservas Abren'),
-                        Forms\Components\DateTimePicker::make('booking_closes_at')
-                            ->label('Reservas Cierran'),
-                        Forms\Components\DateTimePicker::make('cancellation_deadline')
-                            ->label('Límite de Cancelación'),
+                        // Forms\Components\DateTimePicker::make('booking_opens_at')
+                        //     ->label('Reservas Abren'),
+                        // Forms\Components\DateTimePicker::make('booking_closes_at')
+                        //     ->label('Reservas Cierran'),
+                        // Forms\Components\DateTimePicker::make('cancellation_deadline')
+                        //     ->label('Límite de Cancelación'),
                         Forms\Components\Textarea::make('special_notes')
                             ->label('Notas Especiales')
                             ->columnSpanFull(),
@@ -369,12 +374,13 @@ class ClassScheduleResource extends Resource
                         //     })
                         //     ->columnSpanFull()
                         //     ->visible(fn(Get $get): bool => filled($get('studio_id'))),http://backend-resistanc.test/admin/class-schedules/5/edit
-                        Forms\Components\Toggle::make('is_holiday_schedule')
-                            ->label('Horario de Feriado')
-                            ->required(),
+                        // Forms\Components\Toggle::make('is_holiday_schedule')
+                        //     ->label('Horario de Feriado')
+                        //     ->required(),
 
                         Forms\Components\Select::make('status')
                             ->label('Estado')
+                            ->visible(false) // Oculto en el formulario
                             ->options([
                                 'scheduled' => 'Programado',
                                 'in_progress' => 'En Progreso',
@@ -382,7 +388,52 @@ class ClassScheduleResource extends Resource
                                 'cancelled' => 'Cancelado',
                                 'postponed' => 'Pospuesto',
                             ])
+                            ->default('scheduled')
                             ->required(),
+                    ]),
+
+                // Sección de Reemplazo de Instructor (solo en editar)
+                Forms\Components\Section::make('Reemplazo de Instructor')
+                    ->description('Usar solo cuando el instructor original no pueda asistir y necesite ser reemplazado por un suplente.')
+                    ->icon('heroicon-o-arrow-path')
+                    ->collapsible()
+                    ->collapsed()
+                    ->visible(fn(string $operation): bool => $operation === 'edit')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_replaced')
+                            ->label('¿El instructor será reemplazado?')
+                            ->live() // Hacer reactivo
+                            ->default(false)
+                            ->helperText('Marca esta opción si el instructor original no puede asistir y será reemplazado por un suplente.'),
+
+                        Forms\Components\Select::make('substitute_instructor_id')
+                            ->label('Instructor Suplente')
+                            ->visible(fn(Get $get): bool => $get('is_replaced')) // Solo visible si es reemplazo
+                            ->options(function (Get $get) {
+                                $classId = $get('class_id');
+                                $primary = $get('instructor_id');
+
+                                if (!$classId) {
+                                    return [];
+                                }
+
+                                // Obtener la clase con su disciplina
+                                $class = \App\Models\ClassModel::with('discipline')->find($classId);
+                                if (!$class || !$class->discipline_id) {
+                                    return [];
+                                }
+
+                                // Filtrar instructores que enseñan esa disciplina específica, excluyendo el instructor principal
+                                return \App\Models\Instructor::whereHas('disciplines', function ($query) use ($class) {
+                                    $query->where('discipline_id', $class->discipline_id);
+                                })
+                                    ->where('status', 'active') // Solo instructores activos
+                                    ->when($primary, fn($query) => $query->where('id', '!=', $primary)) // Excluir instructor principal
+                                    ->pluck('name', 'id');
+                            })
+                            ->searchable()
+                            ->nullable()
+                            ->helperText('Selecciona el instructor suplente que reemplazará al instructor original. Solo se mostrarán instructores que enseñan la misma disciplina.'),
                     ])
             ]);
     }
@@ -420,10 +471,10 @@ class ClassScheduleResource extends Resource
                     ->label('Hora Fin')
                     ->time()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('max_capacity')
-                    ->label('Capacidad Máxima')
-                    ->numeric()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('max_capacity')
+                //     ->label('Capacidad Máxima')
+                //     ->numeric()
+                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('seat_assignments_count')
                     ->label('Asientos')
@@ -507,7 +558,34 @@ class ClassScheduleResource extends Resource
             ])
             ->defaultSort('scheduled_date', 'desc')
             ->filters([
+                // Filtro de rango de fechas
+                Tables\Filters\Filter::make('scheduled_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('scheduled_from')
+                            ->label('Desde')
+                            ->displayFormat('d/m/Y')
+                            ->placeholder('Fecha inicial')
+                            ->columnSpan(1),
+                        Forms\Components\DatePicker::make('scheduled_until')
+                            ->label('Hasta')
+                            ->displayFormat('d/m/Y')
+                            ->placeholder('Fecha final')
+                            ->columnSpan(1),
+                    ])
+                    ->columns(2)
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['scheduled_from'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('scheduled_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['scheduled_until'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('scheduled_date', '<=', $date),
+                            );
+                    }),
 
+                // Filtro de estado
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([
@@ -518,12 +596,14 @@ class ClassScheduleResource extends Resource
                         'postponed' => 'Pospuesto',
                     ]),
             ])
+            ->filtersLayout(\Filament\Tables\Enums\FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
             ->actions([
                 Tables\Actions\Action::make('start_class')
                     ->label('Iniciar Clase')
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status === 'scheduled')
+                    ->visible(fn($record) => $record->status === 'scheduled')
                     ->requiresConfirmation()
                     ->modalHeading('Iniciar Clase')
                     ->modalDescription('¿Estás seguro de que quieres iniciar esta clase? Los asientos reservados se marcarán como ocupados.')
@@ -547,7 +627,7 @@ class ClassScheduleResource extends Resource
                     ->label('Finalizar Clase')
                     ->icon('heroicon-o-stop')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->status === 'in_progress')
+                    ->visible(fn($record) => $record->status === 'in_progress')
                     ->requiresConfirmation()
                     ->modalHeading('Finalizar Clase')
                     ->modalDescription('¿Estás seguro de que quieres finalizar esta clase? Los asientos ocupados se marcarán como completados y los no ocupados como perdidos.')
@@ -576,7 +656,7 @@ class ClassScheduleResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

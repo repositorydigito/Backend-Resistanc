@@ -642,9 +642,10 @@ final class ClassSchedule extends Model
         }
 
         // Verificar que el estudio tenga asientos configurados
-        $studioSeats = $studio->seats()->where('is_active', true)->get();
+        // ✅ Obtener TODOS los asientos (activos e inactivos) para mostrarlos en el horario
+        $studioSeats = $studio->seats()->get();
         if ($studioSeats->isEmpty()) {
-            Log::info("No hay asientos activos en el estudio, generando asientos del estudio primero", [
+            Log::info("No hay asientos en el estudio, generando asientos del estudio primero", [
                 'schedule_id' => $this->id,
                 'studio_id' => $studio->id,
                 'studio_name' => $studio->name
@@ -652,7 +653,7 @@ final class ClassSchedule extends Model
 
             // Generar asientos del estudio si no existen
             $studio->generateSeats();
-            $studioSeats = $studio->seats()->where('is_active', true)->get();
+            $studioSeats = $studio->seats()->get();
 
             if ($studioSeats->isEmpty()) {
                 Log::warning("No se pudieron generar asientos para el estudio", [
@@ -661,6 +662,26 @@ final class ClassSchedule extends Model
                 ]);
                 return 0;
             }
+        }
+
+        // ✅ Asegurar que todos los asientos del studio tengan seat_number asignado
+        // Verificar si hay asientos sin seat_number
+        $seatsWithoutNumber = $studioSeats->filter(function ($seat) {
+            return $seat->seat_number === null;
+        });
+
+        if ($seatsWithoutNumber->isNotEmpty()) {
+            Log::info("Reordenando números de asientos del studio antes de generar asientos del horario", [
+                'schedule_id' => $this->id,
+                'studio_id' => $studio->id,
+                'seats_without_number' => $seatsWithoutNumber->count()
+            ]);
+
+            // Reordenar los números de asientos del studio
+            $studio->reorderSeatNumbers();
+            
+            // Recargar los asientos para obtener los seat_number actualizados
+            $studioSeats = $studio->seats()->get();
         }
 
         // 🚨 ELIMINAR TODOS LOS ASIENTOS EXISTENTES ANTES DE GENERAR NUEVOS
@@ -677,16 +698,22 @@ final class ClassSchedule extends Model
         }
 
         // Generar asientos para este horario
+        // ✅ Incluir TODOS los asientos (activos e inactivos)
+        // Si el asiento está inactivo en la sala, marcarlo como 'blocked' en el horario
         $created = 0;
         foreach ($studioSeats as $seat) {
             try {
                 // Generar código único para este asiento
                 $code = $this->generateSeatCode($this->id, $seat->id);
 
+                // ✅ Si el asiento está inactivo en la sala, marcarlo como 'blocked' en el horario
+                // Esto permite que se muestre en el mapa pero no se pueda reservar
+                $status = $seat->is_active ? 'available' : 'blocked';
+
                 ClassScheduleSeat::create([
                     'class_schedules_id' => $this->id,
                     'seats_id' => $seat->id,
-                    'status' => 'available',
+                    'status' => $status,
                     'code' => $code,
                 ]);
                 $created++;
@@ -694,6 +721,8 @@ final class ClassSchedule extends Model
                 Log::debug("Asiento creado", [
                     'schedule_id' => $this->id,
                     'seat_id' => $seat->id,
+                    'seat_is_active' => $seat->is_active,
+                    'status' => $status,
                     'code' => $code
                 ]);
 

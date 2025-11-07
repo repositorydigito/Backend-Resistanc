@@ -433,6 +433,20 @@ final class ClassScheduleController extends Controller
             $classScheduleSeatIds = $request->validated()['class_schedule_seat_ids'];
             $minutesToExpire = $request->validated()['minutes_to_expire'];
 
+            // ✅ Validar que no se reserven más de 3 asientos por reserva
+            if (count($classScheduleSeatIds) > 3) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No puedes reservar más de 3 asientos por reserva',
+                    'datoAdicional' => [
+                        'reason' => 'max_seats_exceeded',
+                        'requested_seats' => count($classScheduleSeatIds),
+                        'max_allowed' => 3
+                    ]
+                ], 200);
+            }
+
             // 🎯 VALIDAR PAQUETES DISPONIBLES PARA LA DISCIPLINA
             $packageValidationService = new PackageValidationService();
             $packageValidation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
@@ -1163,6 +1177,61 @@ final class ClassScheduleController extends Controller
             }
 
             $userId = Auth::id();
+
+            if (!$userId) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => [
+                        'reason' => 'unauthenticated'
+                    ]
+                ], 401);
+            }
+
+            // ✅ Validar si el usuario ya tiene una reserva existente en este horario
+            $existingSeats = ClassScheduleSeat::where('class_schedules_id', $classSchedule->id)
+                ->where('user_id', $userId)
+                ->whereIn('status', ['reserved', 'occupied', 'completed'])
+                ->with('seat')
+                ->get();
+
+            if ($existingSeats->isNotEmpty()) {
+                $existingSeatsSummary = $existingSeats->map(function ($seatAssignment) {
+                    return [
+                        'class_schedule_seat_id' => $seatAssignment->id,
+                        'seat_id' => $seatAssignment->seats_id,
+                        'seat_number' => $seatAssignment->seat?->seat_number,
+                        'status' => $seatAssignment->status,
+                        'reserved_at' => $seatAssignment->reserved_at?->toISOString(),
+                        'consumption_source' => $seatAssignment->user_package_id ? 'package' : ($seatAssignment->user_membership_id ? 'membership' : null),
+                        'user_package_id' => $seatAssignment->user_package_id,
+                        'user_membership_id' => $seatAssignment->user_membership_id,
+                    ];
+                });
+
+                Log::info('Usuario ya cuenta con asientos reservados en el horario', [
+                    'user_id' => $userId,
+                    'schedule_id' => $classSchedule->id,
+                    'existing_reservations' => $existingSeatsSummary,
+                ]);
+
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'Ya tienes asientos reservados en este horario',
+                    'datoAdicional' => [
+                        'can_reserve' => false,
+                        'reason' => 'already_reserved',
+                        'existing_reservations' => $existingSeatsSummary,
+                        'summary' => [
+                            'total_existing_reservations' => $existingSeats->count(),
+                            'statuses' => $existingSeats->groupBy('status')->map->count(),
+                        ]
+                    ]
+                ], 200);
+            }
+
             $packageValidationService = new PackageValidationService();
 
             $validation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);

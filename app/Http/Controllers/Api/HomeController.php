@@ -301,19 +301,14 @@ final class HomeController extends Controller
      */
     private function getAvailableShakesCount($user): int
     {
-        $totalShakes = 0;
-
-        // Contar todos los pedidos de shake pendientes (gratuitos y regalos)
+        // Contar todos los pedidos de shake no entregados (pagados o gratuitos)
         $pendingShakeOrders = \App\Models\JuiceOrder::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->where('total_amount_soles', 0) // Solo pedidos gratuitos/regalos
-            ->withCount('details')
+            ->whereNotIn('status', ['delivered', 'cancelled'])
+            ->with('details')
             ->get();
 
-        foreach ($pendingShakeOrders as $order) {
-            $totalShakes += $order->details_count; // Cantidad de bebidas en el pedido
-        }
-
-        return $totalShakes;
+        return $pendingShakeOrders->sum(function ($order) {
+            return $order->details->sum('quantity');
+        });
     }
 }

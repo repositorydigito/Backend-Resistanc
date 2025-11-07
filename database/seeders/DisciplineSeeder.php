@@ -72,7 +72,7 @@ class DisciplineSeeder extends Seeder
                 'display_name' => 'Box',
                 'description' => 'Clases de Box para mejorar la resistencia y la fuerza. Ideal para todos los niveles.',
 
-                'color_hex' => '#FF5733',
+                'color_hex' => '#72661A',
                 'equipment_required' => json_encode(['guantes', 'saco_de_boxeo', 'cuerda', 'botella_agua']),
                 'difficulty_level' => 'intermediate',
                 'calories_per_hour_avg' => 250,

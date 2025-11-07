@@ -102,4 +102,9 @@ final class Discipline extends Model
     {
         return $this->belongsTo(Membership::class);
     }
+
+    public function studios()
+    {
+        return $this->belongsToMany(Studio::class);
+    }
 }

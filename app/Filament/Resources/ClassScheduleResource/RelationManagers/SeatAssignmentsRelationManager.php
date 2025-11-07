@@ -352,12 +352,24 @@ class SeatAssignmentsRelationManager extends RelationManager
         $schedule = $this->getOwnerRecord();
         $studio = $schedule->studio;
 
-        // Obtener todos los asientos activos del estudio
-        $seats = Seat::where('studio_id', $studio->id)
-            ->where('is_active', true)
-            ->get();
+        // ✅ Obtener TODOS los asientos del estudio (activos e inactivos)
+        $seats = Seat::where('studio_id', $studio->id)->get();
+
+        // ✅ Asegurar que todos los asientos del studio tengan seat_number asignado
+        $seatsWithoutNumber = $seats->filter(function ($seat) {
+            return $seat->seat_number === null;
+        });
+
+        if ($seatsWithoutNumber->isNotEmpty()) {
+            // Reordenar los números de asientos del studio
+            $studio->reorderSeatNumbers();
+            
+            // Recargar los asientos para obtener los seat_number actualizados
+            $seats = Seat::where('studio_id', $studio->id)->get();
+        }
 
         $created = 0;
+        $blocked = 0;
         foreach ($seats as $seat) {
             // Solo crear si no existe ya
             $exists = ClassScheduleSeat::where('class_schedules_id', $schedule->id)
@@ -365,19 +377,31 @@ class SeatAssignmentsRelationManager extends RelationManager
                 ->exists();
 
             if (!$exists) {
+                // ✅ Si el asiento está inactivo en la sala, marcarlo como 'blocked' en el horario
+                $status = $seat->is_active ? 'available' : 'blocked';
+                
+                if ($status === 'blocked') {
+                    $blocked++;
+                }
+
                 ClassScheduleSeat::create([
                     'code' => $schedule->code . '-' . $seat->id,
                     'class_schedules_id' => $schedule->id,
                     'seats_id' => $seat->id,
-                    'status' => 'available',
+                    'status' => $status,
                 ]);
                 $created++;
             }
         }
 
+        $message = "Se generaron {$created} asientos automáticamente.";
+        if ($blocked > 0) {
+            $message .= " {$blocked} asientos están bloqueados (inactivos en la sala).";
+        }
+
         Notification::make()
             ->title('Asientos Generados')
-            ->body("Se generaron {$created} asientos automáticamente.")
+            ->body($message)
             ->success()
             ->send();
     }
