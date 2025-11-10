@@ -45,6 +45,18 @@ return new class extends Migration
             $table->foreignId('membership_id')->constrained()->onDelete('cascade');
             $table->foreignId('discipline_id')->nullable()->constrained()->onDelete('set null');
 
+
+
+            $table->unsignedInteger('total_free_shakes')
+                ->default(0);
+
+            $table->unsignedInteger('used_free_shakes')
+                ->default(0);
+
+            $table->unsignedInteger('remaining_free_shakes')
+                ->default(0);
+
+
             $table->timestamps();
 
             // Índices

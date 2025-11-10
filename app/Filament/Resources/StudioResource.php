@@ -220,23 +220,14 @@ class StudioResource extends Resource
                 //             : "Esta sala no tiene horarios asociados";
                 //     }),
 
-                Tables\Columns\TextColumn::make('studio_type')
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'cycling' => 'Ciclo',
-                        'reformer' => 'Reformer',
-                        'mat' => 'Mat',
-                        'multipurpose' => 'Multipropósito',
-                        default => 'Desconocido',
+
+                 Tables\Columns\TextColumn::make('disciplines')
+                    ->label('Disciplinas')
+                    ->getStateUsing(function ($record) {
+                        return $record->disciplines->pluck('name')->join(', ');
                     })
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'cycling' => 'primary',
-                        'reformer' => 'info',
-                        'mat' => 'success',
-                        'multipurpose' => 'warning',
-                        default => 'gray',
-                    })
-                    ->label('Tipo de Sala'),
+                    ->wrap(),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('¿Está activa?')
                     ->boolean(),

@@ -13,6 +13,7 @@ use App\Models\Drink;
 use App\Models\Flavordrink;
 use App\Models\JuiceCartCodes;
 use App\Models\Typedrink;
+use App\Models\UserMembership;
 use Dedoc\Scramble\Support\Generator\Types\Type;
 use DragonCode\PrettyArray\Services\Formatters\Json;
 use Error;
@@ -160,6 +161,87 @@ final class DrinkController extends Controller
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al listar los tipos de bebidas',
                 'datoAdicional' => null,
+            ], 200);
+        }
+    }
+
+    /**
+     * Obtiene los shakes gratuitos disponibles provenientes de membresías activas.
+     */
+    public function availableMembershipShakes(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => [
+                        'reason' => 'unauthenticated'
+                    ],
+                ], 401);
+            }
+
+            $memberships = UserMembership::with(['membership', 'sourcePackage'])
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->where('remaining_free_shakes', '>', 0)
+                ->where(function ($query) {
+                    $query->whereNull('expiry_date')
+                        ->orWhere('expiry_date', '>=', now());
+                })
+                ->orderBy('expiry_date', 'asc')
+                ->get();
+
+            if ($memberships->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes shakes disponibles para canjear',
+                    'datoAdicional' => [
+                        'total_available_shakes' => 0,
+                        'memberships' => [],
+                    ],
+                ], 200);
+            }
+
+            $totalShakes = $memberships->sum('remaining_free_shakes');
+
+            $membershipDetails = $memberships->map(function (UserMembership $membership) {
+                $daysRemaining = null;
+                if ($membership->expiry_date) {
+                    $daysRemaining = max(now()->diffInDays($membership->expiry_date, false), 0);
+                }
+
+                return [
+                    'user_membership_id' => $membership->id,
+                    'membership_name' => $membership->membership->name ?? 'Membresía',
+                    'source_package_name' => $membership->sourcePackage->name ?? null,
+                    'remaining_shakes' => $membership->remaining_free_shakes,
+                    'used_shakes' => $membership->used_free_shakes,
+                    'total_shakes' => $membership->total_free_shakes,
+                    'expiry_date' => $membership->expiry_date?->format('Y-m-d'),
+                    'days_remaining' => $daysRemaining,
+                ];
+            });
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Shakes disponibles obtenidos exitosamente',
+                'datoAdicional' => [
+                    'total_available_shakes' => $totalShakes,
+                    'memberships' => $membershipDetails,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener shakes disponibles',
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }

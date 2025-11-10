@@ -277,6 +277,7 @@ final class PackageController extends Controller
             // Verificar si el paquete tiene una membresía asociada con beneficios
             $membershipData = null;
             $giftOrderId = null;
+            $giftShakeQuantity = 0;
 
             if ($package->membership_id && $package->membership) {
                 $membership = $package->membership;
@@ -291,6 +292,8 @@ final class PackageController extends Controller
                     ? (int) $membership->discipline_quantity
                     : 0;
 
+                $giftShakeQuantity = (int) ($membership->shake_quantity ?? 0);
+
                 // Crear SIEMPRE la membresía del usuario (incluso si no otorga clases gratis)
                 $membershipData = UserMembership::create([
                     'user_id' => $userId,
@@ -299,6 +302,9 @@ final class PackageController extends Controller
                     'total_free_classes' => $disciplineQuantity,
                     'used_free_classes' => 0,
                     'remaining_free_classes' => $disciplineQuantity,
+                    'total_free_shakes' => $giftShakeQuantity,
+                    'used_free_shakes' => 0,
+                    'remaining_free_shakes' => $giftShakeQuantity,
                     'activation_date' => now(),
                     'expiry_date' => $membershipExpiryDate,
                     'status' => 'active',
@@ -309,9 +315,7 @@ final class PackageController extends Controller
                 ]);
 
                 // Si la membresía tiene beneficios de shake, crear pedido de regalo
-                if (($membership->is_benefit_shake ?? false) && ($membership->shake_quantity ?? 0) > 0) {
-                    $giftOrderId = $this->createGiftShakeOrder($userId, $request->user(), (int) $membership->shake_quantity, $package->name);
-                }
+                // El canje de shakes se realiza bajo demanda; aquí solo se registran las cantidades disponibles.
             }
 
             // Crear el UserPackage usando transacción
@@ -376,6 +380,8 @@ final class PackageController extends Controller
                         'discipline_name' => $membershipData->discipline->name ?? null,
                         'total_free_classes' => $membershipData->total_free_classes,
                         'remaining_free_classes' => $membershipData->remaining_free_classes,
+                        'total_free_shakes' => $membershipData->total_free_shakes,
+                        'remaining_free_shakes' => $membershipData->remaining_free_shakes,
                         'expiry_date' => $membershipData->expiry_date?->format('Y-m-d'),
                         'status' => $membershipData->status,
                     ];
@@ -403,6 +409,209 @@ final class PackageController extends Controller
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al comprar el paquete',
+                'datoAdicional' => $th->getMessage()
+            ], 200);
+        }
+    }
+
+    /**
+     * Canjear un shake gratuito asociado a una membresía del usuario autenticado.
+     */
+    public function redeemMembershipShake(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_membership_id' => 'required|integer|exists:user_memberships,id',
+                'quantity' => 'sometimes|integer|min:1|max:10',
+                'drink_id' => 'nullable|integer|exists:drinks,id',
+                'drink_name' => 'sometimes|string|max:255',
+                'drink_combination' => 'required|array|min:1',
+                'ingredients_info' => 'sometimes|array',
+                'special_instructions' => 'sometimes|string|max:500',
+                'delivery_method' => 'sometimes|string|in:pickup,delivery',
+            ]);
+
+            /** @var \App\Models\User|null $user */
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => [
+                        'reason' => 'unauthenticated'
+                    ]
+                ], 401);
+            }
+
+            $membership = UserMembership::where('id', $request->integer('user_membership_id'))
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$membership) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No se encontró la membresía indicada para este usuario',
+                    'datoAdicional' => [
+                        'reason' => 'membership_not_found'
+                    ]
+                ], 200);
+            }
+
+            if ($membership->status !== 'active') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'La membresía no está activa',
+                    'datoAdicional' => [
+                        'reason' => 'membership_inactive',
+                        'status' => $membership->status
+                    ]
+                ], 200);
+            }
+
+            if ($membership->expiry_date && $membership->expiry_date->isPast()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'La membresía se encuentra expirada',
+                    'datoAdicional' => [
+                        'reason' => 'membership_expired',
+                        'expiry_date' => $membership->expiry_date->toDateString()
+                    ]
+                ], 200);
+            }
+
+            if ($membership->remaining_free_shakes <= 0) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes shakes gratuitos por canjear',
+                    'datoAdicional' => [
+                        'reason' => 'no_shakes_available'
+                    ]
+                ], 200);
+            }
+
+            $quantity = $request->integer('quantity', 1);
+
+            if ($quantity > $membership->remaining_free_shakes) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes suficientes shakes pendientes para canjear esta cantidad',
+                    'datoAdicional' => [
+                        'reason' => 'insufficient_shakes',
+                        'requested' => $quantity,
+                        'available' => $membership->remaining_free_shakes
+                    ]
+                ], 200);
+            }
+
+            $drinkName = $request->string('drink_name')->value() ?: 'Shake Personalizado';
+            $drinkCombination = $request->input('drink_combination', []);
+            $ingredientsInfo = $request->input('ingredients_info', $drinkCombination);
+            $specialInstructions = $request->string('special_instructions')->value();
+            $deliveryMethod = $request->string('delivery_method')->value() ?: 'pickup';
+
+            $drinkId = $request->integer('drink_id');
+
+            $membership->loadMissing('membership');
+
+            $order = DB::transaction(function () use (
+                $user,
+                $membership,
+                $quantity,
+                $drinkName,
+                $drinkCombination,
+                $ingredientsInfo,
+                $specialInstructions,
+                $deliveryMethod,
+                $drinkId
+            ) {
+                $order = \App\Models\JuiceOrder::create([
+                    'user_id' => $user->id,
+                    'user_name' => trim($user->name ?? '') ?: $user->email,
+                    'user_email' => $user->email,
+                    'subtotal_soles' => 0,
+                    'tax_amount_soles' => 0,
+                    'discount_amount_soles' => 0,
+                    'total_amount_soles' => 0,
+                    'currency' => 'PEN',
+                    'status' => 'pending',
+                    'payment_status' => 'paid',
+                    'delivery_method' => $deliveryMethod,
+                    'notes' => sprintf(
+                        'Canje de shake gratuito por membresía %s (ID: %d)',
+                        $membership->membership->name ?? 'N/A',
+                        $membership->id
+                    ),
+                    'special_instructions' => $specialInstructions,
+                    'payment_method_name' => 'Beneficio de membresía',
+                ]);
+
+                $order->details()->create([
+                    'drink_id' => $drinkId,
+                    'quantity' => $quantity,
+                    'drink_name' => $drinkName,
+                    'drink_combination' => $drinkCombination,
+                    'unit_price_soles' => 0,
+                    'total_price_soles' => 0,
+                    'special_instructions' => $specialInstructions,
+                    'ingredients_info' => $ingredientsInfo,
+                ]);
+
+                $membership->useFreeShakes($quantity);
+
+                return $order;
+            });
+
+            $membership->refresh();
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Shake canjeado exitosamente',
+                'datoAdicional' => [
+                    'juice_order' => [
+                        'id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'status' => $order->status,
+                        'delivery_method' => $order->delivery_method,
+                        'quantity' => $quantity,
+                        'drink_name' => $drinkName,
+                        'drink_combination' => $drinkCombination,
+                        'special_instructions' => $specialInstructions,
+                    ],
+                    'membership' => [
+                        'id' => $membership->id,
+                        'total_free_shakes' => $membership->total_free_shakes,
+                        'used_free_shakes' => $membership->used_free_shakes,
+                        'remaining_free_shakes' => $membership->remaining_free_shakes,
+                    ]
+                ]
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $th) {
+            Log::error('Error al canjear shake de membresía', [
+                'user_id' => Auth::id(),
+                'membership_id' => $request->input('user_membership_id'),
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al canjear shake',
                 'datoAdicional' => $th->getMessage()
             ], 200);
         }
@@ -438,6 +647,9 @@ final class PackageController extends Controller
                         'total_free_classes' => $membership->total_free_classes,
                         'used_free_classes' => $membership->used_free_classes,
                         'remaining_free_classes' => $membership->remaining_free_classes,
+                        'total_free_shakes' => $membership->total_free_shakes,
+                        'used_free_shakes' => $membership->used_free_shakes,
+                        'remaining_free_shakes' => $membership->remaining_free_shakes,
                         'activation_date' => $membership->activation_date->format('Y-m-d'),
                         'expiry_date' => $membership->expiry_date->format('Y-m-d'),
                         'days_remaining' => $membership->days_remaining,
@@ -541,6 +753,8 @@ final class PackageController extends Controller
                     ] : null,
                     'remaining_classes' => $userPackage->remaining_classes,
                     'total_classes' => $userPackage->package->classes_quantity,
+                    'remaining_shakes' => 0,
+                    'total_shakes' => 0,
                     'expiry_date' => $userPackage->expiry_date->format('d \d\e F \d\e Y'),
                     'expiry_date_raw' => $userPackage->expiry_date->format('Y-m-d'),
                     'days_remaining' => $userPackage->days_remaining,
@@ -559,6 +773,8 @@ final class PackageController extends Controller
                     'discipline_name' => $userMembership->discipline->name ?? 'Sin disciplina',
                     'remaining_classes' => $userMembership->remaining_free_classes,
                     'total_classes' => $userMembership->total_free_classes,
+                    'remaining_shakes' => $userMembership->remaining_free_shakes,
+                    'total_shakes' => $userMembership->total_free_shakes,
                     'expiry_date' => $userMembership->expiry_date->format('d \d\e F \d\e Y'),
                     'expiry_date_raw' => $userMembership->expiry_date->format('Y-m-d'),
                     'days_remaining' => $userMembership->days_remaining,
@@ -574,6 +790,7 @@ final class PackageController extends Controller
 
             // Calcular estadísticas
             $totalClassesAvailable = array_sum(array_column($classesData, 'remaining_classes'));
+            $totalShakesAvailable = array_sum(array_column($classesData, 'remaining_shakes'));
             $totalPackages = count(array_filter($classesData, fn($item) => $item['type'] === 'package'));
             $totalMemberships = count(array_filter($classesData, fn($item) => $item['type'] === 'membership'));
 
@@ -585,6 +802,7 @@ final class PackageController extends Controller
                     'classes' => $classesData,
                     'summary' => [
                         'total_classes_available' => $totalClassesAvailable,
+                        'total_shakes_available' => $totalShakesAvailable,
                         'total_packages' => $totalPackages,
                         'total_memberships' => $totalMemberships,
                         'filtered_by_discipline' => $disciplineId ? true : false,

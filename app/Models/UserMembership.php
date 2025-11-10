@@ -80,6 +80,9 @@ class UserMembership extends Model
         'total_free_classes',
         'used_free_classes',
         'remaining_free_classes',
+        'total_free_shakes',
+        'used_free_shakes',
+        'remaining_free_shakes',
         'activation_date',
         'expiry_date',
         'status',
@@ -93,6 +96,9 @@ class UserMembership extends Model
         'total_free_classes' => 'integer',
         'used_free_classes' => 'integer',
         'remaining_free_classes' => 'integer',
+        'total_free_shakes' => 'integer',
+        'used_free_shakes' => 'integer',
+        'remaining_free_shakes' => 'integer',
     ];
 
     /**
@@ -180,6 +186,14 @@ class UserMembership extends Model
     }
 
     /**
+     * Check if the membership has free shakes available.
+     */
+    public function getHasFreeShakesAttribute(): bool
+    {
+        return $this->remaining_free_shakes > 0;
+    }
+
+    /**
      * Check if this membership can be used for a specific discipline.
      */
     public function canUseForDiscipline(int $disciplineId): bool
@@ -227,6 +241,44 @@ class UserMembership extends Model
 
         return true;
     }
+
+    /**
+     * Use free shakes from this membership.
+     */
+    public function useFreeShakes(int $shakes = 1): bool
+    {
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        if ($this->expiry_date && $this->expiry_date->isPast()) {
+            return false;
+        }
+
+        if ($this->remaining_free_shakes < $shakes) {
+            return false;
+        }
+
+        $this->increment('used_free_shakes', $shakes);
+        $this->decrement('remaining_free_shakes', $shakes);
+
+        return true;
+    }
+
+    /**
+     * Refund free shakes to this membership.
+     */
+    public function refundFreeShakes(int $shakes = 1): bool
+    {
+        $this->increment('remaining_free_shakes', $shakes);
+
+        if ($this->used_free_shakes >= $shakes) {
+            $this->decrement('used_free_shakes', $shakes);
+        }
+
+        return true;
+    }
+
 
     /**
      * Activate the membership.

@@ -108,6 +108,7 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
     Route::post('/me', [PackageController::class, 'packageMe'])->name('me');
     Route::post('/me/create', [PackageController::class, 'packageMeCreate'])->name('meCreate');
     Route::post('/me/vigent', [PackageController::class, 'packageMeVigent'])->name('packageMeVigent');
+    Route::post('/me/redeem-shake', [PackageController::class, 'redeemMembershipShake'])->name('redeemShake');
 });
 // Fin paquetes
 
@@ -178,6 +179,7 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
     Route::post('/base-drinks', [DrinkController::class, 'baseDrinks'])->name('base-drinks');
     Route::post('/flavor-drinks', [DrinkController::class, 'flavorDrinks'])->name('flavor-drinks');
     Route::post('/type-drinks', [DrinkController::class, 'typeDrinks'])->name('type-drinks');
+    Route::post('/shakes/available', [DrinkController::class, 'availableMembershipShakes'])->name('available-shakes');
     // Carrito shakes
     Route::post('/cart/add', [DrinkController::class, 'addToCart'])->name('add-to-cart');
     Route::post('/cart/show', [DrinkController::class, 'showToCart'])->name('show-to-cart');
