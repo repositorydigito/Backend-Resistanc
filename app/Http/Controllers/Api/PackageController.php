@@ -442,7 +442,7 @@ final class PackageController extends Controller
                     'datoAdicional' => [
                         'reason' => 'unauthenticated'
                     ]
-                ], 401);
+                ], 200);
             }
 
             $membership = UserMembership::where('id', $request->integer('user_membership_id'))
@@ -520,7 +520,7 @@ final class PackageController extends Controller
 
             $membership->loadMissing('membership');
 
-            $order = DB::transaction(function () use (
+            $result = DB::transaction(function () use (
                 $user,
                 $membership,
                 $quantity,
@@ -531,6 +531,19 @@ final class PackageController extends Controller
                 $deliveryMethod,
                 $drinkId
             ) {
+                $lockedMembership = UserMembership::where('id', $membership->id)
+                    ->where('user_id', $user->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$lockedMembership) {
+                    throw new \RuntimeException('membership_not_found');
+                }
+
+                if ($lockedMembership->remaining_free_shakes < $quantity) {
+                    throw new \RuntimeException('insufficient_shakes');
+                }
+
                 $order = \App\Models\JuiceOrder::create([
                     'user_id' => $user->id,
                     'user_name' => trim($user->name ?? '') ?: $user->email,
@@ -545,11 +558,14 @@ final class PackageController extends Controller
                     'delivery_method' => $deliveryMethod,
                     'notes' => sprintf(
                         'Canje de shake gratuito por membresía %s (ID: %d)',
-                        $membership->membership->name ?? 'N/A',
-                        $membership->id
+                        $lockedMembership->membership->name ?? 'N/A',
+                        $lockedMembership->id
                     ),
                     'special_instructions' => $specialInstructions,
                     'payment_method_name' => 'Beneficio de membresía',
+                    'is_membership_redeem' => true,
+                    'user_membership_id' => $lockedMembership->id,
+                    'redeemed_shakes_quantity' => $quantity,
                 ]);
 
                 $order->details()->create([
@@ -563,12 +579,23 @@ final class PackageController extends Controller
                     'ingredients_info' => $ingredientsInfo,
                 ]);
 
-                $membership->useFreeShakes($quantity);
+                if (!$lockedMembership->useFreeShakes($quantity)) {
+                    throw new \RuntimeException('consume_failed');
+                }
 
-                return $order;
+                $order->load('details');
+                $lockedMembership->refresh();
+
+                return [
+                    'order' => $order,
+                    'membership' => $lockedMembership,
+                ];
             });
 
-            $membership->refresh();
+            /** @var \App\Models\JuiceOrder $order */
+            $order = $result['order'];
+            /** @var UserMembership $membership */
+            $membership = $result['membership'];
 
             return response()->json([
                 'exito' => true,
@@ -584,12 +611,15 @@ final class PackageController extends Controller
                         'drink_name' => $drinkName,
                         'drink_combination' => $drinkCombination,
                         'special_instructions' => $specialInstructions,
+                        'is_membership_redeem' => (bool) $order->is_membership_redeem,
                     ],
                     'membership' => [
                         'id' => $membership->id,
                         'total_free_shakes' => $membership->total_free_shakes,
                         'used_free_shakes' => $membership->used_free_shakes,
                         'remaining_free_shakes' => $membership->remaining_free_shakes,
+                        'redeemed_quantity' => $quantity,
+                        'expiry_date' => $membership->expiry_date?->format('Y-m-d'),
                     ]
                 ]
             ], 200);
@@ -599,6 +629,50 @@ final class PackageController extends Controller
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Datos de entrada inválidos',
                 'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\RuntimeException $e) {
+            $reason = $e->getMessage();
+
+            if ($reason === 'insufficient_shakes') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'La cantidad de shakes solicitada ya no está disponible',
+                    'datoAdicional' => [
+                        'reason' => $reason,
+                    ]
+                ], 200);
+            }
+
+            if ($reason === 'membership_not_found') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'La membresía seleccionada ya no está disponible',
+                    'datoAdicional' => [
+                        'reason' => $reason,
+                    ]
+                ], 200);
+            }
+
+            if ($reason === 'consume_failed') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No se pudo aplicar el canje de la membresía',
+                    'datoAdicional' => [
+                        'reason' => $reason,
+                    ]
+                ], 200);
+            }
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'No se pudo completar el canje del shake',
+                'datoAdicional' => [
+                    'reason' => $reason,
+                ]
             ], 200);
         } catch (\Throwable $th) {
             Log::error('Error al canjear shake de membresía', [

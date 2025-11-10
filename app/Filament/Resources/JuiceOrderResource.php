@@ -56,6 +56,15 @@ class JuiceOrderResource extends Resource
                             ->disabled()
                             ->email()
                             ->maxLength(255),
+
+                        Forms\Components\Toggle::make('is_membership_redeem')
+                            ->label('Pedido por canje')
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('redeemed_shakes_quantity')
+                            ->label('Shakes canjeados')
+                            ->numeric()
+                            ->disabled(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Estado del Pedido')
@@ -146,6 +155,23 @@ class JuiceOrderResource extends Resource
                     })
                     ->sortable(),
 
+                Tables\Columns\IconColumn::make('is_membership_redeem')
+                    ->label('Canje')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-gift')
+                    ->falseIcon('heroicon-o-credit-card')
+                    ->trueColor('success')
+                    ->falseColor('gray')
+                    ->tooltip(fn (JuiceOrder $record): string => $record->is_membership_redeem ? 'Pedido generado por canje de membresía' : 'Pedido regular'),
+
+                Tables\Columns\TextColumn::make('redeemed_shakes_quantity')
+                    ->label('Shakes')
+                    ->alignCenter()
+                    ->sortable()
+                    ->badge()
+                    ->color(fn ($state): string => (int) $state > 0 ? 'success' : 'gray')
+                    ->formatStateUsing(fn ($state): string => (int) $state > 0 ? (string) $state : '-'),
+
                 Tables\Columns\TextColumn::make('total_amount_soles')
                     ->label('Total')
                     ->money('PEN')
@@ -184,6 +210,19 @@ class JuiceOrderResource extends Resource
                         'delivered' => 'Entregado',
                         'cancelled' => 'Cancelado',
                     ]),
+
+                Tables\Filters\TernaryFilter::make('is_membership_redeem')
+                    ->label('Pedidos por canje')
+                    ->placeholder('Todos')
+                    ->trueLabel('Solo canje')
+                    ->falseLabel('Sin canje')
+                    ->queries(
+                        true: fn (Builder $query) => $query->where('is_membership_redeem', true),
+                        false: fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                            ->whereNull('is_membership_redeem')
+                            ->orWhere('is_membership_redeem', false)),
+                        blank: fn (Builder $query) => $query,
+                    ),
 
                 Tables\Filters\Filter::make('created_at')
                     ->form([

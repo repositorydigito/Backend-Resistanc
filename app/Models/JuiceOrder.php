@@ -18,6 +18,9 @@ class JuiceOrder extends Model
         'currency',
         'status',
         'payment_status',
+        'is_membership_redeem',
+        'user_membership_id',
+        'redeemed_shakes_quantity',
         'delivery_method',
         'estimated_ready_at',
         'ready_at',
@@ -34,6 +37,8 @@ class JuiceOrder extends Model
         'tax_amount_soles' => 'decimal:2',
         'discount_amount_soles' => 'decimal:2',
         'total_amount_soles' => 'decimal:2',
+        'is_membership_redeem' => 'boolean',
+        'redeemed_shakes_quantity' => 'integer',
         'estimated_ready_at' => 'datetime',
         'ready_at' => 'datetime',
         'delivered_at' => 'datetime',
@@ -56,6 +61,14 @@ class JuiceOrder extends Model
    {
        return $this->hasMany(JuiceOrderDetail::class);
    }
+
+    /**
+     * Membership used for this order (if applicable).
+     */
+    public function userMembership()
+    {
+        return $this->belongsTo(UserMembership::class);
+    }
 
     /**
      * Generate unique order number

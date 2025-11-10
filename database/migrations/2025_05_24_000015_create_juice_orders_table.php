@@ -50,6 +50,23 @@ return new class extends Migration
             $table->timestamp('ready_at')->nullable()->comment('Momento en que el pedido estuvo listo');
             $table->timestamp('delivered_at')->nullable()->comment('Momento de entrega del pedido');
 
+            $table->boolean('is_membership_redeem')
+                ->default(false)
+
+                ->comment('Indica si el pedido proviene de un canje de membresía');
+
+            $table->foreignId('user_membership_id')
+                ->nullable()
+
+                ->constrained('user_memberships')
+                ->nullOnDelete()
+                ->comment('Membresía del usuario utilizada para el canje');
+
+            $table->unsignedInteger('redeemed_shakes_quantity')
+                ->default(0)
+                ->comment('Cantidad de shakes canjeados en este pedido');
+
+
             $table->timestamps();
         });
     }

@@ -181,7 +181,7 @@ final class DrinkController extends Controller
                     'datoAdicional' => [
                         'reason' => 'unauthenticated'
                     ],
-                ], 401);
+                ], 200);
             }
 
             $memberships = UserMembership::with(['membership', 'sourcePackage'])
@@ -713,14 +713,16 @@ final class DrinkController extends Controller
     public function confirmCart(Request $request): JsonResponse
     {
         try {
-            // Validar datos de entrada
             $request->validate([
                 'notes' => 'nullable|string|max:500',
+                'membership_redeem' => 'sometimes|array',
+                'membership_redeem.user_membership_id' => 'required_with:membership_redeem|integer|exists:user_memberships,id',
+                'membership_redeem.quantity' => 'nullable|integer|min:1',
             ]);
 
-            $userId = $request->user()->id;
+            $user = $request->user();
+            $userId = $user->id;
 
-            // Buscar el carrito activo del usuario
             $cart = JuiceCartCodes::where('user_id', $userId)
                 ->whereNull('juice_order_id')
                 ->where('is_used', false)
@@ -737,26 +739,106 @@ final class DrinkController extends Controller
                 ], 200);
             }
 
-            // Obtener datos del usuario para historial
-            $user = $request->user();
+            $membershipPayload = $request->input('membership_redeem', []);
+            $isMembershipRedeem = is_array($membershipPayload) && isset($membershipPayload['user_membership_id']);
+            $requestedMembership = null;
+            $redeemQuantity = null;
+            $cartQuantity = $cart->drinks->sum(fn($drink) => $drink->pivot->quantity);
 
-            return DB::transaction(function () use ($request, $cart, $user, $userId) {
-                // Calcular totales
+            if ($isMembershipRedeem) {
+                $membershipId = (int) $membershipPayload['user_membership_id'];
+                $requestedMembership = UserMembership::where('id', $membershipId)
+                    ->where('user_id', $userId)
+                    ->first();
+
+                if (!$requestedMembership) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'No se encontró la membresía indicada para este usuario',
+                        'datoAdicional' => [
+                            'reason' => 'membership_not_found',
+                        ],
+                    ], 200);
+                }
+
+                $redeemQuantity = (int) ($membershipPayload['quantity'] ?? $cartQuantity);
+
+                if ($redeemQuantity <= 0) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'Debes especificar una cantidad válida para canjear',
+                        'datoAdicional' => [
+                            'reason' => 'invalid_quantity',
+                        ],
+                    ], 200);
+                }
+
+                if ($redeemQuantity > $requestedMembership->remaining_free_shakes) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'La cantidad de shakes solicitada ya no está disponible para canje',
+                        'datoAdicional' => [
+                            'reason' => 'insufficient_shakes',
+                            'available' => $requestedMembership->remaining_free_shakes,
+                            'requested' => $redeemQuantity,
+                        ],
+                    ], 200);
+                }
+
+                if ($redeemQuantity > $cartQuantity) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'La cantidad a canjear excede los ítems del carrito actual',
+                        'datoAdicional' => [
+                            'reason' => 'quantity_exceeds_cart',
+                            'cart_quantity' => $cartQuantity,
+                            'requested' => $redeemQuantity,
+                        ],
+                    ], 200);
+                }
+            }
+
+            $result = DB::transaction(function () use (
+                $request,
+                $cart,
+                $user,
+                $userId,
+                $isMembershipRedeem,
+                $requestedMembership,
+                $redeemQuantity
+            ) {
+                $lockedMembership = null;
+
+                if ($isMembershipRedeem) {
+                    $lockedMembership = UserMembership::where('id', $requestedMembership->id)
+                        ->where('user_id', $userId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$lockedMembership) {
+                        throw new \RuntimeException('membership_not_found');
+                    }
+
+                    if ($lockedMembership->remaining_free_shakes < $redeemQuantity) {
+                        throw new \RuntimeException('insufficient_shakes');
+                    }
+                }
+
                 $subtotal = 0;
-                $orderDetails = [];
+                $orderDetailsPayload = [];
 
                 foreach ($cart->drinks as $drink) {
-                    // Asegurar que el precio se calcule correctamente
                     $drink->load(['basesdrinks', 'flavordrinks', 'typesdrinks']);
 
-                    // Generar información histórica de la bebida
                     $drinkName = $drink->drink_name ?: $drink->generateDrinkName();
                     $drinkCombination = $drink->drink_combination ?: $drink->generateDrinkCombination();
 
-                    // Calcular precio correctamente
                     $unitPrice = $drink->total_price_soles ?: $drink->calculateTotalPrice();
 
-                    // Si el precio sigue siendo 0, calcular manualmente
                     if ($unitPrice == 0) {
                         $unitPrice = $drink->base_price_soles + $drink->typesdrinks->sum('price');
                     }
@@ -764,9 +846,14 @@ final class DrinkController extends Controller
                     $quantity = $drink->pivot->quantity;
                     $totalPrice = $unitPrice * $quantity;
 
+                    if ($isMembershipRedeem) {
+                        $unitPrice = 0;
+                        $totalPrice = 0;
+                    }
+
                     $subtotal += $totalPrice;
 
-                    $orderDetails[] = [
+                    $orderDetailsPayload[] = [
                         'drink_id' => $drink->id,
                         'quantity' => $quantity,
                         'drink_name' => $drinkName,
@@ -777,79 +864,153 @@ final class DrinkController extends Controller
                             'bases' => $drink->basesdrinks->pluck('name')->toArray(),
                             'flavors' => $drink->flavordrinks->pluck('name')->toArray(),
                             'types' => $drink->typesdrinks->pluck('name')->toArray(),
-                        ]
+                        ],
                     ];
                 }
 
-                // Calcular totales finales
-                $totalAmount = $subtotal;
-
-                // Crear la orden (contra entrega y ya pagado)
-                $order = \App\Models\JuiceOrder::create([
+                $orderData = [
                     'user_id' => $userId,
                     'user_name' => $user->name,
                     'user_email' => $user->email,
                     'subtotal_soles' => $subtotal,
                     'tax_amount_soles' => 0,
                     'discount_amount_soles' => 0,
-                    'total_amount_soles' => $totalAmount,
+                    'total_amount_soles' => $isMembershipRedeem ? 0 : $subtotal,
                     'currency' => 'PEN',
                     'status' => 'pending',
-                    'payment_status' => 'paid', // Ya viene pagado desde la app
-                    'delivery_method' => 'pickup', // Todos contra entrega
+                    'payment_status' => 'paid',
+                    'delivery_method' => 'pickup',
                     'notes' => $request->notes,
-                    'payment_method_name' => 'App',
-                    'estimated_ready_at' => now()->addMinutes(count($orderDetails) * 5), // 5 min por bebida
-                ]);
+                    'payment_method_name' => $isMembershipRedeem ? 'Beneficio de membresía' : 'App',
+                    'special_instructions' => null,
+                ];
 
-                // Crear detalles de la orden
-                foreach ($orderDetails as $detail) {
+                if ($isMembershipRedeem) {
+                    $orderData['subtotal_soles'] = 0;
+                    $orderData['is_membership_redeem'] = true;
+                    $orderData['user_membership_id'] = $lockedMembership->id;
+                    $orderData['redeemed_shakes_quantity'] = $redeemQuantity;
+                }
+
+                $order = \App\Models\JuiceOrder::create($orderData);
+
+                foreach ($orderDetailsPayload as $detail) {
                     $order->details()->create($detail);
                 }
 
-                // Marcar carrito como usado y asociar con la orden
+                if ($isMembershipRedeem) {
+                    if (!$lockedMembership->useFreeShakes($redeemQuantity)) {
+                        throw new \RuntimeException('consume_failed');
+                    }
+                    $lockedMembership->refresh();
+                }
+
                 $cart->update([
                     'is_used' => true,
                     'juice_order_id' => $order->id,
                 ]);
 
-                // Cargar relaciones para la respuesta
                 $order->load(['details', 'user']);
 
-                return response()->json([
-                    'exito' => true,
-                    'codMensaje' => 1,
-                    'mensajeUsuario' => 'Pedido confirmado exitosamente',
-                    'datoAdicional' => [
-                        'order' => [
-                            'id' => $order->id,
-                            'order_number' => $order->order_number,
-                            'status' => $order->status,
-                            'payment_status' => $order->payment_status,
-                            'subtotal_soles' => $order->subtotal_soles,
-                            'total_amount_soles' => $order->total_amount_soles,
-                            'estimated_ready_at' => $order->estimated_ready_at->format('Y-m-d H:i:s'),
-                            'delivery_method' => $order->delivery_method,
-                            'created_at' => $order->created_at->format('Y-m-d H:i:s'),
-                        ],
-                        'items' => $order->details->map(function ($detail) {
-                            return [
-                                'drink_name' => $detail->drink_name,
-                                'quantity' => $detail->quantity,
-                                'unit_price' => $detail->unit_price_soles,
-                                'total_price' => $detail->total_price_soles,
-                                'special_instructions' => $detail->special_instructions,
-                            ];
-                        }),
-                        'cart' => [
-                            'code' => $cart->code,
-                            'is_used' => true,
-                        ]
-                    ],
-                ], 200);
-
+                return [
+                    'order' => $order,
+                    'membership' => $isMembershipRedeem ? $lockedMembership : null,
+                ];
             });
 
+            $cart->refresh();
+            $order = $result['order'];
+            $consumedMembership = $result['membership'];
+
+            $responseData = [
+                'order' => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'payment_status' => $order->payment_status,
+                    'subtotal_soles' => $order->subtotal_soles,
+                    'total_amount_soles' => $order->total_amount_soles,
+                    'estimated_ready_at' => $order->estimated_ready_at?->format('Y-m-d H:i:s'),
+                    'delivery_method' => $order->delivery_method,
+                    'created_at' => $order->created_at->format('Y-m-d H:i:s'),
+                    'is_membership_redeem' => (bool) $order->is_membership_redeem,
+                ],
+                'items' => $order->details->map(function ($detail) {
+                    return [
+                        'drink_name' => $detail->drink_name,
+                        'quantity' => $detail->quantity,
+                        'unit_price' => $detail->unit_price_soles,
+                        'total_price' => $detail->total_price_soles,
+                        'special_instructions' => $detail->special_instructions,
+                    ];
+                }),
+                'cart' => [
+                    'code' => $cart->code,
+                    'is_used' => true,
+                ],
+            ];
+
+            if ($consumedMembership) {
+                $responseData['membership_redeem'] = [
+                    'user_membership_id' => $consumedMembership->id,
+                    'redeemed_quantity' => $redeemQuantity,
+                    'total_shakes' => $consumedMembership->total_free_shakes,
+                    'used_shakes' => $consumedMembership->used_free_shakes,
+                    'remaining_shakes' => $consumedMembership->remaining_free_shakes,
+                    'expiry_date' => $consumedMembership->expiry_date?->format('Y-m-d'),
+                ];
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Pedido confirmado exitosamente',
+                'datoAdicional' => $responseData,
+            ], 200);
+        } catch (\RuntimeException $e) {
+            $reason = $e->getMessage();
+
+            if ($reason === 'insufficient_shakes') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes suficientes shakes disponibles para completar el canje',
+                    'datoAdicional' => [
+                        'reason' => $reason,
+                    ],
+                ], 200);
+            }
+
+            if ($reason === 'membership_not_found') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'La membresía seleccionada ya no está disponible',
+                    'datoAdicional' => [
+                        'reason' => $reason,
+                    ],
+                ], 200);
+            }
+
+            if ($reason === 'consume_failed') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No se pudo aplicar el canje de la membresía',
+                    'datoAdicional' => [
+                        'reason' => $reason,
+                    ],
+                ], 200);
+            }
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'No se pudo confirmar el pedido',
+                'datoAdicional' => [
+                    'reason' => $reason,
+                ],
+            ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'exito' => false,
@@ -999,69 +1160,5 @@ final class DrinkController extends Controller
         }
     }
 
-    /**
-     * Actualizar estado de una orden (solo para admin)
-     */
-    public function updateOrderStatus(Request $request): JsonResponse
-    {
-        try {
-            // Validar que el usuario tenga permisos de admin
-            if (!$request->user()->hasRole('admin')) {
-                return response()->json([
-                    'exito' => false,
-                    'codMensaje' => 0,
-                    'mensajeUsuario' => 'No tienes permisos para realizar esta acción',
-                    'datoAdicional' => null,
-                ], 403);
-            }
 
-            $request->validate([
-                'order_id' => 'required|integer|exists:juice_orders,id',
-                'status' => 'required|string|in:pending,confirmed,preparing,ready,delivered,cancelled',
-                'notes' => 'nullable|string|max:500',
-            ]);
-
-            $orderId = $request->integer('order_id');
-            $order = \App\Models\JuiceOrder::findOrFail($orderId);
-
-            // Actualizar estado
-            $order->updateStatus($request->status);
-
-            // Agregar notas si se proporcionan
-            if ($request->filled('notes')) {
-                $currentNotes = $order->notes ? $order->notes . "\n" : '';
-                $order->update([
-                    'notes' => $currentNotes . "[" . now()->format('Y-m-d H:i:s') . "] " . $request->notes
-                ]);
-            }
-
-            return response()->json([
-                'exito' => true,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Estado de orden actualizado exitosamente',
-                'datoAdicional' => [
-                    'order' => [
-                        'id' => $order->id,
-                        'order_number' => $order->order_number,
-                        'status' => $order->status,
-                        'updated_at' => $order->updated_at->format('Y-m-d H:i:s'),
-                    ]
-                ],
-            ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 2,
-                'mensajeUsuario' => 'Datos de entrada inválidos',
-                'datoAdicional' => $e->errors(),
-            ], 200);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 0,
-                'mensajeUsuario' => 'Error al actualizar el estado de la orden',
-                'datoAdicional' => null,
-            ], 200);
-        }
-    }
 }

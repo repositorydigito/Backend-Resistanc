@@ -192,7 +192,7 @@ Route::prefix('drinks')->name('drinks.')->middleware('auth:sanctum')->group(func
 Route::prefix('juice-orders')->name('juice-orders.')->middleware('auth:sanctum')->group(function () {
     Route::post('/my-orders', [DrinkController::class, 'myOrders'])->name('my-orders');
     Route::post('/show', [DrinkController::class, 'showOrder'])->name('show');
-    Route::post('/update-status', [DrinkController::class, 'updateOrderStatus'])->name('update-status');
+    // Route::post('/update-status', [DrinkController::class, 'updateOrderStatus'])->name('update-status');
 });
 // Fin órdenes de bebidas
 

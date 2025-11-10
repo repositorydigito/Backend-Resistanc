@@ -4,6 +4,7 @@ namespace App\Filament\Resources\UserProfileResource\RelationManagers;
 
 use App\Models\ClassSchedule;
 use App\Models\Drink;
+use App\Models\DrinkUser;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\FormsComponent;
@@ -30,7 +31,9 @@ class DrinkUserRelationManager extends RelationManager
                 Forms\Components\Select::make('drink_id')
                     ->label('Bebida')
                     ->required()
-                    ->options(Drink::all()->pluck('name', 'id'))
+                    ->options(fn () => Drink::orderBy('drink_name')
+                        ->pluck('drink_name', 'id')
+                        ->toArray())
                     ->preload()
                     ->searchable(),
 
@@ -59,37 +62,48 @@ class DrinkUserRelationManager extends RelationManager
                                 $time = $schedule->start_time;
 
                                 return [$schedule->id => "{$className} - {$date} {$time} ({$studioName})"];
-                            });
+                            })
+                            ->toArray();
                     })
                     ->searchable()
                     ->preload()
                     ->nullable()
                     ->helperText('Solo se muestran las clases donde tienes reservas activas'),
+
+                Forms\Components\Select::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'pending' => 'Pendiente',
+                        'completed' => 'Completado',
+                        'cancelled' => 'Cancelado',
+                    ])
+                    ->default('pending')
+                    ->required(),
             ]);
     }
 
-      public function table(Table $table): Table
+    public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('name')
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['drink', 'classSchedule']))
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('drink.drink_name')
                     ->label('Bebida')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('pivot.quantity')
+                Tables\Columns\TextColumn::make('quantity')
                     ->label('Cantidad')
                     ->sortable()
                     ->badge()
                     ->color('primary'),
 
-                Tables\Columns\TextColumn::make('price')
+                Tables\Columns\TextColumn::make('drink.total_price_soles')
                     ->label('Precio unitario')
                     ->money('PEN')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('pivot.classschedule_id')
+                Tables\Columns\TextColumn::make('classschedule_id')
                     ->label('Clase')
                     ->formatStateUsing(function ($state) {
                         if (!$state) return 'Sin clase asignada';
@@ -107,10 +121,11 @@ class DrinkUserRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('total_price')
                     ->label('Total')
-                    ->formatStateUsing(function ($record) {
-                        return 'S/. ' . number_format($record->price * $record->pivot->quantity, 2);
+                    ->formatStateUsing(function (DrinkUser $record) {
+                        $unit = $record->drink?->total_price_soles ?? 0;
+                        return 'S/. ' . number_format($unit * $record->quantity, 2);
                     })
-                    ->sortable(false), // Deshabilitamos el sort para columnas calculadas
+                    ->sortable(false),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -129,7 +144,7 @@ class DrinkUserRelationManager extends RelationManager
                     })
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('pivot.created_at')
+                Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha de pedido')
                     ->date()
                     ->sortable(),
@@ -137,17 +152,23 @@ class DrinkUserRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\Filter::make('with_class')
                     ->label('Con clase asignada')
-                    ->query(fn($query) => $query->wherePivotNotNull('classschedule_id')),
+                    ->query(fn (Builder $query) => $query->whereNotNull('classschedule_id')),
 
                 Tables\Filters\Filter::make('without_class')
                     ->label('Sin clase asignada')
-                    ->query(fn($query) => $query->wherePivotNull('classschedule_id')),
+                    ->query(fn (Builder $query) => $query->whereNull('classschedule_id')),
 
                 Tables\Filters\Filter::make('recent')
                     ->label('Últimos 7 días')
-                    ->query(function ($query) {
-                        return $query->wherePivot('created_at', '>=', now()->subDays(7));
-                    }),
+                    ->query(fn (Builder $query) => $query->where('created_at', '>=', now()->subDays(7))),
+
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'pending' => 'Pendiente',
+                        'completed' => 'Completado',
+                        'cancelled' => 'Cancelado',
+                    ]),
             ])
             ->headerActions([
                 // Tables\Actions\AttachAction::make()
@@ -230,24 +251,34 @@ class DrinkUserRelationManager extends RelationManager
                                         $time = $schedule->start_time;
 
                                         return [$schedule->id => "{$className} - {$date} {$time} ({$studioName})"];
-                                    });
+                                    })
+                                    ->toArray();
                             })
                             ->searchable()
                             ->nullable(),
+
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->options([
+                                'pending' => 'Pendiente',
+                                'completed' => 'Completado',
+                                'cancelled' => 'Cancelado',
+                            ])
+                            ->required(),
                     ])
-                    ->fillForm(function ($record): array {
+                    ->fillForm(function (DrinkUser $record): array {
                         return [
-                            'quantity' => $record->pivot->quantity,
-                            'classschedule_id' => $record->pivot->classschedule_id,
+                            'quantity' => $record->quantity,
+                            'classschedule_id' => $record->classschedule_id,
+                            'status' => $record->status,
                         ];
                     })
                     ->action(function ($record, array $data): void {
-                        $user = $this->getOwnerRecord();
-
-                        $user->drinks()->updateExistingPivot($record->id, [
+                        /** @var DrinkUser $record */
+                        $record->update([
                             'quantity' => $data['quantity'],
                             'classschedule_id' => $data['classschedule_id'],
-                            'updated_at' => now(),
+                            'status' => $data['status'],
                         ]);
                     }),
 
@@ -282,7 +313,7 @@ class DrinkUserRelationManager extends RelationManager
             ->bulkActions([
 
             ])
-            ->defaultSort('drink_user.created_at', 'desc') // ✅ Usar el nombre completo de la tabla pivot
+            ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('No hay bebidas asignadas')
             ->emptyStateDescription('Haz clic en "Añadir Bebida" para comenzar.');
     }
