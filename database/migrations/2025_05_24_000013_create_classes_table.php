@@ -30,6 +30,8 @@ return new class extends Migration
 
             $table->string('color_hex')->nullable()->comment('Color de la clase');
 
+            $table->integer('available_seats')->default(3)->comment('Número de butacas disponibles para reserva en la clase');
+
             // Relaciones
             $table->foreignId('discipline_id')->constrained('disciplines')->onDelete('restrict');
 

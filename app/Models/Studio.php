@@ -22,6 +22,7 @@ final class Studio extends Model
         'addressing',
         'row',
         'column',
+        'zigzag',
     ];
 
     protected $casts = [

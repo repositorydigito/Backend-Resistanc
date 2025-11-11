@@ -72,7 +72,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProductTagSeeder::class);
 
         // Productos
-        $this->call(ProductSeeder::class);
+        // $this->call(ProductSeeder::class);
 
         // Opciones de variacion del producto
         $this->call(ProductOptionTypeSeeder::class);

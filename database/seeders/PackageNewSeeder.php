@@ -46,7 +46,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageOne->disciplines()->sync([1, 3, 4]);
+        $packageOne->disciplines()->sync([1, 4]);
 
         // 8 clases FIT
         $packageEight = Package::create([
@@ -79,7 +79,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageEight->disciplines()->sync([1, 3, 4]);
+        $packageEight->disciplines()->sync([1, 4]);
 
         // 12 clases FIT
         $packageTwelve = Package::create([
@@ -112,7 +112,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageTwelve->disciplines()->sync([1, 3, 4]);
+        $packageTwelve->disciplines()->sync([1, 4]);
 
         // 16 clases FIT
         $packageSixteen = Package::create([
@@ -145,7 +145,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageSixteen->disciplines()->sync([1, 3, 4]);
+        $packageSixteen->disciplines()->sync([1, 4]);
 
         // 20 clases FIT
         $packageTwenty = Package::create([
@@ -178,7 +178,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageTwenty->disciplines()->sync([1, 3, 4]);
+        $packageTwenty->disciplines()->sync([1, 4]);
 
         // 24 clases FIT (con membership_id = 2)
         $packageTwentyFour = Package::create([
@@ -211,7 +211,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageTwentyFour->disciplines()->sync([1, 3, 4]);
+        $packageTwentyFour->disciplines()->sync([1, 4]);
 
         // 40 clases FIT (con membership_id = 3)
         $packageForty = Package::create([
@@ -244,7 +244,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageForty->disciplines()->sync([1, 3, 4]);
+        $packageForty->disciplines()->sync([1, 4]);
 
         // ========== PAQUETES FIT CON MEMBRESÍA ==========
 
@@ -314,7 +314,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageEightMembership->disciplines()->sync([1, 3, 4]);
+        $packageEightMembership->disciplines()->sync([1, 4]);
 
         // 12 clases FIT - Membresía
         $packageTwelveMembership = Package::create([
@@ -348,7 +348,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageTwelveMembership->disciplines()->sync([1, 3, 4]);
+        $packageTwelveMembership->disciplines()->sync([1, 4]);
 
         // 16 clases FIT - Membresía
         $packageSixteenMembership = Package::create([
@@ -382,7 +382,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageSixteenMembership->disciplines()->sync([1, 3, 4]);
+        $packageSixteenMembership->disciplines()->sync([1, 4]);
 
         // 20 clases FIT - Membresía
         $packageTwentyMembership = Package::create([
@@ -416,7 +416,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageTwentyMembership->disciplines()->sync([1, 3, 4]);
+        $packageTwentyMembership->disciplines()->sync([1, 4]);
 
         // 24 clases FIT - Membresía (con membership_id = 2)
         $packageTwentyFourMembership = Package::create([
@@ -450,7 +450,7 @@ class PackageNewSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $packageTwentyFourMembership->disciplines()->sync([1, 3, 4]);
+        $packageTwentyFourMembership->disciplines()->sync([1, 4]);
 
         // 40 clases FIT - Membresía (con membership_id = 3)
         $packageFortyMembership = Package::create([
@@ -484,7 +484,7 @@ class PackageNewSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
         ]);
-        $packageFortyMembership->disciplines()->sync([1, 3, 4]);
+        $packageFortyMembership->disciplines()->sync([1, 4]);
 
         // ========== PAQUETES REFORMER CON MEMBRESÍA ==========
 

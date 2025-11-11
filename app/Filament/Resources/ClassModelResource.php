@@ -86,6 +86,12 @@ class ClassModelResource extends Resource
                             ->required()
                             ->maxLength(255),
 
+                        Forms\Components\TextInput::make('available_seats')
+                            ->label('Cantidad de Butacas Disponibles para Reserva')
+                            ->required()
+                            ->numeric()
+                            ->default(3),
+
 
                         // Forms\Components\Select::make('instructor_id')
                         //     ->searchable()
@@ -155,7 +161,9 @@ class ClassModelResource extends Resource
                                 'active' => 'Activo',
                                 'inactive' => 'Inactivo',
                                 'draft' => 'Borrador',
-                            ]),
+                            ])
+                            ->default('active')
+                            ->required(),
                         // Forms\Components\TextInput::make('music_genre')
                         //     ->label('Género Musical')
                         //     ->maxLength(100),

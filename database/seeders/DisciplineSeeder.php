@@ -60,7 +60,7 @@ class DisciplineSeeder extends Seeder
                 'equipment_required' => json_encode(['mat', 'pelota', 'banda_elastica', 'bloque']),
                 'difficulty_level' => 'beginner',
                 'calories_per_hour_avg' => 250,
-                'is_active' => true,
+                'is_active' => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

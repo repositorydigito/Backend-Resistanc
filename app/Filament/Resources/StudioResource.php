@@ -64,6 +64,11 @@ class StudioResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpanFull(),
+
+                                Forms\Components\Toggle::make('zigzag')
+                                    ->label('¿Mapa en zigzag?')
+                                    ->default(false)
+                                    ->required(),
                             ]),
 
                         // Sección 2: Capacidad y distribución
@@ -221,7 +226,7 @@ class StudioResource extends Resource
                 //     }),
 
 
-                 Tables\Columns\TextColumn::make('disciplines')
+                Tables\Columns\TextColumn::make('disciplines')
                     ->label('Disciplinas')
                     ->getStateUsing(function ($record) {
                         return $record->disciplines->pluck('name')->join(', ');

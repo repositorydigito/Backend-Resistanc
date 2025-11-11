@@ -55,6 +55,7 @@ final class HomeController extends Controller
             ->get();
 
         $disciplines = Discipline::orderBy('order', 'asc')
+            ->where('is_active', true)
             ->get();
 
 

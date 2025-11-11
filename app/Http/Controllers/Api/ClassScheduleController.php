@@ -327,12 +327,14 @@ final class ClassScheduleController extends Controller
                     'max_capacity' => $classSchedule->studio->max_capacity,
                     'rows' => $classSchedule->studio->row,
                     'columns' => $classSchedule->studio->column,
-                    'location' => $classSchedule->studio->location
+                    'location' => $classSchedule->studio->location,
+                    'is_zigzag' => (bool) $classSchedule->studio->zigzag,
                 ],
                 'class' => [
                     'id' => $classSchedule->class->id,
                     'name' => $classSchedule->class->name,
                     'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
+                    'available_seats' => $classSchedule->class->available_seats,
                     'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : asset('default/icon.png'),
                     'discipline_img_seat' => $classSchedule->class->discipline->image_seat ? asset('storage/') . '/' . $classSchedule->class->discipline->image_seat : asset('default/icon.png'),
                 ],
@@ -386,6 +388,7 @@ final class ClassScheduleController extends Controller
         try {
 
             $classSchedule = ClassSchedule::findOrFail($request->class_schedule_id);
+            $classSchedule->loadMissing('class');
             // Log inicial para debugging
 
             Log::info('Iniciando reserva de asientos', [
@@ -433,16 +436,18 @@ final class ClassScheduleController extends Controller
             $classScheduleSeatIds = $request->validated()['class_schedule_seat_ids'];
             $minutesToExpire = $request->validated()['minutes_to_expire'];
 
-            // ✅ Validar que no se reserven más de 3 asientos por reserva
-            if (count($classScheduleSeatIds) > 3) {
+            $maxSeatsPerReservation = $classSchedule->class?->available_seats;
+
+            // ✅ Validar que no se reserven más asientos que los permitidos para esta clase
+            if ($maxSeatsPerReservation !== null && count($classScheduleSeatIds) > $maxSeatsPerReservation) {
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
-                    'mensajeUsuario' => 'No puedes reservar más de 3 asientos por reserva',
+                    'mensajeUsuario' => 'No puedes reservar más asientos de los permitidos para esta clase',
                     'datoAdicional' => [
                         'reason' => 'max_seats_exceeded',
                         'requested_seats' => count($classScheduleSeatIds),
-                        'max_allowed' => 3
+                        'max_allowed' => $maxSeatsPerReservation
                     ]
                 ], 200);
             }

@@ -35,7 +35,7 @@ final class ClassModel extends Model
         'img_url',
         'icon_url',
         'color_hex',
-
+        'available_seats',
         // Relaciones
         'discipline_id',
         // 'instructor_id',
@@ -47,6 +47,7 @@ final class ClassModel extends Model
         'duration_minutes' => 'integer',
         'max_participants' => 'integer',
         'is_featured' => 'boolean',
+        'available_seats' => 'integer',
     ];
 
     /**

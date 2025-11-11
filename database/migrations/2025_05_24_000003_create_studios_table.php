@@ -23,6 +23,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->comment('Indica si la sala está activa');
             $table->unsignedTinyInteger('capacity_per_seat')->nullable()->comment('Capacidad por asiento');
 
+            $table->boolean('zigzag')->default(false)->comment('Para ver si el mapa es en zigzag o no');
+
             // Informacion de las butacas
             $table->enum('addressing', ['right_to_left', 'left_to_right', 'center'])->default('center')->comment('Dirección de la sala');
             $table->integer('row')->nullable()->comment('Fila de la sala');

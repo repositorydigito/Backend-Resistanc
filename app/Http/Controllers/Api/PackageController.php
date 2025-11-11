@@ -27,7 +27,8 @@ final class PackageController extends Controller
         try {
             // Validar parámetros opcionales
             $request->validate([
-                'discipline_id' => 'sometimes|integer|exists:disciplines,id',
+                'discipline_id' => 'sometimes',
+                'discipline_group' => 'sometimes|string',
                 'mode_type' => 'sometimes|string|in:online,presencial,híbrido', // Ajusta según tus valores
                 'commercial_type' => 'sometimes|string|in:promotion,regular', // Ajusta según tus valores
                 'is_membresia' => 'sometimes|boolean',
@@ -49,11 +50,52 @@ final class PackageController extends Controller
                                 ->where('end_date', '>=', now());
                         });
                 })
-                ->when($request->filled('discipline_id'), function ($query) use ($request) {
-                    $query->whereHas('disciplines', function ($subQuery) use ($request) {
-                        $subQuery->where('disciplines.id', $request->integer('discipline_id'));
-                    });
-                })
+                ->when(
+                    $request->filled('discipline_id') || $request->filled('discipline_group'),
+                    function ($query) use ($request) {
+                        $disciplineIds = collect();
+
+                        if ($request->filled('discipline_group')) {
+                            $disciplineIds = collect(explode('-', $request->string('discipline_group')))
+                                ->filter()
+                                ->filter(fn ($value) => is_numeric($value))
+                                ->map(fn ($value) => (int) $value)
+                                ->unique()
+                                ->values();
+                        } elseif ($request->filled('discipline_id')) {
+                            $rawDiscipline = $request->input('discipline_id');
+
+                            if (is_array($rawDiscipline)) {
+                                $disciplineIds = collect($rawDiscipline);
+                            } else {
+                                $disciplineIds = collect(preg_split('/[,\-]/', (string) $rawDiscipline));
+                            }
+
+                            $disciplineIds = $disciplineIds
+                                ->filter()
+                                ->filter(fn ($value) => is_numeric($value))
+                                ->map(fn ($value) => (int) $value)
+                                ->unique()
+                                ->values();
+                        }
+
+                        if ($disciplineIds->isEmpty()) {
+                            return;
+                        }
+
+                        $disciplineIds->each(function (int $disciplineId) use ($query) {
+                            $query->whereHas('disciplines', function ($subQuery) use ($disciplineId) {
+                                $subQuery->where('disciplines.id', $disciplineId);
+                            });
+                        });
+
+                        if ($request->filled('discipline_group')) {
+                            $query->whereDoesntHave('disciplines', function ($subQuery) use ($disciplineIds) {
+                                $subQuery->whereNotIn('disciplines.id', $disciplineIds->all());
+                            });
+                        }
+                    }
+                )
                 ->when($request->filled('mode_type'), function ($query) use ($request) {
                     $query->where('mode_type', $request->string('mode_type'));
                 })
@@ -137,7 +179,8 @@ final class PackageController extends Controller
     {
 
         $request->validate([
-            'discipline_id' => 'sometimes|exists:disciplines,id'
+            'discipline_id' => 'sometimes',
+            'discipline_group' => 'sometimes|string'
         ]);
 
         try {
@@ -151,11 +194,46 @@ final class PackageController extends Controller
                 ->orderBy('expiry_date', 'desc')
                 ->with(['package:id,name,slug,description,classes_quantity,price_soles', 'package.disciplines:id,name,display_name,icon_url,color_hex,order']);
 
-            // Filtro por disciplina (nuevo)
-            if ($request->filled('discipline_id')) {
-                $query->whereHas('package.disciplines', function ($q) use ($request) {
-                    $q->where('disciplines.id', $request->integer('discipline_id'));
-                });
+            if ($request->filled('discipline_id') || $request->filled('discipline_group')) {
+                $disciplineIds = collect();
+
+                if ($request->filled('discipline_group')) {
+                    $disciplineIds = collect(explode('-', $request->string('discipline_group')))
+                        ->filter()
+                        ->filter(fn ($value) => is_numeric($value))
+                        ->map(fn ($value) => (int) $value)
+                        ->unique()
+                        ->values();
+                } elseif ($request->filled('discipline_id')) {
+                    $rawDiscipline = $request->input('discipline_id');
+
+                    if (is_array($rawDiscipline)) {
+                        $disciplineIds = collect($rawDiscipline);
+                    } else {
+                        $disciplineIds = collect(preg_split('/[,\-]/', (string) $rawDiscipline));
+                    }
+
+                    $disciplineIds = $disciplineIds
+                        ->filter()
+                        ->filter(fn ($value) => is_numeric($value))
+                        ->map(fn ($value) => (int) $value)
+                        ->unique()
+                        ->values();
+                }
+
+                if ($disciplineIds->isNotEmpty()) {
+                    $disciplineIds->each(function (int $disciplineId) use ($query) {
+                        $query->whereHas('package.disciplines', function ($q) use ($disciplineId) {
+                            $q->where('disciplines.id', $disciplineId);
+                        });
+                    });
+
+                    if ($request->filled('discipline_group')) {
+                        $query->whereDoesntHave('package.disciplines', function ($q) use ($disciplineIds) {
+                            $q->whereNotIn('disciplines.id', $disciplineIds->all());
+                        });
+                    }
+                }
             }
 
             $userPackages = $query
@@ -751,7 +829,8 @@ final class PackageController extends Controller
         try {
             // Validar parámetros opcionales
             $request->validate([
-                'discipline_id' => 'sometimes|integer|exists:disciplines,id'
+                'discipline_id' => 'sometimes',
+                'discipline_group' => 'sometimes|string'
             ]);
 
             $user = request()->user();
@@ -766,7 +845,34 @@ final class PackageController extends Controller
             }
 
             $userId = $user->id;
-            $disciplineId = $request->integer('discipline_id');
+
+            $disciplineIds = collect();
+
+            if ($request->filled('discipline_group')) {
+                $disciplineIds = collect(explode('-', $request->string('discipline_group')))
+                    ->filter()
+                    ->filter(fn ($value) => is_numeric($value))
+                    ->map(fn ($value) => (int) $value)
+                    ->unique()
+                    ->values();
+            } elseif ($request->filled('discipline_id')) {
+                $rawDiscipline = $request->input('discipline_id');
+
+                if (is_array($rawDiscipline)) {
+                    $disciplineIds = collect($rawDiscipline);
+                } else {
+                    $disciplineIds = collect(preg_split('/[,\-]/', (string) $rawDiscipline));
+                }
+
+                $disciplineIds = $disciplineIds
+                    ->filter()
+                    ->filter(fn ($value) => is_numeric($value))
+                    ->map(fn ($value) => (int) $value)
+                    ->unique()
+                    ->values();
+            }
+
+            $hasDisciplineFilter = $disciplineIds->isNotEmpty();
 
             // Obtener paquetes activos y vigentes del usuario
             $userPackagesQuery = $user->userPackages()
@@ -777,10 +883,18 @@ final class PackageController extends Controller
                 ->where('activation_date', '<=', now()); // Solo paquetes activados
 
             // Aplicar filtro por disciplina si se proporciona
-            if ($disciplineId) {
-                $userPackagesQuery->whereHas('package.disciplines', function ($query) use ($disciplineId) {
-                    $query->where('disciplines.id', $disciplineId);
+            if ($hasDisciplineFilter) {
+                $disciplineIds->each(function (int $disciplineId) use ($userPackagesQuery) {
+                    $userPackagesQuery->whereHas('package.disciplines', function ($query) use ($disciplineId) {
+                        $query->where('disciplines.id', $disciplineId);
+                    });
                 });
+
+                if ($request->filled('discipline_group')) {
+                    $userPackagesQuery->whereDoesntHave('package.disciplines', function ($query) use ($disciplineIds) {
+                        $query->whereNotIn('disciplines.id', $disciplineIds->all());
+                    });
+                }
             }
 
             $userPackages = $userPackagesQuery->get();
@@ -794,8 +908,8 @@ final class PackageController extends Controller
                 ->where('activation_date', '<=', now()); // Solo membresías activadas
 
             // Aplicar filtro por disciplina si se proporciona
-            if ($disciplineId) {
-                $userMembershipsQuery->where('discipline_id', $disciplineId);
+            if ($hasDisciplineFilter) {
+                $userMembershipsQuery->whereIn('discipline_id', $disciplineIds->all());
             }
 
             $userMemberships = $userMembershipsQuery->get();
@@ -879,8 +993,8 @@ final class PackageController extends Controller
                         'total_shakes_available' => $totalShakesAvailable,
                         'total_packages' => $totalPackages,
                         'total_memberships' => $totalMemberships,
-                        'filtered_by_discipline' => $disciplineId ? true : false,
-                        'discipline_id' => $disciplineId,
+                        'filtered_by_discipline' => $hasDisciplineFilter,
+                        'discipline_ids' => $hasDisciplineFilter ? $disciplineIds->all() : null,
                     ]
                 ]
             ], 200);
