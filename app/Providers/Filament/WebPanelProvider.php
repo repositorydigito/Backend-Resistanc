@@ -27,6 +27,7 @@ class WebPanelProvider extends PanelProvider
             ->id('web')
             ->path('web')
             ->login(Login::class)
+            ->favicon(asset('/image/pages/icon_nuevo.png')) // Icono pages
             ->brandLogo(asset('image/logos/resistance-logo-two.png'))
             ->darkModeBrandLogo(asset('image/logos/resistance-logo-two-white.png'))
             ->colors([

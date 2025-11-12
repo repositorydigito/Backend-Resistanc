@@ -22,6 +22,8 @@ class ClientSeeder extends Seeder
         $clienteRole = Role::firstOrCreate(['name' => 'Cliente']);
 
         // Clientes
+        $clients = [];
+
         $user_cliente = User::create([
             'name' => 'Melany Mercedes',
             'email' => 'aizencode@gmail.com',
@@ -30,30 +32,37 @@ class ClientSeeder extends Seeder
         ]);
         $this->createUserProfile($user_cliente, 'Melany', 'Mercedes');
         $user_cliente->assignRole($clienteRole);
+        $clients[] = $user_cliente;
 
         $user_cliente_two = User::create([
             'name' => 'Maryory Martines',
             'email' => 'maryory@gmail.com',
             'password' => bcrypt('123456789'),
+            'email_verified_at' => now(),
         ]);
         $this->createUserProfile($user_cliente_two, 'Maryory', 'Martines');
         $user_cliente_two->assignRole($clienteRole);
+        $clients[] = $user_cliente_two;
 
         $user_cliente_three = User::create([
             'name' => 'Ana Lucía Torres',
             'email' => 'ana@gmail.com',
             'password' => bcrypt('123456789'),
+            'email_verified_at' => now(),
         ]);
         $this->createUserProfile($user_cliente_three, 'Ana Lucía', 'Torres');
         $user_cliente_three->assignRole($clienteRole);
+        $clients[] = $user_cliente_three;
 
         $user_cliente_four = User::create([
             'name' => 'Maria Molina',
             'email' => 'maria@gmail.com',
             'password' => bcrypt('123456789'),
+            'email_verified_at' => now(),
         ]);
         $this->createUserProfile($user_cliente_four, 'Maria', 'Molina');
         $user_cliente_four->assignRole($clienteRole);
+        $clients[] = $user_cliente_four;
         // Fin clientes
 
         // cliente con metodo de pago
@@ -83,36 +92,44 @@ class ClientSeeder extends Seeder
         // cliente paquete
         $package1 = Package::firstWhere('id', 1); // o el id si lo conoces
         $package2 = Package::firstWhere('id', 2);
-        UserPackage::create([
-            'user_id' => $user_cliente->id,
-            'package_id' => $package1->id,
-            'package_code' => 'PCK-001',
-            'used_classes' => 0,
-            'remaining_classes' => $package1->classes_quantity,
-            'amount_paid_soles' => $package1->price_soles,
-            'currency' => 'PEN',
-            'purchase_date' => now(),
-            'activation_date' => now(),
-            'expiry_date' => $package1->duration_in_months
-                ? now()->addMonths($package1->duration_in_months)
-                : now()->addDays($package1->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
-            'status' => 'active',
-        ]);
-        UserPackage::create([
-            'user_id' => $user_cliente->id,
-            'package_id' => $package2->id,
-            'package_code' => 'PCK-002',
-            'used_classes' => 0,
-            'remaining_classes' => $package2->classes_quantity,
-            'amount_paid_soles' => $package2->price_soles,
-            'currency' => 'PEN',
-            'purchase_date' => now(),
-            'activation_date' => now(),
-            'expiry_date' => $package2->duration_in_months
-                ? now()->addMonths($package2->duration_in_months)
-                : now()->addDays($package2->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
-            'status' => 'active',
-        ]);
+
+        foreach ($clients as $client) {
+            if ($package1) {
+                UserPackage::create([
+                    'user_id' => $client->id,
+                    'package_id' => $package1->id,
+                    'package_code' => sprintf('PCK-001-%03d', $client->id),
+                    'used_classes' => 0,
+                    'remaining_classes' => $package1->classes_quantity,
+                    'amount_paid_soles' => $package1->price_soles,
+                    'currency' => 'PEN',
+                    'purchase_date' => now(),
+                    'activation_date' => now(),
+                    'expiry_date' => $package1->duration_in_months
+                        ? now()->copy()->addMonths($package1->duration_in_months)
+                        : now()->copy()->addDays($package1->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
+                    'status' => 'active',
+                ]);
+            }
+
+            if ($package2) {
+                UserPackage::create([
+                    'user_id' => $client->id,
+                    'package_id' => $package2->id,
+                    'package_code' => sprintf('PCK-002-%03d', $client->id),
+                    'used_classes' => 0,
+                    'remaining_classes' => $package2->classes_quantity,
+                    'amount_paid_soles' => $package2->price_soles,
+                    'currency' => 'PEN',
+                    'purchase_date' => now(),
+                    'activation_date' => now(),
+                    'expiry_date' => $package2->duration_in_months
+                        ? now()->copy()->addMonths($package2->duration_in_months)
+                        : now()->copy()->addDays($package2->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
+                    'status' => 'active',
+                ]);
+            }
+        }
         // Fin cliente paquete
     }
 

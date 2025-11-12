@@ -4,12 +4,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Resistance - Entrenamiento Premium y Clases Fitness</title>
+    <title>Rsistanc - Entrenamiento Premium y Clases Fitness</title>
     <meta name="description"
-        content="Resistance ofrece entrenamiento premium, clases de fitness y servicios de bienestar. Únete a nuestra comunidad y transforma tu vida.">
+        content="Rsistanc ofrece entrenamiento premium, clases de fitness y servicios de bienestar. Únete a nuestra comunidad y transforma tu vida.">
     <meta name="keywords"
         content="fitness, entrenamiento, gym, resistencia, clases grupales, bienestar, salud, ejercicio">
-    <meta name="author" content="Resistance">
+    <meta name="author" content="Rsistanc">
 
     <!-- Favicon y iconos para múltiples dispositivos -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('image/pages/icon_nuevo.png') }}">
@@ -20,19 +20,18 @@
     <meta name="theme-color" content="#ffffff">
 
     <!-- Open Graph para redes sociales -->
-    <meta property="og:title" content="Resistance - Entrenamiento Premium y Clases Fitness">
+    <meta property="og:title" content="Rsistanc - Entrenamiento Premium y Clases Fitness">
     <meta property="og:description"
-        content="Únete a Resistance y transforma tu vida con nuestro entrenamiento premium y clases de fitness.">
+        content="Únete a Rsistanc y transforma tu vida con nuestro entrenamiento premium y clases de fitness.">
     <meta property="og:image" content="{{ asset('image/logos/og-image.jpg') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Resistance">
-
+    <meta property="og:site_name" content="Rsistanc">
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Resistance - Entrenamiento Premium y Clases Fitness">
+    <meta name="twitter:title" content="Rsistanc - Entrenamiento Premium y Clases Fitness">
     <meta name="twitter:description"
-        content="Únete a Resistance y transforma tu vida con nuestro entrenamiento premium y clases de fitness.">
+        content="Únete a Rsistanc y transforma tu vida con nuestro entrenamiento premium y clases de fitness.">
     <meta name="twitter:image" content="{{ asset('image/logos/twitter-image.jpg') }}">
 
     <!-- Verificación de Google -->
