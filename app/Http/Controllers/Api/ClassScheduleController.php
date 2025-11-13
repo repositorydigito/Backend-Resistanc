@@ -11,6 +11,7 @@ use App\Models\ClassSchedule;
 use App\Models\ClassScheduleSeat;
 use App\Models\FootwearReservation;
 use App\Models\WaitingClass;
+use App\Mail\WaitingListSeatAssignedMailable;
 use App\Services\PackageValidationService;
 use Error;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * @tags Horarios de Clases
@@ -211,8 +213,12 @@ final class ClassScheduleController extends Controller
             $userId = Auth::id();
 
             // Obtener asientos del usuario en este horario
+            // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
             $userSeats = ClassScheduleSeat::where('class_schedules_id', $schedule->id)
-                ->where('user_id', $userId)
+                ->where(function($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                          ->orWhere('user_waiting_id', $userId);
+                })
                 ->with('seat')
                 ->get();
 
@@ -287,6 +293,16 @@ final class ClassScheduleController extends Controller
                     'message' => 'Horario de clase no disponible',
                     'data' => null
                 ], 422);
+            }
+
+            // Verificar si el horario está en progreso
+            if ($classSchedule->status === 'in_progress') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'El horario se encuentra en curso',
+                    'datoAdicional' => null
+                ], 200);
             }
 
             // Cargar las relaciones necesarias
@@ -718,16 +734,25 @@ final class ClassScheduleController extends Controller
                 // Obtener el horario de clase y verificar su estado
                 $classSchedule = ClassSchedule::findOrFail($classScheduleId);
 
-                // Verificar que el horario está en estado 'scheduled'
+                // 🚫 Solo se puede cancelar si el horario está en estado 'scheduled'
                 if ($classSchedule->status !== 'scheduled') {
+                    $message = 'No se pueden liberar asientos. ';
+
+                    if ($classSchedule->status === 'in_progress') {
+                        $message .= 'El horario se encuentra en curso';
+                    } elseif ($classSchedule->status === 'cancelled') {
+                        $message .= 'El horario ha sido cancelado';
+                    } elseif ($classSchedule->status === 'completed') {
+                        $message .= 'El horario ya ha finalizado';
+                    } else {
+                        $message .= 'El horario no está programado';
+                    }
+
                     return response()->json([
                         'exito' => false,
                         'codMensaje' => 0,
-                        'mensajeUsuario' => 'No se pueden liberar asientos en un horario que no está programado',
-                        'datoAdicional' => [
-                            'current_status' => $classSchedule->status,
-                            'required_status' => 'scheduled'
-                        ]
+                        'mensajeUsuario' => $message,
+                        'datoAdicional' => null
                     ], 200);
                 }
 
@@ -879,6 +904,150 @@ final class ClassScheduleController extends Controller
                     ]);
                 }
 
+                // 🎯 Asignar automáticamente asientos liberados a usuarios de la lista de espera
+                $assignedFromWaitingList = [];
+                $packageValidationService = new PackageValidationService();
+
+                // Cargar relaciones necesarias del horario
+                $classSchedule->load(['class.discipline', 'instructor', 'studio']);
+                $disciplineId = $classSchedule->class->discipline_id;
+
+                // Obtener usuarios en lista de espera ordenados por fecha de creación (FIFO)
+                $waitingListUsers = WaitingClass::where('class_schedules_id', $classScheduleId)
+                    ->whereIn('status', ['waiting', 'notified'])
+                    ->with(['user', 'userPackage'])
+                    ->orderBy('created_at', 'asc')
+                    ->orderBy('id', 'asc')
+                    ->lockForUpdate()
+                    ->get();
+
+                // Obtener asientos disponibles (los que acabamos de liberar)
+                $availableSeats = ClassScheduleSeat::where('class_schedules_id', $classScheduleId)
+                    ->where('status', 'available')
+                    ->whereIn('id', collect($releasedSeats)->pluck('class_schedule_seat_id')->toArray())
+                    ->with('seat')
+                    ->lockForUpdate()
+                    ->get();
+
+                // Asignar asientos a usuarios de la lista de espera
+                foreach ($availableSeats as $seat) {
+                    if ($waitingListUsers->isEmpty()) {
+                        break; // No hay más usuarios en lista de espera
+                    }
+
+                    // Obtener el siguiente usuario de la lista de espera
+                    $waitingUser = $waitingListUsers->shift();
+
+                    // Verificar que el usuario no tenga ya un asiento asignado en este horario
+                    $existingAssignment = ClassScheduleSeat::where('class_schedules_id', $classScheduleId)
+                        ->where(function($q) use ($waitingUser) {
+                            $q->where('user_id', $waitingUser->user_id)
+                              ->orWhere('user_waiting_id', $waitingUser->user_id);
+                        })
+                        ->whereIn('status', ['reserved', 'occupied'])
+                        ->where('id', '!=', $seat->id)
+                        ->first();
+
+                    if ($existingAssignment) {
+                        // Este usuario ya tiene un asiento, saltar y continuar con el siguiente
+                        $waitingListUsers->prepend($waitingUser); // Devolver al inicio de la cola
+                        continue;
+                    }
+
+                    // Consumir clase del usuario (priorizando membresías sobre paquetes)
+                    $consumptionResult = $packageValidationService->consumeClassFromBestOption($waitingUser->user_id, $disciplineId);
+
+                    if (!$consumptionResult['success']) {
+                        // No se pudo consumir la clase, saltar este usuario
+                        Log::warning('No se pudo consumir clase para usuario de lista de espera', [
+                            'waiting_user_id' => $waitingUser->id,
+                            'user_id' => $waitingUser->user_id,
+                            'schedule_id' => $classScheduleId,
+                            'error' => $consumptionResult['message'] ?? 'Error desconocido'
+                        ]);
+                        $waitingListUsers->prepend($waitingUser); // Devolver al inicio de la cola
+                        continue;
+                    }
+
+                    // Determinar qué tipo de consumo se realizó
+                    $userPackageId = null;
+                    $userMembershipId = null;
+
+                    if (isset($consumptionResult['consumed_membership'])) {
+                        $userMembershipId = $consumptionResult['consumed_membership']['id'];
+                    } elseif (isset($consumptionResult['consumed_package'])) {
+                        $userPackageId = $consumptionResult['consumed_package']['id'];
+                    }
+
+                    // Calcular fecha de expiración (10 minutos después del inicio de la clase)
+                    $scheduledDate = $classSchedule->scheduled_date instanceof \Carbon\Carbon
+                        ? $classSchedule->scheduled_date->format('Y-m-d')
+                        : $classSchedule->scheduled_date;
+                    $startDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $classSchedule->start_time);
+                    $expiresAt = $startDateTime->copy()->addMinutes(10);
+
+                    // Asignar el asiento al usuario de la lista de espera
+                    // Asignar tanto user_id como user_waiting_id para que el usuario pueda ver su reserva
+                    $seat->update([
+                        'user_id' => $waitingUser->user_id,
+                        'user_waiting_id' => $waitingUser->user_id,
+                        'status' => 'reserved',
+                        'reserved_at' => now(),
+                        'expires_at' => $expiresAt,
+                        'user_package_id' => $userPackageId,
+                        'user_membership_id' => $userMembershipId
+                    ]);
+
+                    // Actualizar el estado de la lista de espera a 'confirmed'
+                    $waitingUser->update([
+                        'status' => 'confirmed'
+                    ]);
+
+                    // Cargar relaciones para el correo
+                    $waitingUser->load('user');
+                    $seat->load('seat');
+
+                    // Enviar correo al usuario
+                    try {
+                        Mail::to($waitingUser->user->email)->send(
+                            new WaitingListSeatAssignedMailable(
+                                $waitingUser->user,
+                                $classSchedule,
+                                $seat->seat?->seat_number
+                            )
+                        );
+                    } catch (\Exception $emailException) {
+                        Log::error('Error al enviar correo a usuario de lista de espera', [
+                            'user_id' => $waitingUser->user_id,
+                            'email' => $waitingUser->user->email,
+                            'error' => $emailException->getMessage()
+                        ]);
+                    }
+
+                    $assignedFromWaitingList[] = [
+                        'class_schedule_seat_id' => $seat->id,
+                        'seat_id' => $seat->seats_id,
+                        'seat_number' => $seat->seat?->seat_number ?? null,
+                        'row' => $seat->seat?->row ?? null,
+                        'column' => $seat->seat?->column ?? null,
+                        'waiting_user_id' => $waitingUser->id,
+                        'user_id' => $waitingUser->user_id,
+                        'user_name' => $waitingUser->user->name ?? 'N/A',
+                        'user_email' => $waitingUser->user->email ?? 'N/A',
+                        'assigned_at' => now()->toISOString(),
+                        'consumption_type' => $userMembershipId ? 'membership' : 'package',
+                        'consumption_details' => $consumptionResult['consumed_membership'] ?? $consumptionResult['consumed_package'] ?? null
+                    ];
+
+                    Log::info('Asiento asignado automáticamente desde lista de espera', [
+                        'class_schedule_id' => $classScheduleId,
+                        'waiting_user_id' => $waitingUser->id,
+                        'user_id' => $waitingUser->user_id,
+                        'seat_id' => $seat->id,
+                        'seat_number' => $seat->seat?->seat_number
+                    ]);
+                }
+
                 // Preparar respuesta exitosa
                 return response()->json([
                     'exito' => true,
@@ -897,6 +1066,13 @@ final class ClassScheduleController extends Controller
                             'total_reservations_canceled' => $canceledFootwearCount,
                             'canceled_by_size' => $canceledFootwearBySize,
                             'note' => 'Las reservas de zapatos fueron canceladas automáticamente al liberar los asientos'
+                        ],
+                        'waiting_list_assignments' => [
+                            'total_assigned' => count($assignedFromWaitingList),
+                            'assigned_users' => $assignedFromWaitingList,
+                            'note' => count($assignedFromWaitingList) > 0
+                                ? 'Los asientos liberados fueron asignados automáticamente a usuarios de la lista de espera. Se enviaron correos de notificación.'
+                                : 'No había usuarios en lista de espera o no se pudieron asignar los asientos.'
                         ]
                     ]
                 ], 200);
@@ -944,7 +1120,11 @@ final class ClassScheduleController extends Controller
                 'instructor',
                 'studio',
                 'classScheduleSeats' => function ($q) use ($userId, $request) {
-                    $q->where('user_id', $userId)->with('seat');
+                    // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
+                    $q->where(function($query) use ($userId) {
+                        $query->where('user_id', $userId)
+                              ->orWhere('user_waiting_id', $userId);
+                    })->with('seat');
                     // Si se especifica status (uno o varios), filtrar los asientos
                     if ($request->filled('status')) {
                         $statuses = is_array($request->status) ? $request->status : [$request->status];
@@ -953,7 +1133,11 @@ final class ClassScheduleController extends Controller
                 }
             ])
                 ->whereHas('classScheduleSeats', function ($q) use ($userId, $request) {
-                    $q->where('user_id', $userId);
+                    // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
+                    $q->where(function($query) use ($userId) {
+                        $query->where('user_id', $userId)
+                              ->orWhere('user_waiting_id', $userId);
+                    });
                     // Si se especifica status (uno o varios), filtrar solo esos asientos
                     if ($request->filled('status')) {
                         $statuses = is_array($request->status) ? $request->status : [$request->status];
@@ -1337,9 +1521,13 @@ final class ClassScheduleController extends Controller
                 ->findOrFail($classScheduleId);
 
             // Obtener todos los asientos reservados por el usuario en este horario
+            // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
             $userSeats = ClassScheduleSeat::with(['seat', 'userPackage.package', 'userMembership.membership'])
                 ->where('class_schedules_id', $classScheduleId)
-                ->where('user_id', $userId)
+                ->where(function($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                          ->orWhere('user_waiting_id', $userId);
+                })
                 ->get();
 
             if ($userSeats->isEmpty()) {

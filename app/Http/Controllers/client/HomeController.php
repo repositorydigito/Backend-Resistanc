@@ -19,7 +19,7 @@ class HomeController extends Controller
 
         $company = Company::first();
         $membresias = Membership::all();
-        $disciplines = Discipline::orderBy('sort_order', 'asc')->get();
+        $disciplines = Discipline::where('is_active', true)->orderBy('sort_order', 'asc')->get();
         $services = Service::orderBy('order', 'asc')->where('is_active', true)->get();
         $faqs = Faq::orderBy('order', 'asc')->where('is_active', true)->get();
 
