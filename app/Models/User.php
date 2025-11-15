@@ -12,6 +12,10 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
+use Laravel\Cashier\Billable;
+
+
+
 /**
  * Usuario principal del sistema RSISTANC
  *
@@ -41,7 +45,7 @@ use Spatie\Permission\Traits\HasRoles;
 final class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, Billable;
 
     /**
      * The attributes that are mass assignable.
@@ -104,22 +108,21 @@ final class User extends Authenticatable implements MustVerifyEmail
 
             // Format as XXXX-XXXX-XXXX-XXXX
             $code = substr($digits, 0, 4) . '-' .
-                   substr($digits, 4, 4) . '-' .
-                   substr($digits, 8, 4) . '-' .
-                   substr($digits, 12, 4);
+                substr($digits, 4, 4) . '-' .
+                substr($digits, 8, 4) . '-' .
+                substr($digits, 12, 4);
 
             $attempts++;
 
-                        // If we've tried too many times, add a timestamp to ensure uniqueness
+            // If we've tried too many times, add a timestamp to ensure uniqueness
             if ($attempts >= $maxAttempts) {
                 $timestamp = (string) time();
                 $code = substr($digits, 0, 4) . '-' .
-                       substr($digits, 4, 4) . '-' .
-                       substr($digits, 8, 4) . '-' .
-                       substr($timestamp, -4);
+                    substr($digits, 4, 4) . '-' .
+                    substr($digits, 8, 4) . '-' .
+                    substr($timestamp, -4);
                 break;
             }
-
         } while (static::where('code', $code)->exists());
 
         return $code;
@@ -605,5 +608,6 @@ final class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(JuiceOrder::class);
     }
+
 
 }

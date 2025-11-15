@@ -8,6 +8,7 @@ use App\Observers\ProductVariantObserver;
 use App\Models\FootwearLoan;
 use App\Models\User;
 use App\Observers\FootwearLoanObserver;
+use App\Observers\UserObserver;
 
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -32,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // ProductVariant::observe(ProductVariantObserver::class);
         FootwearLoan::observe(FootwearLoanObserver::class);
+        User::observe(UserObserver::class);
 
         // Scramble::configure()
         //     ->withDocumentTransformers(function (OpenApi $openApi) {

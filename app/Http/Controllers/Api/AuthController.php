@@ -66,6 +66,8 @@ final class AuthController extends Controller
                 'password' => Hash::make($validated['password']), // Hash explícito
             ]);
 
+            // $stripeCustomer = $user->createAsStripeCustomer();
+
             // Crear perfil de usuario
             UserProfile::create([
                 'first_name' => $validated['first_name'],
@@ -476,6 +478,10 @@ final class AuthController extends Controller
 
             $user->save();
 
+            if ($user->hasStripeId()) {
+                $user->syncStripeCustomerDetails();
+            }
+
             // Actualizar o crear perfil
             $profileData = collect($validated)->except(['name', 'email'])->toArray();
 
@@ -506,7 +512,6 @@ final class AuthController extends Controller
                 'mensajeUsuario' => 'Perfil actualizado exitosamente',
                 'datoAdicional' => new UserResource($user)
             ], 200);
-
         } catch (ValidationException $e) {
             // Verificar si es error de email duplicado
             if (isset($e->errors()['email']) && str_contains($e->errors()['email'][0], 'unique')) {

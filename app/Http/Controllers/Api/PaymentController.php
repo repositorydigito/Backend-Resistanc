@@ -9,6 +9,8 @@ use DragonCode\Contracts\Cashier\Auth\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Stripe\Exception\ApiErrorException;
+use Stripe\StripeClient;
 
 /**
  * @tags Métodos de Pago
@@ -103,8 +105,9 @@ class PaymentController extends Controller
             ]);
 
             $validator = Validator::make($request->all(), [
-                'payment_type' => 'required|string|in:credit_card,debit_card,bank_transfer,digital_wallet,crypto',
-                'provider' => 'nullable|string|in:visa,mastercard,amex,bcp,interbank,scotiabank,bbva,yape,plin,paypal',
+                'payment_method_id' => 'required_without:payment_type|nullable|string|max:255',
+                'payment_type' => 'required_without:payment_method_id|string|in:credit_card,debit_card,bank_transfer,digital_wallet,crypto',
+                'provider' => 'nullable|string|in:visa,mastercard,amex,bcp,interbank,scotiabank,bbva,yape,plin,paypal,mercadopago',
                 'card_last_four' => 'nullable|string|size:4',
                 'card_brand' => 'nullable|string|max:20',
                 'card_holder_name' => 'nullable|string|max:255',
@@ -132,11 +135,57 @@ class PaymentController extends Controller
                 ], 200);
             }
 
-            $userId = auth()->id();
-            $data = $request->all();
+            $user = $request->user();
+            $userId = $user?->id;
+
+            if (!$userId) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => []
+                ], 401);
+            }
+
+            $data = $validator->validated();
             $data['user_id'] = $userId;
             $data['status'] = 'active';
-            $data['verification_status'] = 'pending';
+            $data['verification_status'] = $data['payment_method_id'] ? 'verified' : 'pending';
+
+            if (!empty($data['payment_method_id'])) {
+                $stripePaymentMethod = $this->retrieveStripePaymentMethod($data['payment_method_id']);
+
+                if (!$stripePaymentMethod || $stripePaymentMethod->type !== 'card' || empty($stripePaymentMethod->card)) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'El método de pago proporcionado no es una tarjeta válida de Stripe',
+                        'datoAdicional' => []
+                    ], 200);
+                }
+
+                $card = $stripePaymentMethod->card;
+                $billingDetails = $stripePaymentMethod->billing_details;
+
+                $formattedBillingAddress = $this->formatStripeAddress($billingDetails->address ?? null);
+                $metadata = $stripePaymentMethod->metadata?->toArray() ?? null;
+
+                $data = array_merge($data, [
+                    'payment_type' => $data['payment_type'] ?? 'credit_card',
+                    'provider' => $data['provider'] ?? ($card->brand ? strtolower($card->brand) : null),
+                    'card_brand' => $card->brand,
+                    'card_last_four' => $card->last4,
+                    'card_holder_name' => $data['card_holder_name'] ?? ($billingDetails->name ?? null),
+                    'card_expiry_month' => $card->exp_month,
+                    'card_expiry_year' => $card->exp_year,
+                    'gateway_token' => $stripePaymentMethod->id,
+                    'gateway_customer_id' => $stripePaymentMethod->customer ?? $user->stripe_id,
+                    'billing_address' => $formattedBillingAddress,
+                    'metadata' => $metadata,
+                ]);
+
+                unset($data['payment_method_id']);
+            }
 
             // Si se marca como predeterminado, desmarcar los demás
             if ($data['is_default'] ?? false) {
@@ -506,5 +555,97 @@ class PaymentController extends Controller
             ], 200); // Código 500 para errores del servidor
         }
 
+    }
+
+    /**
+     * Genera un SetupIntent de Stripe para el usuario autenticado.
+     */
+    public function createStripeIntent(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => []
+                ], 401);
+            }
+
+            $intent = $user->createSetupIntent();
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'SetupIntent generado correctamente',
+                'datoAdicional' => [
+                    'id' => $intent->id,
+                    'client_secret' => $intent->client_secret,
+                    'status' => $intent->status,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al generar SetupIntent', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'No se pudo generar el SetupIntent',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
+    }
+
+    private function retrieveStripePaymentMethod(string $paymentMethodId)
+    {
+        $stripeClient = $this->makeStripeClient();
+
+        try {
+            return $stripeClient->paymentMethods->retrieve($paymentMethodId, []);
+        } catch (ApiErrorException $e) {
+            Log::error('Stripe API error al recuperar payment_method', [
+                'payment_method_id' => $paymentMethodId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function makeStripeClient(): StripeClient
+    {
+        $secret = config('services.stripe.secret');
+
+        if (!$secret) {
+            throw new \RuntimeException('Stripe no está configurado correctamente. Falta services.stripe.secret.');
+        }
+
+        return new StripeClient($secret);
+    }
+
+    private function formatStripeAddress($address): ?array
+    {
+        if (!$address) {
+            return null;
+        }
+
+        $formatted = array_filter([
+            'line1' => $address->line1 ?? null,
+            'line2' => $address->line2 ?? null,
+            'city' => $address->city ?? null,
+            'state' => $address->state ?? null,
+            'postal_code' => $address->postal_code ?? null,
+            'country' => $address->country ?? null,
+        ], function ($value) {
+            return !is_null($value);
+        });
+
+        return $formatted ?: null;
     }
 }

@@ -14,6 +14,7 @@ class UserPaymentMethod extends Model
     protected $fillable = [
         'user_id',
         'payment_type',
+        'provider',
         'card_brand',           // Cambio: provider -> card_brand
         'card_last_four',       // Cambio: account_identifier -> card_last_four
         'card_holder_name',     // ✅ Igual

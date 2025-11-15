@@ -34,10 +34,12 @@ use App\Http\Controllers\Api\StudioController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\JuiceCartCodeController;
 use App\Http\Controllers\Api\MembershipController;
+use App\Http\Controllers\Api\MercardoPagoController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductVariantApiController;
 use App\Http\Controllers\Api\TagController;
 use App\Models\Instructor;
+use Faker\Provider\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Two\FacebookProvider;
@@ -227,6 +229,7 @@ Route::prefix('favorites')->name('favorites.')->middleware('auth:sanctum')->grou
 Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(function () {
     Route::post('/', [PaymentController::class, 'index'])->name('index');
     Route::post('/create', [PaymentController::class, 'store'])->name('store');
+    Route::post('/stripe-intent', [PaymentController::class, 'createStripeIntent'])->name('stripe-intent');
     Route::get('/show/{card}', [PaymentController::class, 'show'])->name('show');
     Route::put('/update/{card}', [PaymentController::class, 'update'])->name('update');
     Route::delete('/destroy/{card}', [PaymentController::class, 'destroy'])->name('destroy');
@@ -303,3 +306,6 @@ Route::prefix('footwear')->name('footwear.')->middleware('auth:sanctum')->group(
     Route::post('/update-reservation', [FootwearController::class, 'updateReservation'])->name('update-reservation');
     Route::post('/cancel-reservation', [FootwearController::class, 'cancelReservation'])->name('cancel-reservation');
 });
+
+
+Route::post('/payment/create',[MercardoPagoController::class,'create'])->name('payment.create');
