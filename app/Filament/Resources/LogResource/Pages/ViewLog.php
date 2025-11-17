@@ -18,3 +18,4 @@ class ViewLog extends ViewRecord
     }
 }
 
+

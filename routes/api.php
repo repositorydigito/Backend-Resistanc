@@ -34,8 +34,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\MercardoPagoController;
 use App\Http\Controllers\Api\PostController;
-
-
+use App\Http\Controllers\Api\UserPayMethodController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -127,3 +126,12 @@ require __DIR__ . '/apisapp/pasarela/api-tarjetas.php';
 
 
 
+// Métodos de pago
+Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [UserPayMethodController::class, 'index'])->name('index');
+    Route::post('/create', [UserPayMethodController::class, 'store'])->name('store');
+    Route::post('/show', [UserPayMethodController::class, 'show'])->name('show');
+    Route::post('/update', [UserPayMethodController::class, 'update'])->name('update');
+    Route::post('/delete', [UserPayMethodController::class, 'destroy'])->name('delete');
+    // Route::post('/destroy', [UserPayMethodController::class, 'destroy'])->name('destroy');
+});

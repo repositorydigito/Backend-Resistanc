@@ -20,18 +20,30 @@ class PaymentController extends Controller
 {
     /**
      * Lista los métodos de pago del usuario autenticado
+     *
+     * @param string $source - 'database' (default) o 'stripe' para obtener directamente desde Stripe
      */
     public function index(Request $request)
     {
         try {
             $userId = FacadesAuth::id();
+            $user = $request->user();
 
             // Validar parámetros de paginación
             $request->validate([
                 'per_page' => 'nullable|integer|min:1|max:50',
-                'page' => 'nullable|integer|min:1'
+                'page' => 'nullable|integer|min:1',
+                'source' => 'nullable|string|in:database,stripe'
             ]);
 
+            $source = $request->input('source', 'database'); // Por defecto desde BD
+
+            // Si se solicita obtener directamente desde Stripe
+            if ($source === 'stripe') {
+                return $this->getPaymentMethodsFromStripe($user, $request);
+            }
+
+            // Método tradicional: desde base de datos
             $query = UserPaymentMethod::where('user_id', $userId)
                 ->where('status', 'active')
                 ->orderBy('is_default', 'desc')
@@ -115,7 +127,8 @@ class PaymentController extends Controller
             $validator = Validator::make($request->all(), [
                 'payment_method_id' => 'required_without:payment_type|nullable|string|max:255',
                 'payment_type' => 'required_without:payment_method_id|string|in:credit_card,debit_card,bank_transfer,digital_wallet,crypto',
-                'provider' => 'nullable|string|in:visa,mastercard,amex,bcp,interbank,scotiabank,bbva,yape,plin,paypal,mercadopago',
+                // Provider es nullable cuando viene de Stripe, ya que se obtiene automáticamente
+                'provider' => 'nullable|string|in:visa,mastercard,amex,discover,diners,jcb,unionpay,bcp,interbank,scotiabank,bbva,yape,plin,paypal,mercadopago',
                 'card_last_four' => 'nullable|string|size:4',
                 'card_brand' => 'nullable|string|max:20',
                 'card_holder_name' => 'nullable|string|max:255',
@@ -179,9 +192,26 @@ class PaymentController extends Controller
                 $formattedBillingAddress = $this->formatStripeAddress($billingDetails->address ?? null);
                 $metadata = $stripePaymentMethod->metadata?->toArray() ?? null;
 
+                // Mapear la marca de Stripe a nuestro formato de provider
+                $stripeBrand = $card->brand ? strtolower($card->brand) : null;
+                $provider = $data['provider'] ?? $this->mapStripeBrandToProvider($stripeBrand);
+
+                // Si no se pudo mapear el provider, usar la marca de Stripe directamente
+                // o un valor por defecto si la marca tampoco está disponible
+                if (!$provider && $stripeBrand) {
+                    // Intentar usar la marca directamente si está en la lista permitida
+                    $allowedProviders = ['visa', 'mastercard', 'amex', 'discover', 'diners', 'jcb', 'unionpay'];
+                    if (in_array($stripeBrand, $allowedProviders)) {
+                        $provider = $stripeBrand;
+                    } else {
+                        // Si no está en la lista, usar 'visa' como fallback
+                        $provider = 'visa';
+                    }
+                }
+
                 $data = array_merge($data, [
                     'payment_type' => $data['payment_type'] ?? 'credit_card',
-                    'provider' => $data['provider'] ?? ($card->brand ? strtolower($card->brand) : null),
+                    'provider' => $provider,
                     'card_brand' => $card->brand,
                     'card_last_four' => $card->last4,
                     'card_holder_name' => $data['card_holder_name'] ?? ($billingDetails->name ?? null),
@@ -406,71 +436,247 @@ class PaymentController extends Controller
     }
 
     /**
-     * Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado.
+     * Elimina físicamente un método de pago específico del usuario autenticado.
      */
-    public function destroy(Request $request)
-    {
-        try {
-            $request->validate([
-                'id' => 'required|integer|exists:user_payment_methods,id'
-            ]);
+    // public function destroy(Request $request)
+    // {
+    //     try {
+    //         $request->validate([
+    //             'id' => 'required|integer|exists:user_payment_methods,id'
+    //         ]);
 
-            $userId = FacadesAuth::id();
-            $id = $request->integer('id');
+    //         $userId = FacadesAuth::id();
+    //         $id = $request->integer('id');
 
-            $paymentMethod = UserPaymentMethod::where('id', $id)
-                ->where('user_id', $userId)
-                ->where('status', 'active')
-                ->first();
+    //         $paymentMethod = UserPaymentMethod::where('id', $id)
+    //             ->where('user_id', $userId)
+    //             ->where('status', 'active')
+    //             ->first();
 
-            if (!$paymentMethod) {
-                return response()->json([
-                    'exito' => false,
-                    'codMensaje' => 0,
-                    'mensajeUsuario' => 'Método de pago no encontrado',
-                    'datoAdicional' => null
-                ], 200);
-            }
+    //         if (!$paymentMethod) {
+    //             return response()->json([
+    //                 'exito' => false,
+    //                 'codMensaje' => 0,
+    //                 'mensajeUsuario' => 'Método de pago no encontrado',
+    //                 'datoAdicional' => null
+    //             ], 200);
+    //         }
 
-            // Desactivar el método de pago (soft delete)
-            $paymentMethod->update(['status' => 'inactive']);
+    //         // Si tiene gateway_token (ID de Stripe), eliminar también desde Stripe usando Laravel Cashier
+    //         $gatewayToken = $paymentMethod->gateway_token;
+    //         $user = $request->user();
+    //         return response()->json([
+    //             'exito' => false,
+    //             'codMensaje' => 0,
+    //             'mensajeUsuario' =>  $gatewayToken,
+    //             'datoAdicional' =>  $gatewayToken
+    //         ], 200);
 
-            return response()->json([
-                'exito' => true,
-                'codMensaje' => 1,
-                'mensajeUsuario' => 'Método de pago eliminado exitosamente',
-                'datoAdicional' => null
-            ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::create([
-                'user_id' => FacadesAuth::id(),
-                'action' => 'Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado',
-                'description' => 'Datos de entrada inválidos',
-                'data' => $e->getMessage(),
-            ]);
+    //         // Log inicial para depuración
+    //         Log::create([
+    //             'user_id' => FacadesAuth::id(),
+    //             'action' => 'Eliminar método de pago - Inicio',
+    //             'description' => 'Iniciando eliminación de método de pago',
+    //             'data' => json_encode([
+    //                 'payment_method_id' => $paymentMethod->id,
+    //                 'gateway_token' => $gatewayToken,
+    //                 'has_gateway_token' => !empty($gatewayToken),
+    //                 'card_brand' => $paymentMethod->card_brand,
+    //                 'card_last_four' => $paymentMethod->card_last_four
+    //             ])
+    //         ]);
 
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 0,
-                'mensajeUsuario' => 'Datos de entrada inválidos',
-                'datoAdicional' => $e->errors()
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::create([
-                'user_id' => FacadesAuth::id(),
-                'action' => 'Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado',
-                'description' => 'Error al eliminar método de pago',
-                'data' => $e->getMessage(),
-            ]);
+    //         if (!empty($gatewayToken) && $user) {
+    //             try {
+    //                 // Verificar que el usuario tenga stripe_id configurado
+    //                 $stripeId = $user->stripe_id;
 
-            return response()->json([
-                'exito' => false,
-                'codMensaje' => 0,
-                'mensajeUsuario' => 'Error al eliminar método de pago',
-                'datoAdicional' => $e->getMessage()
-            ], 200);
-        }
-    }
+    //                 Log::create([
+    //                     'user_id' => FacadesAuth::id(),
+    //                     'action' => 'Eliminar método de pago de Stripe - Verificación',
+    //                     'description' => 'Verificando configuración de Stripe antes de eliminar',
+    //                     'data' => json_encode([
+    //                         'payment_method_id' => $paymentMethod->id,
+    //                         'gateway_token' => $gatewayToken,
+    //                         'user_stripe_id' => $stripeId,
+    //                         'has_stripe_id' => !empty($stripeId),
+    //                         'stripe_secret_configured' => !empty(config('services.stripe.secret'))
+    //                     ])
+    //                 ]);
+
+    //                 if (empty($stripeId)) {
+    //                     throw new \RuntimeException('El usuario no tiene stripe_id configurado. No se puede eliminar el método de pago de Stripe.');
+    //                 }
+
+    //                 // Usar StripeClient directamente para mayor control
+    //                 $stripeClient = $this->makeStripeClient();
+
+    //                 // Verificar que el payment method existe y pertenece al customer antes de detach
+    //                 try {
+    //                     $stripePaymentMethod = $stripeClient->paymentMethods->retrieve($gatewayToken);
+
+    //                     Log::create([
+    //                         'user_id' => FacadesAuth::id(),
+    //                         'action' => 'Eliminar método de pago de Stripe - Verificación',
+    //                         'description' => 'Payment method encontrado en Stripe antes de detach',
+    //                         'data' => json_encode([
+    //                             'payment_method_id' => $paymentMethod->id,
+    //                             'gateway_token' => $gatewayToken,
+    //                             'stripe_customer_id' => $stripeId,
+    //                             'payment_method_customer' => $stripePaymentMethod->customer ?? null,
+    //                             'belongs_to_customer' => ($stripePaymentMethod->customer ?? null) === $stripeId
+    //                         ])
+    //                     ]);
+
+    //                     // Verificar que el payment method pertenece al customer
+    //                     if ($stripePaymentMethod->customer && $stripePaymentMethod->customer !== $stripeId) {
+    //                         throw new \RuntimeException("El método de pago no pertenece al customer del usuario. Customer del PM: {$stripePaymentMethod->customer}, Customer del usuario: {$stripeId}");
+    //                     }
+    //                 } catch (ApiErrorException $e) {
+    //                     // Si el payment method no existe, loguear y continuar
+    //                     Log::create([
+    //                         'user_id' => FacadesAuth::id(),
+    //                         'action' => 'Eliminar método de pago de Stripe - Verificación',
+    //                         'description' => 'Payment method no encontrado en Stripe: ' . $e->getMessage(),
+    //                         'data' => json_encode([
+    //                             'payment_method_id' => $paymentMethod->id,
+    //                             'gateway_token' => $gatewayToken,
+    //                             'stripe_error' => $e->getMessage(),
+    //                             'stripe_error_code' => $e->getStripeCode() ?? null
+    //                         ])
+    //                     ]);
+    //                     // Continuar con el detach de todas formas, puede que ya esté detachado
+    //                 }
+
+    //                 // Intentar eliminar el método de pago de Stripe usando el endpoint detach
+    //                 // Según la documentación: POST /v1/payment_methods/:id/detach
+    //                 Log::create([
+    //                     'user_id' => FacadesAuth::id(),
+    //                     'action' => 'Eliminar método de pago de Stripe - Intentando',
+    //                     'description' => 'Intentando detach payment method de Stripe',
+    //                     'data' => json_encode([
+    //                         'payment_method_id' => $paymentMethod->id,
+    //                         'gateway_token' => $gatewayToken,
+    //                         'stripe_customer_id' => $stripeId,
+    //                         'endpoint' => '/v1/payment_methods/' . $gatewayToken . '/detach'
+    //                     ])
+    //                 ]);
+
+    //                 // Llamar al método detach según la documentación de Stripe
+    //                 $detachedPaymentMethod = $stripeClient->paymentMethods->detach($gatewayToken);
+
+    //                 // Verificar que se eliminó correctamente (customer debe ser null después de detach)
+    //                 // Según la documentación, después del detach, el campo customer será null
+    //                 $deleted = $detachedPaymentMethod->customer === null;
+
+    //                 // Registrar respuesta completa de Stripe
+    //                 Log::create([
+    //                     'user_id' => FacadesAuth::id(),
+    //                     'action' => 'Eliminar método de pago de Stripe',
+    //                     'description' => $deleted ? 'Método de pago eliminado exitosamente de Stripe' : 'Método de pago detachado pero puede seguir existiendo',
+    //                     'data' => json_encode([
+    //                         'payment_method_id' => $paymentMethod->id,
+    //                         'gateway_token' => $gatewayToken,
+    //                         'card_brand' => $paymentMethod->card_brand,
+    //                         'card_last_four' => $paymentMethod->card_last_four,
+    //                         'deleted' => $deleted,
+    //                         'stripe_response' => [
+    //                             'id' => $detachedPaymentMethod->id ?? null,
+    //                             'customer' => $detachedPaymentMethod->customer ?? null,
+    //                             'type' => $detachedPaymentMethod->type ?? null,
+    //                             'object' => $detachedPaymentMethod->object ?? null,
+    //                             'livemode' => $detachedPaymentMethod->livemode ?? null
+    //                         ]
+    //                     ])
+    //                 ]);
+    //             } catch (ApiErrorException $e) {
+    //                 // Si el método ya no existe en Stripe o hay otro error, solo loguear
+    //                 // pero continuar con la eliminación en BD
+    //                 Log::create([
+    //                     'user_id' => FacadesAuth::id(),
+    //                     'action' => 'Eliminar método de pago de Stripe',
+    //                     'description' => 'Error de Stripe API al eliminar método de pago: ' . $e->getMessage(),
+    //                     'data' => json_encode([
+    //                         'payment_method_id' => $paymentMethod->id,
+    //                         'gateway_token' => $gatewayToken,
+    //                         'stripe_error' => $e->getMessage(),
+    //                         'stripe_error_code' => $e->getStripeCode() ?? null,
+    //                         'stripe_error_type' => $e->getStripeCode() ?? null,
+    //                         'error_type' => 'ApiErrorException',
+    //                         'http_status' => $e->getHttpStatus() ?? null
+    //                     ])
+    //                 ]);
+    //             } catch (\Throwable $e) {
+    //                 Log::create([
+    //                     'user_id' => FacadesAuth::id(),
+    //                     'action' => 'Eliminar método de pago de Stripe',
+    //                     'description' => 'Error inesperado al eliminar método de pago de Stripe: ' . $e->getMessage(),
+    //                     'data' => json_encode([
+    //                         'payment_method_id' => $paymentMethod->id,
+    //                         'gateway_token' => $gatewayToken,
+    //                         'error' => $e->getMessage(),
+    //                         'error_type' => get_class($e),
+    //                         'file' => $e->getFile(),
+    //                         'line' => $e->getLine(),
+    //                         'trace' => $e->getTraceAsString()
+    //                     ])
+    //                 ]);
+    //             }
+    //         } else {
+    //             // Log cuando no hay gateway_token o usuario
+    //             Log::create([
+    //                 'user_id' => FacadesAuth::id(),
+    //                 'action' => 'Eliminar método de pago de Stripe',
+    //                 'description' => !empty($gatewayToken) ? 'No se puede eliminar de Stripe: usuario no encontrado' : 'No se puede eliminar de Stripe: método de pago no tiene gateway_token',
+    //                 'data' => json_encode([
+    //                     'payment_method_id' => $paymentMethod->id,
+    //                     'gateway_token' => $gatewayToken,
+    //                     'has_user' => !empty($user),
+    //                     'card_brand' => $paymentMethod->card_brand,
+    //                     'card_last_four' => $paymentMethod->card_last_four
+    //                 ])
+    //             ]);
+    //         }
+
+    //         // Eliminación física del método de pago
+    //         $paymentMethod->delete();
+
+    //         return response()->json([
+    //             'exito' => true,
+    //             'codMensaje' => 1,
+    //             'mensajeUsuario' => 'Método de pago eliminado exitosamente',
+    //             'datoAdicional' => null
+    //         ], 200);
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         Log::create([
+    //             'user_id' => FacadesAuth::id(),
+    //             'action' => 'Eliminar método de pago',
+    //             'description' => 'Datos de entrada inválidos',
+    //             'data' => $e->getMessage(),
+    //         ]);
+
+    //         return response()->json([
+    //             'exito' => false,
+    //             'codMensaje' => 0,
+    //             'mensajeUsuario' => 'Datos de entrada inválidos',
+    //             'datoAdicional' => $e->errors()
+    //         ], 200);
+    //     } catch (\Throwable $e) {
+    //         Log::create([
+    //             'user_id' => FacadesAuth::id(),
+    //             'action' => 'Eliminar método de pago',
+    //             'description' => 'Error al eliminar método de pago',
+    //             'data' => $e->getMessage(),
+    //         ]);
+
+    //         return response()->json([
+    //             'exito' => false,
+    //             'codMensaje' => 0,
+    //             'mensajeUsuario' => 'Error al eliminar método de pago',
+    //             'datoAdicional' => $e->getMessage()
+    //         ], 200);
+    //     }
+    // }
 
 
     /**
@@ -682,6 +888,138 @@ class PaymentController extends Controller
         }
 
         return new StripeClient($secret);
+    }
+
+    /**
+     * Mapea la marca de tarjeta de Stripe a nuestro formato de provider
+     * @param string|null $stripeBrand - Marca de Stripe (visa, mastercard, amex, etc.)
+     * @return string|null - Provider mapeado o null si no se puede mapear
+     */
+    private function mapStripeBrandToProvider(?string $stripeBrand): ?string
+    {
+        if (!$stripeBrand) {
+            return null;
+        }
+
+        // Mapeo de marcas de Stripe a nuestros providers
+        $brandMap = [
+            'visa' => 'visa',
+            'mastercard' => 'mastercard',
+            'amex' => 'amex',
+            'american_express' => 'amex', // Stripe también puede devolver esto
+            'discover' => 'discover',
+            'diners' => 'diners',
+            'diners_club' => 'diners', // Stripe también puede devolver esto
+            'jcb' => 'jcb',
+            'unionpay' => 'unionpay',
+        ];
+
+        return $brandMap[strtolower($stripeBrand)] ?? null;
+    }
+
+    /**
+     * Obtiene los métodos de pago directamente desde Stripe usando Laravel Cashier
+     *
+     * @param \App\Models\User $user
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function getPaymentMethodsFromStripe($user, Request $request)
+    {
+        try {
+            // Verificar que el usuario tenga un customer_id en Stripe
+            if (!$user->stripe_id) {
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Métodos de pago obtenidos exitosamente',
+                    'datoAdicional' => [
+                        'payment_methods' => [],
+                        'total_count' => 0
+                    ]
+                ], 200);
+            }
+
+            // Obtener métodos de pago directamente desde Stripe usando Cashier
+            $stripeCustomer = $user->asStripeCustomer();
+            $stripePaymentMethods = $stripeCustomer->paymentMethods->all([
+                'type' => 'card',
+            ]);
+
+            // Transformar los métodos de Stripe al formato esperado
+            $paymentMethods = [];
+            foreach ($stripePaymentMethods->data as $stripeMethod) {
+                if ($stripeMethod->type === 'card' && isset($stripeMethod->card)) {
+                    $card = $stripeMethod->card;
+                    $billingDetails = $stripeMethod->billing_details ?? null;
+
+                    $paymentMethods[] = [
+                        'id' => $stripeMethod->id,
+                        'payment_type' => 'credit_card',
+                        'card_brand' => $card->brand ?? null,
+                        'card_last_four' => $card->last4 ?? null,
+                        'card_holder_name' => $billingDetails->name ?? null,
+                        'expiry_date' => ($card->exp_month && $card->exp_year)
+                            ? sprintf('%02d/%d', $card->exp_month, $card->exp_year)
+                            : null,
+                        'card_expiry_month' => $card->exp_month ?? null,
+                        'card_expiry_year' => $card->exp_year ?? null,
+                        'is_expired' => false, // Stripe no devuelve esto directamente, se calcula
+                        'is_default' => false, // Se determina comparando con el default_payment_method del customer
+                        'is_saved_for_future' => true,
+                        'status' => 'active',
+                        'verification_status' => 'verified',
+                        'billing_address' => $this->formatStripeAddress($billingDetails->address ?? null),
+                        'gateway_token' => $stripeMethod->id,
+                        'gateway_customer_id' => $stripeCustomer->id,
+                        'created_at' => date('Y-m-d\TH:i:s.000000\Z', $stripeMethod->created),
+                        'updated_at' => date('Y-m-d\TH:i:s.000000\Z', $stripeMethod->created),
+                    ];
+                }
+            }
+
+            // Marcar el método predeterminado si existe
+            if ($stripeCustomer->invoice_settings->default_payment_method) {
+                $defaultId = $stripeCustomer->invoice_settings->default_payment_method;
+                foreach ($paymentMethods as &$method) {
+                    if ($method['gateway_token'] === $defaultId) {
+                        $method['is_default'] = true;
+                        break;
+                    }
+                }
+            }
+
+            // Ordenar: primero el predeterminado
+            usort($paymentMethods, function ($a, $b) {
+                if ($a['is_default'] && !$b['is_default']) return -1;
+                if (!$a['is_default'] && $b['is_default']) return 1;
+                return 0;
+            });
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Métodos de pago obtenidos exitosamente desde Stripe',
+                'datoAdicional' => [
+                    'payment_methods' => $paymentMethods,
+                    'total_count' => count($paymentMethods)
+                ]
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => $user->id,
+                'action' => 'Obtener métodos de pago desde Stripe',
+                'description' => 'Error al obtener métodos de pago desde Stripe',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener métodos de pago desde Stripe',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
     }
 
     private function formatStripeAddress($address): ?array
