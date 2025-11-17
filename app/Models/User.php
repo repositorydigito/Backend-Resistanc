@@ -609,5 +609,8 @@ final class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(JuiceOrder::class);
     }
 
-
+    public function logs()
+    {
+        return $this->hasMany(Log::class);
+    }
 }

@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PaymentResource;
+use App\Models\Log;
 use App\Models\UserPaymentMethod;
 use DragonCode\Contracts\Cashier\Auth\Auth;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth as FacadesAuth;
 use Illuminate\Support\Facades\Validator;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
@@ -23,7 +24,7 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         try {
-            $userId = auth()->id();
+            $userId = FacadesAuth::id();
 
             // Validar parámetros de paginación
             $request->validate([
@@ -33,7 +34,7 @@ class PaymentController extends Controller
 
             $query = UserPaymentMethod::where('user_id', $userId)
                 ->where('status', 'active')
-                // ->orderBy('is_default', 'desc')
+                ->orderBy('is_default', 'desc')
                 ->orderBy('created_at', 'desc');
 
             // Aplicar paginación si se especifican parámetros
@@ -74,18 +75,33 @@ class PaymentController extends Controller
                     'datoAdicional' => PaymentResource::collection($paymentMethods)
                 ], 200);
             }
-        } catch (\Exception $e) {
-            Log::error('Error al obtener métodos de pago', [
-                'user_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Lista los métodos de pago del usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Lista los métodos de pago del usuario autenticado',
+                'description' => 'Error al obtener métodos de pago',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener métodos de pago',
-                'datoAdicional' => []
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -96,14 +112,6 @@ class PaymentController extends Controller
     public function store(Request $request)
     {
         try {
-            // Debug: Log de los datos recibidos
-            Log::info('Datos recibidos en store payment method', [
-                'all_data' => $request->all(),
-                'content_type' => $request->header('Content-Type'),
-                'payment_type' => $request->input('payment_type'),
-                'provider' => $request->input('provider')
-            ]);
-
             $validator = Validator::make($request->all(), [
                 'payment_method_id' => 'required_without:payment_type|nullable|string|max:255',
                 'payment_type' => 'required_without:payment_method_id|string|in:credit_card,debit_card,bank_transfer,digital_wallet,crypto',
@@ -119,14 +127,15 @@ class PaymentController extends Controller
                 'billing_address' => 'nullable|array',
                 'metadata' => 'nullable|array'
             ]);
-            //  return response()->json([
-            //         'mensaje' => 'Petición recibida',
-            //         'headers' => $request->headers->all(),
-            //         'content_type' => $request->header('Content-Type'),
-            //         'body_raw' => file_get_contents('php://input'),
-            //         'body_parsed' => $request->all(),
-            //     ], 200);
+
             if ($validator->fails()) {
+                Log::create([
+                    'user_id' => FacadesAuth::id(),
+                    'action' => 'Crea un nuevo método de pago para el usuario autenticado',
+                    'description' => 'Datos de entrada inválidos',
+                    'data' => $validator->errors()->toJson(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
@@ -202,12 +211,26 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago creado exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod)
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error al crear método de pago', [
-                'user_id' => auth()->id(),
-                'request_data' => $request->all(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Crea un nuevo método de pago para el usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Crea un nuevo método de pago para el usuario autenticado',
+                'description' => 'Error al crear método de pago',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -221,12 +244,16 @@ class PaymentController extends Controller
 
     /**
      * Obtiene un método de pago específico del usuario autenticado
-
      */
-    public function show($id)
+    public function show(Request $request)
     {
         try {
-            $userId = auth()->id();
+            $request->validate([
+                'id' => 'required|integer|exists:user_payment_methods,id'
+            ]);
+
+            $userId = FacadesAuth::id();
+            $id = $request->integer('id');
 
             $paymentMethod = UserPaymentMethod::where('id', $id)
                 ->where('user_id', $userId)
@@ -238,7 +265,7 @@ class PaymentController extends Controller
                     'exito' => false,
                     'codMensaje' => 0,
                     'mensajeUsuario' => 'Método de pago no encontrado',
-                    'datoAdicional' => []
+                    'datoAdicional' => null
                 ], 200);
             }
 
@@ -248,19 +275,33 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago obtenido exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod)
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error al obtener método de pago', [
-                'user_id' => auth()->id(),
-                'payment_method_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Obtiene un método de pago específico del usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Obtiene un método de pago específico del usuario autenticado',
+                'description' => 'Error al obtener método de pago',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener método de pago',
-                'datoAdicional' => []
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -268,10 +309,11 @@ class PaymentController extends Controller
     /**
      * Actualiza un método de pago específico del usuario autenticado
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
+                'id' => 'required|integer|exists:user_payment_methods,id',
                 'payment_type' => 'sometimes|string|in:credit_card,debit_card,bank_transfer,digital_wallet,crypto',
                 'provider' => 'sometimes|string|in:visa,mastercard,amex,bcp,interbank,scotiabank,bbva,yape,plin,paypal',
                 'card_holder_name' => 'sometimes|string|max:255',
@@ -281,6 +323,13 @@ class PaymentController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::create([
+                    'user_id' => FacadesAuth::id(),
+                    'action' => 'Actualiza un método de pago específico del usuario autenticado',
+                    'description' => 'Datos de entrada inválidos',
+                    'data' => $validator->errors()->toJson(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
@@ -289,7 +338,8 @@ class PaymentController extends Controller
                 ], 200);
             }
 
-            $userId = auth()->id();
+            $userId = FacadesAuth::id();
+            $id = $request->integer('id');
 
             $paymentMethod = UserPaymentMethod::where('id', $id)
                 ->where('user_id', $userId)
@@ -301,11 +351,12 @@ class PaymentController extends Controller
                     'exito' => false,
                     'codMensaje' => 0,
                     'mensajeUsuario' => 'Método de pago no encontrado',
-                    'datoAdicional' => []
+                    'datoAdicional' => null
                 ], 200);
             }
 
-            $data = $request->validated();
+            $data = $validator->validated();
+            unset($data['id']); // Remover id de los datos a actualizar
 
             // Si se marca como predeterminado, desmarcar los demás
             if (isset($data['is_default']) && $data['is_default']) {
@@ -323,54 +374,49 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago actualizado exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod->fresh())
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error al actualizar método de pago', [
-                'user_id' => auth()->id(),
-                'payment_method_id' => $id,
-                'request_data' => $request->all(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Actualiza un método de pago específico del usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Actualiza un método de pago específico del usuario autenticado',
+                'description' => 'Error al actualizar método de pago',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al actualizar método de pago',
-                'datoAdicional' => []
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
 
     /**
      * Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado.
-     *
-     * @summary Eliminar (desactivar) método de pago
-     * @description Cambia el estatus del método de pago a 'inactive' en vez de eliminarlo físicamente.
-     * @operationId deletePaymentMethod
-     * @param int $id ID del método de pago a eliminar
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Método de pago eliminado exitosamente",
-     *   "datoAdicional": {
-     *     "id": 1,
-     *     "status": "inactive"
-     *   }
-     * }
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Método de pago no encontrado",
-     *   "datoAdicional": []
-     * }
      */
-    public function destroy($id)
+    public function destroy(Request $request)
     {
-
         try {
-            $userId = auth()->id();
+            $request->validate([
+                'id' => 'required|integer|exists:user_payment_methods,id'
+            ]);
+
+            $userId = FacadesAuth::id();
+            $id = $request->integer('id');
 
             $paymentMethod = UserPaymentMethod::where('id', $id)
                 ->where('user_id', $userId)
@@ -382,7 +428,7 @@ class PaymentController extends Controller
                     'exito' => false,
                     'codMensaje' => 0,
                     'mensajeUsuario' => 'Método de pago no encontrado',
-                    'datoAdicional' => []
+                    'datoAdicional' => null
                 ], 200);
             }
 
@@ -393,24 +439,35 @@ class PaymentController extends Controller
                 'exito' => true,
                 'codMensaje' => 1,
                 'mensajeUsuario' => 'Método de pago eliminado exitosamente',
-                'datoAdicional' => [
-                    'id' => $paymentMethod->id,
-                    'status' => 'inactive'
-                ]
+                'datoAdicional' => null
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error al eliminar método de pago', [
-                'user_id' => auth()->id(),
-                'payment_method_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => $e->getMessage(),
-                'datoAdicional' => []
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Desactiva (elimina lógicamente) un método de pago específico del usuario autenticado',
+                'description' => 'Error al eliminar método de pago',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al eliminar método de pago',
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -418,39 +475,16 @@ class PaymentController extends Controller
 
     /**
      * Selecciona un método de pago como predeterminado para el usuario autenticado
-     *
-     * @summary Seleccionar método de pago predeterminado
-     * @operationId selectDefaultPaymentMethod
-     *
-     * @param int $id ID del método de pago a seleccionar
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Método de pago seleccionado exitosamente",
-     *   "datoAdicional": {
-     *     "id": 1,
-     *     "payment_type": "credit_card",
-     *     "provider": "visa",
-     *     "card_last_four": "****1234",
-     *     "display_name": "Visa ****1234",
-     *     "is_default": true,
-     *     "status": "active"
-     *   }
-     * }
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Método de pago no encontrado",
-     *   "datoAdicional": []
-     * }
      */
-    public function selectPayment($id)
+    public function selectPayment(Request $request)
     {
-
         try {
-            $userId = auth()->id();
+            $request->validate([
+                'id' => 'required|integer|min:0'
+            ]);
+
+            $userId = FacadesAuth::id();
+            $id = $request->integer('id');
 
             if ($id == 0) {
                 UserPaymentMethod::where('user_id', $userId)
@@ -474,14 +508,11 @@ class PaymentController extends Controller
                     'exito' => false,
                     'codMensaje' => 0,
                     'mensajeUsuario' => 'Método de pago no encontrado',
-                    'datoAdicional' => []
+                    'datoAdicional' => null
                 ], 200);
             }
 
             // Marcar este método como predeterminado
-
-
-
             UserPaymentMethod::where('user_id', $userId)
                 ->update(['is_default' => false]);
 
@@ -493,35 +524,47 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago seleccionado exitosamente',
                 'datoAdicional' => new PaymentResource($paymentMethod)
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error al seleccionar método de pago', [
-                'user_id' => auth()->id(),
-                'payment_method_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Selecciona un método de pago como predeterminado para el usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => $e->getMessage(),
-                'datoAdicional' => []
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Selecciona un método de pago como predeterminado para el usuario autenticado',
+                'description' => 'Error al seleccionar método de pago predeterminado',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al seleccionar método de pago predeterminado',
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
 
 
 
-     /**
+    /**
      * Obtener el metodo de pago de la compra
-     *
      */
-
-    public function defaultPayment()
+    public function defaultPayment(Request $request)
     {
         try {
             // Obtener el ID del usuario autenticado
-            $user_id = auth()->id();
+            $user_id = FacadesAuth::id();
 
             // Buscar el método de pago por defecto del usuario
             $userPaymentMethod = UserPaymentMethod::where('user_id', $user_id)
@@ -546,15 +589,21 @@ class PaymentController extends Controller
                 'mensajeUsuario' => 'Método de pago por defecto obtenido exitosamente',
                 'datoAdicional' => $userPaymentMethod,
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Obtener el metodo de pago de la compra',
+                'description' => 'Error al obtener el método de pago',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Fallo al obtener el método de pago',
-                'datoAdicional' => $th->getMessage(),
-            ], 200); // Código 500 para errores del servidor
+                'mensajeUsuario' => 'Error al obtener el método de pago',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
         }
-
     }
 
     /**
@@ -586,17 +635,18 @@ class PaymentController extends Controller
                     'status' => $intent->status,
                 ]
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error al generar SetupIntent', [
-                'user_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Genera un SetupIntent de Stripe para el usuario autenticado',
+                'description' => 'Error al generar el SetupIntent',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'No se pudo generar el SetupIntent',
+                'mensajeUsuario' => 'Error al generar el SetupIntent',
                 'datoAdicional' => $e->getMessage()
             ], 200);
         }
@@ -609,10 +659,15 @@ class PaymentController extends Controller
         try {
             return $stripeClient->paymentMethods->retrieve($paymentMethodId, []);
         } catch (ApiErrorException $e) {
-            Log::error('Stripe API error al recuperar payment_method', [
-                'payment_method_id' => $paymentMethodId,
-                'error' => $e->getMessage(),
+
+
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Stripe API error al recuperar payment_method',
+                'description' => 'Stripe API error al recuperar payment_method',
+                'data' => $e->getMessage(),
             ]);
+
 
             throw $e;
         }

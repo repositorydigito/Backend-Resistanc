@@ -47,7 +47,7 @@ class FootwearController extends Controller
                 ->where(function ($query) use ($startTime, $endTime) {
                     $query->where(function ($q) use ($startTime, $endTime) {
                         $q->where('start_time', '<', $endTime)
-                          ->where('end_time', '>', $startTime);
+                            ->where('end_time', '>', $startTime);
                     });
                 })
                 ->pluck('id')
@@ -118,8 +118,15 @@ class FootwearController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener disponibilidad de calzados para un horario específico',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -127,6 +134,14 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener disponibilidad de calzados para un horario específico',
+                'description' => 'Error al obtener disponibilidad de calzados',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -208,8 +223,15 @@ class FootwearController extends Controller
                     ]
                 ], 200);
             }
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener todos los calzados disponibles con filtros opcionales',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -217,6 +239,14 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener todos los calzados disponibles con filtros opcionales',
+                'description' => 'Error al obtener los calzados',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -335,8 +365,15 @@ class FootwearController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener calzados disponibles para un horario específico',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -344,6 +381,15 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener calzados disponibles para un horario específico',
+                'description' => 'Error al obtener los calzados para el horario',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -446,8 +492,15 @@ class FootwearController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener los calzados que el usuario ha reservado en una clase específica',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -455,6 +508,14 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener los calzados que el usuario ha reservado en una clase específica',
+                'description' => 'Error al obtener calzados reservados',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -675,13 +736,19 @@ class FootwearController extends Controller
                         ]
                     ]
                 ], 200);
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Editar/Actualizar las reservas de calzado de una clase específica',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -689,6 +756,15 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Editar/Actualizar las reservas de calzado de una clase específica',
+                'description' => 'Error al actualizar las reservas de calzado',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -872,18 +948,17 @@ class FootwearController extends Controller
                 // Si todo fue exitoso, la transacción se commitea automáticamente
                 return $this->formatReservationResponse($reservas, $classSchedule);
             });
-
         } catch (\Throwable $e) {
             // Si hay un error, hacer rollback si estamos en una transacción
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
             }
 
-            Log::error('Error al crear reserva de calzado', [
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $validated['class_schedules_id'] ?? null,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'action' => 'Crear una reserva de calzado asociada a una clase',
+                'description' => 'Error al agregar el calzado a la reserva.',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -1017,8 +1092,16 @@ class FootwearController extends Controller
                     ]
                 ]
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Cancelar reservas de calzado para una clase específica',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -1026,6 +1109,15 @@ class FootwearController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Cancelar reservas de calzado para una clase específica',
+                'description' => 'Error al cancelar las reservas de calzado',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

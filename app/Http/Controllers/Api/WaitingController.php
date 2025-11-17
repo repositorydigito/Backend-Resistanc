@@ -21,10 +21,6 @@ final class WaitingController extends Controller
 {
     /**
      * Listar entradas en la lista de espera del usuario autenticado
-     *
-     * @return \Illuminate\Http\JsonResponse
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
      */
 
 
@@ -256,18 +252,20 @@ final class WaitingController extends Controller
                     ]
                 ], 200);
             }
-        } catch (\Throwable $th) {
-            Log::error('Error al obtener lista de espera', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Listar entradas en la lista de espera del usuario autenticado',
+                'description' => 'Error interno al obtener lista de espera',
+                'data' => $e->getMessage(),
             ]);
+
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'message' => 'Error interno al obtener lista de espera',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
@@ -342,10 +340,6 @@ final class WaitingController extends Controller
 
     /**
      * Obtener lista de espera para un horario específico
-     *
-     * @return \Illuminate\Http\JsonResponse
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
      */
 
     public function show(Request $request)
@@ -464,18 +458,18 @@ final class WaitingController extends Controller
                 'mensajeUsuario' => 'Lista de espera obtenida exitosamente',
                 'datoAdicional' => $formattedData
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al obtener lista de espera', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $request->input('id'),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Obtener lista de espera para un horario específico',
+                'description' => 'Error interno al obtener lista de espera',
+                'data' => $e->getMessage(),
             ]);
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error interno al obtener lista de espera',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
@@ -483,10 +477,6 @@ final class WaitingController extends Controller
 
     /**
      * Agregar a la lista de espera
-     *
-     * @return \Illuminate\Http\JsonResponse
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
      */
 
 
@@ -687,12 +677,12 @@ final class WaitingController extends Controller
                     ]
                 ]
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al agregar a la lista de espera', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $request->input('class_schedule_id'),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Agregar a la lista de espera',
+                'description' => 'Error interno al agregar a la lista de espera',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -707,10 +697,6 @@ final class WaitingController extends Controller
 
     /**
      * Verificar si el usuario está en la lista de espera de un horario específico
-     *
-     * @return \Illuminate\Http\JsonResponse
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
      */
 
     public function checkWaitingStatus(Request $request)
@@ -839,37 +825,40 @@ final class WaitingController extends Controller
                 'mensajeUsuario' => $message,
                 'datoAdicional' => $formattedData
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verificar si el usuario está en la lista de espera de un horario específico',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Datos de entrada inválidos',
                 'datoAdicional' => $e->errors()
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al verificar estado en lista de espera', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $request->input('id'),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Verificar si el usuario está en la lista de espera de un horario específico',
+                'description' => 'Error interno al verificar estado en lista de espera',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error interno al verificar estado en lista de espera',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
 
     /**
      * Abandonar la lista de espera
-     *
-     * @return \Illuminate\Http\JsonResponse
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
      */
 
     public function destroy(Request $request)
@@ -963,25 +952,33 @@ final class WaitingController extends Controller
                 ]
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Abandonar la lista de espera',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Datos de entrada inválidos',
                 'datoAdicional' => $e->errors()
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al eliminar de la lista de espera', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $request->input('class_schedule_id'),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Abandonar la lista de espera',
+                'description' => 'Error interno al eliminar de la lista de espera',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error interno al eliminar de la lista de espera',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }

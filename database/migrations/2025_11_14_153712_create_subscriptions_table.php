@@ -10,7 +10,7 @@ return new class extends Migration
      * Run the migrations.
      */
 
-    // Laravel strapi
+    // Laravel stripe
     public function up(): void
     {
         Schema::create('subscriptions', function (Blueprint $table) {

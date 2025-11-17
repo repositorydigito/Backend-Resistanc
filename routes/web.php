@@ -34,10 +34,16 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
         return view('auth.verification-error', ['message' => 'Enlace de verificación inválido.']);
     }
 
+    // Si ya está verificado, asegurar que tenga cliente de Stripe
     if ($user->hasVerifiedEmail()) {
+        // Forzar verificación de cliente de Stripe incluso si ya está verificado
+        $userObserver = new \App\Observers\UserObserver();
+        $userObserver->ensureStripeCustomer($user);
+        
         return view('auth.verification-success', ['message' => 'Tu email ya ha sido verificado anteriormente. Puedes ingresar al app sin complicaciones!']);
     }
 
+    // Marcar como verificado (esto disparará el Observer)
     $user->markEmailAsVerified();
 
     return view('auth.verification-success', ['message' => '¡Tu email ha sido verificado correctamente. Puedes ingresar al app sin complicaciones!']);

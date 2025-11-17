@@ -17,8 +17,6 @@ class PromoCodeController extends Controller
 {
     /**
      * Validar código promocional
-     *
-     * Verifica si un código promocional es válido para un paquete específico
      */
     public function validate(Request $request)
     {
@@ -140,34 +138,40 @@ class PromoCodeController extends Controller
                     'available_codes' => $quantity
                 ]
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Validar código promocional',
+                'description' => 'Datos de validación incorrectos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Datos de validación incorrectos',
                 'datoAdicional' => $e->errors()
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al validar código promocional', [
-                'code' => $request->code ?? null,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Validar código promocional',
+                'description' => 'Error al validar código promocional',
+                'data' => $e->getMessage(),
             ]);
-
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al validar código promocional',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
 
     /**
      * Consumir código promocional
-     *
-     * Aplica un código promocional a la compra de un paquete
      */
     public function consume(Request $request)
     {
@@ -354,36 +358,40 @@ class PromoCodeController extends Controller
                     ]
                 ], 200);
             });
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Consumir código promocional',
+                'description' => 'Datos de validación incorrectos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Datos de validación incorrectos',
                 'datoAdicional' => $e->errors()
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al consumir código promocional', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'code' => $request->code ?? null,
-                'package_id' => $request->package_id ?? null,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Consumir código promocional',
+                'description' => 'Error al consumir código promocional',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al consumir código promocional',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
 
     /**
      * Historial de códigos promocionales usados
-     *
-     * Retorna todos los códigos promocionales que el usuario ha utilizado
      */
     public function myHistory(Request $request)
     {
@@ -394,44 +402,44 @@ class PromoCodeController extends Controller
             $promoCodes = PromoCodes::whereHas('users', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
-            ->with(['users' => function ($query) use ($userId) {
-                $query->where('user_id', $userId)
-                    ->with('package:id,name,classes_quantity');
-            }])
-            ->get()
-            ->map(function ($promoCode) use ($userId) {
-                $userUsages = $promoCode->users->where('id', $userId);
+                ->with(['users' => function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                        ->with('package:id,name,classes_quantity');
+                }])
+                ->get()
+                ->map(function ($promoCode) use ($userId) {
+                    $userUsages = $promoCode->users->where('id', $userId);
 
-                return [
-                    'promo_code' => [
-                        'id' => $promoCode->id,
-                        'code' => $promoCode->code,
-                        'name' => $promoCode->name,
-                        'supplier' => $promoCode->name_supplier
-                    ],
-                    'usages' => $userUsages->map(function ($usage) {
-                        return [
-                            'package' => [
-                                'id' => $usage->package?->id,
-                                'name' => $usage->package?->name,
-                                'classes_quantity' => $usage->package?->classes_quantity
-                            ],
-                            'pricing' => [
-                                'original_price' => (float) $usage->pivot->original_price,
-                                'discount_applied' => (float) $usage->pivot->discount_applied,
-                                'final_price' => (float) $usage->pivot->final_price,
-                                'amount_paid' => (float) $usage->pivot->monto,
-                                'savings' => (float) ($usage->pivot->original_price - $usage->pivot->final_price)
-                            ],
-                            'used_at' => $usage->pivot->created_at?->toISOString()
-                        ];
-                    })->values(),
-                    'total_used' => $userUsages->count(),
-                    'total_savings' => $userUsages->sum(function ($usage) {
-                        return $usage->pivot->original_price - $usage->pivot->final_price;
-                    })
-                ];
-            });
+                    return [
+                        'promo_code' => [
+                            'id' => $promoCode->id,
+                            'code' => $promoCode->code,
+                            'name' => $promoCode->name,
+                            'supplier' => $promoCode->name_supplier
+                        ],
+                        'usages' => $userUsages->map(function ($usage) {
+                            return [
+                                'package' => [
+                                    'id' => $usage->package?->id,
+                                    'name' => $usage->package?->name,
+                                    'classes_quantity' => $usage->package?->classes_quantity
+                                ],
+                                'pricing' => [
+                                    'original_price' => (float) $usage->pivot->original_price,
+                                    'discount_applied' => (float) $usage->pivot->discount_applied,
+                                    'final_price' => (float) $usage->pivot->final_price,
+                                    'amount_paid' => (float) $usage->pivot->monto,
+                                    'savings' => (float) ($usage->pivot->original_price - $usage->pivot->final_price)
+                                ],
+                                'used_at' => $usage->pivot->created_at?->toISOString()
+                            ];
+                        })->values(),
+                        'total_used' => $userUsages->count(),
+                        'total_savings' => $userUsages->sum(function ($usage) {
+                            return $usage->pivot->original_price - $usage->pivot->final_price;
+                        })
+                    ];
+                });
 
             if ($promoCodes->isEmpty()) {
                 return response()->json([
@@ -455,19 +463,19 @@ class PromoCodeController extends Controller
                     ]
                 ]
             ], 200);
-
-        } catch (\Throwable $th) {
-            Log::error('Error al obtener historial de códigos promocionales', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Historial de códigos promocionales usados',
+                'description' => 'Error al obtener historial',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener historial',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -507,11 +515,12 @@ class PromoCodeController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Error al actualizar UserPackage con código promocional', [
-                'user_id' => $userId,
-                'package_id' => $packageId,
-                'promo_code' => $promoCode,
-                'error' => $e->getMessage()
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Actualizar UserPackage con información del código promocional',
+                'description' => 'Error al actualizar UserPackage con información del código promocional',
+                'data' => $e->getMessage(),
             ]);
         }
     }

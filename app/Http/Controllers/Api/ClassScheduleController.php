@@ -140,12 +140,20 @@ final class ClassScheduleController extends Controller
                 'mensajeUsuario' => 'Lista de horarios obtenida exitosamente',
                 'datoAdicional' => ClassScheduleResource::collection($schedules)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Listar todos los horarios de clases programados',
+                'description' => 'Error al listar horarios de clases',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener lista de horarios',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -215,9 +223,9 @@ final class ClassScheduleController extends Controller
             // Obtener asientos del usuario en este horario
             // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
             $userSeats = ClassScheduleSeat::where('class_schedules_id', $schedule->id)
-                ->where(function($query) use ($userId) {
+                ->where(function ($query) use ($userId) {
                     $query->where('user_id', $userId)
-                          ->orWhere('user_waiting_id', $userId);
+                        ->orWhere('user_waiting_id', $userId);
                 })
                 ->with('seat')
                 ->get();
@@ -261,12 +269,21 @@ final class ClassScheduleController extends Controller
                 'mensajeUsuario' => 'Horario obtenido exitosamente',
                 'datoAdicional' => $scheduleData
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+
+            Log::create([
+                'user_id' =>  Auth::id(),
+                'action' => 'Obtiener un horario de clase específico',
+                'description' => 'Error al obtener el horario de clase',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener horario',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -376,11 +393,11 @@ final class ClassScheduleController extends Controller
                 'datoAdicional' => $responseData
             ], 200);
         } catch (\Exception $e) {
-            // Log del error para debugging
-            Log::error('Error al obtener mapa de asientos', [
-                'class_schedule_id' => $classSchedule->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            Log::create([
+                'user_id' =>  Auth::id(),
+                'action' => 'Obtener el mapa de asientos de un horario de clase',
+                'description' => 'Error al obtener los asientos del horario de clase',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -695,13 +712,11 @@ final class ClassScheduleController extends Controller
                 ], 200);
             });
         } catch (Error $e) {
-            // Log del error para debugging
-            Log::error('Error al reservar asientos', [
-                'class_schedule_id' => $classSchedule->id,
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_seat_ids' => $request->validated()['class_schedule_seat_ids'] ?? [],
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'action' => 'Reservar múltiples asientos para el usuario autenticado',
+                'description' => 'Error al reservar múltiples asientos para el usuario autenticado',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -940,9 +955,9 @@ final class ClassScheduleController extends Controller
 
                     // Verificar que el usuario no tenga ya un asiento asignado en este horario
                     $existingAssignment = ClassScheduleSeat::where('class_schedules_id', $classScheduleId)
-                        ->where(function($q) use ($waitingUser) {
+                        ->where(function ($q) use ($waitingUser) {
                             $q->where('user_id', $waitingUser->user_id)
-                              ->orWhere('user_waiting_id', $waitingUser->user_id);
+                                ->orWhere('user_waiting_id', $waitingUser->user_id);
                         })
                         ->whereIn('status', ['reserved', 'occupied'])
                         ->where('id', '!=', $seat->id)
@@ -1078,12 +1093,11 @@ final class ClassScheduleController extends Controller
                 ], 200);
             });
         } catch (\Exception $e) {
-            // Log del error para debugging
-            Log::error('Error al liberar asientos', [
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $request->input('class_schedule_id'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'action' => 'Liberar/cancelar todas las reservas de asientos del usuario en un horario específico',
+                'description' => 'Error al Liberar/cancelar todas las reservas de asientos del usuario en un horario específico',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -1121,9 +1135,9 @@ final class ClassScheduleController extends Controller
                 'studio',
                 'classScheduleSeats' => function ($q) use ($userId, $request) {
                     // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
-                    $q->where(function($query) use ($userId) {
+                    $q->where(function ($query) use ($userId) {
                         $query->where('user_id', $userId)
-                              ->orWhere('user_waiting_id', $userId);
+                            ->orWhere('user_waiting_id', $userId);
                     })->with('seat');
                     // Si se especifica status (uno o varios), filtrar los asientos
                     if ($request->filled('status')) {
@@ -1134,9 +1148,9 @@ final class ClassScheduleController extends Controller
             ])
                 ->whereHas('classScheduleSeats', function ($q) use ($userId, $request) {
                     // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
-                    $q->where(function($query) use ($userId) {
+                    $q->where(function ($query) use ($userId) {
                         $query->where('user_id', $userId)
-                              ->orWhere('user_waiting_id', $userId);
+                            ->orWhere('user_waiting_id', $userId);
                     });
                     // Si se especifica status (uno o varios), filtrar solo esos asientos
                     if ($request->filled('status')) {
@@ -1286,10 +1300,11 @@ final class ClassScheduleController extends Controller
                 ], 200);
             }
         } catch (\Exception $e) {
-            Log::error('Error al obtener reservas del usuario', [
+            Log::create([
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'action' => 'Listar mis reservas de clases con filtros por estado',
+                'description' => 'Error al Listar mis reservas de clases con filtros por estado',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -1470,11 +1485,11 @@ final class ClassScheduleController extends Controller
                 ]
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error al verificar disponibilidad de paquetes', [
+            Log::create([
                 'user_id' => Auth::id(),
-                'schedule_id' => $classSchedule->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'action' => 'Listar mis reservas de clases con filtros por estado',
+                'description' => 'Error al Listar mis reservas de clases con filtros por estado',
+                'data' => $e->getMessage(),
             ]);
             return response()->json([
                 'exito' => false,
@@ -1524,9 +1539,9 @@ final class ClassScheduleController extends Controller
             // Incluir asientos donde el usuario es el propietario (user_id) O donde viene de lista de espera (user_waiting_id)
             $userSeats = ClassScheduleSeat::with(['seat', 'userPackage.package', 'userMembership.membership'])
                 ->where('class_schedules_id', $classScheduleId)
-                ->where(function($query) use ($userId) {
+                ->where(function ($query) use ($userId) {
                     $query->where('user_id', $userId)
-                          ->orWhere('user_waiting_id', $userId);
+                        ->orWhere('user_waiting_id', $userId);
                 })
                 ->get();
 
@@ -1599,12 +1614,11 @@ final class ClassScheduleController extends Controller
                 'datoAdicional' => $scheduleData
             ], 200);
         } catch (\Throwable $e) {
-            // Log del error para debugging
-            Log::error('Error al obtener asientos reservados del usuario', [
+            Log::create([
                 'user_id' => Auth::id(),
-                'class_schedule_id' => $request->input('class_schedule_id'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'action' => 'Obtiener los asientos reservados por el usuario autenticado en un horario específico',
+                'description' => 'Error al obtener los asientos reservados por el usuario autenticado en un horario específico',
+                'data' => $e->getMessage(),
             ]);
 
             return response()->json([

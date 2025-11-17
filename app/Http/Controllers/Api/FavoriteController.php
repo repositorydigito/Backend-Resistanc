@@ -7,8 +7,10 @@ use App\Models\ClassModel;
 use App\Models\ClassSchedule;
 use App\Models\Drink;
 use App\Models\Instructor;
+use App\Models\Log;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @tags Favoritos
@@ -35,12 +37,20 @@ final class FavoriteController extends Controller
                     'instructors' => $user->favoriteInstructors,
                 ]
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista los elementos favoritos del usuario',
+                'description' => 'Error al obtener las etiquetas',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener las etiquetas',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -53,11 +63,11 @@ final class FavoriteController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // Validar parámetros de paginación
             $perPage = $request->input('per_page', 15);
             $perPage = min(max($perPage, 1), 100); // Limitar entre 1 y 100
-            
+
             // Obtener productos favoritos con información adicional
             $favoriteProductsQuery = $user->favoriteProducts()
                 ->with(['category', 'productBrand', 'variants'])
@@ -67,7 +77,7 @@ final class FavoriteController extends Controller
             // Verificar si se solicita paginación
             if ($request->has('paginate') && $request->boolean('paginate')) {
                 $favoriteProducts = $favoriteProductsQuery->paginate($perPage);
-                
+
                 return response()->json([
                     'exito' => true,
                     'codMensaje' => 1,
@@ -88,7 +98,7 @@ final class FavoriteController extends Controller
             } else {
                 // Sin paginación - retornar todos los resultados
                 $favoriteProducts = $favoriteProductsQuery->get();
-                
+
                 return response()->json([
                     'exito' => true,
                     'codMensaje' => 1,
@@ -99,12 +109,20 @@ final class FavoriteController extends Controller
                     ]
                 ], 200);
             }
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtiene los productos favoritos del usuario logueado',
+                'description' => 'Error al obtener los productos favoritos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener los productos favoritos',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -167,6 +185,14 @@ final class FavoriteController extends Controller
                 ],
             ], 200);
         } catch (\Exception $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega un producto a los favoritos del usuario',
+                'description' => 'Error al procesar el favorito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -233,6 +259,14 @@ final class FavoriteController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega una bebida a los favoritos del usuario',
+                'description' => 'Error al procesar la bebida favorita',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -240,6 +274,14 @@ final class FavoriteController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega una bebida a los favoritos del usuario',
+                'description' => 'Error inesperado al procesar la bebida favorita',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -307,6 +349,16 @@ final class FavoriteController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega una clase a los favoritos del usuario',
+                'description' => 'Error al procesar la clase favorita',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -314,6 +366,15 @@ final class FavoriteController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega una clase a los favoritos del usuario',
+                'description' => 'Error inesperado al procesar la clase favorita',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -381,6 +442,15 @@ final class FavoriteController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega un instructor a los favoritos del usuario',
+                'description' => 'Error al procesar el instructor favorito',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -388,6 +458,14 @@ final class FavoriteController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega un instructor a los favoritos del usuario',
+                'description' => 'Error inesperado al procesar el instructor favorito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -455,6 +533,14 @@ final class FavoriteController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega o remueve un horario de clase de los favoritos del usuario',
+                'description' => 'Error al procesar el horario favorito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -462,6 +548,14 @@ final class FavoriteController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agrega o remueve un horario de clase de los favoritos del usuario',
+                'description' => 'Error inesperado al procesar el horario favorito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

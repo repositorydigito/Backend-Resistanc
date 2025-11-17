@@ -103,6 +103,13 @@ final class AuthController extends Controller
 
         } catch (ValidationException $e) {
             // Errores de validación (aunque no debería llegar aquí por el validate inicial)
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'register',
+                'description' => 'Error de validación al registrar usuario',
+                'data' => $e->getMessage(),
+            ]);
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -110,13 +117,22 @@ final class AuthController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200); // 422 Unprocessable Entity
 
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
             // Otros errores
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'register',
+                'description' => 'Error al registrar usuario',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al registrar usuario',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200); // 500 Internal Server Error
         }
     }
@@ -225,12 +241,15 @@ final class AuthController extends Controller
                 'datoAdicional' => LoginResource::make($user)->toArray(request()),
             ])->header('Authorization', 'Bearer ' . $token);
         } catch (ValidationException $e) {
-            Log::error('Error en Atención [login]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'login',
+                'description' => 'Error de validación al iniciar sesión',
+                'data' => $e->getMessage(),
             ]);
+
+
 
             return response()->json([
                 'exito' => false,
@@ -239,12 +258,14 @@ final class AuthController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Error en Atención [login]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'login',
+                'description' => 'Error interno al iniciar sesión',
+                'data' => $e->getMessage(),
             ]);
+
 
             return response()->json([
                 'exito' => false,
@@ -339,12 +360,14 @@ final class AuthController extends Controller
                 'datoAdicional' => $userData,
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Error en Atención [me]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'me',
+                'description' => 'Error interno al obtener usuario autenticado',
+                'data' => $e->getMessage(),
             ]);
+
 
             return response()->json([
                 'exito' => false,
@@ -361,25 +384,41 @@ final class AuthController extends Controller
      */
     public function resendVerificationEmail(Request $request): JsonResponse
     {
-        $user = $request->user();
 
-        if ($user->hasVerifiedEmail()) {
+        try {
+            $user = $request->user();
+
+            if ($user->hasVerifiedEmail()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Tu email ya ha sido verificado.',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            Mail::to($user->email)->send(new EmailVerificationMailable($user));
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Email de verificación enviado correctamente.',
+                'datoAdicional' => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => null,
+                'action' => 'resend_verification_email',
+                'description' => 'Error al reenviar el email de verificación',
+                'data' => $e->getMessage(),
+            ]);
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Tu email ya ha sido verificado.',
-                'datoAdicional' => null,
+                'mensajeUsuario' => 'Error al reenviar el email de verificación.',
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
-
-        Mail::to($user->email)->send(new EmailVerificationMailable($user));
-
-        return response()->json([
-            'exito' => true,
-            'codMensaje' => 1,
-            'mensajeUsuario' => 'Email de verificación enviado correctamente.',
-            'datoAdicional' => null,
-        ]);
     }
 
     /**
@@ -387,13 +426,32 @@ final class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // Revoke current token
-        $request->user()->currentAccessToken()?->delete();
 
-        return response()->json([
-            'message' => 'Sesión cerrada exitosamente.',
-            'logged_out_at' => now()->toISOString(),
-        ]);
+
+        try {
+            // Revoke current token
+            $request->user()->currentAccessToken()?->delete();
+
+            return response()->json([
+                'message' => 'Sesión cerrada exitosamente.',
+                'logged_out_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $th) {
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'logout',
+                'description' => 'Error al cerrar sesión',
+                'data' => $e->getMessage(),
+            ]);
+
+
+
+            return response()->json([
+                'message' => 'Error al cerrar sesión.',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -401,17 +459,31 @@ final class AuthController extends Controller
      */
     public function logoutAll(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $tokensCount = $user->tokens()->count();
 
-        // Revoke all tokens
-        $user->tokens()->delete();
+        try {
+            $user = $request->user();
+            $tokensCount = $user->tokens()->count();
 
-        return response()->json([
-            'message' => 'Todas las sesiones han sido cerradas exitosamente.',
-            'tokens_revoked' => $tokensCount,
-            'logged_out_at' => now()->toISOString(),
-        ]);
+            // Revoke all tokens
+            $user->tokens()->delete();
+
+            return response()->json([
+                'message' => 'Todas las sesiones han sido cerradas exitosamente.',
+                'tokens_revoked' => $tokensCount,
+                'logged_out_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => null,
+                'action' => 'logout_all',
+                'description' => 'Error al cerrar todas las sesiones',
+                'data' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Error al cerrar todas las sesiones.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -419,26 +491,42 @@ final class AuthController extends Controller
      */
     public function refresh(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $currentToken = $request->user()->currentAccessToken();
 
-        // Get device name from request or use current token name
-        $deviceName = $request->input('device_name', $currentToken->name);
+        try {
+            $user = $request->user();
+            $currentToken = $request->user()->currentAccessToken();
 
-        // Create new token
-        $newToken = $user->createToken($deviceName)->plainTextToken;
+            // Get device name from request or use current token name
+            $deviceName = $request->input('device_name', $currentToken->name);
 
-        // Revoke current token
-        $currentToken?->delete();
+            // Create new token
+            $newToken = $user->createToken($deviceName)->plainTextToken;
 
-        return response()->json([
-            'message' => 'Token renovado exitosamente.',
-            'token' => [
-                'access_token' => $newToken,
-                'token_type' => 'Bearer',
-            ],
-            'refreshed_at' => now()->toISOString(),
-        ]);
+            // Revoke current token
+            $currentToken?->delete();
+
+            return response()->json([
+                'message' => 'Token renovado exitosamente.',
+                'token' => [
+                    'access_token' => $newToken,
+                    'token_type' => 'Bearer',
+                ],
+                'refreshed_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $e) {
+
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'refresh_token',
+                'description' => 'error al renovar token',
+                'data' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Error al renovar el token.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -515,6 +603,14 @@ final class AuthController extends Controller
         } catch (ValidationException $e) {
             // Verificar si es error de email duplicado
             if (isset($e->errors()['email']) && str_contains($e->errors()['email'][0], 'unique')) {
+
+                Log::create([
+                    'user_id' => null,
+                    'action' => 'update_me',
+                    'description' => 'Error de email duplicado al actualizar perfil',
+                    'data' => $e->getMessage(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 2,
@@ -522,6 +618,13 @@ final class AuthController extends Controller
                     'datoAdicional' => null,
                 ], 200);
             }
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_me',
+                'description' => 'Error de validación al actualizar perfil',
+                'data' => $e->getMessage(),
+            ]);
 
             return response()->json([
                 'exito' => false,
@@ -532,6 +635,19 @@ final class AuthController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             // Manejar errores de base de datos específicos
             if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'Duplicate entry')) {
+                Log::create([
+                    'user_id' => null,
+                    'action' => 'update_me',
+                    'description' => 'Error de email duplicado al actualizar perfil',
+                    'data' => $e->getMessage(),
+                ]);
+                Log::create([
+                    'user_id' => null,
+                    'action' => 'update_me',
+                    'description' => 'Error de validación al actualizar perfil',
+                    'data' => $e->getMessage(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 2,
@@ -540,12 +656,6 @@ final class AuthController extends Controller
                 ], 200);
             }
 
-            Log::error('Error de base de datos en Atención [updateMe]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
-            ]);
 
             return response()->json([
                 'exito' => false,
@@ -554,12 +664,13 @@ final class AuthController extends Controller
                 'datoAdicional' => null,
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Error en Atención [updateMe]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_me',
+                'description' => 'Error interno al actualizar perfil',
+                'data' => $e->getMessage(),
             ]);
+
 
             return response()->json([
                 'exito' => false,
@@ -628,18 +739,35 @@ final class AuthController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_password',
+                'description' => 'Error de validación al actualizar la contraseña',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error de validación',
                 'datoAdicional' => $e->errors(),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_password',
+                'description' => 'Error interno al actualizar la contraseña',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al actualizar la contraseña',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }

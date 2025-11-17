@@ -16,46 +16,6 @@ final class InvoiceController extends Controller
     /**
      * Genera y registra un comprobante electrónico
      *
-     * Envía los datos del comprobante a Nubefact y guarda tanto la solicitud como la respuesta.
-     * **Requiere autenticación:** Incluye el token Bearer en el header Authorization.
-     *
-     * @summary Generar comprobante electrónico
-     * @operationId generarComprobante
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @bodyParam operacion string Operación a realizar. Example: generar_comprobante
-     * @bodyParam tipo_de_comprobante integer Tipo de comprobante. Example: 1
-     * @bodyParam serie string Serie del comprobante. Example: FFF1
-     * @bodyParam numero integer Número del comprobante. Example: 1
-     * @bodyParam cliente_tipo_de_documento integer Tipo de documento del cliente. Example: 6
-     * @bodyParam cliente_numero_de_documento string Número de documento del cliente. Example: 20600695771
-     * @bodyParam cliente_denominacion string Nombre o razón social del cliente. Example: NUBEFACT SA
-     * @bodyParam fecha_de_emision string Fecha de emisión (Y-m-d). Example: 2024-07-08
-     * @bodyParam moneda integer Moneda. Example: 1
-     * @bodyParam total number Total de la factura. Example: 708
-     * @bodyParam items array Lista de items del comprobante.
-     * @bodyParam items[].unidad_de_medida string Unidad de medida. Example: NIU
-     * @bodyParam items[].codigo string Código del producto. Example: 001
-     * @bodyParam items[].descripcion string Descripción del producto. Example: DETALLE DEL PRODUCTO
-     * @bodyParam items[].cantidad integer Cantidad. Example: 1
-     * @bodyParam items[].valor_unitario number Valor unitario. Example: 500
-     * @bodyParam items[].precio_unitario number Precio unitario. Example: 590
-     * @bodyParam items[].subtotal number Subtotal. Example: 500
-     * @bodyParam items[].tipo_de_igv integer Tipo de IGV. Example: 1
-     * @bodyParam items[].igv number IGV. Example: 90
-     * @bodyParam items[].total number Total del item. Example: 590
-     *
-     * @response 200 {
-     *   "tipo_de_comprobante": 1,
-     *   "serie": "FFF1",
-     *   "numero": 1,
-     *   "enlace": "https://www.nubefact.com/cpe/uuid",
-     *   "aceptada_por_sunat": true,
-     *   "sunat_description": "La Factura numero FFF1-1, ha sido aceptada",
-     *   "codigo_hash": "xMLFMnbgp1/bHEy572RKRTE9hPY="
-     * }
      */
     public function generarComprobante(InvoiceRequest $request, NubefactService $nubefact)
     {

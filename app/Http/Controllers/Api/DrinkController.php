@@ -12,6 +12,7 @@ use App\Models\Basedrink;
 use App\Models\Drink;
 use App\Models\Flavordrink;
 use App\Models\JuiceCartCodes;
+use App\Models\Log;
 use App\Models\Typedrink;
 use App\Models\UserMembership;
 use Dedoc\Scramble\Support\Generator\Types\Type;
@@ -20,6 +21,7 @@ use Error;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -54,6 +56,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => DrinkResource::collection($drinks),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Listar todas las bebidas',
+                'description' => 'Error al listar todas las bebidas',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -83,7 +93,15 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => 'Bebida obtenida exitosamente',
                 'datoAdicional' => new DrinkResource($drink),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener bebida específica',
+                'description' => 'Error al obtener bebida específica',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -108,6 +126,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => BasedrinkResource::collection($bases),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todas las bases de bebidas disponibles',
+                'description' => 'Error al obtener todas las bases de bebidas disponibles',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -132,6 +158,15 @@ final class DrinkController extends Controller
                 'datoAdicional' => FlavordrinkResource::collection($flavors),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todos los sabores de bebidas disponibles',
+                'description' => 'Error al obtener todos los sabores de bebidas disponibles',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -156,6 +191,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => TypedrinkResource::collection($types),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todos los tipos de bebidas disponibles',
+                'description' => 'Error al obtener todos los tipos de bebidas disponibles',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -237,6 +280,14 @@ final class DrinkController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtiene los shakes gratuitos disponibles provenientes de membresías activas.',
+                'description' => 'Error al obtener los shakes gratuitos disponibles provenientes de membresías activas.',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -419,6 +470,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => new JuiceCartCodesResource($cart),
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Añade una bebida al carrito del usuario autenticado',
+                'description' => 'Error al añadir una bebida al carrito del usuario autenticado',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -426,6 +485,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Añade una bebida al carrito del usuario autenticado',
+                'description' => 'Error al añadir bebida al carrito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -470,6 +537,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => new JuiceCartCodesResource($cart),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Muestra el carrito del usuario autenticado',
+                'description' => 'Error al obtener el carrito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -602,8 +677,16 @@ final class DrinkController extends Controller
                 'mensajeUsuario' => $message,
                 'datoAdicional' => $responseData,
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Actualiza la cantidad de una o varias bebidas en el carrito del usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -611,6 +694,16 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Actualiza la cantidad de una o varias bebidas en el carrito del usuario autenticado',
+                'description' => 'Error al actualizar cantidad en el carrito',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -691,6 +784,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => new JuiceCartCodesResource($cart),
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Remueve una bebida del carrito del usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -698,6 +799,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Remueve una bebida del carrito del usuario autenticado',
+                'description' => 'Error al remover bebida del carrito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -971,6 +1080,14 @@ final class DrinkController extends Controller
             $reason = $e->getMessage();
 
             if ($reason === 'insufficient_shakes') {
+
+                Log::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Confirmar carrito de bebidas y crear orden',
+                    'description' => 'No tienes suficientes shakes disponibles para completar el canje',
+                    'data' => $e->getMessage(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
@@ -982,6 +1099,14 @@ final class DrinkController extends Controller
             }
 
             if ($reason === 'membership_not_found') {
+
+                Log::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Confirmar carrito de bebidas y crear orden',
+                    'description' => 'La membresía seleccionada ya no está disponible',
+                    'data' => $e->getMessage(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
@@ -993,6 +1118,15 @@ final class DrinkController extends Controller
             }
 
             if ($reason === 'consume_failed') {
+
+                Log::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Confirmar carrito de bebidas y crear orden',
+                    'description' => 'No se pudo aplicar el canje de la membresía',
+                    'data' => $e->getMessage(),
+                ]);
+
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
@@ -1003,6 +1137,14 @@ final class DrinkController extends Controller
                 ], 200);
             }
 
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Confirmar carrito de bebidas y crear orden',
+                'description' => 'No se pudo confirmar el pedido',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -1012,6 +1154,14 @@ final class DrinkController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Confirmar carrito de bebidas y crear orden',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -1019,6 +1169,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Confirmar carrito de bebidas y crear orden',
+                'description' => 'Error al confirmar el pedido',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -1068,6 +1226,14 @@ final class DrinkController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener órdenes del usuario',
+                'description' => 'Error al obtener órdenes',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -1144,6 +1310,14 @@ final class DrinkController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar una orden específica',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -1151,6 +1325,14 @@ final class DrinkController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar una orden específica',
+                'description' => 'Error al obtener la orden',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -1159,6 +1341,4 @@ final class DrinkController extends Controller
             ], 200);
         }
     }
-
-
 }

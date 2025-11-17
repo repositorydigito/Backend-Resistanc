@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Log;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @tags Sistema
@@ -34,6 +36,14 @@ final class TestController extends Controller
                 ]
             ], 200);
         } catch (\Throwable $th) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verifica el estado de la API',
+                'description' => 'Error en el sistema',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

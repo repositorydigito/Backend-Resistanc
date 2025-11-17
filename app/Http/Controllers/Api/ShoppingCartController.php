@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductOptionResource;
 use App\Models\ShoppingCart;
 use App\Models\CartItem;
+use App\Models\Log;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\JsonResponse;
@@ -101,6 +102,15 @@ class ShoppingCartController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar los productos del carrito del usuario autenticado',
+                'description' => 'Error al obtener el carrito',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -116,13 +126,6 @@ class ShoppingCartController extends Controller
     public function add(Request $request)
     {
         try {
-            // Log para debug
-            \Log::info('ShoppingCart Add Request', [
-                'all_data' => $request->all(),
-                'json_data' => $request->json()->all(),
-                'input_product_id' => $request->input('product_id'),
-                'input_quantity' => $request->input('quantity'),
-            ]);
 
             $request->validate([
                 'product_id' => 'required|exists:products,id',
@@ -168,6 +171,15 @@ class ShoppingCartController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agregar producto al carrito del usuario',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -175,6 +187,14 @@ class ShoppingCartController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agregar producto al carrito del usuario',
+                'description' => 'Error al agregar producto al carrito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -222,6 +242,15 @@ class ShoppingCartController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Eliminar producto específico del carrito',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -229,6 +258,14 @@ class ShoppingCartController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Eliminar producto específico del carrito',
+                'description' => 'Error al eliminar producto del carrito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -308,6 +345,15 @@ class ShoppingCartController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Actualizar cantidad de un producto en el carrito',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -315,6 +361,14 @@ class ShoppingCartController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Actualizar cantidad de un producto en el carrito',
+                'description' => 'Error al actualizar cantidad',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -346,6 +400,14 @@ class ShoppingCartController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Limpiar todo el carrito del usuario',
+                'description' => 'Error al limpiar el carrito',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -406,6 +468,16 @@ class ShoppingCartController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Confirmar carrito y crear orden',
+                'description' => 'Error al confirmar el carrito',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InstructorResource;
 use App\Models\Instructor;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
@@ -78,12 +79,20 @@ final class InstructorController extends Controller
                     ]
                 ],
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todos los instructores activos del sistema',
+                'description' => 'Error al listar instructores',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al listar instructores',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200); // Código 500 para errores del servidor
         }
     }
@@ -109,12 +118,21 @@ final class InstructorController extends Controller
                 'mensajeUsuario' => 'Instructores de la semana obtenidos exitosamente',
                 'datoAdicional' => InstructorResource::collection($instructors),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todos los instructores activos del sistema',
+                'description' => 'Error al obtener instructores de la semana',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener instructores de la semana',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
@@ -136,12 +154,20 @@ final class InstructorController extends Controller
                 'mensajeUsuario' => 'Top 10 instructores obtenidos exitosamente',
                 'datoAdicional' => InstructorResource::collection($instructors),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista de 10 instructores activos del sistema',
+                'description' => 'Error al obtener top 10 instructores',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener top 10 instructores',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
@@ -169,12 +195,20 @@ final class InstructorController extends Controller
                 'mensajeUsuario' => 'Instructor obtenido exitosamente',
                 'datoAdicional' => new InstructorResource($instructor),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar detalles de un instructor específico',
+                'description' => 'Error al obtener instructor',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener instructor',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
@@ -227,18 +261,34 @@ final class InstructorController extends Controller
                 'datoAdicional' => $rating,
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Calificar a un instructor',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Datos de entrada inválidos',
                 'datoAdicional' => $e->errors(),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Calificar a un instructor',
+                'description' => 'Error al registrar la calificación',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al registrar la calificación',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }

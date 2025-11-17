@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -200,8 +201,15 @@ class HistoryController extends Controller
                     'available_shakes_breakdown' => $this->getShakesBreakdown($user),
                 ]
             ], 200);
-
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener historial de clases completadas del usuario',
+                'description' => 'Error al obtener el historial',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -318,4 +326,3 @@ class HistoryController extends Controller
         return $breakdown;
     }
 }
-

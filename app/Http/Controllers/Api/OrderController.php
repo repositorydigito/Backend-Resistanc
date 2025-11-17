@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderDetailResource;
 use App\Http\Resources\OrderResource;
+use App\Models\Log;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -57,6 +59,14 @@ class OrderController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista los pedidos del usuario autenticado',
+                'description' => 'Error al obtener pedidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -68,7 +78,6 @@ class OrderController extends Controller
 
     /**
      * Confirma el carrito de compras y crea la orden
-     * Flujo: ShoppingCart -> Order (igual que shakes: JuiceCartCodes -> JuiceOrder)
      */
     public function store(Request $request): JsonResponse
     {
@@ -149,24 +158,24 @@ class OrderController extends Controller
                     'items' => $itemsForJson, // Campo JSON requerido
                 ]);
 
-                    // Crear items de la orden
-                    $order->orderItems()->createMany($orderItemsData);
+                // Crear items de la orden
+                $order->orderItems()->createMany($orderItemsData);
 
-                    // Marcar carrito como convertido y limpiarlo
-                    $cart->update(['status' => 'converted']);
-                    $cart->items()->delete();
+                // Marcar carrito como convertido y limpiarlo
+                $cart->update(['status' => 'converted']);
+                $cart->items()->delete();
 
-                    // Crear nuevo carrito activo para el usuario
-                    \App\Models\ShoppingCart::create([
-                        'user_id' => $userId,
-                        'session_id' => session()->getId(),
-                        'status' => 'active',
-                        'total_amount' => 0,
-                        'item_count' => 0,
-                    ]);
+                // Crear nuevo carrito activo para el usuario
+                \App\Models\ShoppingCart::create([
+                    'user_id' => $userId,
+                    'session_id' => session()->getId(),
+                    'status' => 'active',
+                    'total_amount' => 0,
+                    'item_count' => 0,
+                ]);
 
-                    // Cargar relaciones para la respuesta
-                    $order->load(['orderItems.product', 'orderItems.productVariant', 'user']);
+                // Cargar relaciones para la respuesta
+                $order->load(['orderItems.product', 'orderItems.productVariant', 'user']);
 
                 return response()->json([
                     'exito' => true,
@@ -205,6 +214,15 @@ class OrderController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Confirma el carrito de compras y crea la orden',
+                'description' => 'Error al confirmar el pedido',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -270,6 +288,14 @@ class OrderController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar una orden específica',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 2,
@@ -277,6 +303,14 @@ class OrderController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar una orden específica',
+                'description' => 'Error al obtener el pedido',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

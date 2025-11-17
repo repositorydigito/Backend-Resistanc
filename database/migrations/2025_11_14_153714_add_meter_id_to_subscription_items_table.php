@@ -11,7 +11,7 @@ return new class extends Migration
      */
 
 
-    // Laravel strapi
+    // Laravel stripe
     public function up(): void
     {
         Schema::table('subscription_items', function (Blueprint $table) {

@@ -12,10 +12,12 @@ use App\Http\Resources\ProductResource;
 use App\Models\ClassSchedule;
 use App\Models\Discipline;
 use App\Models\Instructor;
+use App\Models\Log;
 use App\Models\Post;
 use App\Models\Product;
 use DragonCode\Contracts\Cashier\Auth\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 /**
  * @tags Inicio
@@ -27,145 +29,160 @@ final class HomeController extends Controller
      */
     public function index()
     {
-        $user = request()->user(); // más seguro que Auth::user()
 
-        // Cantidad de reservas de asientos completadas
-        $classSchedulesCompletedCount = $user->completedSeatReservations()->count();
+        try {
+            $user = request()->user(); // más seguro que Auth::user()
 
-        $classSchedulesPendingCount = $user->pendingSeatReservations()->count();
+            // Cantidad de reservas de asientos completadas
+            $classSchedulesCompletedCount = $user->completedSeatReservations()->count();
 
-        // Clases disponibles del usuario
-        $availableClassesCount = $user->getAvailableClassesCount();
-        $availableClassesByDiscipline = $user->getAvailableClassesByDiscipline();
+            $classSchedulesPendingCount = $user->pendingSeatReservations()->count();
 
-        // Paquetes activos del usuario
-        $activePackagesCount = $user->getActivePackagesCount();
+            // Clases disponibles del usuario
+            $availableClassesCount = $user->getAvailableClassesCount();
+            $availableClassesByDiscipline = $user->getAvailableClassesByDiscipline();
 
-        // Obtener grupos de disciplinas con clases disponibles
-        $disciplineGroupsWithClasses = $this->getDisciplineGroupsWithAvailableClasses($user);
+            // Paquetes activos del usuario
+            $activePackagesCount = $user->getActivePackagesCount();
 
-        // Obtener cantidad de shakes disponibles
-        $availableShakesCount = $this->getAvailableShakesCount($user);
+            // Obtener grupos de disciplinas con clases disponibles
+            $disciplineGroupsWithClasses = $this->getDisciplineGroupsWithAvailableClasses($user);
 
-        // Instructores activos con disciplina
-        $instructors = Instructor::with('disciplines')
-            ->whereHas('disciplines', fn($q) => $q->where('status', 'active'))
-            ->orderBy('name')
-            ->limit(10)
-            ->get();
+            // Obtener cantidad de shakes disponibles
+            $availableShakesCount = $this->getAvailableShakesCount($user);
 
-        $disciplines = Discipline::orderBy('order', 'asc')
-            ->where('is_active', true)
-            ->get();
+            // Instructores activos con disciplina
+            $instructors = Instructor::with('disciplines')
+                ->whereHas('disciplines', fn($q) => $q->where('status', 'active'))
+                ->orderBy('name')
+                ->limit(10)
+                ->get();
+
+            $disciplines = Discipline::orderBy('order', 'asc')
+                ->where('is_active', true)
+                ->get();
 
 
-        $classSchedulesMe = $user->upcomingSeatReservations()
-            ->where(function ($query) {
-                $query->where('status', 'scheduled')
-                      ->orWhere('status', 'in_progress');
-            })
-            ->whereHas('classSchedule.class', fn($q) => $q->where('status', 'active'))
-            ->whereHas('classSchedule.studio', fn($q) => $q->where('status', 'active'))
-            ->with(['classSchedule.class', 'classSchedule.studio', 'seat'])
-            ->orderBy('reserved_at')
-            ->limit(10)
-            ->get();
+            $classSchedulesMe = $user->upcomingSeatReservations()
+                ->where(function ($query) {
+                    $query->where('status', 'scheduled')
+                        ->orWhere('status', 'in_progress');
+                })
+                ->whereHas('classSchedule.class', fn($q) => $q->where('status', 'active'))
+                ->whereHas('classSchedule.studio', fn($q) => $q->where('status', 'active'))
+                ->with(['classSchedule.class', 'classSchedule.studio', 'seat'])
+                ->orderBy('reserved_at')
+                ->limit(10)
+                ->get();
 
-        // 🎯 Calcular la fecha máxima basada en la membresía del usuario
-        $maxScheduledDate = null;
+            // 🎯 Calcular la fecha máxima basada en la membresía del usuario
+            $maxScheduledDate = null;
 
-        // Obtener todas las membresías activas del usuario
-        $userMemberships = $user->userMemberships()
-            ->where('status', 'active')
-            ->where('expiry_date', '>=', now())
-            ->whereHas('membership')
-            ->with('membership')
-            ->get();
+            // Obtener todas las membresías activas del usuario
+            $userMemberships = $user->userMemberships()
+                ->where('status', 'active')
+                ->where('expiry_date', '>=', now())
+                ->whereHas('membership')
+                ->with('membership')
+                ->get();
 
-        if ($userMemberships->isNotEmpty()) {
-            // Encontrar el máximo classes_before entre todas las membresías
-            $maxClassesBefore = $userMemberships->max(function ($userMembership) {
-                return $userMembership->membership->classes_before ?? 0;
-            });
+            if ($userMemberships->isNotEmpty()) {
+                // Encontrar el máximo classes_before entre todas las membresías
+                $maxClassesBefore = $userMemberships->max(function ($userMembership) {
+                    return $userMembership->membership->classes_before ?? 0;
+                });
 
-            if ($maxClassesBefore > 0) {
-                // Si el usuario tiene membresía con classes_before, puede ver clases hasta X días en el futuro
-                // Ejemplo: si classes_before = 7, puede ver clases hasta 7 días en el futuro
-                $maxScheduledDate = now()->addDays($maxClassesBefore)->toDateString();
+                if ($maxClassesBefore > 0) {
+                    // Si el usuario tiene membresía con classes_before, puede ver clases hasta X días en el futuro
+                    // Ejemplo: si classes_before = 7, puede ver clases hasta 7 días en el futuro
+                    $maxScheduledDate = now()->addDays($maxClassesBefore)->toDateString();
+                }
             }
-        }
 
-        $classSchedulesQuery = ClassSchedule::with(['class', 'studio'])
-            ->where('scheduled_date', '>=', now()->toDateString())
-            ->where('status', 'scheduled');
+            $classSchedulesQuery = ClassSchedule::with(['class', 'studio'])
+                ->where('scheduled_date', '>=', now()->toDateString())
+                ->where('status', 'scheduled');
 
-        // Aplicar límite de membresía si existe
-        if ($maxScheduledDate) {
-            $classSchedulesQuery->where('scheduled_date', '<=', $maxScheduledDate);
-        }
+            // Aplicar límite de membresía si existe
+            if ($maxScheduledDate) {
+                $classSchedulesQuery->where('scheduled_date', '<=', $maxScheduledDate);
+            }
 
-        $classSchedules = $classSchedulesQuery
-            ->orderBy('scheduled_date', 'asc')
-            ->orderBy('start_time', 'asc')
-            ->limit(10)
-            ->get();
+            $classSchedules = $classSchedulesQuery
+                ->orderBy('scheduled_date', 'asc')
+                ->orderBy('start_time', 'asc')
+                ->limit(10)
+                ->get();
 
-        $products = Product::with('category', 'productBrand')
-            ->where('status', 'active')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+            $products = Product::with('category', 'productBrand')
+                ->where('status', 'active')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
 
-        $posts = Post::with('category', 'tags')
-            ->where('status', 'published')
-            ->orderBy('is_featured', 'desc')
-            ->limit(10)
-            ->get();
+            $posts = Post::with('category', 'tags')
+                ->where('status', 'published')
+                ->orderBy('is_featured', 'desc')
+                ->limit(10)
+                ->get();
 
-        return response()->json([
-            'data' => [
-                'user' => [
+            return response()->json([
+                'data' => [
                     'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                    ],
-                    'info' => [
-                        'completedClassSchedulesCount' => $classSchedulesCompletedCount,
-                        'pendingClassSchedulesCount' => $classSchedulesPendingCount,
-                        'availableClassesCount' => $availableClassesCount,
-                        'availableClassesByDiscipline' => $availableClassesByDiscipline,
-                        'activePackagesCount' => $activePackagesCount,
-                        'disciplineGroupsWithClasses' => $disciplineGroupsWithClasses,
-                        'availableShakesCount' => $availableShakesCount,
-                    ],
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                        ],
+                        'info' => [
+                            'completedClassSchedulesCount' => $classSchedulesCompletedCount,
+                            'pendingClassSchedulesCount' => $classSchedulesPendingCount,
+                            'availableClassesCount' => $availableClassesCount,
+                            'availableClassesByDiscipline' => $availableClassesByDiscipline,
+                            'activePackagesCount' => $activePackagesCount,
+                            'disciplineGroupsWithClasses' => $disciplineGroupsWithClasses,
+                            'availableShakesCount' => $availableShakesCount,
+                        ],
 
-                    'paymentMethods' => $user->paymentMethods ? $user->paymentMethods->map(function ($method) {
-                        return [
-                            'id' => $method->id,
-                            'type' => $method->type,
-                            'details' => $method->details,
-                        ];
-                    }) : [],
-                    'packages' => $user->packages ? $user->packages->map(function ($package) {
-                        return [
-                            'id' => $package->id,
-                            'name' => $package->name,
-                            'description' => $package->description,
-                            'price' => $package->price,
-                            'status' => $package->status,
-                        ];
-                    }) : [],
+                        'paymentMethods' => $user->paymentMethods ? $user->paymentMethods->map(function ($method) {
+                            return [
+                                'id' => $method->id,
+                                'type' => $method->type,
+                                'details' => $method->details,
+                            ];
+                        }) : [],
+                        'packages' => $user->packages ? $user->packages->map(function ($package) {
+                            return [
+                                'id' => $package->id,
+                                'name' => $package->name,
+                                'description' => $package->description,
+                                'price' => $package->price,
+                                'status' => $package->status,
+                            ];
+                        }) : [],
 
+                    ],
+                    'disciplines' => DisciplineResource::collection($disciplines),
+                    'instructors' => InstructorResource::collection($instructors),
+                    'classSchedules' => ClassScheduleResource::collection($classSchedules),
+                    'classSchedulesMe' => ClassScheduleResource::collection($classSchedulesMe),
+                    'products' => ProductResource::collection($products),
+                    'posts' => PostResource::collection($posts),
                 ],
-                'disciplines' => DisciplineResource::collection($disciplines),
-                'instructors' => InstructorResource::collection($instructors),
-                'classSchedules' => ClassScheduleResource::collection($classSchedules),
-                'classSchedulesMe' => ClassScheduleResource::collection($classSchedulesMe),
-                'products' => ProductResource::collection($products),
-                'posts' => PostResource::collection($posts),
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => FacadesAuth::id(),
+                'action' => 'Obtener historial de clases completadas del usuario',
+                'description' => 'Error al obtener el historial',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error al obtener los datos de inicio.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

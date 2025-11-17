@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\JuiceOrderResource;
 use App\Models\JuiceOrder;
+use App\Models\Log;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -248,8 +249,16 @@ class StoreOrderController extends Controller
                     ],
                 ],
             ], 200);
-
         } catch (\Exception $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Listar todos los pedidos del usuario (shakes y productos)',
+                'description' => 'Error al obtener la lista de pedidos',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

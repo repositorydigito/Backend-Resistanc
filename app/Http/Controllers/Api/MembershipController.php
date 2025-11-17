@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Log;
 use App\Models\UserMembership;
 use App\Models\UserPackage;
 use Illuminate\Http\JsonResponse;
@@ -110,8 +111,15 @@ class MembershipController extends Controller
                     'membership' => $formattedMembership,
                 ]
             ], 200);
-
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener la membresía activa del usuario (solo la de mayor nivel vigente)',
+                'description' => 'Error al obtener las membresías',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -183,8 +191,15 @@ class MembershipController extends Controller
                     'is_valid' => $membership->is_valid,
                 ]
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verificar si la membresía está vigente para una disciplina específica',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -192,6 +207,14 @@ class MembershipController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verificar si la membresía está vigente para una disciplina específica',
+                'description' => 'Error al verificar el estado de la membresía',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -267,8 +290,15 @@ class MembershipController extends Controller
                     'total_paid_classes_available' => $activePackages->sum('remaining_classes'),
                 ]
             ], 200);
-
         } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verificar si la membresía está vigente para una disciplina específica',
+                'description' => 'Error al obtener el resumen de membresías',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -278,4 +308,3 @@ class MembershipController extends Controller
         }
     }
 }
-

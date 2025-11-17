@@ -58,8 +58,8 @@ final class PackageController extends Controller
                         if ($request->filled('discipline_group')) {
                             $disciplineIds = collect(explode('-', $request->string('discipline_group')))
                                 ->filter()
-                                ->filter(fn ($value) => is_numeric($value))
-                                ->map(fn ($value) => (int) $value)
+                                ->filter(fn($value) => is_numeric($value))
+                                ->map(fn($value) => (int) $value)
                                 ->unique()
                                 ->values();
                         } elseif ($request->filled('discipline_id')) {
@@ -73,8 +73,8 @@ final class PackageController extends Controller
 
                             $disciplineIds = $disciplineIds
                                 ->filter()
-                                ->filter(fn ($value) => is_numeric($value))
-                                ->map(fn ($value) => (int) $value)
+                                ->filter(fn($value) => is_numeric($value))
+                                ->map(fn($value) => (int) $value)
                                 ->unique()
                                 ->values();
                         }
@@ -123,12 +123,19 @@ final class PackageController extends Controller
                 'mensajeUsuario' => 'Paquetes obtenidos exitosamente',
                 'datoAdicional' => PackageResource::collection($packages),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todos los paquetes disponibles del sistema',
+                'description' => 'Fallo al listar paquetes',
+                'data' => $e->getMessage(),
+            ]);
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Fallo al listar paquetes',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200); // Código 500 para errores del servidor
         }
     }
@@ -163,12 +170,20 @@ final class PackageController extends Controller
                 'mensajeUsuario' => 'Paquete obtenido exitosamente',
                 'datoAdicional' => new PackageResource($package),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener paquete',
+                'description' => 'Fallo al obtener paquete',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Fallo al obtener paquete',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }
@@ -200,8 +215,8 @@ final class PackageController extends Controller
                 if ($request->filled('discipline_group')) {
                     $disciplineIds = collect(explode('-', $request->string('discipline_group')))
                         ->filter()
-                        ->filter(fn ($value) => is_numeric($value))
-                        ->map(fn ($value) => (int) $value)
+                        ->filter(fn($value) => is_numeric($value))
+                        ->map(fn($value) => (int) $value)
                         ->unique()
                         ->values();
                 } elseif ($request->filled('discipline_id')) {
@@ -215,8 +230,8 @@ final class PackageController extends Controller
 
                     $disciplineIds = $disciplineIds
                         ->filter()
-                        ->filter(fn ($value) => is_numeric($value))
-                        ->map(fn ($value) => (int) $value)
+                        ->filter(fn($value) => is_numeric($value))
+                        ->map(fn($value) => (int) $value)
                         ->unique()
                         ->values();
                 }
@@ -249,23 +264,26 @@ final class PackageController extends Controller
                 'mensajeUsuario' => 'Lista de paquetes del usuario obtenida correctamente',
                 'datoAdicional' => UserPackageResource::collection($userPackages)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mis paquetes',
+                'description' => 'Error al obtener los paquetes del usuario',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener los paquetes del usuario',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
 
     /**
      * Comprar/Agregar un paquete al usuario autenticado
-     *
-     * @param int package_id ID del paquete a comprar
-     * @param int payment_method_id ID del método de pago del usuario
-     * @param string promo_code (opcional) Código promocional a aplicar
-     * @param string notes (opcional) Notas adicionales
      */
     public function packageMeCreate(Request $request)
     {
@@ -476,6 +494,14 @@ final class PackageController extends Controller
                 throw $e;
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Comprar/Agregar un paquete al usuario autenticado',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -483,6 +509,14 @@ final class PackageController extends Controller
                 'datoAdicional' => $e->errors()
             ], 200);
         } catch (\Throwable $th) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Comprar/Agregar un paquete al usuario autenticado',
+                'description' => 'Error al comprar el paquete',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -702,6 +736,16 @@ final class PackageController extends Controller
                 ]
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Canjear un shake gratuito asociado a una membresía del usuario autenticado.',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -712,6 +756,14 @@ final class PackageController extends Controller
             $reason = $e->getMessage();
 
             if ($reason === 'insufficient_shakes') {
+
+                Log::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Canjear un shake gratuito asociado a una membresía del usuario autenticado.',
+                    'description' => 'La cantidad de shakes solicitada ya no está disponible',
+                    'data' => $e->getMessage(),
+                ]);
+
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
@@ -752,19 +804,18 @@ final class PackageController extends Controller
                     'reason' => $reason,
                 ]
             ], 200);
-        } catch (\Throwable $th) {
-            Log::error('Error al canjear shake de membresía', [
+        } catch (\Throwable $e) {
+            Log::create([
                 'user_id' => Auth::id(),
-                'membership_id' => $request->input('user_membership_id'),
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'action' => 'Canjear un shake gratuito asociado a una membresía del usuario autenticado.',
+                'description' => 'Error interno al canjear shake',
+                'data' => $e->getMessage(),
             ]);
-
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error interno al canjear shake',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -810,12 +861,20 @@ final class PackageController extends Controller
                     ];
                 })
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener las membresías activas del usuario autenticado',
+                'description' => 'Error al obtener las membresías',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener las membresías',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -851,8 +910,8 @@ final class PackageController extends Controller
             if ($request->filled('discipline_group')) {
                 $disciplineIds = collect(explode('-', $request->string('discipline_group')))
                     ->filter()
-                    ->filter(fn ($value) => is_numeric($value))
-                    ->map(fn ($value) => (int) $value)
+                    ->filter(fn($value) => is_numeric($value))
+                    ->map(fn($value) => (int) $value)
                     ->unique()
                     ->values();
             } elseif ($request->filled('discipline_id')) {
@@ -866,8 +925,8 @@ final class PackageController extends Controller
 
                 $disciplineIds = $disciplineIds
                     ->filter()
-                    ->filter(fn ($value) => is_numeric($value))
-                    ->map(fn ($value) => (int) $value)
+                    ->filter(fn($value) => is_numeric($value))
+                    ->map(fn($value) => (int) $value)
                     ->unique()
                     ->values();
             }
@@ -998,12 +1057,21 @@ final class PackageController extends Controller
                     ]
                 ]
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Clases restantes del usuario (paquetes + membresías)',
+                'description' => 'Error al obtener clases restantes',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener clases restantes',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -1086,13 +1154,12 @@ final class PackageController extends Controller
                     'available_quantity' => $packageDiscount->quantity
                 ]
             ];
-
         } catch (\Exception $e) {
-            Log::error('Error validating promo code', [
-                'code' => $code,
-                'package_id' => $packageId,
-                'user_id' => $userId,
-                'error' => $e->getMessage()
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Validar y aplicar código promocional',
+                'description' => 'Error al validar el código promocional',
+                'data' => $e->getMessage(),
             ]);
 
             return [
@@ -1137,13 +1204,12 @@ final class PackageController extends Controller
                 'discount' => $promoCodeData['discount_percentage'],
                 'final_price' => $promoCodeData['final_price']
             ]);
-
         } catch (\Exception $e) {
-            Log::error('Error registering promo code usage', [
-                'user_id' => $userId,
-                'package_id' => $packageId,
-                'promo_code' => $promoCode,
-                'error' => $e->getMessage()
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Registrar uso del código promocional',
+                'description' => 'Error registrar uso del código promocional',
+                'data' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -1198,13 +1264,13 @@ final class PackageController extends Controller
             ]);
 
             return $giftOrder->id;
-
         } catch (\Exception $e) {
-            Log::error('Error creando pedido de regalo de shakes', [
-                'user_id' => $userId,
-                'shake_quantity' => $shakeQuantity,
-                'package_name' => $packageName,
-                'error' => $e->getMessage()
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Crear pedido de regalo de shakes para membresía',
+                'description' => 'Error crear pedido de regalo de shakes para membresía',
+                'data' => $e->getMessage(),
             ]);
             return null;
         }

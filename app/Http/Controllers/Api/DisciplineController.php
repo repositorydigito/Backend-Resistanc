@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DisciplineResource;
 use App\Models\Discipline;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @tags Disciplinas
@@ -48,12 +50,20 @@ final class DisciplineController extends Controller
                 'mensajeUsuario' => 'Lista de disciplinas obtenida correctamente',
                 'datoAdicional' => DisciplineResource::collection($disciplines)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener lista de ',
+                'description' => 'Error al obtener las disciplinas',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener las disciplinas',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -183,10 +193,9 @@ final class DisciplineController extends Controller
                 'codMensaje' => 1,
                 'mensajeUsuario' => 'Grupos de disciplinas obtenidos correctamente',
                 'datoAdicional' =>  $disciplineGroups,
-                    // 'stats' => $stats
+                // 'stats' => $stats
 
             ], 200);
-
         } catch (\Throwable $th) {
             return response()->json([
                 'exito' => false,
@@ -196,5 +205,4 @@ final class DisciplineController extends Controller
             ], 200);
         }
     }
-
 }
