@@ -81,10 +81,13 @@ class PackageResource extends Resource
                                             ->values()
                                             ->toArray();
 
-                                        $nextAvailable = (max($existingOrders) ?? 0) + 1;
+                                        $nextAvailable = !empty($existingOrders) ? (max($existingOrders) + 1) : 1;
 
-                                        return "Órdenes ya usados: " . implode(', ', $existingOrders) .
-                                            ". Siguiente disponible: {$nextAvailable}";
+                                        $ordersText = !empty($existingOrders)
+                                            ? implode(', ', $existingOrders)
+                                            : 'Ninguno';
+
+                                        return "Órdenes ya usados: {$ordersText}. Siguiente disponible: {$nextAvailable}";
                                     })
                                     ->default(function () {
                                         return (\App\Models\Package::max('display_order') ?? 0) + 1;
@@ -96,15 +99,32 @@ class PackageResource extends Resource
                             ->columns(2)
                             ->schema([
                                 Forms\Components\TextInput::make('price_soles')
-                                    ->label('Precio con descuento')
+                                    ->label('Precio base (sin IGV)')
                                     ->required()
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->helperText('Este será el precio del producto en Stripe'),
+
+                                Forms\Components\TextInput::make('igv')
+                                    ->label('IGV (%)')
+                                    ->numeric()
+                                    ->default(18.00)
+                                    ->required()
+                                    ->suffix('%')
+                                    ->helperText('Impuesto General a las Ventas'),
 
                                 Forms\Components\TextInput::make('original_price_soles')
-                                    ->label('Precio base')
-                                    ->numeric(),
+                                    ->label('Precio original (sin IGV)')
+                                    ->numeric()
+                                    ->helperText('Precio original para mostrar descuentos'),
 
-
+                                Forms\Components\Placeholder::make('sale_price')
+                                    ->label('Precio de venta (con IGV)')
+                                    ->content(function ($get) {
+                                        $price = (float)($get('price_soles') ?? 0);
+                                        $igv = (float)($get('igv') ?? 18.00);
+                                        $salePrice = $price * (1 + ($igv / 100));
+                                        return 'S/ ' . number_format($salePrice, 2, '.', ',');
+                                    }),
 
                                 Forms\Components\TextInput::make('duration_in_months')
                                     ->label('Vigencia en meses')
@@ -143,7 +163,17 @@ class PackageResource extends Resource
 
                                 Forms\Components\Toggle::make('is_membresia')
                                     ->label('¿Es membresía?')
-                                    ->default(false), // Para hacer campos reactivos si es necesario
+                                    ->live()
+                                    ->default(false)
+                                    ->helperText('Si es true, será un pago recurrente'),
+
+                                Forms\Components\TextInput::make('recurrence_months')
+                                    ->label('Meses de recurrencia')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->visible(fn($get) => $get('is_membresia') === true)
+                                    ->required(fn($get) => $get('is_membresia') === true)
+                                    ->helperText('Cada cuántos meses se renovará automáticamente'),
 
                             ]),
 

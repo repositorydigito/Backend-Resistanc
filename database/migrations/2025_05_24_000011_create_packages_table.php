@@ -39,7 +39,7 @@ return new class extends Migration
             // Tipos y segmentación
             $table->enum('status', ['active', 'inactive', 'coming_soon', 'discontinued'])->default('active')->comment('Estado del paquete');
             $table->enum('buy_type', ['affordable', 'assignable'])->default('affordable')->comment('Tipo de compra del paquete');
-            $table->enum('type', ['free_trial','fixed', 'temporary'])->comment('Tipo de paquete');
+            $table->enum('type', ['free_trial', 'fixed', 'temporary'])->comment('Tipo de paquete');
             $table->date('start_date')->nullable()->comment('Fecha de inicio del paquete');
             $table->date('end_date')->nullable()->comment('Fecha de finalización del paquete');
             $table->enum('mode_type', ['presencial', 'virtual', 'mixto'])->default('presencial')->comment('Tipo de modalidad del paquete');
@@ -55,6 +55,11 @@ return new class extends Migration
             // nuevo
             $table->string('icon_url')->nullable()->comment('URL de la imagen del paquete');
             $table->integer('duration_in_months')->nullable()->comment('Duración del paquete en meses');
+
+            $table->string('stripe_product_id')->nullable()->comment('ID del producto en Stripe');
+            $table->decimal('igv', 5, 2)->default(18.00)->comment('IGV en porcentaje (ej: 18.00 para 18%)');
+            $table->integer('recurrence_months')->nullable()->comment('Meses de recurrencia si es membresía');
+            $table->string('stripe_price_id')->nullable()->comment('ID del precio en Stripe');
 
             // Relaciones
             $table->foreignId('membership_id')->nullable()->constrained('memberships')->onDelete('set null');

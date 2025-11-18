@@ -298,7 +298,12 @@ final class User extends Authenticatable implements MustVerifyEmail
         return $this->name ?? $this->email;
     }
 
-    public function paymentMethods(): HasMany
+    /**
+     * Relación con los métodos de pago almacenados en la base de datos
+     * Nota: Este método se renombró a storedPaymentMethods() para evitar conflicto 
+     * con paymentMethods() del trait Billable de Cashier que obtiene métodos de Stripe
+     */
+    public function storedPaymentMethods(): HasMany
     {
         return $this->hasMany(UserPaymentMethod::class);
     }

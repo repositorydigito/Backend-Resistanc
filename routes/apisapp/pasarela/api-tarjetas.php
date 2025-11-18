@@ -11,7 +11,7 @@ Route::prefix('me/cards')->name('cards.')->middleware('auth:sanctum')->group(fun
     Route::post('/stripe-intent', [PaymentController::class, 'createStripeIntent'])->name('stripe-intent');
     Route::post('/show', [PaymentController::class, 'show'])->name('show');
     Route::post('/update', [PaymentController::class, 'update'])->name('update');
-    // Route::post('/destroy', [PaymentController::class, 'destroy'])->name('destroy');
+    Route::post('/delete', [PaymentController::class, 'destroy'])->name('destroy');
     Route::post('/select', [PaymentController::class, 'selectPayment'])->name('select');
     Route::post('/default', [PaymentController::class, 'defaultPayment'])->name('default');
 });

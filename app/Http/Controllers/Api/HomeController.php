@@ -144,7 +144,7 @@ final class HomeController extends Controller
                             'availableShakesCount' => $availableShakesCount,
                         ],
 
-                        'paymentMethods' => $user->paymentMethods ? $user->paymentMethods->map(function ($method) {
+                        'paymentMethods' => $user->storedPaymentMethods ? $user->storedPaymentMethods->map(function ($method) {
                             return [
                                 'id' => $method->id,
                                 'type' => $method->type,

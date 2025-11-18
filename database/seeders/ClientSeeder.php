@@ -66,70 +66,70 @@ class ClientSeeder extends Seeder
         // Fin clientes
 
         // cliente con metodo de pago
-        $method = $user_cliente->paymentMethods()->create([
-            'payment_type' => 'credit_card',
-            'card_brand' => 'visa',
-            'card_last_four' => '1111',
-            'card_holder_name' => 'Juan Pérez',
-            'card_expiry_month' => 12,
-            'card_expiry_year' => 2025,
-            'is_default' => false,
-            'status' => 'active',
-            'verification_status' => 'pending',
-            'is_saved_for_future' => true,
-            'billing_address' => [
-                'street' => 'Av. Lima 123',
-                'city' => 'Lima',
-                'state' => 'Lima',
-                'postal_code' => '15001',
-                'country' => 'Perú',
-            ],
-            'gateway_token' => 'tok_test123456',
-            'gateway_customer_id' => 'cus_fake123',
-        ]);
+        // $method = $user_cliente->storedPaymentMethods()->create([
+        //     'payment_type' => 'credit_card',
+        //     'card_brand' => 'visa',
+        //     'card_last_four' => '1111',
+        //     'card_holder_name' => 'Juan Pérez',
+        //     'card_expiry_month' => 12,
+        //     'card_expiry_year' => 2025,
+        //     'is_default' => false,
+        //     'status' => 'active',
+        //     'verification_status' => 'pending',
+        //     'is_saved_for_future' => true,
+        //     'billing_address' => [
+        //         'street' => 'Av. Lima 123',
+        //         'city' => 'Lima',
+        //         'state' => 'Lima',
+        //         'postal_code' => '15001',
+        //         'country' => 'Perú',
+        //     ],
+        //     'gateway_token' => 'tok_test123456',
+        //     'gateway_customer_id' => 'cus_fake123',
+        // ]);
         // Fin cliente con metodo de pago
 
         // cliente paquete
-        $package1 = Package::firstWhere('id', 1); // o el id si lo conoces
-        $package2 = Package::firstWhere('id', 2);
+        // $package1 = Package::firstWhere('id', 1); // o el id si lo conoces
+        // $package2 = Package::firstWhere('id', 2);
 
-        foreach ($clients as $client) {
-            if ($package1) {
-                UserPackage::create([
-                    'user_id' => $client->id,
-                    'package_id' => $package1->id,
-                    'package_code' => sprintf('PCK-001-%03d', $client->id),
-                    'used_classes' => 0,
-                    'remaining_classes' => $package1->classes_quantity,
-                    'amount_paid_soles' => $package1->price_soles,
-                    'currency' => 'PEN',
-                    'purchase_date' => now(),
-                    'activation_date' => now(),
-                    'expiry_date' => $package1->duration_in_months
-                        ? now()->copy()->addMonths($package1->duration_in_months)
-                        : now()->copy()->addDays($package1->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
-                    'status' => 'active',
-                ]);
-            }
+        // foreach ($clients as $client) {
+        //     if ($package1) {
+        //         UserPackage::create([
+        //             'user_id' => $client->id,
+        //             'package_id' => $package1->id,
+        //             'package_code' => sprintf('PCK-001-%03d', $client->id),
+        //             'used_classes' => 0,
+        //             'remaining_classes' => $package1->classes_quantity,
+        //             'amount_paid_soles' => $package1->price_soles,
+        //             'currency' => 'PEN',
+        //             'purchase_date' => now(),
+        //             'activation_date' => now(),
+        //             'expiry_date' => $package1->duration_in_months
+        //                 ? now()->copy()->addMonths($package1->duration_in_months)
+        //                 : now()->copy()->addDays($package1->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
+        //             'status' => 'active',
+        //         ]);
+        //     }
 
-            if ($package2) {
-                UserPackage::create([
-                    'user_id' => $client->id,
-                    'package_id' => $package2->id,
-                    'package_code' => sprintf('PCK-002-%03d', $client->id),
-                    'used_classes' => 0,
-                    'remaining_classes' => $package2->classes_quantity,
-                    'amount_paid_soles' => $package2->price_soles,
-                    'currency' => 'PEN',
-                    'purchase_date' => now(),
-                    'activation_date' => now(),
-                    'expiry_date' => $package2->duration_in_months
-                        ? now()->copy()->addMonths($package2->duration_in_months)
-                        : now()->copy()->addDays($package2->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
-                    'status' => 'active',
-                ]);
-            }
-        }
+        //     if ($package2) {
+        //         UserPackage::create([
+        //             'user_id' => $client->id,
+        //             'package_id' => $package2->id,
+        //             'package_code' => sprintf('PCK-002-%03d', $client->id),
+        //             'used_classes' => 0,
+        //             'remaining_classes' => $package2->classes_quantity,
+        //             'amount_paid_soles' => $package2->price_soles,
+        //             'currency' => 'PEN',
+        //             'purchase_date' => now(),
+        //             'activation_date' => now(),
+        //             'expiry_date' => $package2->duration_in_months
+        //                 ? now()->copy()->addMonths($package2->duration_in_months)
+        //                 : now()->copy()->addDays($package2->validity_days ?? 30), // Si no tiene duración en meses, usar validity_days o 30 días por defecto
+        //             'status' => 'active',
+        //         ]);
+        //     }
+        // }
         // Fin cliente paquete
     }
 

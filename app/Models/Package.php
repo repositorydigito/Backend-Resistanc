@@ -46,6 +46,10 @@ final class Package extends Model
         'end_date',
         'duration_in_months',
         'is_membresia',
+        'recurrence_months', // Meses de recurrencia si es membresía
+        'igv', // IGV en porcentaje
+        'stripe_product_id', // ID del producto en Stripe
+        'stripe_price_id', // ID del precio en Stripe
 
 
         // Relaciones
@@ -56,7 +60,9 @@ final class Package extends Model
     protected $casts = [
         'price_soles' => 'decimal:2',
         'original_price_soles' => 'decimal:2',
+        'igv' => 'decimal:2',
         'classes_quantity' => 'integer',
+        'recurrence_months' => 'integer',
 
         'priority_booking_days' => 'integer',
         'features' => 'array',

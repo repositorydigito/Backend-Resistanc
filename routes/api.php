@@ -2,39 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\AuthRedController;
 
-use App\Http\Controllers\Api\ClassScheduleController;
 use App\Http\Controllers\Api\CompanyController;
-use App\Http\Controllers\Api\DisciplineController;
-use App\Http\Controllers\Api\DrinkController;
-use App\Http\Controllers\Api\FavoriteController;
-
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\HomeController;
-use App\Http\Controllers\Api\InstructorController;
-
-
-use App\Http\Controllers\Api\ProductController;
-
-use App\Http\Controllers\Api\RecoverPasswordController;
 use App\Http\Controllers\Api\TestController;
-
-
-
-use App\Http\Controllers\Api\WaitingController;
-use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\StoreOrderController;
-use App\Http\Controllers\Api\PasarelaController;
-use App\Http\Controllers\Api\PaymentController;
-
 use App\Http\Controllers\Api\InvoiceController;
-
-use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\MercardoPagoController;
-use App\Http\Controllers\Api\PostController;
-use App\Http\Controllers\Api\UserPayMethodController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -126,12 +101,3 @@ require __DIR__ . '/apisapp/pasarela/api-tarjetas.php';
 
 
 
-// Métodos de pago
-Route::prefix('me/payment-methods')->name('payment-methods.')->middleware('auth:sanctum')->group(function () {
-    Route::post('/', [UserPayMethodController::class, 'index'])->name('index');
-    Route::post('/create', [UserPayMethodController::class, 'store'])->name('store');
-    Route::post('/show', [UserPayMethodController::class, 'show'])->name('show');
-    Route::post('/update', [UserPayMethodController::class, 'update'])->name('update');
-    Route::post('/delete', [UserPayMethodController::class, 'destroy'])->name('delete');
-    // Route::post('/destroy', [UserPayMethodController::class, 'destroy'])->name('destroy');
-});
