@@ -11,5 +11,7 @@ Route::prefix('packages')->name('packages.')->middleware('auth:sanctum')->group(
     Route::post('/me/create', [PackageController::class, 'packageMeCreate'])->name('meCreate');
     Route::post('/me/vigent', [PackageController::class, 'packageMeVigent'])->name('packageMeVigent');
     Route::post('/me/redeem-shake', [PackageController::class, 'redeemMembershipShake'])->name('redeemShake');
+    Route::post('/me/subscriptions', [PackageController::class, 'mySubscriptions'])->name('mySubscriptions');
+    Route::post('/me/subscriptions/cancel', [PackageController::class, 'cancelSubscription'])->name('cancelSubscription');
 });
 // Fin paquetes

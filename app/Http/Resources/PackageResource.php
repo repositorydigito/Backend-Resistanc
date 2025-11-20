@@ -14,6 +14,11 @@ class PackageResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Calcular precios con IGV
+        $igvPercentage = (float) ($this->igv ?? 18); // IGV por defecto 18% si no está definido
+        $priceWithIgv = $this->price_soles * (1 + ($igvPercentage / 100));
+        $originalPriceWithIgv = $this->original_price_soles * (1 + ($igvPercentage / 100));
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -21,8 +26,8 @@ class PackageResource extends JsonResource
             'description' => $this->description,
             'short_description' => $this->short_description,
             'classes_quantity' => $this->classes_quantity,
-            'price_soles' => number_format($this->price_soles, 2, '.', ''), // Formato: 999.99
-            'original_price_soles' => number_format($this->original_price_soles, 2, '.', ''),
+            'price_soles' => number_format($priceWithIgv, 2, '.', ''), // Precio con IGV
+            'original_price_soles' => number_format($originalPriceWithIgv, 2, '.', ''), // Precio original con IGV
 
             'package_type' => $this->package_type,
             'billing_type' => $this->billing_type,
@@ -50,7 +55,7 @@ class PackageResource extends JsonResource
             'discount_percentage' => $this->discount_percentage,
             'features_string' => $this->features_string,
             'restrictions_string' => $this->restrictions_string,
-            'price_per_credit' => round($this->price_per_credit, 2),
+            'price_per_credit' => round($this->price_per_credit * (1 + ($igvPercentage / 100)), 2), // Precio por crédito con IGV
             'type_display_name' => $this->type_display_name,
             'billing_type_display_name' => $this->billing_type_display_name,
             'validity_period' => $this->validity_period,

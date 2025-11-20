@@ -102,6 +102,7 @@ class PackageResource extends Resource
                                     ->label('Precio base (sin IGV)')
                                     ->required()
                                     ->numeric()
+                                    ->live(onBlur: true)
                                     ->helperText('Este será el precio del producto en Stripe'),
 
                                 Forms\Components\TextInput::make('igv')
@@ -110,12 +111,26 @@ class PackageResource extends Resource
                                     ->default(18.00)
                                     ->required()
                                     ->suffix('%')
+                                    ->live(onBlur: true)
                                     ->helperText('Impuesto General a las Ventas'),
 
                                 Forms\Components\TextInput::make('original_price_soles')
                                     ->label('Precio original (sin IGV)')
                                     ->numeric()
+                                    ->live(onBlur: true)
                                     ->helperText('Precio original para mostrar descuentos'),
+
+                                Forms\Components\Placeholder::make('original_price_with_igv')
+                                    ->label('Precio original (con IGV)')
+                                    ->content(function ($get) {
+                                        $originalPrice = (float)($get('original_price_soles') ?? 0);
+                                        if ($originalPrice <= 0) {
+                                            return '-';
+                                        }
+                                        $igv = (float)($get('igv') ?? 18.00);
+                                        $priceWithIgv = $originalPrice * (1 + ($igv / 100));
+                                        return 'S/ ' . number_format($priceWithIgv, 2, '.', ',');
+                                    }),
 
                                 Forms\Components\Placeholder::make('sale_price')
                                     ->label('Precio de venta (con IGV)')

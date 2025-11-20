@@ -8,11 +8,12 @@ use App\Http\Resources\UserPackageResource;
 use App\Models\Package;
 use App\Models\UserPackage;
 use App\Models\UserMembership;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Stripe\StripeClient;
 
 /**
  * @tags Paquetes
@@ -291,25 +292,79 @@ final class PackageController extends Controller
             // Validar datos de entrada
             $request->validate([
                 'package_id' => 'required|integer|exists:packages,id',
-                'payment_method_id' => 'required|integer|exists:user_payment_methods,id',
+                'payment_method_id' => 'required|string', // ID de Stripe directamente
                 'promo_code' => 'nullable|string|max:50',
                 'notes' => 'nullable|string|max:500',
             ]);
 
             $userId = Auth::id();
 
-            // Verificar que el método de pago pertenece al usuario
-            $paymentMethod = \App\Models\UserPaymentMethod::where('id', $request->payment_method_id)
-                ->where('user_id', $userId)
-                ->where('status', 'active')
-                ->first();
-
-            if (!$paymentMethod) {
+            // Obtener el usuario
+            $user = Auth::user();
+            
+            if (!$user) {
                 return response()->json([
                     'exito' => false,
                     'codMensaje' => 0,
-                    'mensajeUsuario' => 'Método de pago no válido',
-                    'datoAdicional' => 'El método de pago no existe o no está activo'
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => []
+                ], 200);
+            }
+
+            // Asegurar que el usuario tenga un customer en Stripe
+            if (!$user->stripe_id) {
+                $user->createAsStripeCustomer();
+            }
+
+            // Obtener el ID del método de pago directamente desde Stripe (no desde BD)
+            $stripePaymentMethodId = $request->input('payment_method_id');
+            
+            // Validar que el método de pago existe en Stripe y pertenece al usuario
+            try {
+                // Verificar que el método de pago existe y está asociado al customer
+                $paymentMethod = $user->findPaymentMethod($stripePaymentMethodId);
+                
+                if (!$paymentMethod) {
+                    // Si no está asociado, intentar asociarlo
+                    try {
+                        $user->addPaymentMethod($stripePaymentMethodId);
+                    } catch (\Exception $e) {
+                        return response()->json([
+                            'exito' => false,
+                            'codMensaje' => 0,
+                            'mensajeUsuario' => 'El método de pago no es válido o no pertenece a este usuario',
+                            'datoAdicional' => $e->getMessage()
+                        ], 200);
+                    }
+                }
+
+                // Verificar que el método de pago pertenece al customer del usuario
+                $stripePaymentMethod = $user->findPaymentMethod($stripePaymentMethodId)->asStripePaymentMethod();
+                if ($stripePaymentMethod->customer && $stripePaymentMethod->customer !== $user->stripe_id) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'El método de pago no pertenece a este usuario',
+                        'datoAdicional' => []
+                    ], 200);
+                }
+
+            } catch (\Exception $e) {
+                Log::create([
+                    'user_id' => $userId,
+                    'action' => 'Error al validar método de pago de Stripe',
+                    'description' => 'Error al validar método de pago de Stripe',
+                    'data' => json_encode([
+                        'payment_method_id' => $stripePaymentMethodId,
+                        'error' => $e->getMessage(),
+                    ]),
+                ]);
+
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Error al validar el método de pago en Stripe',
+                    'datoAdicional' => $e->getMessage()
                 ], 200);
             }
 
@@ -417,6 +472,198 @@ final class PackageController extends Controller
             // Crear el UserPackage usando transacción
             DB::beginTransaction();
             try {
+                // Asegurar que el usuario tenga un customer en Stripe
+                if (!$user->stripe_id) {
+                    $user->createAsStripeCustomer();
+                }
+
+                // Verificar que el paquete tenga IDs de Stripe
+                if (!$package->stripe_product_id || !$package->stripe_price_id) {
+                    // Crear el producto y precio en Stripe si no existen
+                    $package->createStripeProduct();
+                    $package->refresh();
+                }
+
+                $stripeSubscriptionId = null;
+                $stripePaymentIntentId = null;
+                $stripeInvoiceId = null;
+
+                // Procesar pago en Stripe según el tipo de paquete
+                if ($package->is_membresia) {
+                    // Si es membresía, crear suscripción recurrente
+                    try {
+                        // Asegurar que el método de pago esté asociado al customer
+                        $paymentMethod = $user->findPaymentMethod($stripePaymentMethodId);
+                        if (!$paymentMethod) {
+                            $user->addPaymentMethod($stripePaymentMethodId);
+                        }
+
+                        // Establecer el método de pago como predeterminado
+                        $user->updateDefaultPaymentMethod($stripePaymentMethodId);
+
+                        // Crear la suscripción con un nombre único basado en el package_id
+                        $subscriptionName = 'package_' . $package->id;
+                        $subscription = $user->newSubscription($subscriptionName, $package->stripe_price_id)
+                            ->create($stripePaymentMethodId);
+
+                        $stripeSubscriptionId = $subscription->stripe_id;
+                        
+                        // Actualizar metadata de la suscripción después de crearla
+                        try {
+                            $subscription->updateStripeSubscription([
+                                'metadata' => [
+                                    'package_id' => (string) $package->id,
+                                    'user_package_id' => null, // Se actualizará después
+                                    'promo_code' => $promoCodeUsed ?? '',
+                                ],
+                            ]);
+                        } catch (\Exception $e) {
+                            // Si falla actualizar metadata, no es crítico, continuar
+                            Log::create([
+                                'user_id' => $userId,
+                                'action' => 'No se pudo agregar metadata inicial a la suscripción',
+                                'description' => 'No se pudo agregar metadata inicial a la suscripción',
+                                'data' => json_encode([
+                                    'subscription_id' => $stripeSubscriptionId,
+                                    'error' => $e->getMessage(),
+                                ]),
+                            ]);
+                        }
+                        
+                        // Obtener la factura inicial si existe
+                        $stripeInvoice = $subscription->asStripeSubscription()->latest_invoice;
+                        if ($stripeInvoice) {
+                            $stripeInvoiceId = is_string($stripeInvoice) ? $stripeInvoice : $stripeInvoice->id;
+                        }
+
+                        Log::create([
+                            'user_id' => $userId,
+                            'action' => 'Suscripción de Stripe creada exitosamente',
+                            'description' => 'Suscripción de Stripe creada exitosamente',
+                            'data' => json_encode([
+                                'package_id' => $package->id,
+                                'subscription_id' => $stripeSubscriptionId,
+                            ]),
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::create([
+                            'user_id' => $userId,
+                            'action' => 'Error al crear suscripción en Stripe',
+                            'description' => 'Error al crear suscripción en Stripe',
+                            'data' => json_encode([
+                                'package_id' => $package->id,
+                                'error' => $e->getMessage(),
+                            ]),
+                        ]);
+                        throw new \Exception('Error al procesar el pago recurrente: ' . $e->getMessage());
+                    }
+                } else {
+                    // Si no es membresía, crear pago único
+                    try {
+                        // Asegurar que el método de pago esté asociado al customer
+                        $paymentMethod = $user->findPaymentMethod($stripePaymentMethodId);
+                        if (!$paymentMethod) {
+                            $user->addPaymentMethod($stripePaymentMethodId);
+                        }
+
+                        // Establecer el método de pago como predeterminado
+                        $user->updateDefaultPaymentMethod($stripePaymentMethodId);
+
+                        // Calcular precios con IGV para Stripe
+                        $igvPercentage = (float) ($package->igv ?? 18); // IGV por defecto 18% si no está definido
+                        $originalPriceWithIgv = $originalPrice * (1 + ($igvPercentage / 100));
+                        $finalPriceWithIgv = $finalPrice * (1 + ($igvPercentage / 100));
+
+                        // Convertir el precio a centavos (PEN no tiene centavos, pero Stripe espera el monto en la unidad menor)
+                        // En Perú, los centavos son los céntimos, pero PEN no usa céntimos, así que multiplicamos por 100
+                        $amountInCents = (int) round($finalPriceWithIgv * 100);
+
+                        // Crear y confirmar un PaymentIntent directamente con el método de pago guardado
+                        $stripeClient = $this->makeStripeClient();
+                        
+                        // Crear el PaymentIntent con configuración para método de pago guardado (off_session)
+                        // Especificamos explícitamente que solo usamos 'card' para evitar métodos de pago automáticos
+                        $paymentIntentParams = [
+                            'amount' => $amountInCents,
+                            'currency' => 'pen',
+                            'customer' => $user->stripe_id,
+                            'payment_method' => $stripePaymentMethodId,
+                            'payment_method_types' => ['card'], // Especificar explícitamente solo tarjetas
+                            'confirmation_method' => 'automatic',
+                            'confirm' => true,
+                            'description' => "Compra de paquete: {$package->name}",
+                            'metadata' => [
+                                'package_id' => (string) $package->id,
+                                'user_package_id' => null, // Se actualizará después
+                                'promo_code' => $promoCodeUsed ?? '',
+                                'original_price' => (string) round($originalPriceWithIgv, 2),
+                                'final_price' => (string) round($finalPriceWithIgv, 2),
+                            ],
+                            'off_session' => true, // Indicar que el cliente no está presente (método guardado)
+                            'return_url' => config('app.url') . '/payment/success', // URL de retorno por si requiere autenticación
+                        ];
+                        
+                        // Crear el PaymentIntent con la configuración específica
+                        $paymentIntent = $stripeClient->paymentIntents->create($paymentIntentParams);
+
+                        // Obtener el ID del PaymentIntent
+                        $stripePaymentIntentId = $paymentIntent->id;
+                        
+                        // Verificar el estado del PaymentIntent
+                        if ($paymentIntent->status === 'requires_action') {
+                            // Si requiere acción adicional (como autenticación 3D Secure), intentar manejar
+                            throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status . '. Client secret: ' . $paymentIntent->client_secret);
+                        }
+                        
+                        if ($paymentIntent->status === 'requires_payment_method') {
+                            throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status);
+                        }
+                        
+                        if ($paymentIntent->status !== 'succeeded') {
+                            throw new \Exception('El pago no se completó. Estado: ' . $paymentIntent->status);
+                        }
+                        
+                        // Obtener la factura si existe
+                        if (isset($paymentIntent->invoice)) {
+                            if (is_string($paymentIntent->invoice)) {
+                                $stripeInvoiceId = $paymentIntent->invoice;
+                            } elseif (is_object($paymentIntent->invoice)) {
+                                $stripeInvoiceId = $paymentIntent->invoice->id ?? null;
+                            }
+                        }
+                        
+                        // Si hay un charge asociado, también obtenerlo
+                        if (isset($paymentIntent->charges->data[0])) {
+                            $charge = $paymentIntent->charges->data[0];
+                            if (isset($charge->id)) {
+                                // El charge ID está disponible si se necesita
+                            }
+                        }
+
+                        Log::create([
+                            'user_id' => $userId,
+                            'action' => 'Pago único de Stripe procesado exitosamente',
+                            'description' => 'Pago único de Stripe procesado exitosamente',
+                            'data' => json_encode([
+                                'package_id' => $package->id,
+                                'payment_intent_id' => $stripePaymentIntentId,
+                            ]),
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::create([
+                            'user_id' => $userId,
+                            'action' => 'Error al procesar pago único en Stripe',
+                            'description' => 'Error al procesar pago único en Stripe',
+                            'data' => json_encode([
+                                'package_id' => $package->id,
+                                'error' => $e->getMessage(),
+                            ]),
+                        ]);
+                        throw new \Exception('Error al procesar el pago: ' . $e->getMessage());
+                    }
+                }
+
+                // Crear el UserPackage con los IDs de Stripe
                 $userPackage = UserPackage::create([
                     'user_id' => $userId,
                     'package_id' => $package->id,
@@ -433,18 +680,52 @@ final class PackageController extends Controller
                     'expiry_date' => $expiryDate,
                     'status' => 'active',
                     'gift_order_id' => $giftOrderId, // Pedido de regalo si aplica
+                    'stripe_subscription_id' => $stripeSubscriptionId,
+                    'stripe_payment_intent_id' => $stripePaymentIntentId,
+                    'stripe_invoice_id' => $stripeInvoiceId,
+                    'stripe_customer_id' => $user->stripe_id,
                     'notes' => $request->notes ?? 'Compra realizada desde la aplicación',
                 ]);
+
+                // Actualizar metadata de Stripe con el user_package_id
+                if ($stripeSubscriptionId) {
+                    try {
+                        $subscriptionName = 'package_' . $package->id;
+                        $subscription = $user->subscription($subscriptionName);
+                        if ($subscription) {
+                            $subscription->updateStripeSubscription([
+                                'metadata' => [
+                                    'package_id' => (string) $package->id,
+                                    'user_package_id' => (string) $userPackage->id,
+                                    'promo_code' => $promoCodeUsed ?? '',
+                                ],
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::create([
+                            'user_id' => $userId,
+                            'action' => 'No se pudo actualizar metadata de suscripción en Stripe',
+                            'description' => 'No se pudo actualizar metadata de suscripción en Stripe',
+                            'data' => json_encode([
+                                'user_package_id' => $userPackage->id,
+                                'subscription_id' => $stripeSubscriptionId,
+                                'error' => $e->getMessage(),
+                            ]),
+                        ]);
+                    }
+                }
 
                 // Registrar uso del código promocional si se usó
                 if ($promoCodeUsed && $promoCodeData) {
                     $this->registerPromoCodeUsage($userId, $package->id, $promoCodeUsed, $promoCodeData);
                 }
 
-                // Aquí podrías agregar lógica de procesamiento de pago
-                // Por ejemplo, integrar con un gateway de pago como Culqi, PayU, etc.
-
                 DB::commit();
+
+                // Calcular precios con IGV para la respuesta
+                $igvPercentage = (float) ($package->igv ?? 18); // IGV por defecto 18% si no está definido
+                $originalPriceWithIgv = $userPackage->amount_paid_soles * (1 + ($igvPercentage / 100));
+                $finalPriceWithIgv = $userPackage->real_amount_paid_soles * (1 + ($igvPercentage / 100));
 
                 $responseData = [
                     'id' => $userPackage->id,
@@ -454,10 +735,10 @@ final class PackageController extends Controller
                     'status' => $userPackage->status,
                     'package_name' => $package->name,
                     'pricing' => [
-                        'original_price' => $userPackage->amount_paid_soles,
-                        'final_price' => $userPackage->real_amount_paid_soles,
+                        'original_price' => round($originalPriceWithIgv, 2),
+                        'final_price' => round($finalPriceWithIgv, 2),
                         'discount_percentage' => $userPackage->discount_percentage,
-                        'savings' => $userPackage->amount_paid_soles - $userPackage->real_amount_paid_soles,
+                        'savings' => round($originalPriceWithIgv - $finalPriceWithIgv, 2),
                     ],
                     'promo_code' => $promoCodeUsed ? [
                         'code' => $promoCodeUsed,
@@ -514,7 +795,10 @@ final class PackageController extends Controller
                 'user_id' => Auth::id(),
                 'action' => 'Comprar/Agregar un paquete al usuario autenticado',
                 'description' => 'Error al comprar el paquete',
-                'data' => $e->getMessage(),
+                'data' => json_encode([
+                    'error' => $th->getMessage(),
+                    'trace' => $th->getTraceAsString(),
+                ]),
             ]);
 
             return response()->json([
@@ -1137,19 +1421,26 @@ final class PackageController extends Controller
             }
 
             // Calcular descuento
-            $originalPrice = \App\Models\Package::find($packageId)->price_soles;
+            $packageModel = \App\Models\Package::find($packageId);
+            $originalPrice = $packageModel->price_soles;
             $discount = (float) $packageDiscount->discount_percentage;
             $discountAmount = ($originalPrice * $discount) / 100;
             $finalPrice = $originalPrice - $discountAmount;
+
+            // Calcular precios con IGV para la respuesta
+            $igvPercentage = (float) ($packageModel->igv ?? 18); // IGV por defecto 18% si no está definido
+            $originalPriceWithIgv = $originalPrice * (1 + ($igvPercentage / 100));
+            $finalPriceWithIgv = $finalPrice * (1 + ($igvPercentage / 100));
+            $discountAmountWithIgv = $discountAmount * (1 + ($igvPercentage / 100));
 
             return [
                 'valid' => true,
                 'code' => $promoCode->code,
                 'data' => [
-                    'original_price' => $originalPrice,
+                    'original_price' => round($originalPriceWithIgv, 2),
                     'discount_percentage' => $discount,
-                    'discount_amount' => $discountAmount,
-                    'final_price' => $finalPrice,
+                    'discount_amount' => round($discountAmountWithIgv, 2),
+                    'final_price' => round($finalPriceWithIgv, 2),
                     'package_discount_id' => $packageDiscount->id,
                     'available_quantity' => $packageDiscount->quantity
                 ]
@@ -1197,12 +1488,16 @@ final class PackageController extends Controller
                 'updated_at' => now()
             ]);
 
-            Log::info('Código promocional aplicado en compra de paquete', [
+            Log::create([
                 'user_id' => $userId,
-                'promo_code' => $promoCode,
-                'package_id' => $packageId,
-                'discount' => $promoCodeData['discount_percentage'],
-                'final_price' => $promoCodeData['final_price']
+                'action' => 'Código promocional aplicado en compra de paquete',
+                'description' => 'Código promocional aplicado en compra de paquete',
+                'data' => json_encode([
+                    'promo_code' => $promoCode,
+                    'package_id' => $packageId,
+                    'discount' => $promoCodeData['discount_percentage'],
+                    'final_price' => $promoCodeData['final_price'],
+                ]),
             ]);
         } catch (\Exception $e) {
             Log::create([
@@ -1256,11 +1551,15 @@ final class PackageController extends Controller
                 ]);
             }
 
-            Log::info('Pedido de regalo de shakes creado', [
+            Log::create([
                 'user_id' => $userId,
-                'order_id' => $giftOrder->id,
-                'shake_quantity' => $shakeQuantity,
-                'package_name' => $packageName
+                'action' => 'Pedido de regalo de shakes creado',
+                'description' => 'Pedido de regalo de shakes creado',
+                'data' => json_encode([
+                    'order_id' => $giftOrder->id,
+                    'shake_quantity' => $shakeQuantity,
+                    'package_name' => $packageName,
+                ]),
             ]);
 
             return $giftOrder->id;
@@ -1270,9 +1569,394 @@ final class PackageController extends Controller
                 'user_id' => Auth::id(),
                 'action' => 'Crear pedido de regalo de shakes para membresía',
                 'description' => 'Error crear pedido de regalo de shakes para membresía',
-                'data' => $e->getMessage(),
+                'data' => json_encode([
+                    'error' => $e->getMessage(),
+                ]),
             ]);
             return null;
         }
+    }
+
+    /**
+     * Lista las suscripciones activas del usuario autenticado
+     */
+    public function mySubscriptions(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => []
+                ], 200);
+            }
+
+            // Verificar que el usuario tenga un customer en Stripe
+            if (!$user->stripe_id) {
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Suscripciones obtenidas exitosamente',
+                    'datoAdicional' => [
+                        'subscriptions' => [],
+                        'total_count' => 0
+                    ]
+                ], 200);
+            }
+
+            // Obtener todas las suscripciones del usuario desde Stripe
+            $stripeClient = $this->makeStripeClient();
+            $stripeSubscriptions = $stripeClient->subscriptions->all([
+                'customer' => $user->stripe_id,
+                'status' => 'all', // Obtener todas: active, past_due, canceled, etc.
+            ]);
+
+            // Transformar las suscripciones al formato esperado
+            $subscriptions = [];
+            foreach ($stripeSubscriptions->data as $stripeSubscription) {
+                // Obtener el UserPackage relacionado si existe
+                $userPackage = UserPackage::where('stripe_subscription_id', $stripeSubscription->id)
+                    ->with(['package'])
+                    ->first();
+
+                // Obtener información del precio/producto
+                $price = null;
+                $product = null;
+                if (isset($stripeSubscription->items->data[0]->price)) {
+                    $price = $stripeSubscription->items->data[0]->price;
+                    if (isset($price->product)) {
+                        $productId = is_string($price->product) ? $price->product : $price->product->id;
+                        try {
+                            $product = $stripeClient->products->retrieve($productId);
+                        } catch (\Exception $e) {
+                            // Si no se puede obtener el producto, continuar
+                        }
+                    }
+                }
+
+                $subscriptions[] = [
+                    'id' => $stripeSubscription->id,
+                    'status' => $stripeSubscription->status,
+                    'status_display' => $this->getSubscriptionStatusDisplay($stripeSubscription->status),
+                    'current_period_start' => date('Y-m-d H:i:s', $stripeSubscription->current_period_start),
+                    'current_period_end' => date('Y-m-d H:i:s', $stripeSubscription->current_period_end),
+                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                    'canceled_at' => $stripeSubscription->canceled_at ? date('Y-m-d H:i:s', $stripeSubscription->canceled_at) : null,
+                    'ended_at' => $stripeSubscription->ended_at ? date('Y-m-d H:i:s', $stripeSubscription->ended_at) : null,
+                    'quantity' => $stripeSubscription->items->data[0]->quantity ?? 1,
+                    'price' => [
+                        'id' => $price->id ?? null,
+                        'amount' => $price->unit_amount ? ($price->unit_amount / 100) : null,
+                        'currency' => $price->currency ?? 'pen',
+                        'recurring' => isset($price->recurring) ? [
+                            'interval' => $price->recurring->interval ?? null,
+                            'interval_count' => $price->recurring->interval_count ?? 1,
+                        ] : null,
+                    ],
+                    'product' => $product ? [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                    ] : null,
+                    'metadata' => $stripeSubscription->metadata->toArray(),
+                    'package' => $userPackage ? [
+                        'id' => $userPackage->id,
+                        'package_id' => $userPackage->package_id,
+                        'package_name' => $userPackage->package->name ?? null,
+                        'remaining_classes' => $userPackage->remaining_classes,
+                        'status' => $userPackage->status,
+                    ] : null,
+                ];
+            }
+
+            // Ordenar: activas primero, luego por fecha de creación descendente
+            usort($subscriptions, function ($a, $b) {
+                $statusOrder = ['active' => 1, 'trialing' => 2, 'past_due' => 3, 'canceled' => 4, 'unpaid' => 5];
+                $aOrder = $statusOrder[$a['status']] ?? 99;
+                $bOrder = $statusOrder[$b['status']] ?? 99;
+                
+                if ($aOrder !== $bOrder) {
+                    return $aOrder - $bOrder;
+                }
+                
+                return strtotime($b['current_period_start']) - strtotime($a['current_period_start']);
+            });
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Suscripciones obtenidas exitosamente',
+                'datoAdicional' => [
+                    'subscriptions' => $subscriptions,
+                    'total_count' => count($subscriptions),
+                    'active_count' => count(array_filter($subscriptions, fn($s) => $s['status'] === 'active')),
+                ]
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Listar suscripciones del usuario',
+                'description' => 'Error al obtener suscripciones',
+                'data' => json_encode([
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener suscripciones',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
+    }
+
+    /**
+     * Cancela una suscripción del usuario autenticado
+     */
+    public function cancelSubscription(Request $request)
+    {
+        try {
+            $request->validate([
+                'subscription_id' => 'required|string', // ID de Stripe de la suscripción
+                'cancel_immediately' => 'nullable|boolean', // Si true, cancela inmediatamente. Si false, cancela al final del período
+            ]);
+
+            $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Usuario no autenticado',
+                    'datoAdicional' => []
+                ], 200);
+            }
+
+            $subscriptionId = $request->input('subscription_id');
+            $cancelImmediately = $request->boolean('cancel_immediately', false);
+
+            // Verificar que el usuario tenga un customer en Stripe
+            if (!$user->stripe_id) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'El usuario no tiene un customer en Stripe',
+                    'datoAdicional' => []
+                ], 200);
+            }
+
+            // Buscar la suscripción usando el tipo correcto (package_X)
+            // Primero intentar encontrar por el nombre de suscripción
+            $subscription = null;
+            $subscriptionName = null;
+
+            // Buscar en todas las suscripciones del usuario
+            $allSubscriptions = $user->subscriptions;
+            foreach ($allSubscriptions as $sub) {
+                if ($sub->stripe_id === $subscriptionId) {
+                    $subscription = $sub;
+                    $subscriptionName = $sub->name;
+                    break;
+                }
+            }
+
+            // Si no se encuentra, buscar directamente en Stripe
+            if (!$subscription) {
+                $stripeClient = $this->makeStripeClient();
+                try {
+                    $stripeSubscription = $stripeClient->subscriptions->retrieve($subscriptionId);
+                    
+                    // Verificar que la suscripción pertenece al usuario
+                    if ($stripeSubscription->customer !== $user->stripe_id) {
+                        return response()->json([
+                            'exito' => false,
+                            'codMensaje' => 0,
+                            'mensajeUsuario' => 'La suscripción no pertenece a este usuario',
+                            'datoAdicional' => []
+                        ], 200);
+                    }
+
+                    // Intentar encontrar en Cashier por el nombre
+                    // El nombre puede ser 'package_X' basado en cómo lo creamos
+                    $metadata = $stripeSubscription->metadata->toArray();
+                    if (isset($metadata['package_id'])) {
+                        $subscriptionName = 'package_' . $metadata['package_id'];
+                        $subscription = $user->subscription($subscriptionName);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'La suscripción no existe en Stripe',
+                        'datoAdicional' => $e->getMessage()
+                    ], 200);
+                }
+            }
+
+            // Si no se encontró la suscripción en Cashier, cancelar directamente en Stripe
+            if (!$subscription) {
+                $stripeClient = $this->makeStripeClient();
+                
+                if ($cancelImmediately) {
+                    // Cancelar inmediatamente
+                    $stripeSubscription = $stripeClient->subscriptions->cancel($subscriptionId);
+                } else {
+                    // Cancelar al final del período actual
+                    $stripeSubscription = $stripeClient->subscriptions->update($subscriptionId, [
+                        'cancel_at_period_end' => true,
+                    ]);
+                }
+
+                Log::create([
+                    'user_id' => $user->id,
+                    'action' => 'Suscripción cancelada en Stripe',
+                    'description' => 'Suscripción cancelada directamente en Stripe',
+                    'data' => json_encode([
+                        'subscription_id' => $subscriptionId,
+                        'cancel_immediately' => $cancelImmediately,
+                        'status' => $stripeSubscription->status,
+                    ]),
+                ]);
+
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => $cancelImmediately 
+                        ? 'Suscripción cancelada exitosamente' 
+                        : 'Suscripción programada para cancelarse al final del período',
+                    'datoAdicional' => [
+                        'subscription_id' => $subscriptionId,
+                        'status' => $stripeSubscription->status,
+                        'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                        'canceled_at' => $stripeSubscription->canceled_at ? date('Y-m-d H:i:s', $stripeSubscription->canceled_at) : null,
+                        'current_period_end' => date('Y-m-d H:i:s', $stripeSubscription->current_period_end),
+                    ]
+                ], 200);
+            }
+
+            // Cancelar usando Cashier
+            if ($cancelImmediately) {
+                // Cancelar inmediatamente
+                $subscription->cancelNow();
+                $message = 'Suscripción cancelada exitosamente';
+            } else {
+                // Cancelar al final del período actual
+                $subscription->cancel();
+                $message = 'Suscripción programada para cancelarse al final del período actual';
+            }
+
+            // Obtener información actualizada de la suscripción
+            $stripeSubscription = $subscription->asStripeSubscription();
+
+            // Actualizar el UserPackage relacionado si existe
+            $userPackage = UserPackage::where('stripe_subscription_id', $subscriptionId)->first();
+            if ($userPackage) {
+                if ($cancelImmediately) {
+                    $userPackage->update(['status' => 'cancelled']);
+                } else {
+                    // Marcar como pendiente de cancelación
+                    $userPackage->update(['status' => 'active']); // Mantener activo hasta que termine el período
+                }
+            }
+
+            Log::create([
+                'user_id' => $user->id,
+                'action' => 'Suscripción cancelada',
+                'description' => $cancelImmediately ? 'Suscripción cancelada inmediatamente' : 'Suscripción programada para cancelarse',
+                'data' => json_encode([
+                    'subscription_id' => $subscriptionId,
+                    'subscription_name' => $subscriptionName,
+                    'cancel_immediately' => $cancelImmediately,
+                    'status' => $stripeSubscription->status,
+                    'user_package_id' => $userPackage->id ?? null,
+                ]),
+            ]);
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => [
+                    'subscription_id' => $subscriptionId,
+                    'status' => $stripeSubscription->status,
+                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                    'canceled_at' => $stripeSubscription->canceled_at ? date('Y-m-d H:i:s', $stripeSubscription->canceled_at) : null,
+                    'current_period_end' => date('Y-m-d H:i:s', $stripeSubscription->current_period_end),
+                    'ends_at' => $subscription->ends_at ? $subscription->ends_at->format('Y-m-d H:i:s') : null,
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Cancelar suscripción',
+                'description' => 'Datos de entrada inválidos',
+                'data' => json_encode([
+                    'errors' => $e->errors(),
+                ]),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Cancelar suscripción',
+                'description' => 'Error al cancelar suscripción',
+                'data' => json_encode([
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al cancelar suscripción',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
+    }
+
+    /**
+     * Obtiene el texto de estado de la suscripción
+     */
+    private function getSubscriptionStatusDisplay(string $status): string
+    {
+        return match($status) {
+            'active' => 'Activa',
+            'trialing' => 'Período de Prueba',
+            'past_due' => 'Pago Vencido',
+            'canceled' => 'Cancelada',
+            'unpaid' => 'No Pagada',
+            'incomplete' => 'Incompleta',
+            'incomplete_expired' => 'Incompleta Expirada',
+            'paused' => 'Pausada',
+            default => ucfirst($status),
+        };
+    }
+
+    /**
+     * Crea un cliente de Stripe
+     */
+    private function makeStripeClient(): StripeClient
+    {
+        $secret = config('services.stripe.secret');
+
+        if (!$secret) {
+            throw new \RuntimeException('Stripe no está configurado correctamente. Falta services.stripe.secret.');
+        }
+
+        return new StripeClient($secret);
     }
 }

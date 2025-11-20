@@ -895,16 +895,16 @@ class PaymentController extends Controller
     {
         try {
             // Log para depuración
-            Log::create([
-                'user_id' => $user->id ?? null,
-                'action' => 'Obtener métodos de pago desde Stripe - Inicio',
-                'description' => 'Iniciando obtención de métodos de pago',
-                'data' => json_encode([
-                    'user_id' => $user->id,
-                    'stripe_id' => $user->stripe_id,
-                    'has_stripe_id' => !empty($user->stripe_id),
-                ])
-            ]);
+            // Log::create([
+            //     'user_id' => $user->id ?? null,
+            //     'action' => 'Obtener métodos de pago desde Stripe - Inicio',
+            //     'description' => 'Iniciando obtención de métodos de pago',
+            //     'data' => json_encode([
+            //         'user_id' => $user->id,
+            //         'stripe_id' => $user->stripe_id,
+            //         'has_stripe_id' => !empty($user->stripe_id),
+            //     ])
+            // ]);
 
             // Verificar si el usuario tiene un customer_id en Stripe
             if (!$user->stripe_id) {
@@ -930,15 +930,15 @@ class PaymentController extends Controller
             $cashierPaymentMethods = $user->paymentMethods('card');
             $defaultPaymentMethodId = null;
 
-            Log::create([
-                'user_id' => $user->id ?? null,
-                'action' => 'Obtener métodos de pago desde Stripe',
-                'description' => 'Métodos obtenidos de Cashier',
-                'data' => json_encode([
-                    'count' => $cashierPaymentMethods->count(),
-                    'stripe_id' => $user->stripe_id,
-                ])
-            ]);
+            // Log::create([
+            //     'user_id' => $user->id ?? null,
+            //     'action' => 'Obtener métodos de pago desde Stripe',
+            //     'description' => 'Métodos obtenidos de Cashier',
+            //     'data' => json_encode([
+            //         'count' => $cashierPaymentMethods->count(),
+            //         'stripe_id' => $user->stripe_id,
+            //     ])
+            // ]);
 
             // Si Cashier no devuelve métodos, intentar con StripeClient directamente
             if ($cashierPaymentMethods->isEmpty()) {
@@ -1050,16 +1050,16 @@ class PaymentController extends Controller
                 return 0;
             });
 
-            Log::create([
-                'user_id' => $user->id ?? null,
-                'action' => 'Obtener métodos de pago desde Stripe - Final',
-                'description' => 'Métodos transformados',
-                'data' => json_encode([
-                    'payment_methods_count' => count($paymentMethods),
-                    'cashier_count' => $cashierPaymentMethods->count(),
-                    'default_payment_method_id' => $defaultPaymentMethodId,
-                ])
-            ]);
+            // Log::create([
+            //     'user_id' => $user->id ?? null,
+            //     'action' => 'Obtener métodos de pago desde Stripe - Final',
+            //     'description' => 'Métodos transformados',
+            //     'data' => json_encode([
+            //         'payment_methods_count' => count($paymentMethods),
+            //         'cashier_count' => $cashierPaymentMethods->count(),
+            //         'default_payment_method_id' => $defaultPaymentMethodId,
+            //     ])
+            // ]);
 
             return response()->json([
                 'exito' => true,

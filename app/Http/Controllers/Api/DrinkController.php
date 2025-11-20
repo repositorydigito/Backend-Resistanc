@@ -23,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Stripe\StripeClient;
 
 /**
  * @tags Bebidas
@@ -822,15 +823,27 @@ final class DrinkController extends Controller
     public function confirmCart(Request $request): JsonResponse
     {
         try {
-            $request->validate([
+            $user = $request->user();
+            $userId = $user->id;
+
+            // Validar membership_redeem primero para determinar si es canje
+            $membershipPayload = $request->input('membership_redeem', []);
+            $isMembershipRedeem = is_array($membershipPayload) && isset($membershipPayload['user_membership_id']);
+
+            // Validar datos de entrada
+            $validationRules = [
                 'notes' => 'nullable|string|max:500',
                 'membership_redeem' => 'sometimes|array',
                 'membership_redeem.user_membership_id' => 'required_with:membership_redeem|integer|exists:user_memberships,id',
                 'membership_redeem.quantity' => 'nullable|integer|min:1',
-            ]);
+            ];
 
-            $user = $request->user();
-            $userId = $user->id;
+            // Solo requerir payment_method_id si NO es canje de membresía
+            if (!$isMembershipRedeem) {
+                $validationRules['payment_method_id'] = 'required|string'; // ID de Stripe directamente
+            }
+
+            $request->validate($validationRules);
 
             $cart = JuiceCartCodes::where('user_id', $userId)
                 ->whereNull('juice_order_id')
@@ -848,8 +861,6 @@ final class DrinkController extends Controller
                 ], 200);
             }
 
-            $membershipPayload = $request->input('membership_redeem', []);
-            $isMembershipRedeem = is_array($membershipPayload) && isset($membershipPayload['user_membership_id']);
             $requestedMembership = null;
             $redeemQuantity = null;
             $cartQuantity = $cart->drinks->sum(fn($drink) => $drink->pivot->quantity);
@@ -937,8 +948,49 @@ final class DrinkController extends Controller
                     }
                 }
 
+                // Procesar pago con Stripe si NO es canje de membresía
+                $stripePaymentIntentId = null;
+                $stripeInvoiceId = null;
+                $stripeCustomerId = null;
+
+                if (!$isMembershipRedeem) {
+                    // Asegurar que el usuario tenga un customer en Stripe
+                    if (!$user->stripe_id) {
+                        $user->createAsStripeCustomer();
+                    }
+
+                    // Obtener el ID del método de pago directamente desde Stripe
+                    $stripePaymentMethodId = $request->input('payment_method_id');
+
+                    // Validar que el método de pago existe en Stripe y pertenece al usuario
+                    try {
+                        $paymentMethod = $user->findPaymentMethod($stripePaymentMethodId);
+                        if (!$paymentMethod) {
+                            // Si no está asociado, asociarlo
+                            $user->addPaymentMethod($stripePaymentMethodId);
+                        }
+                    } catch (\Exception $e) {
+                        Log::create([
+                            'user_id' => $user->id,
+                            'action' => 'Error al validar método de pago de Stripe',
+                            'description' => 'Error al validar método de pago de Stripe',
+                            'data' => json_encode([
+                                'error' => $e->getMessage(),
+                                'payment_method_id' => $stripePaymentMethodId,
+                            ]),
+                        ]);
+
+                        throw new \Exception('Error al validar el método de pago en Stripe: ' . $e->getMessage());
+                    }
+
+                    // Establecer como método de pago por defecto
+                    $user->updateDefaultPaymentMethod($stripePaymentMethodId);
+                    $stripeCustomerId = $user->stripe_id;
+                }
+
                 $subtotal = 0;
                 $orderDetailsPayload = [];
+                $itemsDescription = [];
 
                 foreach ($cart->drinks as $drink) {
                     $drink->load(['basesdrinks', 'flavordrinks', 'typesdrinks']);
@@ -962,6 +1014,11 @@ final class DrinkController extends Controller
 
                     $subtotal += $totalPrice;
 
+                    // Para la descripción de Stripe
+                    if (!$isMembershipRedeem) {
+                        $itemsDescription[] = "{$quantity}x {$drinkName}";
+                    }
+
                     $orderDetailsPayload[] = [
                         'drink_id' => $drink->id,
                         'quantity' => $quantity,
@@ -975,6 +1032,88 @@ final class DrinkController extends Controller
                             'types' => $drink->typesdrinks->pluck('name')->toArray(),
                         ],
                     ];
+                }
+
+                // Procesar pago con Stripe si NO es canje de membresía
+                if (!$isMembershipRedeem && $subtotal > 0) {
+                    try {
+                        // Convertir el precio a centavos
+                        $amountInCents = (int) round($subtotal * 100);
+
+                        // Crear descripción para Stripe
+                        $description = 'Compra de bebidas: ' . implode(', ', $itemsDescription);
+
+                        // Procesar pago con Stripe
+                        $stripeClient = $this->makeStripeClient();
+                        $stripePaymentMethodId = $request->input('payment_method_id');
+
+                        // Crear el PaymentIntent con configuración para método de pago guardado (off_session)
+                        $paymentIntentParams = [
+                            'amount' => $amountInCents,
+                            'currency' => 'pen',
+                            'customer' => $user->stripe_id,
+                            'payment_method' => $stripePaymentMethodId,
+                            'payment_method_types' => ['card'],
+                            'confirmation_method' => 'automatic',
+                            'confirm' => true,
+                            'description' => $description,
+                            'metadata' => [
+                                'order_type' => 'drink_purchase',
+                                'user_id' => (string) $userId,
+                            ],
+                            'off_session' => true,
+                            'return_url' => config('app.url') . '/payment/success',
+                        ];
+
+                        // Crear el PaymentIntent
+                        $paymentIntent = $stripeClient->paymentIntents->create($paymentIntentParams);
+                        $stripePaymentIntentId = $paymentIntent->id;
+
+                        // Verificar el estado del PaymentIntent
+                        if ($paymentIntent->status === 'requires_action') {
+                            throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status);
+                        }
+
+                        if ($paymentIntent->status === 'requires_payment_method') {
+                            throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status);
+                        }
+
+                        if ($paymentIntent->status !== 'succeeded') {
+                            throw new \Exception('El pago no se completó. Estado: ' . $paymentIntent->status);
+                        }
+
+                        // Obtener invoice si existe
+                        if (isset($paymentIntent->invoice)) {
+                            if (is_string($paymentIntent->invoice)) {
+                                $stripeInvoiceId = $paymentIntent->invoice;
+                            } elseif (is_object($paymentIntent->invoice)) {
+                                $stripeInvoiceId = $paymentIntent->invoice->id ?? null;
+                            }
+                        }
+
+                        Log::create([
+                            'user_id' => $user->id,
+                            'action' => 'Pago de orden de bebidas procesado exitosamente en Stripe',
+                            'description' => 'Pago de orden de bebidas procesado exitosamente en Stripe',
+                            'data' => json_encode([
+                                'payment_intent_id' => $stripePaymentIntentId,
+                                'amount' => $amountInCents,
+                                'currency' => 'pen',
+                            ]),
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::create([
+                            'user_id' => $user->id,
+                            'action' => 'Error al procesar pago de orden de bebidas en Stripe',
+                            'description' => 'Error al procesar pago de orden de bebidas en Stripe',
+                            'data' => json_encode([
+                                'error' => $e->getMessage(),
+                                'amount' => isset($amountInCents) ? $amountInCents : null,
+                            ]),
+                        ]);
+
+                        throw new \Exception('Error al procesar el pago: ' . $e->getMessage());
+                    }
                 }
 
                 $orderData = [
@@ -1001,7 +1140,11 @@ final class DrinkController extends Controller
                     $orderData['redeemed_shakes_quantity'] = $redeemQuantity;
                 }
 
-                $order = \App\Models\JuiceOrder::create($orderData);
+                $order = \App\Models\JuiceOrder::create(array_merge($orderData, [
+                    'stripe_payment_intent_id' => $stripePaymentIntentId,
+                    'stripe_invoice_id' => $stripeInvoiceId,
+                    'stripe_customer_id' => $stripeCustomerId,
+                ]));
 
                 foreach ($orderDetailsPayload as $detail) {
                     $order->details()->create($detail);
@@ -1340,5 +1483,19 @@ final class DrinkController extends Controller
                 'datoAdicional' => null,
             ], 200);
         }
+    }
+
+    /**
+     * Crea un cliente de Stripe
+     */
+    private function makeStripeClient(): StripeClient
+    {
+        $secret = config('services.stripe.secret');
+
+        if (!$secret) {
+            throw new \RuntimeException('Stripe no está configurado correctamente. Falta services.stripe.secret.');
+        }
+
+        return new StripeClient($secret);
     }
 }

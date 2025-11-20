@@ -28,6 +28,9 @@ class JuiceOrder extends Model
         'special_instructions',
         'notes',
         'payment_method_name',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_customer_id',
         'confirmed_at',
         'preparing_at'
     ];

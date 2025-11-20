@@ -159,8 +159,8 @@ class CompanyResource extends Resource
                     ->columns(2)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Configuración de Facturación (Greenter)')
-                    ->description('Configuración para facturación electrónica')
+                Forms\Components\Section::make('Configuración de Producción (Greenter)')
+                    ->description('Credenciales para facturación electrónica en modo producción')
                     ->schema([
                         Forms\Components\Toggle::make('is_production')
                             ->label('Modo Producción')
@@ -175,10 +175,12 @@ class CompanyResource extends Resource
                             ->password()
                             ->maxLength(255)
                             ->placeholder('Contraseña SOL para producción'),
-                        Forms\Components\TextInput::make('cert_path_production')
-                            ->label('Ruta del Certificado Producción')
-                            ->maxLength(255)
-                            ->placeholder('Ruta del certificado digital para producción'),
+                        Forms\Components\FileUpload::make('cert_path_production')
+                            ->label('Certificado Digital Producción')
+                            ->directory('company-certificates')
+                            ->visibility('private')
+                            ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
+                            ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para producción'),
                         Forms\Components\TextInput::make('client_id_production')
                             ->label('Client ID Producción')
                             ->maxLength(255)
@@ -188,6 +190,13 @@ class CompanyResource extends Resource
                             ->password()
                             ->maxLength(255)
                             ->placeholder('Client secret para producción'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
+
+                Forms\Components\Section::make('Configuración de Pruebas - QA (Greenter)')
+                    ->description('Credenciales para facturación electrónica en modo de pruebas')
+                    ->schema([
                         Forms\Components\TextInput::make('sol_user_evidence')
                             ->label('Usuario SOL Pruebas (QA)')
                             ->maxLength(255)
@@ -197,10 +206,12 @@ class CompanyResource extends Resource
                             ->password()
                             ->maxLength(255)
                             ->placeholder('Contraseña SOL para pruebas'),
-                        Forms\Components\TextInput::make('cert_path_evidence')
-                            ->label('Ruta del Certificado Pruebas (QA)')
-                            ->maxLength(255)
-                            ->placeholder('Ruta del certificado digital para pruebas'),
+                        Forms\Components\FileUpload::make('cert_path_evidence')
+                            ->label('Certificado Digital Pruebas (QA)')
+                            ->directory('company-certificates')
+                            ->visibility('private')
+                            ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
+                            ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para pruebas'),
                         Forms\Components\TextInput::make('client_id_evidence')
                             ->label('Client ID Pruebas (QA)')
                             ->maxLength(255)

@@ -34,6 +34,9 @@ final class Order extends Model
         'mercadopago_preference_id',
         'mercadopago_payment_id',
         'mercadopago_init_point_url',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_customer_id',
         'user_id',
     ];
 

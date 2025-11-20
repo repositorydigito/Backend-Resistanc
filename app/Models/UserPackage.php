@@ -35,6 +35,10 @@ final class UserPackage extends Model
         'renewal_price',
         // 'benefits_included',
         'gift_order_id',
+        'stripe_subscription_id',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_customer_id',
         'notes',
     ];
 
