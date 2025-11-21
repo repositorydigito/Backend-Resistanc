@@ -55,6 +55,15 @@ class CompanyResource extends Resource
                             ->label('Razón Social')
                             ->maxLength(255)
                             ->placeholder('Ej: RSISTANCE S.A.C.'),
+                        Forms\Components\TextInput::make('ruc')
+                            ->label('RUC')
+                            ->maxLength(11)
+                            ->placeholder('Ej: 20123456789')
+                            ->numeric(),
+                        Forms\Components\TextInput::make('commercial_name')
+                            ->label('Nombre Comercial')
+                            ->maxLength(255)
+                            ->placeholder('Ej: RSISTANCE'),
                     ])
                     ->columns(2),
 
@@ -62,10 +71,38 @@ class CompanyResource extends Resource
                     ->description('Datos de contacto de la empresa')
                     ->schema([
                         Forms\Components\TextInput::make('address')
-                            ->label('Dirección')
+                            ->label('Dirección Completa')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('Ej: Av. Ejemplo 123, Lima, Perú'),
+                            ->placeholder('Ej: Av. Ejemplo 123'),
+                        Forms\Components\TextInput::make('ubigeo')
+                            ->label('Ubigeo')
+                            ->maxLength(6)
+                            ->placeholder('Ej: 150101')
+                            ->helperText('Código de ubicación geográfica de 6 dígitos'),
+                        Forms\Components\TextInput::make('department')
+                            ->label('Departamento')
+                            ->maxLength(100)
+                            ->placeholder('Ej: LIMA'),
+                        Forms\Components\TextInput::make('province')
+                            ->label('Provincia')
+                            ->maxLength(100)
+                            ->placeholder('Ej: LIMA'),
+                        Forms\Components\TextInput::make('district')
+                            ->label('Distrito')
+                            ->maxLength(100)
+                            ->placeholder('Ej: LIMA'),
+                        Forms\Components\TextInput::make('urbanization')
+                            ->label('Urbanización')
+                            ->maxLength(100)
+                            ->default('-')
+                            ->placeholder('Ej: -'),
+                        Forms\Components\TextInput::make('establishment_code')
+                            ->label('Código de Establecimiento')
+                            ->maxLength(4)
+                            ->default('0000')
+                            ->placeholder('Ej: 0000')
+                            ->helperText('Código de establecimiento asignado por SUNAT'),
                         Forms\Components\TextInput::make('phone')
                             ->label('Teléfono')
                             ->tel()
@@ -159,6 +196,25 @@ class CompanyResource extends Resource
                     ->columns(2)
                     ->collapsible(),
 
+                Forms\Components\Section::make('Configuración de Facturación')
+                    ->description('Configuración general de facturación electrónica')
+                    ->schema([
+                        Forms\Components\TextInput::make('invoice_series')
+                            ->label('Serie de Facturación')
+                            ->maxLength(4)
+                            ->default('F001')
+                            ->placeholder('Ej: F001')
+                            ->helperText('Serie para las facturas (ej: F001, B001)'),
+                        Forms\Components\TextInput::make('invoice_initial_correlative')
+                            ->label('Correlativo Inicial')
+                            ->numeric()
+                            ->default(1)
+                            ->minValue(1)
+                            ->helperText('Número inicial para el correlativo de facturación'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
+
                 Forms\Components\Section::make('Configuración de Producción (Greenter)')
                     ->description('Credenciales para facturación electrónica en modo producción')
                     ->schema([
@@ -210,7 +266,7 @@ class CompanyResource extends Resource
                             ->label('Certificado Digital Pruebas (QA)')
                             ->directory('company-certificates')
                             ->visibility('private')
-                            ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
+                            // ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
                             ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para pruebas'),
                         Forms\Components\TextInput::make('client_id_evidence')
                             ->label('Client ID Pruebas (QA)')

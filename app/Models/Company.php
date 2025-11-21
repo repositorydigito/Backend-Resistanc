@@ -9,8 +9,16 @@ class Company extends Model
      protected $fillable = [
         'name',
         'social_reason',
+        'ruc',
+        'commercial_name',
 
         'address',
+        'ubigeo',
+        'department',
+        'province',
+        'district',
+        'urbanization',
+        'establishment_code',
         'phone',
         'phone_whassap',
         'phone_help',
@@ -35,6 +43,8 @@ class Company extends Model
 
         // Facturacion greenter
         'is_production',
+        'invoice_series',
+        'invoice_initial_correlative',
 
         // Es produccion
         'sol_user_production',
@@ -58,6 +68,7 @@ class Company extends Model
     protected $casts = [
         'social_networks' => 'array', // Esto convierte automáticamente el JSON a array
         'is_production' => 'boolean',
+        'invoice_initial_correlative' => 'integer',
     ];
 
 }
