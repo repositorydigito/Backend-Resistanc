@@ -43,6 +43,13 @@ return new class extends Migration
             // Información del método de pago (como texto para integridad)
             $table->string('payment_method_name', 255)->nullable()->comment('Nombre del método de pago al momento del pedido');
 
+
+
+            $table->string('stripe_payment_intent_id')->nullable();
+            $table->string('stripe_invoice_id')->nullable();
+            $table->string('stripe_customer_id')->nullable();
+
+
             // Timestamps de estados
             $table->timestamp('estimated_ready_at')->nullable()->comment('Tiempo estimado de preparación');
             $table->timestamp('confirmed_at')->nullable()->comment('Momento de confirmación del pedido');

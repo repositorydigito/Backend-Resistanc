@@ -221,17 +221,19 @@ class OrderController extends Controller
                     $paymentIntent = $stripeClient->paymentIntents->create($paymentIntentParams);
                     $stripePaymentIntentId = $paymentIntent->id;
 
-                    // Verificar el estado del PaymentIntent
+                    // CRÍTICO: Verificar el estado del PaymentIntent - SOLO aceptar 'succeeded'
+                    // Si el pago no es exitoso, NO se creará la orden
                     if ($paymentIntent->status === 'requires_action') {
-                        throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status);
+                        throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status . '. La orden NO será creada.');
                     }
 
                     if ($paymentIntent->status === 'requires_payment_method') {
-                        throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status);
+                        throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status . '. La orden NO será creada.');
                     }
 
+                    // CRÍTICO: Solo crear la orden si el pago fue exitoso
                     if ($paymentIntent->status !== 'succeeded') {
-                        throw new \Exception('El pago no se completó. Estado: ' . $paymentIntent->status);
+                        throw new \Exception('El pago no se completó exitosamente. Estado: ' . $paymentIntent->status . '. La orden NO será creada.');
                     }
 
                     // Obtener invoice si existe
@@ -257,14 +259,21 @@ class OrderController extends Controller
                     Log::create([
                         'user_id' => $user->id,
                         'action' => 'Error al procesar pago de orden en Stripe',
-                        'description' => 'Error al procesar pago de orden en Stripe',
+                        'description' => 'Error al procesar pago de orden en Stripe - NO se creará la orden',
                         'data' => json_encode([
                             'error' => $e->getMessage(),
                             'amount' => $amountInCents,
                         ]),
                     ]);
 
-                    throw new \Exception('Error al procesar el pago: ' . $e->getMessage());
+                    // Lanzar excepción para hacer rollback de la transacción
+                    throw new \Exception('Error al procesar el pago en Stripe. La orden NO será creada: ' . $e->getMessage());
+                }
+
+                // CRÍTICO: Solo crear la orden si el pago fue exitoso
+                // Si llegamos aquí, el pago fue exitoso (status === 'succeeded')
+                if (!$stripePaymentIntentId) {
+                    throw new \Exception('No se puede crear la orden: el pago no fue procesado exitosamente en Stripe');
                 }
 
                 // Crear la orden

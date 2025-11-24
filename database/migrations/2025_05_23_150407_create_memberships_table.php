@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('slug')->unique()->comment('Unique identificador de la membresía');
             $table->integer('level')->unique()->comment('Nivel de la membresía');
 
+            $table->integer('class_completed')->comment('Cantidad de clases completadas que tiene que tener para llegar a esta categoria');
+
             $table->text('description')->nullable()->comment('Descripción de la membresía');
             $table->integer('classes_before')->default(0)->comment('Número de dias que puede reservar clases antes de la publicacion de la clase');
 

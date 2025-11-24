@@ -62,6 +62,7 @@ class Company extends Model
         'client_id_evidence',
         'client_secret_evidence',
 
+        'stripe_commission_percentage', // Porcentaje de comisión de Stripe
 
     ];
 
@@ -69,6 +70,7 @@ class Company extends Model
         'social_networks' => 'array', // Esto convierte automáticamente el JSON a array
         'is_production' => 'boolean',
         'invoice_initial_correlative' => 'integer',
+        'stripe_commission_percentage' => 'decimal:2',
     ];
 
 }

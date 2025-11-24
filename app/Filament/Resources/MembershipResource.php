@@ -23,10 +23,10 @@ class MembershipResource extends Resource
 
     protected static ?string $navigationGroup = 'Configuración General';
 
-    protected static ?string $navigationLabel = 'Membresias';
+    protected static ?string $navigationLabel = 'Categorias';
 
-    protected static ?string $label = 'Membresia'; // Nombre en singular
-    protected static ?string $pluralLabel = 'Membresias'; // Nombre en plural
+    protected static ?string $label = 'Categoria'; // Nombre en singular
+    protected static ?string $pluralLabel = 'Categorias'; // Nombre en plural
 
     protected static ?int $navigationSort = 22;
 
@@ -39,7 +39,7 @@ class MembershipResource extends Resource
                     ->label('¿Está activa?')
                     ->required(),
 
-                Section::make('Información de la membresía')
+                Section::make('Información de la categoria')
                     ->columns(2)
                     ->schema([
 
@@ -71,6 +71,13 @@ class MembershipResource extends Resource
 
                         Forms\Components\TextInput::make('duration')
                             ->label('Duración (meses)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->default(3)
+                            ->required(),
+
+                            Forms\Components\TextInput::make('class_completed')
+                            ->label('Cnt. completadas para llegar a la categoria')
                             ->numeric()
                             ->minValue(1)
                             ->default(3)
@@ -157,6 +164,7 @@ class MembershipResource extends Resource
                             ->default(null)
                             ->addActionLabel('+ Añadir color')
                             ->collapsible()
+                            ->maxItems(2) // ← Esto limita a máximo 2 colores
                             ->columnSpanFull(),
                     ])
             ]);

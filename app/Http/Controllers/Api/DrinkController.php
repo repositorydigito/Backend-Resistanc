@@ -1035,7 +1035,18 @@ final class DrinkController extends Controller
                 }
 
                 // Procesar pago con Stripe si NO es canje de membresía
-                if (!$isMembershipRedeem && $subtotal > 0) {
+                // IMPORTANTE: Si no es canje de membresía, SIEMPRE debe haber un pago exitoso en Stripe
+                if (!$isMembershipRedeem) {
+                    // Validar que hay un subtotal válido
+                    if ($subtotal <= 0) {
+                        throw new \Exception('El monto total debe ser mayor a cero para procesar el pago');
+                    }
+
+                    // Validar que se proporcionó un método de pago
+                    if (!$request->has('payment_method_id') || empty($request->input('payment_method_id'))) {
+                        throw new \Exception('Se requiere un método de pago válido para procesar la compra');
+                    }
+
                     try {
                         // Convertir el precio a centavos
                         $amountInCents = (int) round($subtotal * 100);
@@ -1069,7 +1080,7 @@ final class DrinkController extends Controller
                         $paymentIntent = $stripeClient->paymentIntents->create($paymentIntentParams);
                         $stripePaymentIntentId = $paymentIntent->id;
 
-                        // Verificar el estado del PaymentIntent
+                        // Verificar el estado del PaymentIntent - SOLO aceptar 'succeeded'
                         if ($paymentIntent->status === 'requires_action') {
                             throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status);
                         }
@@ -1078,8 +1089,9 @@ final class DrinkController extends Controller
                             throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status);
                         }
 
+                        // CRÍTICO: Solo crear la orden si el pago fue exitoso
                         if ($paymentIntent->status !== 'succeeded') {
-                            throw new \Exception('El pago no se completó. Estado: ' . $paymentIntent->status);
+                            throw new \Exception('El pago no se completó exitosamente. Estado: ' . $paymentIntent->status . '. No se creará la orden.');
                         }
 
                         // Obtener invoice si existe
@@ -1099,21 +1111,28 @@ final class DrinkController extends Controller
                                 'payment_intent_id' => $stripePaymentIntentId,
                                 'amount' => $amountInCents,
                                 'currency' => 'pen',
+                                'status' => $paymentIntent->status,
                             ]),
                         ]);
                     } catch (\Exception $e) {
                         Log::create([
                             'user_id' => $user->id,
                             'action' => 'Error al procesar pago de orden de bebidas en Stripe',
-                            'description' => 'Error al procesar pago de orden de bebidas en Stripe',
+                            'description' => 'Error al procesar pago de orden de bebidas en Stripe - NO se creará la orden',
                             'data' => json_encode([
                                 'error' => $e->getMessage(),
                                 'amount' => isset($amountInCents) ? $amountInCents : null,
+                                'subtotal' => $subtotal,
                             ]),
                         ]);
 
-                        throw new \Exception('Error al procesar el pago: ' . $e->getMessage());
+                        // Lanzar excepción para hacer rollback de la transacción
+                        throw new \Exception('Error al procesar el pago en Stripe. La orden NO será creada: ' . $e->getMessage());
                     }
+                } else {
+                    // Si es canje de membresía, no requiere pago pero validamos la membresía
+                    $stripePaymentIntentId = null;
+                    $stripeInvoiceId = null;
                 }
 
                 $orderData = [
@@ -1138,6 +1157,13 @@ final class DrinkController extends Controller
                     $orderData['is_membership_redeem'] = true;
                     $orderData['user_membership_id'] = $lockedMembership->id;
                     $orderData['redeemed_shakes_quantity'] = $redeemQuantity;
+                }
+
+                // CRÍTICO: Solo crear la orden si:
+                // 1. Es canje de membresía (no requiere pago), O
+                // 2. NO es canje Y el pago fue exitoso (tiene stripe_payment_intent_id)
+                if (!$isMembershipRedeem && !$stripePaymentIntentId) {
+                    throw new \Exception('No se puede crear la orden: el pago no fue procesado exitosamente en Stripe');
                 }
 
                 $order = \App\Models\JuiceOrder::create(array_merge($orderData, [

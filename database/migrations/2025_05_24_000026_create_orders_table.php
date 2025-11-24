@@ -41,6 +41,11 @@ return new class extends Migration
             // Delivery
 
 
+            $table->string('stripe_payment_intent_id')->nullable();
+            $table->string('stripe_invoice_id')->nullable();
+            $table->string('stripe_customer_id')->nullable();
+
+
 
             // Relaciones
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

@@ -354,6 +354,8 @@ class UserProfileResource extends Resource
             RelationManagers\UserPackagesRelationManager::class,
             RelationManagers\UserMembershipsRelationManager::class,
             RelationManagers\PaymentMethodsRelationManager::class,
+            RelationManagers\SubscriptionsRelationManager::class,
+            RelationManagers\TransactionsRelationManager::class,
             RelationManagers\ClassScheduleSeatsRelationManager::class,
             RelationManagers\DrinkUserRelationManager::class,
             RelationManagers\UserFavorityRelationManager::class,

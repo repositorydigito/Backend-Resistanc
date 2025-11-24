@@ -35,6 +35,12 @@ return new class extends Migration
             $table->decimal('discount_percentage', 5, 2)->nullable()->comment('Porcentaje de descuento aplicado');
 
 
+            $table->string('stripe_subscription_id')->nullable();
+            $table->string('stripe_payment_intent_id')->nullable();
+            $table->string('stripe_invoice_id')->nullable();
+            $table->string('stripe_customer_id')->nullable();
+
+
 
 
             // Relaciones

@@ -98,48 +98,94 @@ class PackageResource extends Resource
                         Section::make('Precios y validez')
                             ->columns(2)
                             ->schema([
-                                Forms\Components\TextInput::make('price_soles')
-                                    ->label('Precio base (sin IGV)')
-                                    ->required()
-                                    ->numeric()
-                                    ->live(onBlur: true)
-                                    ->helperText('Este será el precio del producto en Stripe'),
-
                                 Forms\Components\TextInput::make('igv')
                                     ->label('IGV (%)')
                                     ->numeric()
                                     ->default(18.00)
                                     ->required()
                                     ->suffix('%')
-                                    ->live(onBlur: true)
+                                    ->live()
                                     ->helperText('Impuesto General a las Ventas'),
 
-                                Forms\Components\TextInput::make('original_price_soles')
-                                    ->label('Precio original (sin IGV)')
+                                Forms\Components\TextInput::make('price_with_igv')
+                                    ->label('Precio de venta (con IGV)')
+                                    ->required()
                                     ->numeric()
-                                    ->live(onBlur: true)
-                                    ->helperText('Precio original para mostrar descuentos'),
+                                    ->live()
+                                    ->helperText('Ingrese el precio que verá el cliente (incluye IGV)')
+                                    ->afterStateHydrated(function ($set, $get, $record) {
+                                        // Al cargar el registro, mostrar el precio con IGV
+                                        if ($record && $record->price_soles) {
+                                            $igv = (float)($record->igv ?? 18.00);
+                                            $priceWithIgv = $record->price_soles * (1 + ($igv / 100));
+                                            $set('price_with_igv', round($priceWithIgv, 2));
+                                        }
+                                    }),
 
-                                Forms\Components\Placeholder::make('original_price_with_igv')
-                                    ->label('Precio original (con IGV)')
+                                Forms\Components\Placeholder::make('price_without_igv')
+                                    ->label('Precio base (sin IGV) - Se enviará a Stripe')
                                     ->content(function ($get) {
-                                        $originalPrice = (float)($get('original_price_soles') ?? 0);
-                                        if ($originalPrice <= 0) {
+                                        $priceWithIgv = (float)($get('price_with_igv') ?? 0);
+                                        if ($priceWithIgv <= 0) {
                                             return '-';
                                         }
                                         $igv = (float)($get('igv') ?? 18.00);
-                                        $priceWithIgv = $originalPrice * (1 + ($igv / 100));
-                                        return 'S/ ' . number_format($priceWithIgv, 2, '.', ',');
+                                        $priceWithoutIgv = $priceWithIgv / (1 + ($igv / 100));
+                                        return 'S/ ' . number_format($priceWithoutIgv, 2, '.', ',');
+                                    })
+                                    ->dehydrated(false),
+
+                                Forms\Components\TextInput::make('original_price_with_igv')
+                                    ->label('Precio original (con IGV)')
+                                    ->numeric()
+                                    ->live()
+                                    ->helperText('Precio original para mostrar descuentos (incluye IGV)')
+                                    ->afterStateHydrated(function ($set, $get, $record) {
+                                        // Al cargar el registro, mostrar el precio original con IGV
+                                        if ($record && $record->original_price_soles) {
+                                            $igv = (float)($record->igv ?? 18.00);
+                                            $priceWithIgv = $record->original_price_soles * (1 + ($igv / 100));
+                                            $set('original_price_with_igv', round($priceWithIgv, 2));
+                                        }
                                     }),
 
-                                Forms\Components\Placeholder::make('sale_price')
-                                    ->label('Precio de venta (con IGV)')
+                                Forms\Components\Placeholder::make('original_price_without_igv')
+                                    ->label('Precio original (sin IGV)')
                                     ->content(function ($get) {
-                                        $price = (float)($get('price_soles') ?? 0);
+                                        $originalPriceWithIgv = (float)($get('original_price_with_igv') ?? 0);
+                                        if ($originalPriceWithIgv <= 0) {
+                                            return '-';
+                                        }
                                         $igv = (float)($get('igv') ?? 18.00);
-                                        $salePrice = $price * (1 + ($igv / 100));
-                                        return 'S/ ' . number_format($salePrice, 2, '.', ',');
-                                    }),
+                                        $priceWithoutIgv = $originalPriceWithIgv / (1 + ($igv / 100));
+                                        return 'S/ ' . number_format($priceWithoutIgv, 2, '.', ',');
+                                    })
+                                    ->dehydrated(false),
+
+                                Forms\Components\Placeholder::make('net_profit')
+                                    ->label('Ganancia neta (después de comisión Stripe)')
+                                    ->content(function ($get) {
+                                        $priceWithIgv = (float)($get('price_with_igv') ?? 0);
+                                        if ($priceWithIgv <= 0) {
+                                            return '-';
+                                        }
+
+                                        // Obtener la comisión de Stripe desde la tabla companies
+                                        $company = \App\Models\Company::first();
+                                        $stripeCommission = $company ? (float)($company->stripe_commission_percentage ?? 3.60) : 3.60;
+
+                                        $igv = (float)($get('igv') ?? 18.00);
+                                        $priceWithoutIgv = $priceWithIgv / (1 + ($igv / 100));
+
+                                        // Calcular la comisión de Stripe sobre el precio sin IGV
+                                        $stripeFee = $priceWithoutIgv * ($stripeCommission / 100);
+
+                                        // Ganancia neta = precio sin IGV - comisión de Stripe
+                                        $netProfit = $priceWithoutIgv - $stripeFee;
+
+                                        return 'S/ ' . number_format($netProfit, 2, '.', ',');
+                                    })
+                                    ->extraAttributes(['class' => 'font-bold text-success-600']),
 
                                 Forms\Components\TextInput::make('duration_in_months')
                                     ->label('Vigencia en meses')

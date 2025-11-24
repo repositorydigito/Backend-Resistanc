@@ -211,6 +211,15 @@ class CompanyResource extends Resource
                             ->default(1)
                             ->minValue(1)
                             ->helperText('Número inicial para el correlativo de facturación'),
+                        Forms\Components\TextInput::make('stripe_commission_percentage')
+                            ->label('Comisión de Stripe (%)')
+                            ->numeric()
+                            ->default(3.60)
+                            ->suffix('%')
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->step(0.01)
+                            ->helperText('Porcentaje de comisión que Stripe consume de cada venta (ej: 3.60 = 3.60%)'),
                     ])
                     ->columns(2)
                     ->collapsible(),

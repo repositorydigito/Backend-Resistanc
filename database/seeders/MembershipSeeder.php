@@ -24,12 +24,13 @@ class MembershipSeeder extends Seeder
                 'description' => 'Membresía básica de Rsistanc',
                 'classes_before' => 7,
                 'duration' => 8,
-                'colors' => json_encode([['color' => '#9D5AA9'], ['color' => '#A36BB6'], ['color' => '#B494DA']]),
+                'colors' => json_encode([['color' => '#9D5AA9'], ['color' => '#A36BB6']]),
                 'icon' => 'fa-solid fa-dumbbell',
                 'is_benefit_shake' => false,
                 'shake_quantity' => 0,
                 'is_benefit_discipline' => false,
                 'discipline_id' => null,
+                'class_completed' => 100,
                 'discipline_quantity' => 0,
             ],
             [
@@ -46,6 +47,7 @@ class MembershipSeeder extends Seeder
                 'shake_quantity' => 2,
                 'is_benefit_discipline' => false,
                 'discipline_id' => null, // Assuming discipline with ID 1 exists
+                'class_completed' => 200,
                 'discipline_quantity' => 2,
             ],
             [
@@ -62,6 +64,7 @@ class MembershipSeeder extends Seeder
                 'shake_quantity' => 4,
                 'is_benefit_discipline' => true,
                 'discipline_id' => 3, // Assuming discipline with ID 3 exists
+                'class_completed' => 300,
                 'discipline_quantity' => 1,
             ],
         ]);

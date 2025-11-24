@@ -166,4 +166,42 @@ final class UserProfile extends Model
     {
         return $this->hasManyThrough(WaitingClass::class, User::class, 'id', 'user_id', 'user_id', 'id');
     }
+
+    /**
+     * Relación "falsa" para suscripciones de Stripe.
+     * Los datos reales se obtienen desde Stripe API en el RelationManager.
+     * Esta relación devuelve una consulta vacía.
+     */
+    public function userSubscriptions(): HasManyThrough
+    {
+        // Usar la tabla subscriptions de Cashier, pero devolver consulta vacía
+        // ya que los datos vienen directamente de Stripe
+        return $this->hasManyThrough(
+            \Laravel\Cashier\Subscription::class,
+            User::class,
+            'id',
+            'user_id',
+            'user_id',
+            'id'
+        )->whereRaw('1 = 0');
+    }
+
+    /**
+     * Relación "falsa" para transacciones de Stripe.
+     * Los datos reales se obtienen desde Stripe API en el RelationManager.
+     * Esta relación devuelve una consulta vacía.
+     */
+    public function userTransactions(): HasManyThrough
+    {
+        // Devolver una relación vacía ya que los datos vienen directamente de Stripe
+        // No hay tabla de transacciones en la BD, todo viene de Stripe
+        return $this->hasManyThrough(
+            \App\Models\Transaction::class,
+            User::class,
+            'id',
+            'user_id',
+            'user_id',
+            'id'
+        )->whereRaw('1 = 0');
+    }
 }

@@ -632,22 +632,41 @@ class ClassScheduleResource extends Resource
                     ->modalHeading('Finalizar Clase')
                     ->modalDescription('¿Estás seguro de que quieres finalizar esta clase? Los asientos ocupados se marcarán como completados y los no ocupados como perdidos.')
                     ->action(function ($record) {
+                        // Obtener usuarios únicos que completaron la clase (asientos ocupados)
+                        $completedSeats = $record->seatAssignments()
+                            ->where('status', 'occupied')
+                            ->whereNotNull('user_id')
+                            ->get();
+
+                        // Extraer IDs únicos de usuarios
+                        $userIds = $completedSeats->pluck('user_id')->unique()->toArray();
+
                         // Cambiar estado del horario a 'completed'
                         $record->update(['status' => 'completed']);
 
                         // Cambiar asientos ocupados a completados
                         $record->seatAssignments()
                             ->where('status', 'occupied')
-                            ->update(['status' => 'completed']);
+                            ->update(['status' => 'Completed']);
 
                         // Cambiar asientos reservados (que no se ocuparon) a perdidos
                         $record->seatAssignments()
                             ->where('status', 'reserved')
                             ->update(['status' => 'lost']);
 
+                        // Evaluar y crear membresías automáticamente para usuarios que completaron la clase
+                        // Esto debe hacerse DESPUÉS de cambiar el status a 'Completed' para que el conteo sea correcto
+                        $membershipService = new \App\Services\MembershipService();
+                        $results = $membershipService->evaluateAndCreateMembershipsForUsers($userIds);
+
+                        $notificationBody = 'La clase ha sido finalizada. Los asientos ocupados están completados y los no ocupados están marcados como perdidos.';
+                        if ($results['memberships_created'] > 0) {
+                            $notificationBody .= " Se crearon {$results['memberships_created']} nueva(s) membresía(s) automáticamente para " . $results['memberships_created'] . " usuario(s).";
+                        }
+
                         \Filament\Notifications\Notification::make()
                             ->title('Clase finalizada')
-                            ->body('La clase ha sido finalizada. Los asientos ocupados están completados y los no ocupados están marcados como perdidos.')
+                            ->body($notificationBody)
                             ->success()
                             ->send();
                     }),
@@ -679,4 +698,5 @@ class ClassScheduleResource extends Resource
             'manage-seats' => Pages\ManageSeats::route('/{record}/seats'),
         ];
     }
+
 }

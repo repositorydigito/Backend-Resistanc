@@ -28,7 +28,7 @@ return new class extends Migration
             $table->json('social_networks')->nullable()->comment('Redes sociales');
 
 
-
+            $table->decimal('stripe_commission_percentage', 5, 2)->default(3.60)->comment('Porcentaje de comisión que Stripe consume de cada venta (ej: 3.60 = 3.60%)');
 
             // Redes sociales individuales
             $table->string('facebook_url')->nullable()->comment('URL de Facebook');
@@ -40,6 +40,22 @@ return new class extends Migration
             $table->string('whatsapp_url')->nullable()->comment('URL de WhatsApp');
             $table->string('website_url')->nullable()->comment('URL del sitio web');
 
+
+            // Información fiscal de la empresa
+            $table->string('ruc', 11)->nullable()->comment('RUC de la empresa');
+            $table->string('commercial_name')->nullable()->comment('Nombre comercial de la empresa');
+
+            // Configuración de facturación
+            $table->string('invoice_series', 4)->default('F001')->comment('Serie de facturación (ej: F001)');
+            $table->integer('invoice_initial_correlative')->default(1)->comment('Correlativo inicial de facturación');
+
+            // Dirección desglosada para facturación
+            $table->string('ubigeo', 6)->nullable()->comment('Ubigeo (código de ubicación geográfica)');
+            $table->string('department')->nullable()->comment('Departamento');
+            $table->string('province')->nullable()->comment('Provincia');
+            $table->string('district')->nullable()->comment('Distrito');
+            $table->string('urbanization')->nullable()->default('-')->comment('Urbanización');
+            $table->string('establishment_code', 4)->default('0000')->comment('Código de establecimiento asignado por SUNAT');
 
             // Facturacion con Greenter
             $table->boolean('is_production')->default(false)->comment('Para que empiece a facturar');
@@ -59,6 +75,9 @@ return new class extends Migration
 
             $table->string('client_id_evidence')->nullable()->comment('client id de QA');
             $table->string('client_secret_evidence')->nullable()->comment('client secret de QA');
+
+
+
 
             $table->timestamps();
         });

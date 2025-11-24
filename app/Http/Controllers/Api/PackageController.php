@@ -301,7 +301,7 @@ final class PackageController extends Controller
 
             // Obtener el usuario
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json([
                     'exito' => false,
@@ -318,12 +318,12 @@ final class PackageController extends Controller
 
             // Obtener el ID del método de pago directamente desde Stripe (no desde BD)
             $stripePaymentMethodId = $request->input('payment_method_id');
-            
+
             // Validar que el método de pago existe en Stripe y pertenece al usuario
             try {
                 // Verificar que el método de pago existe y está asociado al customer
                 $paymentMethod = $user->findPaymentMethod($stripePaymentMethodId);
-                
+
                 if (!$paymentMethod) {
                     // Si no está asociado, intentar asociarlo
                     try {
@@ -392,15 +392,28 @@ final class PackageController extends Controller
                 ], 200);
             }
 
-            // Validar y aplicar código promocional si se proporciona
+            // Si el paquete es una membresía (recurrente), no se permiten códigos promocionales
+            if ($package->is_membresia && $request->filled('promo_code')) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Los códigos promocionales no están disponibles para paquetes de membresía',
+                    'datoAdicional' => [
+                        'reason' => 'membership_no_promo',
+                        'package_type' => 'membership'
+                    ]
+                ], 200);
+            }
+
+            // Validar y aplicar código promocional solo si NO es membresía
             $promoCodeData = null;
-            $finalPrice = $package->price_soles;
-            $originalPrice = $package->price_soles;
+            $finalPrice = $package->price_soles; // Precio SIN IGV
+            $originalPrice = $package->price_soles; // Precio SIN IGV
             $discountPercentage = 0;
             $discountAmount = 0;
             $promoCodeUsed = null;
 
-            if ($request->filled('promo_code')) {
+            if (!$package->is_membresia && $request->filled('promo_code')) {
                 $promoCodeValidation = $this->validateAndApplyPromoCode($request->string('promo_code'), $package->id, $userId);
 
                 if (!$promoCodeValidation['valid']) {
@@ -413,10 +426,20 @@ final class PackageController extends Controller
                 }
 
                 $promoCodeData = $promoCodeValidation['data'];
-                $finalPrice = $promoCodeData['final_price'];
-                $originalPrice = $promoCodeData['original_price'];
+
+                // Los precios vienen con IGV desde validateAndApplyPromoCode, pero necesitamos sin IGV
+                // para calcular correctamente. Convertimos de vuelta a precio sin IGV.
+                $igvPercentage = (float) ($package->igv ?? 18);
+
+                // Convertir precios CON IGV a precios SIN IGV
+                $originalPriceWithIgv = $promoCodeData['original_price'];
+                $finalPriceWithIgv = $promoCodeData['final_price'];
+
+                $originalPrice = $originalPriceWithIgv / (1 + ($igvPercentage / 100));
+                $finalPrice = $finalPriceWithIgv / (1 + ($igvPercentage / 100));
+
                 $discountPercentage = $promoCodeData['discount_percentage'];
-                $discountAmount = $promoCodeData['discount_amount'];
+                $discountAmount = $promoCodeData['discount_amount'] / (1 + ($igvPercentage / 100)); // Convertir también el descuento
                 $promoCodeUsed = $promoCodeValidation['code'];
             }
 
@@ -501,20 +524,29 @@ final class PackageController extends Controller
                         // Establecer el método de pago como predeterminado
                         $user->updateDefaultPaymentMethod($stripePaymentMethodId);
 
+                        // Calcular precios con IGV para Stripe
+                        $igvPercentage = (float) ($package->igv ?? 18);
+                        $finalPriceWithIgv = $finalPrice * (1 + ($igvPercentage / 100));
+                        $amountInCents = (int) round($finalPriceWithIgv * 100);
+
+                        // Para membresías no se usan códigos promocionales, usar el precio normal
+                        $stripePriceIdToUse = $package->stripe_price_id;
+
                         // Crear la suscripción con un nombre único basado en el package_id
                         $subscriptionName = 'package_' . $package->id;
-                        $subscription = $user->newSubscription($subscriptionName, $package->stripe_price_id)
+                        $subscription = $user->newSubscription($subscriptionName, $stripePriceIdToUse)
                             ->create($stripePaymentMethodId);
 
                         $stripeSubscriptionId = $subscription->stripe_id;
-                        
+
                         // Actualizar metadata de la suscripción después de crearla
                         try {
                             $subscription->updateStripeSubscription([
                                 'metadata' => [
                                     'package_id' => (string) $package->id,
+                                    'package_name' => $package->name,
                                     'user_package_id' => null, // Se actualizará después
-                                    'promo_code' => $promoCodeUsed ?? '',
+                                    'transaction_type' => 'subscription',
                                 ],
                             ]);
                         } catch (\Exception $e) {
@@ -529,7 +561,7 @@ final class PackageController extends Controller
                                 ]),
                             ]);
                         }
-                        
+
                         // Obtener la factura inicial si existe
                         $stripeInvoice = $subscription->asStripeSubscription()->latest_invoice;
                         if ($stripeInvoice) {
@@ -573,56 +605,84 @@ final class PackageController extends Controller
                         $igvPercentage = (float) ($package->igv ?? 18); // IGV por defecto 18% si no está definido
                         $originalPriceWithIgv = $originalPrice * (1 + ($igvPercentage / 100));
                         $finalPriceWithIgv = $finalPrice * (1 + ($igvPercentage / 100));
+                        $discountAmountWithIgv = $discountAmount * (1 + ($igvPercentage / 100));
 
-                        // Convertir el precio a centavos (PEN no tiene centavos, pero Stripe espera el monto en la unidad menor)
-                        // En Perú, los centavos son los céntimos, pero PEN no usa céntimos, así que multiplicamos por 100
+                        // IMPORTANTE: VENTA ÚNICA CON DESCUENTO PROMOCIONAL
+                        // El precio del producto en Stripe (stripe_price_id) NO se modifica.
+                        // El descuento se aplica solo en esta transacción específica como una "venta única".
+                        // Usamos el precio final CON descuento aplicado para el PaymentIntent.
+                        // Esto asegura que el precio base del producto permanezca intacto.
                         $amountInCents = (int) round($finalPriceWithIgv * 100);
+
+                        // Crear descripción detallada que incluya información del descuento si existe
+                        $description = "Compra de paquete: {$package->name}";
+                        if ($promoCodeUsed) {
+                            $description .= " | VENTA ÚNICA con código promocional: {$promoCodeUsed} ({$discountPercentage}% desc.)";
+                            $description .= " | Precio original del producto: S/ " . number_format($originalPriceWithIgv, 2);
+                            $description .= " | Descuento aplicado: S/ " . number_format($discountAmountWithIgv, 2);
+                            $description .= " | Precio final de esta venta: S/ " . number_format($finalPriceWithIgv, 2);
+                        }
 
                         // Crear y confirmar un PaymentIntent directamente con el método de pago guardado
                         $stripeClient = $this->makeStripeClient();
-                        
+
                         // Crear el PaymentIntent con configuración para método de pago guardado (off_session)
                         // Especificamos explícitamente que solo usamos 'card' para evitar métodos de pago automáticos
+                        // NOTA: Este es un pago único (one-time payment) con descuento promocional.
+                        // El precio del producto en Stripe NO se modifica, solo se aplica el descuento en esta transacción.
                         $paymentIntentParams = [
-                            'amount' => $amountInCents,
+                            'amount' => $amountInCents, // Monto final con descuento aplicado (venta única)
                             'currency' => 'pen',
                             'customer' => $user->stripe_id,
                             'payment_method' => $stripePaymentMethodId,
                             'payment_method_types' => ['card'], // Especificar explícitamente solo tarjetas
                             'confirmation_method' => 'automatic',
                             'confirm' => true,
-                            'description' => "Compra de paquete: {$package->name}",
+                            'description' => $description,
                             'metadata' => [
                                 'package_id' => (string) $package->id,
+                                'package_name' => $package->name,
                                 'user_package_id' => null, // Se actualizará después
+                                'is_promo_sale' => $promoCodeUsed ? 'true' : 'false', // Indicar que es venta promocional
+                                'sale_type' => $promoCodeUsed ? 'one_time_promo' : 'one_time_regular', // Tipo de venta
                                 'promo_code' => $promoCodeUsed ?? '',
-                                'original_price' => (string) round($originalPriceWithIgv, 2),
-                                'final_price' => (string) round($finalPriceWithIgv, 2),
+                                'discount_percentage' => (string) $discountPercentage,
+                                'discount_amount' => (string) round($discountAmountWithIgv, 2),
+                                'original_price' => (string) round($originalPriceWithIgv, 2), // Precio original del producto (sin modificar)
+                                'final_price' => (string) round($finalPriceWithIgv, 2), // Precio final de esta venta única
+                                'price_without_igv' => (string) round($finalPrice, 2),
+                                'igv_percentage' => (string) $igvPercentage,
+                                'igv_amount' => (string) round($finalPriceWithIgv - $finalPrice, 2),
+                                'transaction_type' => $promoCodeUsed ? 'one_time_promo_package_purchase' : 'one_time_package_purchase',
+                                'note' => $promoCodeUsed
+                                    ? 'Venta única con descuento promocional. El precio del producto en Stripe no se modifica.'
+                                    : 'Venta única regular. Precio del producto sin modificaciones.',
                             ],
                             'off_session' => true, // Indicar que el cliente no está presente (método guardado)
                             'return_url' => config('app.url') . '/payment/success', // URL de retorno por si requiere autenticación
                         ];
-                        
+
                         // Crear el PaymentIntent con la configuración específica
                         $paymentIntent = $stripeClient->paymentIntents->create($paymentIntentParams);
 
                         // Obtener el ID del PaymentIntent
                         $stripePaymentIntentId = $paymentIntent->id;
-                        
-                        // Verificar el estado del PaymentIntent
+
+                        // CRÍTICO: Verificar el estado del PaymentIntent - SOLO aceptar 'succeeded'
+                        // Si el pago no es exitoso, NO se creará el UserPackage
                         if ($paymentIntent->status === 'requires_action') {
-                            // Si requiere acción adicional (como autenticación 3D Secure), intentar manejar
-                            throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status . '. Client secret: ' . $paymentIntent->client_secret);
+                            throw new \Exception('El pago requiere autenticación adicional. Estado: ' . $paymentIntent->status . '. El paquete NO será creado.');
                         }
-                        
+
                         if ($paymentIntent->status === 'requires_payment_method') {
-                            throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status);
+                            throw new \Exception('El método de pago no es válido o fue rechazado. Estado: ' . $paymentIntent->status . '. El paquete NO será creado.');
                         }
-                        
+
+                        // CRÍTICO: Solo crear el UserPackage si el pago fue exitoso
                         if ($paymentIntent->status !== 'succeeded') {
-                            throw new \Exception('El pago no se completó. Estado: ' . $paymentIntent->status);
+                            throw new \Exception('El pago no se completó exitosamente. Estado: ' . $paymentIntent->status . '. El paquete NO será creado.');
                         }
-                        
+
                         // Obtener la factura si existe
                         if (isset($paymentIntent->invoice)) {
                             if (is_string($paymentIntent->invoice)) {
@@ -631,7 +691,7 @@ final class PackageController extends Controller
                                 $stripeInvoiceId = $paymentIntent->invoice->id ?? null;
                             }
                         }
-                        
+
                         // Si hay un charge asociado, también obtenerlo
                         if (isset($paymentIntent->charges->data[0])) {
                             $charge = $paymentIntent->charges->data[0];
@@ -653,14 +713,26 @@ final class PackageController extends Controller
                         Log::create([
                             'user_id' => $userId,
                             'action' => 'Error al procesar pago único en Stripe',
-                            'description' => 'Error al procesar pago único en Stripe',
+                            'description' => 'Error al procesar pago único en Stripe - NO se creará el paquete',
                             'data' => json_encode([
                                 'package_id' => $package->id,
                                 'error' => $e->getMessage(),
                             ]),
                         ]);
-                        throw new \Exception('Error al procesar el pago: ' . $e->getMessage());
+                        // Lanzar excepción para hacer rollback de la transacción
+                        throw new \Exception('Error al procesar el pago en Stripe. El paquete NO será creado: ' . $e->getMessage());
                     }
+                }
+
+                // CRÍTICO: Validar que el pago fue exitoso antes de crear el UserPackage
+                // Para membresías: debe tener stripe_subscription_id
+                // Para paquetes únicos: debe tener stripe_payment_intent_id
+                if ($package->is_membresia && !$stripeSubscriptionId) {
+                    throw new \Exception('No se puede crear el paquete: la suscripción no fue creada exitosamente en Stripe');
+                }
+                
+                if (!$package->is_membresia && !$stripePaymentIntentId) {
+                    throw new \Exception('No se puede crear el paquete: el pago no fue procesado exitosamente en Stripe');
                 }
 
                 // Crear el UserPackage con los IDs de Stripe
@@ -697,7 +769,6 @@ final class PackageController extends Controller
                                 'metadata' => [
                                     'package_id' => (string) $package->id,
                                     'user_package_id' => (string) $userPackage->id,
-                                    'promo_code' => $promoCodeUsed ?? '',
                                 ],
                             ]);
                         }
@@ -1584,7 +1655,7 @@ final class PackageController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json([
                     'exito' => false,
@@ -1677,11 +1748,11 @@ final class PackageController extends Controller
                 $statusOrder = ['active' => 1, 'trialing' => 2, 'past_due' => 3, 'canceled' => 4, 'unpaid' => 5];
                 $aOrder = $statusOrder[$a['status']] ?? 99;
                 $bOrder = $statusOrder[$b['status']] ?? 99;
-                
+
                 if ($aOrder !== $bOrder) {
                     return $aOrder - $bOrder;
                 }
-                
+
                 return strtotime($b['current_period_start']) - strtotime($a['current_period_start']);
             });
 
@@ -1728,7 +1799,7 @@ final class PackageController extends Controller
             ]);
 
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json([
                     'exito' => false,
@@ -1771,7 +1842,7 @@ final class PackageController extends Controller
                 $stripeClient = $this->makeStripeClient();
                 try {
                     $stripeSubscription = $stripeClient->subscriptions->retrieve($subscriptionId);
-                    
+
                     // Verificar que la suscripción pertenece al usuario
                     if ($stripeSubscription->customer !== $user->stripe_id) {
                         return response()->json([
@@ -1802,7 +1873,7 @@ final class PackageController extends Controller
             // Si no se encontró la suscripción en Cashier, cancelar directamente en Stripe
             if (!$subscription) {
                 $stripeClient = $this->makeStripeClient();
-                
+
                 if ($cancelImmediately) {
                     // Cancelar inmediatamente
                     $stripeSubscription = $stripeClient->subscriptions->cancel($subscriptionId);
@@ -1827,8 +1898,8 @@ final class PackageController extends Controller
                 return response()->json([
                     'exito' => true,
                     'codMensaje' => 1,
-                    'mensajeUsuario' => $cancelImmediately 
-                        ? 'Suscripción cancelada exitosamente' 
+                    'mensajeUsuario' => $cancelImmediately
+                        ? 'Suscripción cancelada exitosamente'
                         : 'Suscripción programada para cancelarse al final del período',
                     'datoAdicional' => [
                         'subscription_id' => $subscriptionId,
