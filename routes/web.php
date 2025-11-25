@@ -4,6 +4,7 @@ use App\Http\Controllers\client\HomeController;
 use App\Http\Controllers\client\PackageController;
 use App\Http\Controllers\client\PrivacityController;
 use App\Http\Controllers\client\TermsController;
+use App\Http\Controllers\BoletaTestController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
@@ -39,7 +40,7 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
         // Forzar verificación de cliente de Stripe incluso si ya está verificado
         $userObserver = new \App\Observers\UserObserver();
         $userObserver->ensureStripeCustomer($user);
-        
+
         return view('auth.verification-success', ['message' => 'Tu email ya ha sido verificado anteriormente. Puedes ingresar al app sin complicaciones!']);
     }
 
@@ -74,3 +75,5 @@ Route::post('/email/verification-notification', function () {
 
     return back()->with('success', 'Email de verificación enviado.');
 })->name('verification.send');
+
+Route::get('facturacion/test/mensual', [BoletaTestController::class, 'testBoletaMensual'])->name('test.boleta.mensual');
