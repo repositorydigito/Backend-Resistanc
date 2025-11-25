@@ -64,6 +64,11 @@ class CompanyResource extends Resource
                             ->label('Nombre Comercial')
                             ->maxLength(255)
                             ->placeholder('Ej: RSISTANCE'),
+                        Forms\Components\TextInput::make('months_points')
+                            ->label('Cantidad de meses validos de los puntos')
+                            ->placeholder('Ej: 8'),
+
+
                     ])
                     ->columns(2),
 

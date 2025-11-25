@@ -63,6 +63,7 @@ class Company extends Model
         'client_secret_evidence',
 
         'stripe_commission_percentage', // Porcentaje de comisión de Stripe
+        'months_points', // Cantidad de meses que duran los puntos
 
     ];
 
@@ -71,6 +72,7 @@ class Company extends Model
         'is_production' => 'boolean',
         'invoice_initial_correlative' => 'integer',
         'stripe_commission_percentage' => 'decimal:2',
+        'months_points' => 'integer',
     ];
 
 }

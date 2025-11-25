@@ -30,7 +30,7 @@ class MembershipSeeder extends Seeder
                 'shake_quantity' => 0,
                 'is_benefit_discipline' => false,
                 'discipline_id' => null,
-                'class_completed' => 100,
+                'class_completed' => 0,
                 'discipline_quantity' => 0,
             ],
             [
@@ -47,7 +47,7 @@ class MembershipSeeder extends Seeder
                 'shake_quantity' => 2,
                 'is_benefit_discipline' => false,
                 'discipline_id' => null, // Assuming discipline with ID 1 exists
-                'class_completed' => 200,
+                'class_completed' => 100,
                 'discipline_quantity' => 2,
             ],
             [

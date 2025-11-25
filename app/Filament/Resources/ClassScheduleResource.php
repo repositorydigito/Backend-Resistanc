@@ -632,6 +632,9 @@ class ClassScheduleResource extends Resource
                     ->modalHeading('Finalizar Clase')
                     ->modalDescription('¿Estás seguro de que quieres finalizar esta clase? Los asientos ocupados se marcarán como completados y los no ocupados como perdidos.')
                     ->action(function ($record) {
+                        // Cargar la relación con la clase para obtener la disciplina
+                        $record->load('class.discipline');
+
                         // Obtener usuarios únicos que completaron la clase (asientos ocupados)
                         $completedSeats = $record->seatAssignments()
                             ->where('status', 'occupied')
@@ -641,27 +644,211 @@ class ClassScheduleResource extends Resource
                         // Extraer IDs únicos de usuarios
                         $userIds = $completedSeats->pluck('user_id')->unique()->toArray();
 
+                        // Obtener el discipline_id de la clase
+                        $disciplineId = $record->class->discipline_id ?? null;
+
                         // Cambiar estado del horario a 'completed'
                         $record->update(['status' => 'completed']);
 
-                        // Cambiar asientos ocupados a completados
-                        $record->seatAssignments()
+                        // Obtener asientos ocupados para actualizarlos individualmente
+                        // IMPORTANTE: Debemos actualizar cada asiento individualmente para que se disparen los eventos
+                        $occupiedSeats = $record->seatAssignments()
                             ->where('status', 'occupied')
-                            ->update(['status' => 'Completed']);
+                            ->whereNotNull('user_id')
+                            ->get();
+                        
+                        // Actualizar cada asiento individualmente para que se dispare el evento 'updated'
+                        // Esto creará los puntos automáticamente para cada usuario
+                        foreach ($occupiedSeats as $seat) {
+                            try {
+                                $seat->status = 'Completed';
+                                $seat->save(); // save() dispara el evento updated que crea los puntos
+                                
+                                \Illuminate\Support\Facades\Log::info('Asiento actualizado a Completed - puntos se crearán automáticamente', [
+                                    'seat_id' => $seat->id,
+                                    'user_id' => $seat->user_id,
+                                    'user_package_id' => $seat->user_package_id,
+                                    'user_membership_id' => $seat->user_membership_id,
+                                ]);
+                            } catch (\Exception $e) {
+                                // Log del error pero continuar con los demás asientos
+                                \Illuminate\Support\Facades\Log::error('Error al actualizar asiento y crear puntos', [
+                                    'seat_id' => $seat->id,
+                                    'user_id' => $seat->user_id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
+                        
+                        // Log de resumen
+                        \App\Models\Log::create([
+                            'action' => 'Asientos actualizados a Completed',
+                            'description' => "Se procesaron " . count($occupiedSeats) . " asientos ocupados. Los puntos se crearán automáticamente mediante eventos.",
+                            'data' => [
+                                'class_schedule_id' => $record->id,
+                                'seats_processed' => count($occupiedSeats),
+                            ],
+                        ]);
 
                         // Cambiar asientos reservados (que no se ocuparon) a perdidos
                         $record->seatAssignments()
                             ->where('status', 'reserved')
                             ->update(['status' => 'lost']);
 
+                        // Pequeña pausa para asegurar que todos los eventos de actualización se hayan procesado
+                        // Los eventos crean los puntos y actualizan las clases efectivas automáticamente
+                        usleep(200000); // 200ms
+
+                        // Recalcular clases efectivas completadas para cada usuario desde cero
+                        // Esto asegura que el contador esté correcto después de todos los eventos
+                        foreach ($userIds as $userId) {
+                            $user = \App\Models\User::find($userId);
+                            if ($user) {
+                                // Recalcular clases efectivas desde cero (incluye clases físicas + base de membresía)
+                                $effectiveClasses = $user->calculateAndUpdateEffectiveCompletedClasses();
+                                
+                                // Log para debug
+                                \App\Models\Log::create([
+                                    'user_id' => $userId,
+                                    'action' => 'Clases efectivas recalculadas al finalizar clase',
+                                    'description' => "Usuario {$userId}: Clases efectivas completadas = {$effectiveClasses}",
+                                    'data' => [
+                                        'effective_completed_classes' => $effectiveClasses,
+                                        'class_schedule_id' => $record->id,
+                                    ],
+                                ]);
+                                
+                                // Recargar el usuario para obtener el valor actualizado
+                                $user->refresh();
+                            }
+                        }
+
+                        // Pequeña pausa adicional para asegurar que los puntos se hayan creado correctamente
+                        usleep(100000); // 100ms
+
+                        // Validar puntos acumulados (no expirados) para verificar si alcanzan para la siguiente membresía
+                        // Esta validación considera: clases efectivas + puntos no expirados >= clases requeridas
+                        foreach ($userIds as $userId) {
+                            $user = \App\Models\User::find($userId);
+                            if (!$user) {
+                                continue;
+                            }
+
+                            // Obtener todos los puntos no expirados del usuario
+                            $nonExpiredPoints = \App\Models\UserPoint::where('user_id', $userId)
+                                ->notExpired()
+                                ->get();
+
+                            $totalPoints = $nonExpiredPoints->sum('quantity_point');
+
+                            if ($totalPoints <= 0) {
+                                continue;
+                            }
+
+                            // Obtener las clases efectivas completadas del usuario (actualizadas después de la clase)
+                            $user->refresh();
+                            $effectiveClasses = $user->effective_completed_classes ?? 0;
+
+                            // Obtener todas las membresías activas ordenadas por nivel
+                            $allMemberships = \App\Models\Membership::where('is_active', true)
+                                ->orderBy('level', 'asc')
+                                ->get();
+
+                            if ($allMemberships->isEmpty()) {
+                                continue;
+                            }
+
+                            // Determinar la membresía actual basada en clases completadas
+                            $currentMembershipByProgress = null;
+                            foreach ($allMemberships as $m) {
+                                if ($effectiveClasses >= $m->class_completed) {
+                                    $currentMembershipByProgress = $m;
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            // Determinar la siguiente membresía
+                            $nextMembership = null;
+                            if ($currentMembershipByProgress) {
+                                // Buscar la membresía con mayor nivel que la actual
+                                $nextMembership = $allMemberships
+                                    ->filter(function ($m) use ($currentMembershipByProgress) {
+                                        return $m->level > $currentMembershipByProgress->level;
+                                    })
+                                    ->sortBy('level')
+                                    ->first();
+                            } else {
+                                // No tiene membresía actual, buscar la primera que requiere más clases
+                                $nextMembership = $allMemberships
+                                    ->filter(function ($m) use ($effectiveClasses) {
+                                        return $effectiveClasses < $m->class_completed;
+                                    })
+                                    ->sortBy('level')
+                                    ->first();
+                            }
+
+                            // Si no hay siguiente membresía, el usuario ya tiene la más alta
+                            if (!$nextMembership) {
+                                continue;
+                            }
+
+                            // Calcular el total considerando clases efectivas + puntos no expirados
+                            $totalWithPoints = $effectiveClasses + $totalPoints;
+
+                            // Verificar si alcanza para la siguiente membresía
+                            if ($totalWithPoints >= $nextMembership->class_completed) {
+                                // Verificar si ya tiene esta membresía activa
+                                $hasNextMembership = \App\Models\UserMembership::where('user_id', $userId)
+                                    ->where('membership_id', $nextMembership->id)
+                                    ->where('status', 'active')
+                                    ->where(function ($query) {
+                                        $query->whereNull('expiry_date')
+                                            ->orWhere('expiry_date', '>', now());
+                                    })
+                                    ->exists();
+
+                                if (!$hasNextMembership) {
+                                    // Crear la membresía automáticamente basada en puntos acumulados
+                                    $membershipService = new \App\Services\MembershipService();
+                                    $result = $membershipService->evaluateAndCreateMembershipForUser($userId, $disciplineId);
+
+                                    \App\Models\Log::create([
+                                        'user_id' => $userId,
+                                        'action' => 'Membresía creada por puntos acumulados',
+                                        'description' => "Usuario {$userId}: Se validaron {$totalPoints} puntos no expirados + {$effectiveClasses} clases efectivas = {$totalWithPoints} total. Se alcanzó la membresía {$nextMembership->name} (requería {$nextMembership->class_completed}).",
+                                        'data' => [
+                                            'effective_classes' => $effectiveClasses,
+                                            'total_points' => $totalPoints,
+                                            'total_with_points' => $totalWithPoints,
+                                            'next_membership_id' => $nextMembership->id,
+                                            'next_membership_name' => $nextMembership->name,
+                                            'next_membership_required' => $nextMembership->class_completed,
+                                            'membership_created' => $result['created'] ?? false,
+                                        ],
+                                    ]);
+                                }
+                            }
+                        }
+
                         // Evaluar y crear membresías automáticamente para usuarios que completaron la clase
-                        // Esto debe hacerse DESPUÉS de cambiar el status a 'Completed' para que el conteo sea correcto
+                        // Esto debe hacerse DESPUÉS de cambiar el status a 'Completed' y actualizar clases efectivas
+                        // Esta evaluación considera solo las clases completadas (sin puntos)
                         $membershipService = new \App\Services\MembershipService();
-                        $results = $membershipService->evaluateAndCreateMembershipsForUsers($userIds);
+                        $results = $membershipService->evaluateAndCreateMembershipsForUsers($userIds, $disciplineId);
 
                         $notificationBody = 'La clase ha sido finalizada. Los asientos ocupados están completados y los no ocupados están marcados como perdidos.';
                         if ($results['memberships_created'] > 0) {
                             $notificationBody .= " Se crearon {$results['memberships_created']} nueva(s) membresía(s) automáticamente para " . $results['memberships_created'] . " usuario(s).";
+                        }
+
+                        // Agregar detalles de debug si hay algún problema
+                        if ($results['memberships_created'] === 0 && !empty($results['details'])) {
+                            $reasons = array_column($results['details'], 'result');
+                            $uniqueReasons = array_unique(array_column($reasons, 'reason'));
+                            if (!empty($uniqueReasons)) {
+                                $notificationBody .= " Razones: " . implode(", ", array_filter($uniqueReasons));
+                            }
                         }
 
                         \Filament\Notifications\Notification::make()

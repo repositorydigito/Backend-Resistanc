@@ -210,7 +210,7 @@ class PackageResource extends Resource
                                         'assignable' => 'Asignable',
                                     ])
                                     ->label('Tipo de compra')
-                                    ->default('assignable')
+                                    ->default('affordable')
                                     ->required(),
 
                                 Forms\Components\Select::make('commercial_type')
@@ -219,6 +219,7 @@ class PackageResource extends Resource
                                         'offer' => 'Oferta',
                                         'basic' => 'Básico',
                                     ])
+                                    ->default('basic')
                                     ->label('Tipo comercial')
                                     ->required(),
 
@@ -250,6 +251,7 @@ class PackageResource extends Resource
                                         'temporary' => 'Temporal',
                                     ])
                                     ->label('Tipo de paquete')
+                                    ->default('fixed')
                                     ->required(),
 
                                 Forms\Components\DatePicker::make('start_date')

@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('email')->nullable()->comment('Correo electrónico de la empresa');
             $table->string('logo_path')->nullable()->comment('Ruta del logotipo de la empresa');
 
+            $table->integer('months_points')->default(8)->comment('Cantidad de meses que duran los puntos de clases completadas');
+
 
             $table->string('signature_image')->nullable()->comment('Ruta de la imagen de la firma');
             $table->json('social_networks')->nullable()->comment('Redes sociales');

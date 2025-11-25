@@ -79,7 +79,7 @@ class MembershipResource extends Resource
                             Forms\Components\TextInput::make('class_completed')
                             ->label('Cnt. completadas para llegar a la categoria')
                             ->numeric()
-                            ->minValue(1)
+                            // ->minValue(1)
                             ->default(3)
                             ->required(),
 

@@ -488,6 +488,44 @@ final class PackageController extends Controller
                         : "Membresía otorgada por la compra del paquete: {$package->name} (sin clases gratis)",
                 ]);
 
+                // Crear puntos en point_user basados en la cantidad de clases completadas de la membresía
+                // La cantidad de puntos es igual a class_completed de la membresía
+                $pointsQuantity = (int) ($membership->class_completed ?? 0);
+                
+                if ($pointsQuantity > 0) {
+                    // Obtener la configuración de la compañía para la duración de los puntos
+                    $company = \App\Models\Company::first();
+                    $monthsPoints = $company ? ($company->months_points ?? 8) : 8;
+                    
+                    // Calcular la fecha de expiración de los puntos
+                    $pointsExpiryDate = now()->addMonths($monthsPoints);
+                    
+                    // Crear el registro de puntos
+                    \App\Models\UserPoint::create([
+                        'user_id' => $userId,
+                        'quantity_point' => $pointsQuantity,
+                        'date_expire' => $pointsExpiryDate,
+                        'membresia_id' => $membership->id,
+                        'active_membership_id' => $membership->id, // Inicialmente la misma membresía
+                        'package_id' => $package->id,
+                    ]);
+                    
+                    \Illuminate\Support\Facades\Log::info('Puntos creados al comprar paquete con membresía', [
+                        'user_id' => $userId,
+                        'package_id' => $package->id,
+                        'membership_id' => $membership->id,
+                        'quantity_point' => $pointsQuantity,
+                        'date_expire' => $pointsExpiryDate->toDateString(),
+                    ]);
+                }
+
+                // Actualizar los puntos del usuario con la nueva membresía activa
+                \App\Models\UserPoint::updateActiveMembershipForUser($userId, $membership->id);
+
+                // Actualizar las clases completadas efectivas del usuario
+                // Cuando compra un paquete con membresía, se le otorgan las clases base de esa membresía
+                $user->calculateAndUpdateEffectiveCompletedClasses();
+
                 // Si la membresía tiene beneficios de shake, crear pedido de regalo
                 // El canje de shakes se realiza bajo demanda; aquí solo se registran las cantidades disponibles.
             }

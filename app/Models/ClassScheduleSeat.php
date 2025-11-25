@@ -32,6 +32,32 @@ class ClassScheduleSeat extends Model
         'expires_at' => 'datetime',
     ];
 
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Cuando se actualiza el status a 'Completed', actualizar el contador del usuario y crear puntos
+        static::updated(function ($seat) {
+            if ($seat->wasChanged('status') && $seat->status === 'Completed' && $seat->user_id) {
+                // Verificar que no estaba ya en 'Completed' antes
+                $oldStatus = $seat->getOriginal('status');
+                if ($oldStatus !== 'Completed') {
+                    // Incrementar las clases efectivas completadas del usuario
+                    $user = \App\Models\User::find($seat->user_id);
+                    if ($user) {
+                        $user->incrementEffectiveCompletedClasses(1);
+                        
+                        // Crear registro de puntos para el usuario
+                        $seat->createUserPoints($user);
+                    }
+                }
+            }
+        });
+    }
+
     // 🔗 Relaciones
     public function classSchedule(): BelongsTo
     {
@@ -204,5 +230,128 @@ class ClassScheduleSeat extends Model
         return 'SCH-' . $scheduleId . '-SEAT-' . $seatId . '-' . time() . '-' . rand(1000, 9999);
     }
 
+    /**
+     * Crear puntos para el usuario cuando completa una clase
+     */
+    protected function createUserPoints(User $user): void
+    {
+        try {
+            // Obtener la configuración de la compañía
+            $company = \App\Models\Company::first();
+            if (!$company) {
+                \Illuminate\Support\Facades\Log::warning('No se encontró configuración de compañía para crear puntos');
+                return;
+            }
+
+            // Obtener los meses de duración de los puntos (por defecto 8 meses)
+            $monthsPoints = $company->months_points ?? 8;
+
+            // Calcular la fecha de expiración de los puntos
+            $dateExpire = now()->addMonths($monthsPoints);
+
+            // Obtener información del paquete si se usó uno
+            $packageId = null;
+            if ($this->user_package_id) {
+                $userPackage = \App\Models\UserPackage::find($this->user_package_id);
+                if ($userPackage) {
+                    $packageId = $userPackage->package_id;
+                }
+            }
+
+            // Obtener la membresía asociada al asiento si se usó una, o buscar una activa del usuario
+            // Esta es la membresía CON LA QUE SE GANARON los puntos
+            $membershipIdEarned = null;
+            if ($this->user_membership_id) {
+                // Si el asiento tiene una membresía específica asociada, usar esa
+                $userMembership = \App\Models\UserMembership::find($this->user_membership_id);
+                if ($userMembership) {
+                    $membershipIdEarned = $userMembership->membership_id;
+                }
+            } else {
+                // Si no hay membresía específica en el asiento, buscar la membresía activa del usuario con mayor nivel
+                $activeMembership = $user->userMemberships()
+                    ->with('membership')
+                    ->where('status', 'active')
+                    ->where('expiry_date', '>', now())
+                    ->get()
+                    ->sortByDesc(function ($um) {
+                        return $um->membership->level ?? 0;
+                    })
+                    ->first();
+                    
+                if ($activeMembership) {
+                    $membershipIdEarned = $activeMembership->membership_id;
+                }
+            }
+
+            // Si no hay membresía, intentar determinar basándose en las clases completadas del usuario
+            if (!$membershipIdEarned) {
+                $user->refresh();
+                $effectiveClasses = $user->effective_completed_classes ?? 0;
+                
+                // Obtener todas las membresías ordenadas por nivel
+                $allMemberships = \App\Models\Membership::where('is_active', true)
+                    ->orderBy('level', 'asc')
+                    ->get();
+                
+                // Determinar la membresía actual basada en clases completadas
+                foreach ($allMemberships as $m) {
+                    if ($effectiveClasses >= $m->class_completed) {
+                        $membershipIdEarned = $m->id;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // Determinar la siguiente membresía para active_membership_id
+            // Los puntos se usan para la siguiente membresía porque los de la actual ya fueron usados
+            $nextMembershipId = null;
+            if ($membershipIdEarned) {
+                $currentMembership = \App\Models\Membership::find($membershipIdEarned);
+                if ($currentMembership) {
+                    // Buscar la siguiente membresía con mayor nivel
+                    $nextMembership = \App\Models\Membership::where('is_active', true)
+                        ->where('level', '>', $currentMembership->level)
+                        ->orderBy('level', 'asc')
+                        ->first();
+                    
+                    if ($nextMembership) {
+                        $nextMembershipId = $nextMembership->id;
+                    }
+                }
+            }
+
+            // Si no hay siguiente membresía, usar la misma con la que se ganaron
+            // (esto significa que el usuario está en la membresía más alta)
+            $activeMembershipId = $nextMembershipId ?? $membershipIdEarned;
+
+            // Crear el registro de puntos
+            \App\Models\UserPoint::create([
+                'user_id' => $user->id,
+                'quantity_point' => 1, // 1 punto por clase completada
+                'date_expire' => $dateExpire,
+                'membresia_id' => $membershipIdEarned, // Membresía con la que se ganaron los puntos
+                'active_membership_id' => $activeMembershipId, // Membresía activa (siguiente membresía si existe, sino la misma)
+                'package_id' => $packageId, // Paquete consumido
+            ]);
+
+            \Illuminate\Support\Facades\Log::info('Puntos creados para el usuario', [
+                'user_id' => $user->id,
+                'class_schedule_seat_id' => $this->id,
+                'quantity_point' => 1,
+                'date_expire' => $dateExpire->toDateString(),
+                'membresia_id' => $membershipIdEarned,
+                'active_membership_id' => $activeMembershipId,
+                'package_id' => $packageId,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error al crear puntos para el usuario', [
+                'user_id' => $user->id,
+                'class_schedule_seat_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 
 }

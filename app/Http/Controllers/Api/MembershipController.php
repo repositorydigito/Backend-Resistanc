@@ -29,10 +29,15 @@ class MembershipController extends Controller
             $categorias = Membership::orderBy('level', 'asc')
                 ->get();
 
-            // Contar las clases completadas del usuario para calcular progreso
-            $totalCompletedClasses = \App\Models\ClassScheduleSeat::where('user_id', $userId)
-                ->where('status', 'Completed')
-                ->count();
+            // Obtener las clases efectivas completadas del usuario para calcular progreso
+            $user = Auth::user();
+            $user->refresh();
+            $totalCompletedClasses = $user->effective_completed_classes ?? 0;
+
+            // Obtener todos los puntos del usuario
+            $userPoints = \App\Models\UserPoint::where('user_id', $userId)
+                ->with(['membership', 'activeMembership', 'package'])
+                ->get();
 
             // Obtener las membresías activas y vigentes del usuario
             $userMemberships = UserMembership::where('user_id', $userId)
@@ -65,9 +70,41 @@ class MembershipController extends Controller
                 ->get();
 
             // Mapear las categorías con información de clases válidas
-            $membresiasConClases = $categorias->map(function ($membership) use ($userMemberships, $userPackages, $totalCompletedClasses, $categorias) {
+            $membresiasConClases = $categorias->map(function ($membership) use ($userMemberships, $userPackages, $totalCompletedClasses, $categorias, $userPoints) {
                 // Buscar membresías del usuario para esta membresía
                 $userMembershipsForThis = $userMemberships->where('membership_id', $membership->id);
+                
+                // Buscar puntos ganados con esta membresía
+                $pointsEarnedWithMembership = $userPoints->where('membresia_id', $membership->id);
+                
+                // Buscar puntos que están siendo usados con esta membresía activa
+                $pointsUsedWithMembership = $userPoints->where('active_membership_id', $membership->id);
+                
+                // Calcular puntos totales ganados con esta membresía (solo no expirados)
+                $totalPointsEarned = $pointsEarnedWithMembership->filter(function ($point) {
+                    return !$point->isExpired();
+                })->sum('quantity_point');
+                
+                // Calcular puntos totales que se están usando con esta membresía activa (solo no expirados)
+                $totalPointsUsed = $pointsUsedWithMembership->filter(function ($point) {
+                    return !$point->isExpired();
+                })->sum('quantity_point');
+                
+                // Detalles de los puntos
+                $pointsDetails = $pointsEarnedWithMembership->map(function ($point) {
+                    return [
+                        'id' => $point->id,
+                        'quantity_point' => $point->quantity_point,
+                        'date_expire' => $point->date_expire->format('Y-m-d'),
+                        'is_expired' => $point->isExpired(),
+                        'is_active' => $point->isActive(),
+                        'active_membership_id' => $point->active_membership_id,
+                        'active_membership_name' => $point->activeMembership->name ?? null,
+                        'package_id' => $point->package_id,
+                        'package_name' => $point->package->name ?? null,
+                        'days_until_expire' => $point->isActive() ? now()->diffInDays($point->date_expire, false) : null,
+                    ];
+                })->values();
 
                 // Calcular clases válidas de membresías
                 $validMembershipClasses = $userMembershipsForThis->sum(function ($userMembership) {
@@ -199,6 +236,13 @@ class MembershipController extends Controller
                     'user_memberships' => $userMembershipsDetails,
                     // Detalles de los paquetes relacionados
                     'user_packages' => $userPackagesDetails,
+                    // Información de puntos asociados a esta membresía
+                    'points' => [
+                        'total_earned' => $totalPointsEarned,
+                        'total_used_with_active_membership' => $totalPointsUsed,
+                        'points_details' => $pointsDetails,
+                        'has_points' => $totalPointsEarned > 0,
+                    ],
                 ];
             });
 
@@ -251,6 +295,40 @@ class MembershipController extends Controller
                     ->first();
             }
 
+            // Calcular resumen de puntos del usuario
+            $activePoints = $userPoints->filter(function ($point) {
+                return !$point->isExpired();
+            });
+            
+            $expiredPoints = $userPoints->filter(function ($point) {
+                return $point->isExpired();
+            });
+            
+            $pointsSummary = [
+                'total_points' => $activePoints->sum('quantity_point'),
+                'total_points_by_membership_earned' => $activePoints->filter(function ($point) {
+                    return $point->membresia_id !== null;
+                })->groupBy('membresia_id')->map(function ($points) {
+                    $firstPoint = $points->first();
+                    return [
+                        'membership_id' => $firstPoint->membresia_id,
+                        'membership_name' => $firstPoint->membership->name ?? null,
+                        'total_points' => $points->sum('quantity_point'),
+                    ];
+                })->values(),
+                'total_points_by_active_membership' => $activePoints->filter(function ($point) {
+                    return $point->active_membership_id !== null;
+                })->groupBy('active_membership_id')->map(function ($points) {
+                    $firstPoint = $points->first();
+                    return [
+                        'active_membership_id' => $firstPoint->active_membership_id,
+                        'active_membership_name' => $firstPoint->activeMembership->name ?? null,
+                        'total_points' => $points->sum('quantity_point'),
+                    ];
+                })->values(),
+                'expired_points' => $expiredPoints->sum('quantity_point'),
+            ];
+
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
@@ -278,7 +356,8 @@ class MembershipController extends Controller
                         'total_valid_classes' => $membresiasConClases->sum('user_valid_classes.total'),
                         'total_valid_membership_classes' => $membresiasConClases->sum('user_valid_classes.from_memberships'),
                         'total_valid_package_classes' => $membresiasConClases->sum('user_valid_classes.from_packages'),
-                    ]
+                    ],
+                    'points_summary' => $pointsSummary,
                 ]
             ], 200);
         } catch (\Throwable $e) {
@@ -302,7 +381,7 @@ class MembershipController extends Controller
     /**
      * Obtener la membresía activa del usuario (solo la de mayor nivel vigente)
      */
-    public function getMyMemberships(Request $request): JsonResponse
+    public function getMyMemberships(Request $request)
     {
         try {
             $userId = Auth::id();
@@ -368,22 +447,31 @@ class MembershipController extends Controller
             }
 
             // Ordenar por nivel de membresía (mayor nivel primero), luego por fecha de expiración (la que expira antes primero)
-            $membership = $activeMemberships->sortBy([
-                function ($m) {
-                    return -($m->membership->level ?? 0); // Negativo para orden descendente
-                },
-                function ($m) {
-                    return $m->expiry_date ? $m->expiry_date->timestamp : PHP_INT_MAX;
+            $membership = $activeMemberships->sort(function ($a, $b) {
+                // Primero ordenar por level descendente (mayor level primero)
+                $levelA = $a->membership->level ?? 0;
+                $levelB = $b->membership->level ?? 0;
+                
+                if ($levelA !== $levelB) {
+                    return $levelB <=> $levelA; // Orden descendente (mayor primero)
                 }
-            ])->first();
+                
+                // Si tienen el mismo level, ordenar por fecha de expiración ascendente (la que expira antes primero)
+                $expiryA = $a->expiry_date ? $a->expiry_date->timestamp : PHP_INT_MAX;
+                $expiryB = $b->expiry_date ? $b->expiry_date->timestamp : PHP_INT_MAX;
+                
+                return $expiryA <=> $expiryB;
+            })->first();
 
             // Cargar los datos de la membresía
             $membership->load('membership', 'discipline', 'sourcePackage');
 
-            // Contar las clases completadas del usuario para calcular progreso
-            $totalCompletedClasses = \App\Models\ClassScheduleSeat::where('user_id', $userId)
-                ->where('status', 'Completed')
-                ->count();
+            // Obtener información del usuario y su perfil
+            $user = Auth::user();
+            $user->refresh(); // Asegurar que tenemos los datos más actualizados
+            
+            // Obtener las clases efectivas completadas del usuario para calcular progreso
+            $totalCompletedClasses = $user->effective_completed_classes ?? 0;
 
             // Obtener todas las membresías ordenadas por nivel para calcular progreso
             $allMemberships = Membership::where('is_active', true)
@@ -448,8 +536,7 @@ class MembershipController extends Controller
                 ];
             }
 
-            // Obtener información del usuario y su perfil
-            $user = Auth::user();
+            // Obtener el perfil del usuario (ya tenemos $user de arriba)
             $userProfile = $user->profile;
 
             $formattedMembership = [

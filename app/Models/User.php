@@ -64,6 +64,7 @@ final class User extends Authenticatable implements MustVerifyEmail
         'document_number',
         'business_name',
         'is_company',
+        'effective_completed_classes',
     ];
 
     /**
@@ -462,6 +463,209 @@ final class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(ClassScheduleSeat::class)
             ->where('status', 'reserved');
+    }
+
+    /**
+     * Calcular y actualizar las clases completadas efectivas del usuario.
+     * Esto incluye:
+     * 1. Clases físicamente completadas de paquetes VIGENTES (ClassScheduleSeat con status 'Completed')
+     *    - Solo cuenta clases cuyo paquete asociado (user_package_id) está activo y no expirado
+     * 2. Clases otorgadas por membresías VIGENTES adquiridas por compra de paquete
+     *    - Solo cuenta si la membresía está activa y no expirada
+     * 
+     * @return int Número de clases efectivas completadas
+     */
+    public function calculateAndUpdateEffectiveCompletedClasses(): int
+    {
+        // 1. Contar clases físicamente completadas SOLO de paquetes o membresías vigentes
+        // Una clase completa es válida si:
+        // - Está completada (status = 'Completed')
+        // - Y el paquete asociado (user_package_id) está activo y vigente
+        // - O la membresía asociada (user_membership_id) está activa y vigente
+        // - O no tiene paquete ni membresía asociada (se cuenta igual)
+        $physicalCompletedClasses = ClassScheduleSeat::where('user_id', $this->id)
+            ->where('status', 'Completed')
+            ->where(function ($query) {
+                // Clases sin paquete ni membresía asociada (se cuentan siempre)
+                $query->where(function ($q) {
+                    $q->whereNull('user_package_id')
+                        ->whereNull('user_membership_id');
+                })
+                    // O clases con paquete asociado que esté activo y vigente
+                    ->orWhereHas('userPackage', function ($q) {
+                        $q->where('status', 'active')
+                            ->where(function ($subQuery) {
+                                $subQuery->whereNull('expiry_date')
+                                    ->orWhere('expiry_date', '>', now());
+                            })
+                            // Asegurar que el paquete ya fue activado
+                            ->where(function ($subQuery) {
+                                $subQuery->whereNull('activation_date')
+                                    ->orWhere('activation_date', '<=', now());
+                            });
+                    })
+                    // O clases con membresía asociada que esté activa y vigente
+                    ->orWhereHas('userMembership', function ($q) {
+                        $q->where('status', 'active')
+                            ->where(function ($subQuery) {
+                                $subQuery->whereNull('expiry_date')
+                                    ->orWhere('expiry_date', '>', now());
+                            })
+                            // Asegurar que la membresía ya fue activada
+                            ->where(function ($subQuery) {
+                                $subQuery->whereNull('activation_date')
+                                    ->orWhere('activation_date', '<=', now());
+                            });
+                    });
+            })
+            ->count();
+
+        // 2. Sumar clases otorgadas por membresías VIGENTES adquiridas por compra de paquete
+        // Solo contar la membresía más alta adquirida por paquete (para no duplicar)
+        $membershipGrantedClasses = 0;
+        
+        // Obtener la membresía más alta del usuario que fue adquirida por compra de paquete
+        // Primero buscar en UserMembership
+        $highestPackageMembership = \App\Models\UserMembership::where('user_id', $this->id)
+            ->whereNotNull('source_package_id')
+            ->where('status', 'active')
+            ->where(function ($query) {
+                // Membresía no expirada
+                $query->whereNull('expiry_date')
+                    ->orWhere('expiry_date', '>', now());
+            })
+            ->where(function ($query) {
+                // Membresía ya activada
+                $query->whereNull('activation_date')
+                    ->orWhere('activation_date', '<=', now());
+            })
+            ->with(['membership'])
+            ->whereHas('membership', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        $membershipGrantedClasses = 0;
+        
+        if ($highestPackageMembership && $highestPackageMembership->membership) {
+            // Si el usuario adquirió una membresía por paquete, se le otorgan las clases que requiere esa membresía
+            // Por ejemplo, si compró Rsistanc (requiere 100 clases), se le otorgan 100 clases base
+            $membershipGrantedClasses = $highestPackageMembership->membership->class_completed ?? 0;
+        } else {
+            // Si no se encontró UserMembership, buscar directamente en los paquetes activos del usuario
+            // que tengan una membresía asociada (is_membresia = true)
+            $activePackage = \App\Models\UserPackage::where('user_id', $this->id)
+                ->where('status', 'active')
+                ->where(function ($query) {
+                    $query->whereNull('expiry_date')
+                        ->orWhere('expiry_date', '>', now());
+                })
+                ->where(function ($query) {
+                    $query->whereNull('activation_date')
+                        ->orWhere('activation_date', '<=', now());
+                })
+                ->with(['package.membership'])
+                ->whereHas('package', function ($query) {
+                    $query->where('is_membresia', true)
+                        ->whereNotNull('membership_id')
+                        ->where('status', 'active');
+                })
+                ->whereHas('package.membership', function ($query) {
+                    $query->where('is_active', true);
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($activePackage && $activePackage->package && $activePackage->package->membership) {
+                // Encontramos un paquete activo con membresía, usar sus clases base
+                $membershipGrantedClasses = $activePackage->package->membership->class_completed ?? 0;
+                
+                \App\Models\Log::create([
+                    'user_id' => $this->id,
+                    'action' => 'Cálculo de clases efectivas - Membresía encontrada desde paquete',
+                    'description' => "Usuario {$this->id}: Se encontró membresía desde paquete activo: {$activePackage->package->membership->name} (requiere {$membershipGrantedClasses} clases base)",
+                    'data' => [
+                        'user_id' => $this->id,
+                        'package_id' => $activePackage->package_id,
+                        'membership_name' => $activePackage->package->membership->name,
+                        'membership_class_completed' => $membershipGrantedClasses,
+                        'physical_completed_classes' => $physicalCompletedClasses,
+                    ],
+                ]);
+            } else {
+                // Log para debug: no se encontró membresía base
+                \App\Models\Log::create([
+                    'user_id' => $this->id,
+                    'action' => 'Cálculo de clases efectivas - Sin membresía base',
+                    'description' => "Usuario {$this->id}: No se encontró UserMembership ni paquete con membresía activa. Solo se contarán {$physicalCompletedClasses} clases físicas.",
+                    'data' => [
+                        'user_id' => $this->id,
+                        'physical_completed_classes' => $physicalCompletedClasses,
+                        'note' => 'El usuario necesita tener una UserMembership activa o un paquete con membresía para obtener clases base',
+                    ],
+                ]);
+            }
+        }
+
+        // 3. Calcular total efectivo
+        // LÓGICA CORREGIDA:
+        // - Si tienes membresía otorgada por paquete: clases base + clases físicas adicionales
+        //   Ejemplo: Rsistanc (100 base) + 7 físicas = 107 clases efectivas
+        // - Si NO tienes membresía por paquete pero sí clases físicas: solo cuentan las físicas
+        //   Ejemplo: 50 clases físicas = 50 clases efectivas
+        
+        // IMPORTANTE: Solo contar clases físicas que sean ADICIONALES a la base de la membresía
+        // Si ya tienes 100 clases físicas y la membresía otorga 100 base, no sumar 100+100=200
+        // En ese caso, las clases físicas ya incluyen la base
+        
+        if ($membershipGrantedClasses > 0) {
+            // Si tiene membresía por paquete, las clases físicas se suman a la base
+            // PERO solo si las clases físicas son menores que la base
+            // Si las clases físicas ya superan la base, significa que las ganó por completar clases
+            // y no necesita sumar la base (ya está incluida)
+            
+            if ($physicalCompletedClasses < $membershipGrantedClasses) {
+                // Tiene membresía base pero pocas clases físicas
+                // Sumar: base + físicas = total
+                // Ejemplo: 100 (base) + 7 (físicas) = 107
+                $effectiveClasses = $membershipGrantedClasses + $physicalCompletedClasses;
+            } else {
+                // Ya tiene más clases físicas que la base de la membresía
+                // Esto significa que las clases físicas ya incluyen la base
+                // Solo contar las clases físicas
+                // Ejemplo: 150 (físicas) > 100 (base), entonces = 150
+                $effectiveClasses = $physicalCompletedClasses;
+            }
+        } else {
+            // No tiene membresía por paquete, solo cuentan las clases físicas
+            $effectiveClasses = $physicalCompletedClasses;
+        }
+
+        // 4. Actualizar el campo en la base de datos
+        $this->update(['effective_completed_classes' => $effectiveClasses]);
+
+        return $effectiveClasses;
+    }
+
+    /**
+     * Incrementar las clases completadas efectivas cuando se completa una clase física.
+     * Solo incrementa si el nuevo total es mayor que el valor actual.
+     */
+    public function incrementEffectiveCompletedClasses(int $classes = 1): void
+    {
+        // Recalcular desde cero para asegurar precisión
+        $newTotal = $this->calculateAndUpdateEffectiveCompletedClasses();
+        
+        \App\Models\Log::create([
+            'user_id' => $this->id,
+            'action' => 'Clases efectivas actualizadas',
+            'description' => "Clases efectivas completadas actualizadas a: {$newTotal} (incremento de {$classes} clase(s))",
+            'data' => [
+                'effective_completed_classes' => $newTotal,
+                'increment' => $classes,
+            ],
+        ]);
     }
 
     /**

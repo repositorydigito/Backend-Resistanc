@@ -23,6 +23,30 @@ class UserMembership extends Model
                 $userMembership->code = static::generateUniqueCode();
             }
         });
+
+        // Cuando se crea o actualiza una membresía a 'active', actualizar los puntos del usuario
+        static::saved(function ($userMembership) {
+            if ($userMembership->status === 'active' && $userMembership->expiry_date && $userMembership->expiry_date->isFuture()) {
+                // Actualizar los puntos del usuario con esta membresía activa
+                \App\Models\UserPoint::updateActiveMembershipForUser(
+                    $userMembership->user_id,
+                    $userMembership->membership_id
+                );
+            }
+        });
+
+        // Cuando se actualiza el status a 'active', también actualizar los puntos
+        static::updated(function ($userMembership) {
+            if ($userMembership->wasChanged('status') && $userMembership->status === 'active') {
+                if ($userMembership->expiry_date && $userMembership->expiry_date->isFuture()) {
+                    // Actualizar los puntos del usuario con esta membresía activa
+                    \App\Models\UserPoint::updateActiveMembershipForUser(
+                        $userMembership->user_id,
+                        $userMembership->membership_id
+                    );
+                }
+            }
+        });
     }
 
     /**
