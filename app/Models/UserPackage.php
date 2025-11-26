@@ -1,0 +1,483 @@
+<?php
+
+namespace App\Models;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+final class UserPackage extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'package_id',
+        'package_code',
+        // 'total_classes',
+        'used_classes',
+        'remaining_classes',
+        'amount_paid_soles',
+        'real_amount_paid_soles',
+        'original_package_price_soles',
+        'promo_code_used',
+        'discount_percentage',
+        'currency',
+        'purchase_date',
+        'activation_date',
+        'expiry_date',
+        'status',
+        // 'auto_renew',
+        'renewal_price',
+        // 'benefits_included',
+        'gift_order_id',
+        'stripe_subscription_id',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_customer_id',
+        'notes',
+    ];
+
+    protected $casts = [
+        'purchase_date' => 'date',
+        'activation_date' => 'date',
+        'expiry_date' => 'date',
+        // 'total_classes' => 'integer',
+        'used_classes' => 'integer',
+        'remaining_classes' => 'integer',
+        'amount_paid_soles' => 'decimal:2',
+        'real_amount_paid_soles' => 'decimal:2',
+        'original_package_price_soles' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
+        'renewal_price' => 'decimal:2',
+        // 'benefits_included' => 'array',
+        // 'auto_renew' => 'boolean',
+    ];
+
+    protected $appends = [
+        'estimated_expiry_date',
+        'expiry_status',
+    ];
+
+
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (UserPackage $userPackage) {
+            // Generar código único si no se proporcionó uno
+            if (empty($userPackage->package_code)) {
+                $userPackage->package_code = static::generateUniquePackageCode();
+            }
+        });
+    }
+
+    /**
+     * Genera un código de paquete único
+     */
+    public static function generateUniquePackageCode(): string
+    {
+        do {
+            $code = strtoupper(Str::random(12)); // Ejemplo: "A1B2C3D4E5F6"
+        } while (static::where('package_code', $code)->exists());
+
+        return $code;
+    }
+
+
+    /**
+     * Get the user that owns this package.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the package details.
+     */
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(Package::class);
+    }
+
+    /**
+     * Get the gift order associated with this package (shakes gratis por membresía).
+     */
+    public function giftOrder(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\JuiceOrder::class, 'gift_order_id');
+    }
+
+    /**
+     * Get the user who gifted this package.
+     */
+    public function giftFrom(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'gift_from_user_id');
+    }
+
+    /**
+     * Get promo code information used for this package
+     */
+    public function getPromoCodeInfoAttribute(): ?array
+    {
+        if (!$this->user_id || !$this->package_id) {
+            return null;
+        }
+
+        $promoCodeUsage = DB::table('promocodes_user')
+            ->join('promo_codes', 'promocodes_user.promo_codes_id', '=', 'promo_codes.id')
+            ->where('promocodes_user.user_id', $this->user_id)
+            ->where('promocodes_user.package_id', $this->package_id)
+            ->select([
+                'promo_codes.code',
+                'promo_codes.name',
+                'promocodes_user.discount_applied',
+                'promocodes_user.original_price',
+                'promocodes_user.final_price',
+                'promocodes_user.monto',
+                'promocodes_user.created_at'
+            ])
+            ->orderBy('promocodes_user.created_at', 'desc')
+            ->first();
+
+        if (!$promoCodeUsage) {
+            return null;
+        }
+
+        return [
+            'code' => $promoCodeUsage->code,
+            'name' => $promoCodeUsage->name,
+            'discount_applied' => (float) $promoCodeUsage->discount_applied,
+            'original_price' => (float) $promoCodeUsage->original_price,
+            'final_price' => (float) $promoCodeUsage->final_price,
+            'amount_paid' => (float) $promoCodeUsage->monto,
+            'used_at' => $promoCodeUsage->created_at,
+        ];
+    }
+
+    /**
+     * Scope to get only active packages.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to get expired packages.
+     */
+    public function scopeExpired($query)
+    {
+        return $query->where('expiry_date', '<', now());
+    }
+
+    /**
+     * Scope to get packages expiring soon.
+     */
+    public function scopeExpiringSoon($query, int $days = 7)
+    {
+        return $query->whereBetween('expiry_date', [now(), now()->addDays($days)]);
+    }
+
+    /**
+     * Check if the package is expired.
+     */
+    public function getIsExpiredAttribute(): bool
+    {
+        return $this->expiry_date && $this->expiry_date->isPast();
+    }
+
+    /**
+     * Check if the package is valid (active and not expired).
+     */
+    public function getIsValidAttribute(): bool
+    {
+        return $this->status === 'active' &&
+            $this->activation_date && $this->activation_date->isPast() &&
+            $this->expiry_date && $this->expiry_date->isFuture();
+    }
+
+    /**
+     * Check if the package has credits available.
+     */
+    public function getHasCreditsAttribute(): bool
+    {
+        return $this->remaining_credits > 0;
+    }
+
+    /**
+     * Check if the package is a gift.
+     */
+    public function getIsGiftAttribute(): bool
+    {
+        return $this->gift_from_user_id !== null;
+    }
+
+    /**
+     * Get the days remaining until expiry.
+     */
+    public function getDaysRemainingAttribute(): int
+    {
+        if (!$this->expiry_date) {
+            return 0;
+        }
+
+        if ($this->expiry_date->isPast()) {
+            return 0;
+        }
+
+        return (int) now()->diffInDays($this->expiry_date, false);
+    }
+
+    /**
+     * Get the usage percentage.
+     */
+    public function getUsagePercentageAttribute(): int
+    {
+        if (!$this->original_credits || $this->original_credits <= 0) {
+            return 0;
+        }
+
+        return (int) round(($this->used_credits / $this->original_credits) * 100);
+    }
+
+    /**
+     * Get the status display name.
+     */
+    public function getStatusDisplayNameAttribute(): string
+    {
+        return match ($this->status) {
+            'active' => 'Activo',
+            'expired' => 'Expirado',
+            'pending' => 'Pendiente',
+            'suspended' => 'Suspendido',
+            'cancelled' => 'Cancelado',
+            default => ucfirst($this->status),
+        };
+    }
+
+    /**
+     * Use credits from this package.
+     */
+    public function useCredits(int $credits): bool
+    {
+        if (!$this->is_valid || $this->remaining_credits < $credits) {
+            return false;
+        }
+
+        $this->increment('used_credits', $credits);
+        $this->decrement('remaining_credits', $credits);
+
+        return true;
+    }
+
+    /**
+     * Refund credits to this package.
+     */
+    public function refundCredits(int $credits): void
+    {
+        $this->decrement('used_credits', $credits);
+        $this->increment('remaining_credits', $credits);
+    }
+
+    /**
+     * Use classes from this package.
+     */
+    public function useClasses(int $classes = 1): bool
+    {
+        // Validar que el paquete esté activo y no expirado
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        if ($this->expiry_date && $this->expiry_date->isPast()) {
+            return false;
+        }
+
+        if ($this->remaining_classes < $classes) {
+            return false;
+        }
+
+        $this->increment('used_classes', $classes);
+        $this->decrement('remaining_classes', $classes);
+
+        return true;
+    }
+
+    /**
+     * Refund classes to this package.
+     */
+    public function refundClasses(int $classes = 1): bool
+    {
+        // No validar used_classes, simplemente incrementar remaining_classes
+        $this->increment('remaining_classes', $classes);
+
+        // Solo decrementar used_classes si hay suficientes
+        if ($this->used_classes >= $classes) {
+            $this->decrement('used_classes', $classes);
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if this package can be used for a specific discipline.
+     */
+    public function canUseForDiscipline(int $disciplineId): bool
+    {
+        if (!$this->is_valid || !$this->has_classes) {
+            return false;
+        }
+
+        // Cargar la relación del paquete si no está cargada
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package && $this->package->disciplines->contains('id', $disciplineId);
+    }
+
+    /**
+     * Check if the package has classes available.
+     */
+    public function getHasClassesAttribute(): bool
+    {
+        return $this->remaining_classes > 0;
+    }
+
+    /**
+     * Get the discipline IDs of this package.
+     */
+    public function getDisciplineIdsAttribute(): ?array
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->pluck('id')->toArray();
+    }
+
+    /**
+     * Get the primary discipline ID of this package (first discipline).
+     */
+    public function getDisciplineIdAttribute(): ?int
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->first()?->id;
+    }
+
+    /**
+     * Get the discipline names of this package.
+     */
+    public function getDisciplineNamesAttribute(): ?array
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->pluck('name')->toArray();
+    }
+
+    /**
+     * Get the primary discipline name of this package (first discipline).
+     */
+    public function getDisciplineNameAttribute(): ?string
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->first()?->name;
+    }
+
+    /**
+     * Activate the package.
+     */
+    public function activate(): void
+    {
+        $this->update([
+            'status' => 'active',
+            'activation_date' => $this->activation_date ?? now(),
+        ]);
+    }
+
+    /**
+     * Suspend the package.
+     */
+    public function suspend(): void
+    {
+        $this->update([
+            'status' => 'suspended',
+        ]);
+    }
+
+    /**
+     * Expire the package.
+     */
+    public function expire(): void
+    {
+        $this->update([
+            'status' => 'expired',
+        ]);
+    }
+
+    /**
+     * Obtener la fecha de expiración estimada (creado + duración del paquete).
+     */
+    public function getEstimatedExpiryDateAttribute()
+    {
+        // Cargar la relación del paquete si no está cargada
+        if (!$this->relationLoaded('package')) {
+            $this->load('package');
+        }
+        if (!$this->package || !$this->purchase_date) {
+            return null;
+        }
+        // Si el paquete tiene duration_in_months, sumar a purchase_date
+        $months = $this->package->duration_in_months ?? 0;
+        return $this->purchase_date->copy()->addMonths($months);
+    }
+
+    /**
+     * Get the expiry status for display.
+     */
+    public function getExpiryStatusAttribute(): string
+    {
+        // Si no hay fecha de expiración
+        if (!$this->expiry_date) {
+            return 'Sin fecha de expiración';
+        }
+
+        // Si la fecha ya pasó
+        if ($this->expiry_date->isPast()) {
+            return 'Vencido';
+        }
+
+        // Calcular días restantes
+        $daysRemaining = now()->diffInDays($this->expiry_date, false);
+
+        // Si quedan 7 días o menos
+        if ($daysRemaining <= 7) {
+            return 'Por vencer';
+        }
+
+        // Si quedan más de 7 días
+        return 'Vigente';
+    }
+
+    public function promoCodes()
+    {
+        return $this->belongsToMany(PromoCodes::class);
+    }
+}
