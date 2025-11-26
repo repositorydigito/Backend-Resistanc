@@ -73,7 +73,8 @@ class GenerateScheduleSeats extends Command
         $tableData = [];
         foreach ($schedules as $schedule) {
             $existingSeats = $schedule->seatAssignments()->count();
-            $studioSeats = $schedule->studio?->seats()->where('is_active', true)->count() ?? 0;
+            // ✅ Mostrar TODOS los asientos (activos e inactivos) del estudio
+            $studioSeats = $schedule->studio?->seats()->count() ?? 0;
             
             $tableData[] = [
                 'ID' => $schedule->id,

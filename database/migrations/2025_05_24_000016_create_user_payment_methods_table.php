@@ -12,14 +12,13 @@ return new class extends Migration
     public function up(): void
     {
 
-        // no utilizado
         Schema::create('user_payment_methods', function (Blueprint $table) {
             $table->id();
 
             $table->enum('payment_type', ['credit_card', 'debit_card', 'bank_transfer', 'digital_wallet', 'crypto'])->comment('Tipo de método de pago');
             $table->enum('provider', [
                 'visa', 'mastercard', 'amex', 'bcp', 'interbank',
-                'scotiabank', 'bbva', 'yape', 'plin', 'paypal'
+                'scotiabank', 'bbva', 'yape', 'plin', 'paypal', 'mercadopago'
             ])->nullable()->comment('Proveedor del método de pago');
 
             // Datos tarjeta

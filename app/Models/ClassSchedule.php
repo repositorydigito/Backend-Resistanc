@@ -205,6 +205,34 @@ final class ClassSchedule extends Model
                     ]);
                 }
             }
+
+            // Verificar si se canceló la clase directamente (sin usar el método cancel())
+            // También verificar si is_cancelled cambió a true
+            if (($classSchedule->wasChanged('status') && 
+                $classSchedule->status === 'cancelled' && 
+                $classSchedule->getOriginal('status') !== 'cancelled') ||
+                ($classSchedule->wasChanged('is_cancelled') && 
+                $classSchedule->is_cancelled === true &&
+                $classSchedule->getOriginal('is_cancelled') !== true)) {
+                
+                // Asegurarse de que el status también esté en 'cancelled'
+                if ($classSchedule->status !== 'cancelled') {
+                    $classSchedule->status = 'cancelled';
+                    $classSchedule->saveQuietly(); // Guardar sin disparar eventos para evitar loops
+                }
+                
+                // Cancelar automáticamente las reservas de zapatos
+                $reason = $classSchedule->cancellation_reason ?? 'Clase cancelada';
+                try {
+                    $classSchedule->cancelFootwearReservations($reason);
+                } catch (\Exception $e) {
+                    Log::error('Error cancelando reservas de zapatos desde evento updated', [
+                        'class_schedule_id' => $classSchedule->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
         });
     }
 
@@ -233,21 +261,8 @@ final class ClassSchedule extends Model
         return $this->belongsTo(ClassModel::class); // Ajusta el modelo real si se llama diferente
     }
 
-    /**
-     * Get the bookings for this schedule.
-     */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class);
-    }
 
-    /**
-     * Get the booking seats for this schedule.
-     */
-    public function bookingSeats(): HasMany
-    {
-        return $this->hasMany(BookingSeat::class);
-    }
+
 
     /**
      * Get the waitlist entries for this schedule.
@@ -440,11 +455,70 @@ final class ClassSchedule extends Model
      */
     public function cancel(string $reason): void
     {
+        // Actualizar el estado de la clase
         $this->update([
             'is_cancelled' => true,
             'cancellation_reason' => $reason,
             'status' => 'cancelled',
         ]);
+
+        // Cancelar automáticamente todas las reservas de zapatos asociadas a esta clase
+        $this->cancelFootwearReservations($reason);
+    }
+
+    /**
+     * Cancelar todas las reservas de zapatos asociadas a esta clase.
+     */
+    public function cancelFootwearReservations(?string $reason = null): int
+    {
+        // Cargar la relación class si no está cargada
+        if (!$this->relationLoaded('class')) {
+            $this->load('class');
+        }
+
+        // Obtener todas las reservas de zapatos pendientes o confirmadas para esta clase
+        // Cargar la relación footwear para obtener información del tamaño
+        $footwearReservations = \App\Models\FootwearReservation::where('class_schedules_id', $this->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->with('footwear')
+            ->get();
+
+        if ($footwearReservations->isEmpty()) {
+            Log::info('No hay reservas de zapatos para cancelar', [
+                'class_schedule_id' => $this->id
+            ]);
+            return 0;
+        }
+
+        // Agrupar por talla ANTES de cancelar para el log
+        $canceledBySize = [];
+        foreach ($footwearReservations as $reservation) {
+            $footwear = $reservation->footwear;
+            if ($footwear && $footwear->size) {
+                $size = $footwear->size;
+                if (!isset($canceledBySize[$size])) {
+                    $canceledBySize[$size] = 0;
+                }
+                $canceledBySize[$size]++;
+            }
+        }
+
+        // Cancelar todas las reservas
+        $canceledCount = \App\Models\FootwearReservation::where('class_schedules_id', $this->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->update(['status' => 'canceled']);
+
+        Log::info('Reservas de zapatos canceladas automáticamente por cancelación de clase', [
+            'class_schedule_id' => $this->id,
+            'class_name' => $this->class->name ?? 'N/A',
+            'scheduled_date' => $this->scheduled_date,
+            'start_time' => $this->start_time,
+            'cancellation_reason' => $reason,
+            'total_reservations_canceled' => $canceledCount,
+            'canceled_by_size' => $canceledBySize
+        ]);
+
+        return $canceledCount;
     }
 
     /**
@@ -568,9 +642,10 @@ final class ClassSchedule extends Model
         }
 
         // Verificar que el estudio tenga asientos configurados
-        $studioSeats = $studio->seats()->where('is_active', true)->get();
+        // ✅ Obtener TODOS los asientos (activos e inactivos) para mostrarlos en el horario
+        $studioSeats = $studio->seats()->get();
         if ($studioSeats->isEmpty()) {
-            Log::info("No hay asientos activos en el estudio, generando asientos del estudio primero", [
+            Log::info("No hay asientos en el estudio, generando asientos del estudio primero", [
                 'schedule_id' => $this->id,
                 'studio_id' => $studio->id,
                 'studio_name' => $studio->name
@@ -578,7 +653,7 @@ final class ClassSchedule extends Model
 
             // Generar asientos del estudio si no existen
             $studio->generateSeats();
-            $studioSeats = $studio->seats()->where('is_active', true)->get();
+            $studioSeats = $studio->seats()->get();
 
             if ($studioSeats->isEmpty()) {
                 Log::warning("No se pudieron generar asientos para el estudio", [
@@ -587,6 +662,26 @@ final class ClassSchedule extends Model
                 ]);
                 return 0;
             }
+        }
+
+        // ✅ Asegurar que todos los asientos del studio tengan seat_number asignado
+        // Verificar si hay asientos sin seat_number
+        $seatsWithoutNumber = $studioSeats->filter(function ($seat) {
+            return $seat->seat_number === null;
+        });
+
+        if ($seatsWithoutNumber->isNotEmpty()) {
+            Log::info("Reordenando números de asientos del studio antes de generar asientos del horario", [
+                'schedule_id' => $this->id,
+                'studio_id' => $studio->id,
+                'seats_without_number' => $seatsWithoutNumber->count()
+            ]);
+
+            // Reordenar los números de asientos del studio
+            $studio->reorderSeatNumbers();
+            
+            // Recargar los asientos para obtener los seat_number actualizados
+            $studioSeats = $studio->seats()->get();
         }
 
         // 🚨 ELIMINAR TODOS LOS ASIENTOS EXISTENTES ANTES DE GENERAR NUEVOS
@@ -603,16 +698,22 @@ final class ClassSchedule extends Model
         }
 
         // Generar asientos para este horario
+        // ✅ Incluir TODOS los asientos (activos e inactivos)
+        // Si el asiento está inactivo en la sala, marcarlo como 'blocked' en el horario
         $created = 0;
         foreach ($studioSeats as $seat) {
             try {
                 // Generar código único para este asiento
                 $code = $this->generateSeatCode($this->id, $seat->id);
 
+                // ✅ Si el asiento está inactivo en la sala, marcarlo como 'blocked' en el horario
+                // Esto permite que se muestre en el mapa pero no se pueda reservar
+                $status = $seat->is_active ? 'available' : 'blocked';
+
                 ClassScheduleSeat::create([
                     'class_schedules_id' => $this->id,
                     'seats_id' => $seat->id,
-                    'status' => 'available',
+                    'status' => $status,
                     'code' => $code,
                 ]);
                 $created++;
@@ -620,6 +721,8 @@ final class ClassSchedule extends Model
                 Log::debug("Asiento creado", [
                     'schedule_id' => $this->id,
                     'seat_id' => $seat->id,
+                    'seat_is_active' => $seat->is_active,
+                    'status' => $status,
                     'code' => $code
                 ]);
 
@@ -700,11 +803,11 @@ final class ClassSchedule extends Model
                         'exists' => true,
                         'seat_id' => $seat->id,
                         'assignment_id' => $assignment->id,
-                        'seat_number' => $seat->seat_number,
-                        'row' => $seat->row,
-                        'column' => $seat->column,
+                        'seat_number' => $seat->seat_number ?? null,
+                        'row' => $seat->row ?? null,
+                        'column' => $seat->column ?? null,
                         'status' => $assignment->status,
-                        'is_active' => $seat->is_active,
+                        'is_active' => $seat->is_active ?? false,
                         'user' => $assignment->user ? [
                             'id' => $assignment->user->id,
                             'name' => $assignment->user->name,
@@ -737,11 +840,11 @@ final class ClassSchedule extends Model
         $seatsByStatus = $seatAssignments->groupBy('status')->map(function ($assignments, $status) {
             return $assignments->map(function ($assignment) {
                 return [
-                    'id' => $assignment->seat->id,
+                    'id' => $assignment->seat?->id ?? null,
                     'assignment_id' => $assignment->id,
-                    'seat_number' => $assignment->seat->seat_number,
-                    'row' => $assignment->seat->row,
-                    'column' => $assignment->seat->column,
+                    'seat_number' => $assignment->seat?->seat_number ?? null,
+                    'row' => $assignment->seat?->row ?? null,
+                    'column' => $assignment->seat?->column ?? null,
                     'status' => $assignment->status,
                     'user' => $assignment->user ? [
                         'id' => $assignment->user->id,
@@ -799,6 +902,14 @@ final class ClassSchedule extends Model
                     ->orWhere('status', 'notified')
                     ->orWhere('status', 'confirmed');
             });
+    }
+
+    /**
+     * Get all waiting classes entries (without status filter).
+     */
+    public function waitingClasses(): HasMany
+    {
+        return $this->hasMany(WaitingClass::class, 'class_schedules_id');
     }
     /**
      * Get the substitute instructor for this schedule.

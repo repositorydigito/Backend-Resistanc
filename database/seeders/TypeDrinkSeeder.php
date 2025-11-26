@@ -20,12 +20,14 @@ class TypeDrinkSeeder extends Seeder
         Typedrink::insert([
             [
                 'name' => 'Proteico',
+                'price' => 19.00,
                 // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'name' => 'Detox',
+                'price' => 18.00,
                 // 'image_url' => 'https://i.imgur.com/1234567.png',
                 'created_at' => now(),
                 'updated_at' => now(),

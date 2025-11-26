@@ -17,8 +17,8 @@ class TypedrinkResource extends JsonResource
          return [
             'id' => $this->id,
             'name' => $this->name,
-            'image_url' => $this->image_url ? asset($this->image_url) : null,
-            'ico_url' => $this->ico_url ? asset($this->ico_url) : null,
+            'image_url' => $this->image_url ? asset('storage/'. $this->image_url) : asset('default/protico.png'),
+            'ico_url' => $this->ico_url ? asset('storage/'. $this->ico_url) : asset('default/icon.png'),
             'price' => $this->price,
 
         ];

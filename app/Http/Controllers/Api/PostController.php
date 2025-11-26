@@ -8,11 +8,13 @@ use App\Http\Resources\PostCategoryResource;
 use App\Http\Resources\PostResource;
 use App\Http\Resources\TagResource;
 use App\Models\Category;
+use App\Models\Log;
 use App\Models\Post;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Dedoc\Scramble\Attributes\BodyParameter;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @tags Artículos
@@ -21,9 +23,6 @@ class PostController extends Controller
 {
     /**
      * Lista todos los artículos del sistema
-     *
-     * Obtiene una lista paginada de artículos con opciones de filtrado y ordenación.
-
      */
     public function index(Request $request): JsonResponse
     {
@@ -84,6 +83,15 @@ class PostController extends Controller
                 'datoAdicional' => PostResource::collection($posts)
             ], 200);
         } catch (\Exception $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todos los artículos del sistema',
+                'description' => 'Error al obtener los artículos',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -94,8 +102,6 @@ class PostController extends Controller
     }
     /**
      * Vista independiente del articulo
-     *
-
      */
     public function show(Request $request): JsonResponse
     {
@@ -133,19 +139,28 @@ class PostController extends Controller
                 'mensajeUsuario' => 'Artículo obtenido correctamente',
                 'datoAdicional' => new PostResource($post)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Vista independiente del articulo',
+                'description' => 'Error al obtener el artículo',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener el artículo',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
 
     /**
      * Lista todas las categorías de articulos
-     *
      */
 
     #[BodyParameter('per_page', description: 'Número de categorías por página', type: 'integer', example: 15)]
@@ -183,6 +198,15 @@ class PostController extends Controller
 
             ], 200);
         } catch (\Exception $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todas las categorías de articulos',
+                'description' => 'Error al obtener las categorías',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
@@ -224,6 +248,16 @@ class PostController extends Controller
                 'datoAdicional' => TagResource::collection($tags)
             ], 200);
         } catch (\Exception $e) {
+
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todas las etiquetas de articulos',
+                'description' => 'Error al obtener las etiquetas',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,

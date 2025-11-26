@@ -34,9 +34,7 @@ class PackageResource extends Resource
     {
         return $form
             ->schema([
-                // Forms\Components\Toggle::make('is_featured')
-                //     ->label('Destacado')
-                //     ->required(),
+
 
                 Section::make('Información del paquete')
                     ->columns(2)
@@ -50,9 +48,13 @@ class PackageResource extends Resource
                                     ->required()
                                     ->maxLength(100),
 
-                                Forms\Components\Select::make('discipline_id')
-                                    ->label('Disciplina')
-                                    ->relationship('discipline', 'name')
+
+
+                                Forms\Components\Select::make('disciplines') // Cambia a plural
+                                    ->label('Disciplinas')
+                                    ->relationship('disciplines', 'name') // Relación muchos a muchos
+                                    ->multiple() // Permite selección múltiple
+                                    ->preload() // Carga opciones anticipadamente (opcional)
                                     ->required(),
 
                                 Forms\Components\Select::make('status')
@@ -79,10 +81,13 @@ class PackageResource extends Resource
                                             ->values()
                                             ->toArray();
 
-                                        $nextAvailable = (max($existingOrders) ?? 0) + 1;
+                                        $nextAvailable = !empty($existingOrders) ? (max($existingOrders) + 1) : 1;
 
-                                        return "Órdenes ya usados: " . implode(', ', $existingOrders) .
-                                            ". Siguiente disponible: {$nextAvailable}";
+                                        $ordersText = !empty($existingOrders)
+                                            ? implode(', ', $existingOrders)
+                                            : 'Ninguno';
+
+                                        return "Órdenes ya usados: {$ordersText}. Siguiente disponible: {$nextAvailable}";
                                     })
                                     ->default(function () {
                                         return (\App\Models\Package::max('display_order') ?? 0) + 1;
@@ -93,16 +98,94 @@ class PackageResource extends Resource
                         Section::make('Precios y validez')
                             ->columns(2)
                             ->schema([
-                                Forms\Components\TextInput::make('price_soles')
-                                    ->label('Precio con descuento')
+                                Forms\Components\TextInput::make('igv')
+                                    ->label('IGV (%)')
+                                    ->numeric()
+                                    ->default(18.00)
                                     ->required()
-                                    ->numeric(),
+                                    ->suffix('%')
+                                    ->live()
+                                    ->helperText('Impuesto General a las Ventas'),
 
-                                Forms\Components\TextInput::make('original_price_soles')
-                                    ->label('Precio base')
-                                    ->numeric(),
+                                Forms\Components\TextInput::make('price_with_igv')
+                                    ->label('Precio de venta (con IGV)')
+                                    ->required()
+                                    ->numeric()
+                                    ->live()
+                                    ->helperText('Ingrese el precio que verá el cliente (incluye IGV)')
+                                    ->afterStateHydrated(function ($set, $get, $record) {
+                                        // Al cargar el registro, mostrar el precio con IGV
+                                        if ($record && $record->price_soles) {
+                                            $igv = (float)($record->igv ?? 18.00);
+                                            $priceWithIgv = $record->price_soles * (1 + ($igv / 100));
+                                            $set('price_with_igv', round($priceWithIgv, 2));
+                                        }
+                                    }),
 
+                                Forms\Components\Placeholder::make('price_without_igv')
+                                    ->label('Precio base (sin IGV) - Se enviará a Stripe')
+                                    ->content(function ($get) {
+                                        $priceWithIgv = (float)($get('price_with_igv') ?? 0);
+                                        if ($priceWithIgv <= 0) {
+                                            return '-';
+                                        }
+                                        $igv = (float)($get('igv') ?? 18.00);
+                                        $priceWithoutIgv = $priceWithIgv / (1 + ($igv / 100));
+                                        return 'S/ ' . number_format($priceWithoutIgv, 2, '.', ',');
+                                    })
+                                    ->dehydrated(false),
 
+                                Forms\Components\TextInput::make('original_price_with_igv')
+                                    ->label('Precio original (con IGV)')
+                                    ->numeric()
+                                    ->live()
+                                    ->helperText('Precio original para mostrar descuentos (incluye IGV)')
+                                    ->afterStateHydrated(function ($set, $get, $record) {
+                                        // Al cargar el registro, mostrar el precio original con IGV
+                                        if ($record && $record->original_price_soles) {
+                                            $igv = (float)($record->igv ?? 18.00);
+                                            $priceWithIgv = $record->original_price_soles * (1 + ($igv / 100));
+                                            $set('original_price_with_igv', round($priceWithIgv, 2));
+                                        }
+                                    }),
+
+                                Forms\Components\Placeholder::make('original_price_without_igv')
+                                    ->label('Precio original (sin IGV)')
+                                    ->content(function ($get) {
+                                        $originalPriceWithIgv = (float)($get('original_price_with_igv') ?? 0);
+                                        if ($originalPriceWithIgv <= 0) {
+                                            return '-';
+                                        }
+                                        $igv = (float)($get('igv') ?? 18.00);
+                                        $priceWithoutIgv = $originalPriceWithIgv / (1 + ($igv / 100));
+                                        return 'S/ ' . number_format($priceWithoutIgv, 2, '.', ',');
+                                    })
+                                    ->dehydrated(false),
+
+                                Forms\Components\Placeholder::make('net_profit')
+                                    ->label('Ganancia neta (después de comisión Stripe)')
+                                    ->content(function ($get) {
+                                        $priceWithIgv = (float)($get('price_with_igv') ?? 0);
+                                        if ($priceWithIgv <= 0) {
+                                            return '-';
+                                        }
+
+                                        // Obtener la comisión de Stripe desde la tabla companies
+                                        $company = \App\Models\Company::first();
+                                        $stripeCommission = $company ? (float)($company->stripe_commission_percentage ?? 3.60) : 3.60;
+
+                                        $igv = (float)($get('igv') ?? 18.00);
+                                        $priceWithoutIgv = $priceWithIgv / (1 + ($igv / 100));
+
+                                        // Calcular la comisión de Stripe sobre el precio sin IGV
+                                        $stripeFee = $priceWithoutIgv * ($stripeCommission / 100);
+
+                                        // Ganancia neta = precio sin IGV - comisión de Stripe
+                                        $netProfit = $priceWithoutIgv - $stripeFee;
+
+                                        return 'S/ ' . number_format($netProfit, 2, '.', ',');
+                                    })
+                                    ->extraAttributes(['class' => 'font-bold text-success-600']),
 
                                 Forms\Components\TextInput::make('duration_in_months')
                                     ->label('Vigencia en meses')
@@ -127,18 +210,8 @@ class PackageResource extends Resource
                                         'assignable' => 'Asignable',
                                     ])
                                     ->label('Tipo de compra')
-                                    ->default('assignable')
+                                    ->default('affordable')
                                     ->required(),
-
-                                // Forms\Components\Select::make('billing_type')
-                                //     ->options([
-                                //         'one_time' => 'Pago único',
-                                //         'monthly' => 'Mensual',
-                                //         'quarterly' => 'Trimestral',
-                                //         'yearly' => 'Anual',
-                                //     ])
-                                //     ->label('Tipo de pago')
-                                //     ->required(),
 
                                 Forms\Components\Select::make('commercial_type')
                                     ->options([
@@ -146,18 +219,24 @@ class PackageResource extends Resource
                                         'offer' => 'Oferta',
                                         'basic' => 'Básico',
                                     ])
+                                    ->default('basic')
                                     ->label('Tipo comercial')
                                     ->required(),
 
-                                // Forms\Components\Select::make('target_audience')
-                                //     ->label('Audiencia objetivo')
-                                //     ->options([
-                                //         'beginner' => 'Principiantes',
-                                //         'intermediate' => 'Intermedios',
-                                //         'advanced' => 'Avanzados',
-                                //         'all' => 'Todos',
-                                //     ])
-                                //     ->required(),
+                                Forms\Components\Toggle::make('is_membresia')
+                                    ->label('¿Es membresía?')
+                                    ->live()
+                                    ->default(false)
+                                    ->helperText('Si es true, será un pago recurrente'),
+
+                                Forms\Components\TextInput::make('recurrence_months')
+                                    ->label('Meses de recurrencia')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->visible(fn($get) => $get('is_membresia') === true)
+                                    ->required(fn($get) => $get('is_membresia') === true)
+                                    ->helperText('Cada cuántos meses se renovará automáticamente'),
+
                             ]),
 
                         // Sección 4: Configuración de fechas
@@ -172,6 +251,7 @@ class PackageResource extends Resource
                                         'temporary' => 'Temporal',
                                     ])
                                     ->label('Tipo de paquete')
+                                    ->default('fixed')
                                     ->required(),
 
                                 Forms\Components\DatePicker::make('start_date')
@@ -252,7 +332,7 @@ class PackageResource extends Resource
                                 Forms\Components\Select::make('membership_id')
                                     ->visible(fn($get) => $get('membreship'))
                                     ->live()
-                                    ->label('Membresía asociada')
+                                    ->label('Categoria asociada')
                                     ->relationship('membership', 'name')
                                     ->columnSpanFull(),
                             ]),
@@ -278,13 +358,23 @@ class PackageResource extends Resource
         }
         return $table
             ->columns([
+
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
-
-                // Tables\Columns\TextColumn::make('short_description')
-                //     ->searchable(),
+                Tables\Columns\IconColumn::make('is_membresia')
+                    ->label('Pago Recurrente')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-badge')
+                    ->falseIcon('heroicon-o-x-mark')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('classes_quantity')
                     ->label('N° de Clases')
@@ -312,33 +402,30 @@ class PackageResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('membership.name')
-                    ->label('Membresía')
+                    ->label('Categoria')
                     ->searchable(),
 
 
-                Tables\Columns\TextColumn::make('discipline.name')
-                    ->label('Disciplina')
+                Tables\Columns\TextColumn::make('disciplines')
+                    ->label('Disciplinas')
                     ->badge()
-                    ->color(fn($record) => $record->discipline->color_hex)
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'cycling' => 'Ciclo',
-                        'solidreformer' => 'Reformer',
-                        'pilates_mat' => 'Pilates Mat',
-                        default => ucfirst($state),
+                    ->color('primary')
+                    ->getStateUsing(function ($record) {
+                        return $record->disciplines->pluck('name')->map(function ($name) {
+                            return match ($name) {
+                                'cycling' => 'Ciclo',
+                                'solidreformer' => 'Reformer',
+                                'pilates_mat' => 'Pilates Mat',
+                                default => ucfirst($name),
+                            };
+                        })->join(', ');
                     })
-                    ->searchable()
-                    ->extraAttributes(function ($record) {
-                        return [
-                            'style' => "background-color: {$record->discipline->color_hex}10; color:  {$record->discipline->color_hex}; border: 1px solid {$record->discipline->color_hex}; padding: 0; font-weight: bold; border-radius: 0.45rem; text-align: center; display: flex; width: 100%; justify-content: center; align-items: center;",
-                            'class' => 'p-0 text-sm text-center' // Estilos adicionales para el badge
-                        ];
+                    ->searchable(query: function ($query, $search) {
+                        $query->whereHas('disciplines', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
                     }),
 
-
-                // Tables\Columns\TextColumn::make('price_soles')
-                //     ->label('Precio con descuento')
-                //     ->numeric()
-                //     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo de paquete')
                     ->formatStateUsing(fn(string $state): string => match ($state) {
@@ -356,14 +443,6 @@ class PackageResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
-                // Tables\Columns\TextColumn::make('start_date')
-                //     ->label('Fecha de inicio')
-                //     ->date('M d') // Ej: "Ene 15", "Feb 28"
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('end_date')
-                //     ->label('Fecha de fin')
-                //     ->date('M d') // Ej: "Ene 15", "Feb 28"
-                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('start_date')
                     ->label('Período de validez')
@@ -379,24 +458,7 @@ class PackageResource extends Resource
                     ->label('Precio Base')
                     ->numeric()
                     ->sortable(),
-                // Tables\Columns\TextColumn::make('validity_days')
-                //     ->label('Días Validos')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('package_type')
-                //     ->label('Tipo de paquete'), // Permite renderizar HTML
-                // Tables\Columns\TextColumn::make('billing_type'),
-                // Tables\Columns\IconColumn::make('is_virtual_access')
-                //     ->boolean(),
-                // Tables\Columns\TextColumn::make('priority_booking_days')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\IconColumn::make('auto_renewal')
-                //     ->boolean(),
-                // Tables\Columns\IconColumn::make('is_featured')
-                //     ->boolean(),
-                // Tables\Columns\IconColumn::make('is_popular')
-                //     ->boolean(),
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
@@ -410,18 +472,7 @@ class PackageResource extends Resource
                         'inactive' => 'danger',
                         default => 'secondary',
                     }),
-                // Tables\Columns\TextColumn::make('display_order')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('target_audience'),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -462,18 +513,12 @@ class PackageResource extends Resource
                         'virtual' => 'Virtual',
                         'mixto' => 'Mixto',
                     ]),
-                // Tables\Filters\SelectFilter::make('target_audience')
-                //     ->options([
-                //         'beginner' => 'Principiantes',
-                //         'intermediate' => 'Intermedios',
-                //         'advanced' => 'Avanzados',
-                //         'all' => 'Todos',
-                //     ])
-                //     ->default('all'),
-                Tables\Filters\SelectFilter::make('discipline_id')
+
+                Tables\Filters\SelectFilter::make('disciplines') // Cambiar a plural
                     ->label('Disciplina')
-                    ->relationship('discipline', 'name')
-                    ->label('Disciplina'),
+                    ->relationship('disciplines', 'name') // Relación muchos a muchos
+                    ->preload() // Opcional: cargar opciones anticipadamente
+                    ->multiple(), // Permitir filtrar por múltiples disciplinas
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

@@ -327,7 +327,7 @@
 
     @if ($rows > 0 && $columns > 0)
         <div class="schedule-header dark:bg-gray-800 ">
-            🎭 {{ $schedule->class->name ?? 'Clase' }} - {{ $studioInfo['name'] }}
+         {{ $schedule->class->name ?? 'Clase' }} - {{ $studioInfo['name'] }}
             <div class="text-black dark:text-white" style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.9;">
                 📅 {{ $schedule->scheduled_date->format('d/m/Y') }} •
                 ⏰ {{ $schedule->start_time }} - {{ $schedule->end_time }}
@@ -415,7 +415,7 @@
                 <div class="stat-number" style="color: #374151;">{{ $reservationStats['total_seats'] }}</div>
                 <div class="text-black dark:text-white">Total</div>
             </div>
-            
+
             <!-- 🆕 Estadísticas de Lista de Espera -->
             @if($waitingListStats['total_waiting'] > 0 || $waitingListStats['total_notified'] > 0)
             <div class="stat-card dark:bg-gray-800" style="grid-column: span 2; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b;">
@@ -436,12 +436,12 @@
                     <span class="text-amber-600 dark:text-amber-400 text-lg">📋</span>
                     <span class="font-medium text-amber-800 dark:text-amber-200">Lista de Espera Activa</span>
                 </div>
-                <a href="{{ route('filament.admin.resources.class-schedules.edit', ['record' => $schedule->id, 'activeTab' => 'waitingUsers']) }}" 
+                <a href="{{ route('filament.admin.resources.class-schedules.edit', ['record' => $schedule->id, 'activeTab' => 'waitingUsers']) }}"
                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded-md hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 dark:text-amber-300 dark:bg-amber-800 dark:border-amber-600 dark:hover:bg-amber-700">
                     📋 Gestionar Lista
                 </a>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 @foreach($waitingListStats['waiting_users']->take(6) as $waitingUser)
                 <div class="flex items-center space-x-2 p-2 bg-amber-100 rounded-md dark:bg-amber-800/50">

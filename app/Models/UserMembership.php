@@ -11,13 +11,102 @@ class UserMembership extends Model
 {
     use HasFactory;
 
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($userMembership) {
+            if (empty($userMembership->code)) {
+                $userMembership->code = static::generateUniqueCode();
+            }
+        });
+
+        // Cuando se crea o actualiza una membresía a 'active', actualizar los puntos del usuario
+        static::saved(function ($userMembership) {
+            if ($userMembership->status === 'active' && $userMembership->expiry_date && $userMembership->expiry_date->isFuture()) {
+                // Actualizar los puntos del usuario con esta membresía activa
+                \App\Models\UserPoint::updateActiveMembershipForUser(
+                    $userMembership->user_id,
+                    $userMembership->membership_id
+                );
+            }
+        });
+
+        // Cuando se actualiza el status a 'active', también actualizar los puntos
+        static::updated(function ($userMembership) {
+            if ($userMembership->wasChanged('status') && $userMembership->status === 'active') {
+                if ($userMembership->expiry_date && $userMembership->expiry_date->isFuture()) {
+                    // Actualizar los puntos del usuario con esta membresía activa
+                    \App\Models\UserPoint::updateActiveMembershipForUser(
+                        $userMembership->user_id,
+                        $userMembership->membership_id
+                    );
+                }
+            }
+        });
+    }
+
+    /**
+     * Generate a unique code similar to a credit card number.
+     * Format: XXXX-XXXX-XXXX-XXXX (16 digits with hyphens)
+     */
+    public static function generateUniqueCode(): string
+    {
+        $maxAttempts = 100; // Prevent infinite loops
+        $attempts = 0;
+
+        do {
+            // Generate 16 random digits
+            $digits = '';
+            for ($i = 0; $i < 16; $i++) {
+                $digits .= mt_rand(0, 9);
+            }
+
+            // Format as XXXX-XXXX-XXXX-XXXX
+            $code = substr($digits, 0, 4) . '-' .
+                   substr($digits, 4, 4) . '-' .
+                   substr($digits, 8, 4) . '-' .
+                   substr($digits, 12, 4);
+
+            $attempts++;
+
+            // If we've tried too many times, add a timestamp to ensure uniqueness
+            if ($attempts >= $maxAttempts) {
+                $timestamp = (string) time();
+                $code = substr($digits, 0, 4) . '-' .
+                       substr($digits, 4, 4) . '-' .
+                       substr($digits, 8, 4) . '-' .
+                       substr($timestamp, -4);
+                break;
+            }
+
+        } while (static::where('code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Get the code without hyphens (raw digits only).
+     */
+    public function getCodeDigitsAttribute(): string
+    {
+        return str_replace('-', '', $this->code);
+    }
+
     protected $fillable = [
+        'code',
         'user_id',
         'membership_id',
         'discipline_id',
         'total_free_classes',
         'used_free_classes',
         'remaining_free_classes',
+        'total_free_shakes',
+        'used_free_shakes',
+        'remaining_free_shakes',
         'activation_date',
         'expiry_date',
         'status',
@@ -31,6 +120,9 @@ class UserMembership extends Model
         'total_free_classes' => 'integer',
         'used_free_classes' => 'integer',
         'remaining_free_classes' => 'integer',
+        'total_free_shakes' => 'integer',
+        'used_free_shakes' => 'integer',
+        'remaining_free_shakes' => 'integer',
     ];
 
     /**
@@ -65,20 +157,14 @@ class UserMembership extends Model
         return $this->belongsTo(Package::class, 'source_package_id');
     }
 
-    /**
-     * Get the bookings made with this membership.
-     */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class, 'user_membership_id');
-    }
+
 
     /**
      * Scope to get only active memberships.
      */
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('is_active', true);
     }
 
     /**
@@ -121,6 +207,14 @@ class UserMembership extends Model
     public function getHasFreeClassesAttribute(): bool
     {
         return $this->remaining_free_classes > 0;
+    }
+
+    /**
+     * Check if the membership has free shakes available.
+     */
+    public function getHasFreeShakesAttribute(): bool
+    {
+        return $this->remaining_free_shakes > 0;
     }
 
     /**
@@ -171,6 +265,44 @@ class UserMembership extends Model
 
         return true;
     }
+
+    /**
+     * Use free shakes from this membership.
+     */
+    public function useFreeShakes(int $shakes = 1): bool
+    {
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        if ($this->expiry_date && $this->expiry_date->isPast()) {
+            return false;
+        }
+
+        if ($this->remaining_free_shakes < $shakes) {
+            return false;
+        }
+
+        $this->increment('used_free_shakes', $shakes);
+        $this->decrement('remaining_free_shakes', $shakes);
+
+        return true;
+    }
+
+    /**
+     * Refund free shakes to this membership.
+     */
+    public function refundFreeShakes(int $shakes = 1): bool
+    {
+        $this->increment('remaining_free_shakes', $shakes);
+
+        if ($this->used_free_shakes >= $shakes) {
+            $this->decrement('used_free_shakes', $shakes);
+        }
+
+        return true;
+    }
+
 
     /**
      * Activate the membership.

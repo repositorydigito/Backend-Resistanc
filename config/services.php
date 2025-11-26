@@ -44,6 +44,10 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI')
     ],
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+    ],
     'izipay' => [
         'url' => env('IZIPAY_URL'),
         'client_id' => env('IZIPAY_CLIENT_ID'),

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('image_url')->nullable()->comment('Imagen del tipo de bebida');
             $table->string('ico_url')->nullable()->comment('Icono del tipo de bebida');
             $table->float('price')->default(0)->comment('Precio de la bebida');
+            $table->decimal('price_soles', 8, 2)->default(0.00)->comment('Precio en soles');
 
             $table->boolean('is_active')->default(true)->comment('Indica si la bebida base está activa');
             $table->timestamps();

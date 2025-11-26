@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductCategoryResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductTagResource;
+use App\Models\Log;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @tags Productos
@@ -19,7 +21,6 @@ class ProductController extends Controller
 {
     /**
      * Lista de productos con filtros, ordenamientos y paginación.
-     *
      */
     public function index(Request $request)
     {
@@ -71,12 +72,22 @@ class ProductController extends Controller
                 'mensajeUsuario' => 'Lista de productos obtenida correctamente',
                 'datoAdicional' => ProductResource::collection($products)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista de productos con filtros, ordenamientos y paginación.',
+                'description' => 'Error al obtener lista de productos',
+                'data' => $e->getMessage(),
+            ]);
+
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener lista de productos',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -99,12 +110,20 @@ class ProductController extends Controller
                 'mensajeUsuario' => 'Producto obtenido correctamente',
                 'datoAdicional' => new ProductResource($product)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Mostrar un producto',
+                'description' => 'Error al obtener el producto',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener el producto',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -112,7 +131,6 @@ class ProductController extends Controller
 
     /**
      * Lista todas las categorías activas de productos
-     *
      */
     public function categories(): JsonResponse
     {
@@ -128,12 +146,20 @@ class ProductController extends Controller
                 'mensajeUsuario' => 'Lista de categorias de productos obtenida correctamente',
                 'datoAdicional' => ProductCategoryResource::collection($categories)
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todas las categorías activas de productos',
+                'description' => 'Error al obtener la lista de categorias de los productos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener la lista de categorias de los productos',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }
@@ -141,7 +167,6 @@ class ProductController extends Controller
 
     /**
      * Lista todas las tags activas de los productos
-     *
      */
     public function tags()
     {
@@ -160,12 +185,20 @@ class ProductController extends Controller
             return response()->json([
                 'data' => $tags,
             ]);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Lista todas las tags activas de los productos',
+                'description' => 'Error al obtener la lista de etiquetas de los productos',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al obtener la lista de etiquetas de los productos',
-                'datoAdicional' => $th->getMessage()
+                'datoAdicional' => $e->getMessage()
             ], 200);
         }
     }

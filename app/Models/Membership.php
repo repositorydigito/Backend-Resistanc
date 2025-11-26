@@ -17,14 +17,17 @@ class Membership extends Model
         'duration',
         'colors',
         'icon',
-        'is_benefit_shake',
-        'typeDrink_id',
         'shake_quantity',
         'is_benefit_discipline',
-        'discipline_id',
         'discipline_quantity',
         'is_active',
         'color_hex',
+        'class_completed',
+        'is_benefit_shake',
+
+        // Relaciones
+        'discipline_id',
+        'typeDrink_id',
     ];
 
     protected $casts = [

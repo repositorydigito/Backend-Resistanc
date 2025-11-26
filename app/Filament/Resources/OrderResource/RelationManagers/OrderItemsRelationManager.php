@@ -2,16 +2,19 @@
 
 namespace App\Filament\Resources\OrderResource\RelationManagers;
 
-use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrderItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'orderItems';
+
+    protected static ?string $title = 'Detalles del Pedido';
 
     protected static ?string $recordTitleAttribute = 'product_name';
 
@@ -19,54 +22,28 @@ class OrderItemsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('product_id')
-                    ->label('Producto')
-                    ->options(Product::where('status', 'active')->pluck('name', 'id'))
-                    ->searchable()
-                    ->required()
-                    ->reactive()
-                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        $product = Product::find($state);
-                        $unitPrice = $product?->price_soles ?? 0;
-                        $quantity = $get('quantity') ?? 1;
-
-                        $set('unit_price_soles', $unitPrice);
-                        $set('total_price_soles', $unitPrice * $quantity);
-                    }),
+                Forms\Components\TextInput::make('product.name')
+                    ->label('Nombre del Producto')
+                    ->disabled()
+                    ->required(),
 
                 Forms\Components\TextInput::make('quantity')
                     ->label('Cantidad')
                     ->numeric()
-                    ->required()
-                    ->default(1)
-                    ->minValue(1)
-                    ->reactive()
-                    ->afterStateUpdated(function ($state, callable $set, $get) {
-                        $unitPrice = $get('unit_price_soles') ?? 0;
-                        $quantity = $state ?? 1;
-                        $set('total_price_soles', $unitPrice * $quantity);
-                    }),
+                    ->disabled()
+                    ->required(),
 
-                Forms\Components\TextInput::make('unit_price_soles')
+                Forms\Components\TextInput::make('unit_price')
                     ->label('Precio Unitario (S/)')
                     ->numeric()
-                    ->required()
-                    ->prefix('S/')
                     ->disabled()
-                    ->dehydrated(),
+                    ->prefix('S/'),
 
-                Forms\Components\TextInput::make('total_price_soles')
-                    ->label('Total (S/)')
+                Forms\Components\TextInput::make('total_price')
+                    ->label('Precio Total (S/)')
                     ->numeric()
-                    ->required()
-                    ->prefix('S/')
                     ->disabled()
-                    ->dehydrated(),
-
-                Forms\Components\Textarea::make('notes')
-                    ->label('Notas')
-                    ->rows(2)
-                    ->placeholder('Notas especiales para este producto...'),
+                    ->prefix('S/'),
             ]);
     }
 
@@ -75,50 +52,56 @@ class OrderItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('product_name')
             ->columns([
-                Tables\Columns\TextColumn::make('product_name')
+                Tables\Columns\TextColumn::make('product.name')
                     ->label('Producto')
                     ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('product_sku')
-                    ->label('SKU')
-                    ->searchable()
-                    ->sortable(),
+                    ->weight('bold')
+                    ->wrap()
+                    ->placeholder('Producto no encontrado'),
 
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Cantidad')
-                    ->sortable(),
+                    ->alignCenter()
+                    ->badge()
+                    ->color('primary'),
 
-                Tables\Columns\TextColumn::make('unit_price_soles')
-                    ->label('Precio Unitario')
+                Tables\Columns\TextColumn::make('unit_price')
+                    ->label('Precio Unit.')
                     ->money('PEN')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('total_price_soles')
+                Tables\Columns\TextColumn::make('total_price')
                     ->label('Total')
                     ->money('PEN')
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold')
+                    ->color('success'),
 
-                Tables\Columns\TextColumn::make('notes')
-                    ->label('Notas')
-                    ->limit(50)
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Agregado')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Agregar Producto'),
+                // No permitir crear items manualmente
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                // No permitir eliminar items en bulk
+            ])
+            ->emptyStateHeading('Sin productos en el pedido')
+            ->emptyStateDescription('Este pedido no tiene productos registrados.')
+            ->defaultSort('unit_price', 'asc');
     }
-} 
+
+    public function canCreate(): bool
+    {
+        return false;
+    }
+}

@@ -6,6 +6,7 @@ use App\Filament\Resources\ClassModelResource\Pages;
 use App\Filament\Resources\ClassModelResource\RelationManagers;
 use App\Models\ClassModel;
 use Filament\Forms;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -53,6 +54,24 @@ class ClassModelResource extends Resource
                             ->imageResizeTargetWidth(800)
                             ->imageResizeTargetHeight(600)
                             ->image()
+                            ->preserveFilenames()
+                            ->downloadable()
+                            ->deletable()
+                            ->columnSpanFull(),
+                        Forms\Components\FileUpload::make('icon_url')
+                            ->label('Icono')
+                            ->disk('public')
+                            ->directory('clases')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(1024 * 5) // 5 MB
+                            ->imageResizeMode('crop')
+                            ->imageResizeTargetWidth(800)
+                            ->imageResizeTargetHeight(600)
+                            ->image()
+                            ->preserveFilenames()
+                            ->downloadable()
+                            ->deletable()
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('discipline_id')
@@ -66,6 +85,12 @@ class ClassModelResource extends Resource
                             ->label('Nombre')
                             ->required()
                             ->maxLength(255),
+
+                        Forms\Components\TextInput::make('available_seats')
+                            ->label('Cantidad de Butacas Disponibles para Reserva')
+                            ->required()
+                            ->numeric()
+                            ->default(3),
 
 
                         // Forms\Components\Select::make('instructor_id')
@@ -98,11 +123,15 @@ class ClassModelResource extends Resource
                         //     ->relationship('studio', 'name')
                         //     ->required(),
 
-                        Forms\Components\TextInput::make('max_capacity')
-                            ->label('Capacidad Máxima')
+                        // Forms\Components\TextInput::make('max_capacity')
+                        //     ->label('Capacidad Máxima')
+                        //     ->required()
+                        //     ->numeric(),
+                        ColorPicker::make('color_hex')
+                            ->label('Color')
                             ->required()
-                            ->numeric(),
-
+                            ->hex() // Asegura que solo acepte formato HEX (#RRGGBB)
+                            ->default('#000000'), // Color por defecto (negro)
                         Forms\Components\Select::make('type')
                             ->label('Modalidad')
                             ->options([
@@ -132,7 +161,9 @@ class ClassModelResource extends Resource
                                 'active' => 'Activo',
                                 'inactive' => 'Inactivo',
                                 'draft' => 'Borrador',
-                            ]),
+                            ])
+                            ->default('active')
+                            ->required(),
                         // Forms\Components\TextInput::make('music_genre')
                         //     ->label('Género Musical')
                         //     ->maxLength(100),

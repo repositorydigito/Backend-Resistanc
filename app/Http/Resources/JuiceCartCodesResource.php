@@ -54,8 +54,8 @@ class JuiceCartCodesResource extends JsonResource
                 $drinkData['base'] = [
                     'id' => $baseDrink->id,
                     'name' => $baseDrink->name,
-                    'image_url' => $baseDrink->image_url ? asset($baseDrink->image_url) : null,
-                    'ico_url' => $baseDrink->ico_url ? asset($baseDrink->ico_url) : null,
+                    'image_url' => $baseDrink->image_url ? asset( 'storage/' . $baseDrink->image_url) : asset('default/protico.png'),
+                    'ico_url' => $baseDrink->ico_url ?  asset( 'storage/' . $baseDrink->ico_url) : asset('default/icon.png'),
                     'is_active' => $baseDrink->is_active
                 ];
             }
@@ -65,8 +65,8 @@ class JuiceCartCodesResource extends JsonResource
                 $drinkData['flavor'] = [
                     'id' => $flavorDrink->id,
                     'name' => $flavorDrink->name,
-                    'image_url' => $flavorDrink->image_url ? asset($flavorDrink->image_url) : null,
-                    'ico_url' => $flavorDrink->ico_url ? asset($flavorDrink->ico_url) : null,
+                    'image_url' => $flavorDrink->image_url ?  asset( 'storage/' . $flavorDrink->image_url) : asset('default/protico.png'),
+                    'ico_url' => $flavorDrink->ico_url ?  asset( 'storage/' . $flavorDrink->ico_url) : asset('default/icon.png'),
                     'is_active' => $flavorDrink->is_active
                 ];
             }
@@ -77,8 +77,8 @@ class JuiceCartCodesResource extends JsonResource
                     'id' => $typeDrink->id,
                     'name' => $typeDrink->name,
                     'price' => $typeDrink->price,
-                    'image_url' => $typeDrink->image_url ? asset($typeDrink->image_url) : null,
-                    'ico_url' => $typeDrink->ico_url ? asset($typeDrink->ico_url) : null,
+                    'image_url' => $typeDrink->image_url ?  asset( 'storage/' . $typeDrink->image_url) : asset('default/protico.png'),
+                    'ico_url' => $typeDrink->ico_url ?  asset( 'storage/' . $typeDrink->ico_url) : asset('default/icon.png'),
                     'is_active' => $typeDrink->is_active
                 ];
 

@@ -16,7 +16,19 @@ class EditUserProfile extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->requiresConfirmation()
+                ->modalHeading('Eliminar cliente')
+                ->modalDescription('¿Estás seguro de que quieres eliminar este cliente? Esta acción también eliminará el usuario asociado y no se puede deshacer.')
+                ->modalSubmitActionLabel('Sí, eliminar')
+                ->action(function ($record) {
+                    // Eliminar el usuario relacionado primero
+                    if ($record->user) {
+                        $record->user->delete();
+                    }
+                    // Luego eliminar el perfil
+                    $record->delete();
+                }),
         ];
     }
 

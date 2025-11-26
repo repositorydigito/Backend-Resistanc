@@ -11,6 +11,30 @@ final class Studio extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name',
+        'location',
+        'max_capacity',
+        'equipment_available',
+        'amenities',
+        'is_active',
+        'capacity_per_seat',
+        'addressing',
+        'row',
+        'column',
+        'zigzag',
+    ];
+
+    protected $casts = [
+        'equipment_available' => 'array',
+        'amenities' => 'array',
+        'max_capacity' => 'integer',
+        'capacity_per_seat' => 'integer',
+        'is_active' => 'boolean',
+    ];
+
+
+
     /**
      * Boot the model and add event listeners.
      */
@@ -64,27 +88,6 @@ final class Studio extends Model
         });
     }
 
-    protected $fillable = [
-        'name',
-        'location',
-        'max_capacity',
-        'equipment_available',
-        'amenities',
-        'studio_type',
-        'is_active',
-        'capacity_per_seat',
-        'addressing',
-        'row',
-        'column',
-    ];
-
-    protected $casts = [
-        'equipment_available' => 'array',
-        'amenities' => 'array',
-        'max_capacity' => 'integer',
-        'capacity_per_seat' => 'integer',
-        'is_active' => 'boolean',
-    ];
 
     /**
      * Get the classes held in this studio.
@@ -327,28 +330,52 @@ final class Studio extends Model
             ->orderBy('column')
             ->get();
 
+        if ($seats->isEmpty()) {
+            Log::warning("No hay asientos para reordenar en el estudio: {$this->name}");
+            return;
+        }
+
         $newSeatNumber = 1;
         $updatedSeats = [];
+        $nullSeats = 0;
 
         foreach ($seats as $seat) {
-            if ($seat->seat_number !== $newSeatNumber) {
+            $currentSeatNumber = $seat->seat_number;
+
+            // Update if seat_number is null or different from expected
+            if ($currentSeatNumber === null || $currentSeatNumber !== $newSeatNumber) {
+                if ($currentSeatNumber === null) {
+                    $nullSeats++;
+                }
                 $updatedSeats[] = [
                     'id' => $seat->id,
-                    'seat_number' => $newSeatNumber
+                    'seat_number' => $newSeatNumber,
+                    'previous_seat_number' => $currentSeatNumber,
+                    'row' => $seat->row,
+                    'column' => $seat->column
                 ];
             }
             $newSeatNumber++;
         }
 
         // Update seat numbers in batches to avoid conflicts
-        foreach ($updatedSeats as $update) {
-            Seat::where('id', $update['id'])->update(['seat_number' => $update['seat_number']]);
-        }
-
         if (!empty($updatedSeats)) {
+            foreach ($updatedSeats as $update) {
+                Seat::where('id', $update['id'])->update(['seat_number' => $update['seat_number']]);
+            }
+
             Log::info("Números de asientos reordenados", [
                 'studio_id' => $this->id,
-                'updated_seats' => count($updatedSeats)
+                'studio_name' => $this->name,
+                'total_seats' => $seats->count(),
+                'updated_seats' => count($updatedSeats),
+                'null_seats_fixed' => $nullSeats,
+                'seat_numbers_assigned' => $newSeatNumber - 1
+            ]);
+        } else {
+            Log::info("Todos los asientos ya tienen números correctos", [
+                'studio_id' => $this->id,
+                'total_seats' => $seats->count()
             ]);
         }
     }
@@ -420,5 +447,11 @@ final class Studio extends Model
         }
 
         return $deleted;
+    }
+
+
+    public function disciplines()
+    {
+        return $this->belongsToMany(Discipline::class);
     }
 }

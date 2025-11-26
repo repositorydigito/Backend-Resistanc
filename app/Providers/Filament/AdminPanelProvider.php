@@ -33,10 +33,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(Login::class)
             // ->profile(EditProfile::class)
-            ->favicon(asset('/image/logos/iconos/resistance-logo.ico')) // Icono pages
+            ->favicon(asset('/image/pages/icon_nuevo.png')) // Icono pages
             ->brandLogo(asset('image/logos/resistance-logo-two.png')) // 👈 Logo principal
             ->darkModeBrandLogo(asset('image/logos/resistance-logo-two-white.png'))
-            ->brandName('Strategio')        // 👈 Texto al lado del logo (opcional)
+            ->brandName('Rsistanc')        // 👈 Texto al lado del logo (opcional)
 
             ->colors([
                 'primary' => Color::hex('#B0694C'), // Color exacto

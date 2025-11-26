@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('scheduled_date')->comment('Fecha programada de la clase');
             $table->time('start_time')->comment('Hora de inicio de la clase');
             $table->time('end_time')->comment('Hora de fin de la clase');
-            $table->unsignedTinyInteger('max_capacity')->comment('Capacidad máxima de la clase');
+            $table->unsignedTinyInteger('max_capacity')->nullable()->comment('Capacidad máxima de la clase');
             $table->unsignedTinyInteger('available_spots')->comment('Espacios disponibles');
             $table->unsignedTinyInteger('booked_spots')->default(0)->comment('Espacios reservados');
             $table->unsignedTinyInteger('waitlist_spots')->default(0)->comment('Espacios en lista de espera');

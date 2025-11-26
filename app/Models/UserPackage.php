@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class UserPackage extends Model
@@ -22,6 +22,10 @@ final class UserPackage extends Model
         'used_classes',
         'remaining_classes',
         'amount_paid_soles',
+        'real_amount_paid_soles',
+        'original_package_price_soles',
+        'promo_code_used',
+        'discount_percentage',
         'currency',
         'purchase_date',
         'activation_date',
@@ -30,6 +34,11 @@ final class UserPackage extends Model
         // 'auto_renew',
         'renewal_price',
         // 'benefits_included',
+        'gift_order_id',
+        'stripe_subscription_id',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_customer_id',
         'notes',
     ];
 
@@ -41,6 +50,9 @@ final class UserPackage extends Model
         'used_classes' => 'integer',
         'remaining_classes' => 'integer',
         'amount_paid_soles' => 'decimal:2',
+        'real_amount_paid_soles' => 'decimal:2',
+        'original_package_price_soles' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
         'renewal_price' => 'decimal:2',
         // 'benefits_included' => 'array',
         // 'auto_renew' => 'boolean',
@@ -96,6 +108,14 @@ final class UserPackage extends Model
     }
 
     /**
+     * Get the gift order associated with this package (shakes gratis por membresía).
+     */
+    public function giftOrder(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\JuiceOrder::class, 'gift_order_id');
+    }
+
+    /**
      * Get the user who gifted this package.
      */
     public function giftFrom(): BelongsTo
@@ -104,11 +124,43 @@ final class UserPackage extends Model
     }
 
     /**
-     * Get the bookings made with this package.
+     * Get promo code information used for this package
      */
-    public function bookings(): HasMany
+    public function getPromoCodeInfoAttribute(): ?array
     {
-        return $this->hasMany(Booking::class);
+        if (!$this->user_id || !$this->package_id) {
+            return null;
+        }
+
+        $promoCodeUsage = DB::table('promocodes_user')
+            ->join('promo_codes', 'promocodes_user.promo_codes_id', '=', 'promo_codes.id')
+            ->where('promocodes_user.user_id', $this->user_id)
+            ->where('promocodes_user.package_id', $this->package_id)
+            ->select([
+                'promo_codes.code',
+                'promo_codes.name',
+                'promocodes_user.discount_applied',
+                'promocodes_user.original_price',
+                'promocodes_user.final_price',
+                'promocodes_user.monto',
+                'promocodes_user.created_at'
+            ])
+            ->orderBy('promocodes_user.created_at', 'desc')
+            ->first();
+
+        if (!$promoCodeUsage) {
+            return null;
+        }
+
+        return [
+            'code' => $promoCodeUsage->code,
+            'name' => $promoCodeUsage->name,
+            'discount_applied' => (float) $promoCodeUsage->discount_applied,
+            'original_price' => (float) $promoCodeUsage->original_price,
+            'final_price' => (float) $promoCodeUsage->final_price,
+            'amount_paid' => (float) $promoCodeUsage->monto,
+            'used_at' => $promoCodeUsage->created_at,
+        ];
     }
 
     /**
@@ -287,10 +339,10 @@ final class UserPackage extends Model
 
         // Cargar la relación del paquete si no está cargada
         if (!$this->relationLoaded('package')) {
-            $this->load('package');
+            $this->load('package.disciplines');
         }
 
-        return $this->package && $this->package->discipline_id === $disciplineId;
+        return $this->package && $this->package->disciplines->contains('id', $disciplineId);
     }
 
     /**
@@ -302,27 +354,51 @@ final class UserPackage extends Model
     }
 
     /**
-     * Get the discipline ID of this package.
+     * Get the discipline IDs of this package.
+     */
+    public function getDisciplineIdsAttribute(): ?array
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->pluck('id')->toArray();
+    }
+
+    /**
+     * Get the primary discipline ID of this package (first discipline).
      */
     public function getDisciplineIdAttribute(): ?int
     {
         if (!$this->relationLoaded('package')) {
-            $this->load('package');
+            $this->load('package.disciplines');
         }
 
-        return $this->package?->discipline_id;
+        return $this->package?->disciplines?->first()?->id;
     }
 
     /**
-     * Get the discipline name of this package.
+     * Get the discipline names of this package.
+     */
+    public function getDisciplineNamesAttribute(): ?array
+    {
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
+        }
+
+        return $this->package?->disciplines?->pluck('name')->toArray();
+    }
+
+    /**
+     * Get the primary discipline name of this package (first discipline).
      */
     public function getDisciplineNameAttribute(): ?string
     {
-        if (!$this->relationLoaded('package.discipline')) {
-            $this->load('package.discipline');
+        if (!$this->relationLoaded('package')) {
+            $this->load('package.disciplines');
         }
 
-        return $this->package?->discipline?->name;
+        return $this->package?->disciplines?->first()?->name;
     }
 
     /**
@@ -398,5 +474,10 @@ final class UserPackage extends Model
 
         // Si quedan más de 7 días
         return 'Vigente';
+    }
+
+    public function promoCodes()
+    {
+        return $this->belongsToMany(PromoCodes::class);
     }
 }

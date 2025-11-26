@@ -13,7 +13,6 @@ final class Instructor extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'name',
         'email',
         'phone',
@@ -34,6 +33,12 @@ final class Instructor extends Model
         // nuevo
         'type_document',
         'document_number',
+
+        'presentation_image',
+        'send_presentation',
+
+        // Relaciones
+        'user_id',
     ];
 
     protected $casts = [

@@ -50,14 +50,13 @@ class StudioResource extends Resource
                                     ->required()
                                     ->maxLength(100),
 
-                                Forms\Components\Select::make('studio_type')
-                                    ->label('Tipo de Sala')
-                                    ->options([
-                                        'cycling' => 'Ciclo',
-                                        'reformer' => 'Reformer',
-                                        'mat' => 'Mat',
-                                        'multipurpose' => 'Multipropósito',
-                                    ])
+                                // Agregar el campo para la relación muchos a muchos con disciplines
+                                Forms\Components\Select::make('disciplines')
+                                    ->label('Disciplinas')
+                                    ->relationship('disciplines', 'name') // 'name' es el campo que se mostrará
+                                    // ->multiple()
+                                    ->preload()
+                                    ->searchable()
                                     ->required(),
 
                                 Forms\Components\TextInput::make('location')
@@ -65,6 +64,11 @@ class StudioResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpanFull(),
+
+                                Forms\Components\Toggle::make('zigzag')
+                                    ->label('¿Mapa en zigzag?')
+                                    ->default(false)
+                                    ->required(),
                             ]),
 
                         // Sección 2: Capacidad y distribución
@@ -73,12 +77,12 @@ class StudioResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('max_capacity')
                                     ->label('Aforo total')
-                                    ->required()
+                                    // ->required()
                                     ->numeric(),
 
                                 Forms\Components\TextInput::make('capacity_per_seat')
                                     ->label('Espacios Disponibles')
-                                    ->required()
+                                    // ->required()
                                     ->numeric(),
 
                                 // Forms\Components\Select::make('addressing')
@@ -100,7 +104,7 @@ class StudioResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
-                                    ->maxValue(20)
+                                    // ->maxValue(20)
                                     ->helperText('Número de filas para distribuir los asientos'),
 
                                 Forms\Components\TextInput::make('column')
@@ -108,7 +112,7 @@ class StudioResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
-                                    ->maxValue(20)
+                                    // ->maxValue(20)
                                     ->helperText('Número de columnas para distribuir los asientos')
                                     ->live()
                                     ->afterStateUpdated(function ($state, $get, $set) {
@@ -221,23 +225,14 @@ class StudioResource extends Resource
                 //             : "Esta sala no tiene horarios asociados";
                 //     }),
 
-                Tables\Columns\TextColumn::make('studio_type')
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'cycling' => 'Ciclo',
-                        'reformer' => 'Reformer',
-                        'mat' => 'Mat',
-                        'multipurpose' => 'Multipropósito',
-                        default => 'Desconocido',
+
+                Tables\Columns\TextColumn::make('disciplines')
+                    ->label('Disciplinas')
+                    ->getStateUsing(function ($record) {
+                        return $record->disciplines->pluck('name')->join(', ');
                     })
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'cycling' => 'primary',
-                        'reformer' => 'info',
-                        'mat' => 'success',
-                        'multipurpose' => 'warning',
-                        default => 'gray',
-                    })
-                    ->label('Tipo de Sala'),
+                    ->wrap(),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('¿Está activa?')
                     ->boolean(),

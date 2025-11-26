@@ -83,12 +83,14 @@
         .seat-map-grid {
             display: grid;
             gap: 0.55rem;
-            justify-content: center;
+            /* justify-content: center; */
             margin: 1rem 0;
             padding: 1.5rem;
             background: white;
             border-radius: 0.75rem;
             border: 2px solid #e5e7eb;
+            overflow: hidden;
+            overflow: scroll;
         }
 
         .seat {
@@ -250,7 +252,7 @@
     </style>
 
     @if ($rows > 0 && $columns > 0)
-        <div class="seat-map-header">🎭 {{ $studio->name }} - Mapa Interactivo de Asientos</div>
+        <div class="seat-map-header"> {{ $studio->name }} - Mapa Interactivo de Asientos</div>
 
         {{-- <div class="controls-bar">
             <button class="control-btn btn-regenerate" wire:click="regenerateSeats" wire:confirm="¿Estás seguro? Esto eliminará todos los asientos existentes y creará nuevos.">

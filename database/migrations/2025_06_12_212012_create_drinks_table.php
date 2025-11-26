@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('drinks', function (Blueprint $table) {
             $table->id();
 
-            // $table->string('name')->comment('Nombre de la bebida');
-            // $table->string('slug')->unique()->comment('Slug único para la bebida');
-            // $table->string('description')->nullable()->comment('Descripción de la bebida');
-            // $table->string('image_url')->nullable()->comment('URL de la imagen de la bebida');
+            // Campos de precio y datos históricos
+            $table->decimal('base_price_soles', 10, 2)->default(0.00)->comment('Precio base de la bebida');
+            $table->decimal('total_price_soles', 10, 2)->default(0.00)->comment('Precio total calculado');
+            $table->string('drink_name', 255)->nullable()->comment('Nombre completo de la bebida para historial');
+            $table->json('drink_combination')->nullable()->comment('Combinación de ingredientes para historial');
+            $table->boolean('is_active')->default(true)->comment('Estado de disponibilidad');
 
             // Relaciones
             $table->foreignId('typedrink_id')

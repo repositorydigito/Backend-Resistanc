@@ -81,12 +81,27 @@ class DisciplineResource extends Resource
                                     ->label('Color principal')
                                     ->required()
                                     ->default('#000000'),
+
                             ]),
 
                         // Sección 2: Información básica
                         Section::make('Datos principales')
                             ->columns(2)
                             ->schema([
+
+                                Forms\Components\TextInput::make('order')
+                                    ->label('Orden (único)')
+                                    ->numeric()
+                                    ->required()
+                                    ->unique(Discipline::class, 'order', ignoreRecord: true)
+                                    ->rules(['integer', 'min:1'])
+                                    ->default(fn() => Discipline::max('order') + 1)
+                                    ->helperText(function () {
+                                        $usedOrders = Discipline::pluck('order')->filter()->sort()->values()->toArray();
+                                        $availableOrder = Discipline::max('order') + 1;
+                                        return "Números usados: " . implode(', ', $usedOrders) .
+                                            " Próximo disponible: {$availableOrder}";
+                                    }),
                                 Forms\Components\TextInput::make('name')
                                     ->label('Nombre técnico')
                                     ->required()
@@ -142,6 +157,12 @@ class DisciplineResource extends Resource
                 Tables\Columns\TextColumn::make('display_name')
                     ->label('Nombre para mostrar')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('order')
+                    ->label('Orden')
+                    ->sortable()
+                    ->searchable(),
+
 
                 Tables\Columns\ImageColumn::make('icon_url')
                     ->label('Icono')

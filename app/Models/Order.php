@@ -12,7 +12,6 @@ final class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-
         'order_number',
         'order_type',
         'subtotal_soles',
@@ -30,12 +29,15 @@ final class Order extends Model
         'special_instructions',
         'promocode_used',
         'notes',
-
         'items',
-
-        // Relaciones
+        'payment_method_name',
+        'mercadopago_preference_id',
+        'mercadopago_payment_id',
+        'mercadopago_init_point_url',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_customer_id',
         'user_id',
-
     ];
 
     protected $casts = [
@@ -45,6 +47,7 @@ final class Order extends Model
         'discount_amount_soles' => 'decimal:2',
         'total_amount_soles' => 'decimal:2',
         'delivery_address' => 'array',
+        'items' => 'array', // Campo JSON para historial de items
         'delivery_date' => 'date',
     ];
 

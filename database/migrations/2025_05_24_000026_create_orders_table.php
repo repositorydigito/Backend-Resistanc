@@ -26,6 +26,8 @@ return new class extends Migration
             $table->enum('status', ['pending', 'confirmed', 'processing', 'preparing', 'ready', 'delivered', 'cancelled', 'refunded'])->default('pending')->comment('Estado de la orden');
             $table->enum('payment_status', ['pending', 'authorized', 'paid', 'partially_paid', 'failed', 'refunded'])->default('pending')->comment('Estado del pago');
 
+            $table->string('payment_method_name', 255)->nullable()->comment('Nombre del método de pago');
+
             $table->json('items')->comment('Lista de productos comprados');
 
             // Delivery
@@ -37,6 +39,13 @@ return new class extends Migration
             $table->string('promocode_used', 50)->nullable()->comment('Código promocional utilizado');
             $table->text('notes')->nullable()->comment('Notas');
             // Delivery
+
+
+            $table->string('stripe_payment_intent_id')->nullable();
+            $table->string('stripe_invoice_id')->nullable();
+            $table->string('stripe_customer_id')->nullable();
+
+
 
             // Relaciones
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

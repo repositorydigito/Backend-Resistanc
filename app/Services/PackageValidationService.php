@@ -55,6 +55,59 @@ final class PackageValidationService
         // Obtener membresías con clases gratis disponibles para esta disciplina
         $availableMemberships = $this->getUserAvailableMembershipsForDiscipline($userId, $disciplineId);
 
+        // 🎯 Obtener membresías adicionales cuya disciplina está en el grupo de disciplinas de los paquetes del usuario
+        // Esto permite usar una membresía de "Pilates" para consumir "Cycling" si ambos están en el mismo grupo del paquete
+        $membershipsFromPackageGroups = $this->getUserMembershipsFromPackageDisciplineGroups($userId, $disciplineId);
+        
+        // Combinar ambas colecciones (membresías directas + membresías del grupo de paquetes)
+        $availableMemberships = $availableMemberships->merge($membershipsFromPackageGroups)->unique('id');
+
+        // 🎯 También buscar paquetes que incluyan esta disciplina a través de paquetes con múltiples disciplinas
+        // Esto asegura que si un usuario tiene un paquete con múltiples disciplinas que incluye esta, se encuentre
+        // Esto es una verificación adicional porque whereHas('package.disciplines') debería funcionar, pero por si acaso
+        $allUserPackages = UserPackage::query()
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->where('remaining_classes', '>', 0)
+            ->whereHas('package', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->whereDate('expiry_date', '>=', now())
+            ->with(['package.disciplines:id,name'])
+            ->get();
+
+        // Si hay paquetes que incluyen esta disciplina en su grupo, agregarlos
+        $packagesWithDiscipline = $allUserPackages->filter(function ($userPackage) use ($disciplineId) {
+            if (!$userPackage->package || !$userPackage->package->disciplines || $userPackage->package->disciplines->isEmpty()) {
+                return false;
+            }
+            $packageDisciplineIds = $userPackage->package->disciplines->pluck('id')->toArray();
+            $hasDiscipline = in_array($disciplineId, $packageDisciplineIds);
+            
+            // Log para debugging
+            if ($hasDiscipline) {
+                \Illuminate\Support\Facades\Log::info('Paquete encontrado con disciplina en grupo', [
+                    'user_package_id' => $userPackage->id,
+                    'package_id' => $userPackage->package_id,
+                    'package_name' => $userPackage->package->name ?? 'N/A',
+                    'required_discipline_id' => $disciplineId,
+                    'package_disciplines' => $packageDisciplineIds,
+                ]);
+            }
+            
+            return $hasDiscipline;
+        });
+
+        // Combinar paquetes encontrados (los que ya encontramos + los del grupo)
+        // Eliminar duplicados comparando por ID
+        if ($packagesWithDiscipline->isNotEmpty()) {
+            $existingPackageIds = $availablePackages->pluck('id')->toArray();
+            $newPackages = $packagesWithDiscipline->reject(function ($package) use ($existingPackageIds) {
+                return in_array($package->id, $existingPackageIds);
+            });
+            $availablePackages = $availablePackages->merge($newPackages);
+        }
+
         // Si no hay paquetes ni membresías disponibles
         if ($availablePackages->isEmpty() && $availableMemberships->isEmpty()) {
             return [
@@ -73,6 +126,13 @@ final class PackageValidationService
             'valid' => true,
             'message' => 'Paquetes y/o membresías disponibles encontrados',
             'available_packages' => $availablePackages->map(function ($userPackage) {
+                // Cargar todas las disciplinas del paquete si no están cargadas
+                if (!$userPackage->relationLoaded('package.disciplines')) {
+                    $userPackage->load('package.disciplines');
+                }
+
+                $disciplines = $userPackage->package->disciplines ?? collect();
+
                 return [
                     'id' => $userPackage->id,
                     'package_code' => $userPackage->package_code,
@@ -80,7 +140,16 @@ final class PackageValidationService
                     'remaining_classes' => $userPackage->remaining_classes,
                     'expiry_date' => $userPackage->expiry_date?->toDateString(),
                     'days_remaining' => $userPackage->days_remaining,
-                    'type' => 'package'
+                    'type' => 'package',
+                    'disciplines' => $disciplines->map(function ($discipline) {
+                        return [
+                            'id' => $discipline->id,
+                            'name' => $discipline->name,
+                        ];
+                    })->toArray(),
+                    'disciplines_count' => $disciplines->count(),
+                    'is_multi_discipline' => $disciplines->count() > 1,
+                    'discipline_names' => $disciplines->pluck('name')->toArray(),
                 ];
             })->toArray(),
             'available_memberships' => $availableMemberships->map(function ($membership) {
@@ -114,12 +183,14 @@ final class PackageValidationService
             ->where('user_id', $userId)
             ->where('status', 'active')
             ->where('remaining_classes', '>', 0)
-            ->whereHas('package', function ($query) use ($disciplineId) {
-                $query->where('discipline_id', $disciplineId)
-                      ->where('status', 'active');
+            ->whereHas('package', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->whereHas('package.disciplines', function ($query) use ($disciplineId) {
+                $query->where('disciplines.id', $disciplineId);
             })
             ->whereDate('expiry_date', '>=', now())
-            ->with(['package:id,name,discipline_id'])
+            ->with(['package:id,name', 'package.disciplines:id,name'])
             ->orderBy('expiry_date', 'asc') // Usar primero los que expiran antes
             ->get();
     }
@@ -142,6 +213,118 @@ final class PackageValidationService
             ->with(['membership:id,name', 'discipline:id,name'])
             ->orderBy('expiry_date', 'asc') // Usar primero los que expiran antes
             ->get();
+    }
+
+    /**
+     * Obtiene membresías del usuario cuya disciplina está en el grupo de disciplinas de algún paquete del sistema
+     * que también incluye la disciplina requerida. Esto permite usar membresías de otras disciplinas si están en el mismo
+     * grupo de disciplinas, similar a como lo hace HomeController.
+     * 
+     * Ejemplo: Si el usuario tiene una membresía de "Pilates" y existe un paquete con grupo ["Cycling", "Pilates", "Box"],
+     * puede usar esa membresía para consumir clases de "Cycling" porque están en el mismo grupo.
+     *
+     * @param int $userId
+     * @param int $requiredDisciplineId Disciplina requerida para la clase
+     * @return Collection<UserMembership>
+     */
+    public function getUserMembershipsFromPackageDisciplineGroups(int $userId, int $requiredDisciplineId): Collection
+    {
+        // 🎯 Obtener TODOS los paquetes activos del SISTEMA con sus disciplinas (como hace HomeController)
+        // Esto permite ver todos los grupos posibles de disciplinas
+        $allPackages = \App\Models\Package::query()
+            ->with(['disciplines:id,name'])
+            ->where('buy_type', 'affordable')
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->where('type', 'fixed')
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->where('type', 'temporary')
+                            ->where('start_date', '<=', now())
+                            ->where('end_date', '>=', now());
+                    });
+            })
+            ->get();
+
+        if ($allPackages->isEmpty()) {
+            return collect();
+        }
+
+        // 🎯 Encontrar grupos de disciplinas que incluyen la disciplina requerida
+        $validGroupKeys = [];
+        foreach ($allPackages as $package) {
+            if (!$package->disciplines || $package->disciplines->isEmpty()) {
+                continue;
+            }
+            
+            $packageDisciplineIds = $package->disciplines->pluck('id')->sort()->values()->toArray();
+            
+            // Si el paquete incluye la disciplina requerida, este es un grupo válido
+            if (in_array($requiredDisciplineId, $packageDisciplineIds)) {
+                $groupKey = implode('-', $packageDisciplineIds);
+                if (!in_array($groupKey, $validGroupKeys)) {
+                    $validGroupKeys[] = $groupKey;
+                }
+            }
+        }
+
+        if (empty($validGroupKeys)) {
+            return collect();
+        }
+
+        // 🎯 Obtener todas las membresías activas del usuario
+        $userMemberships = UserMembership::query()
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->where('remaining_free_classes', '>', 0)
+            ->whereDate('expiry_date', '>=', now())
+            ->with(['membership:id,name', 'discipline:id,name', 'sourcePackage:id,name'])
+            ->orderBy('expiry_date', 'asc')
+            ->get();
+
+        if ($userMemberships->isEmpty()) {
+            return collect();
+        }
+
+        // 🎯 Filtrar membresías cuya disciplina está en alguno de los grupos válidos (que incluyen la disciplina requerida)
+        $validMemberships = $userMemberships->filter(function ($membership) use ($allPackages, $validGroupKeys, $requiredDisciplineId) {
+            if (!$membership->discipline) {
+                return false;
+            }
+
+            $membershipDisciplineId = $membership->discipline_id;
+
+            // Verificar si la disciplina de la membresía está en algún grupo válido
+            foreach ($allPackages as $package) {
+                if (!$package->disciplines || $package->disciplines->isEmpty()) {
+                    continue;
+                }
+
+                $packageDisciplineIds = $package->disciplines->pluck('id')->sort()->values()->toArray();
+                $groupKey = implode('-', $packageDisciplineIds);
+
+                // Si este grupo es válido (incluye la disciplina requerida) y también incluye la disciplina de la membresía
+                if (in_array($groupKey, $validGroupKeys) && 
+                    in_array($membershipDisciplineId, $packageDisciplineIds)) {
+                    
+                    \Illuminate\Support\Facades\Log::info('Membresía válida encontrada en grupo de disciplinas', [
+                        'membership_id' => $membership->id,
+                        'membership_discipline_id' => $membershipDisciplineId,
+                        'membership_discipline_name' => $membership->discipline->name ?? 'N/A',
+                        'required_discipline_id' => $requiredDisciplineId,
+                        'package_id' => $package->id,
+                        'package_name' => $package->name ?? 'N/A',
+                        'group_key' => $groupKey,
+                        'package_disciplines' => $packageDisciplineIds,
+                    ]);
+                    
+                    return true;
+                }
+            }
+            
+            return false;
+        });
+
+        return $validMemberships->values();
     }
 
     /**
@@ -198,7 +381,14 @@ final class PackageValidationService
      */
     public function consumeClassFromMembership(int $userId, int $disciplineId): array
     {
+        // Obtener membresías directas para la disciplina
         $availableMemberships = $this->getUserAvailableMembershipsForDiscipline($userId, $disciplineId);
+
+        // 🎯 Obtener membresías adicionales cuya disciplina está en el grupo de disciplinas de los paquetes del usuario
+        $membershipsFromPackageGroups = $this->getUserMembershipsFromPackageDisciplineGroups($userId, $disciplineId);
+        
+        // Combinar ambas colecciones (membresías directas + membresías del grupo de paquetes)
+        $availableMemberships = $availableMemberships->merge($membershipsFromPackageGroups)->unique('id');
 
         if ($availableMemberships->isEmpty()) {
             return [
@@ -310,34 +500,73 @@ final class PackageValidationService
             ->where('status', 'active')
             ->where('remaining_classes', '>', 0)
             ->whereDate('expiry_date', '>=', now())
-            ->with(['package.discipline:id,name'])
+            ->with(['package.disciplines:id,name'])
             ->get();
 
         $summary = [];
 
         foreach ($userPackages as $userPackage) {
-            $disciplineId = $userPackage->package->discipline_id ?? null;
-            $disciplineName = $userPackage->package->discipline->name ?? 'Sin disciplina';
+            // Ahora un paquete puede tener múltiples disciplinas
+            $disciplines = $userPackage->package->disciplines ?? collect();
 
-            if (!isset($summary[$disciplineId])) {
-                $summary[$disciplineId] = [
-                    'discipline_id' => $disciplineId,
-                    'discipline_name' => $disciplineName,
-                    'total_packages' => 0,
-                    'total_classes_remaining' => 0,
-                    'packages' => []
+            if ($disciplines->isEmpty()) {
+                // Paquete sin disciplinas asignadas
+                $disciplineId = null;
+                $disciplineName = 'Sin disciplina';
+
+                if (!isset($summary[$disciplineId])) {
+                    $summary[$disciplineId] = [
+                        'discipline_id' => $disciplineId,
+                        'discipline_name' => $disciplineName,
+                        'total_packages' => 0,
+                        'total_classes_remaining' => 0,
+                        'packages' => []
+                    ];
+                }
+
+                $summary[$disciplineId]['total_packages']++;
+                $summary[$disciplineId]['total_classes_remaining'] += $userPackage->remaining_classes;
+                $summary[$disciplineId]['packages'][] = [
+                    'id' => $userPackage->id,
+                    'package_code' => $userPackage->package_code,
+                    'package_name' => $userPackage->package->name ?? 'N/A',
+                    'remaining_classes' => $userPackage->remaining_classes,
+                    'expiry_date' => $userPackage->expiry_date?->toDateString(),
+                    'disciplines' => []
                 ];
-            }
+            } else {
+                // Agrupar por cada disciplina que tenga el paquete
+                foreach ($disciplines as $discipline) {
+                    $disciplineId = $discipline->id;
+                    $disciplineName = $discipline->name;
 
-            $summary[$disciplineId]['total_packages']++;
-            $summary[$disciplineId]['total_classes_remaining'] += $userPackage->remaining_classes;
-            $summary[$disciplineId]['packages'][] = [
-                'id' => $userPackage->id,
-                'package_code' => $userPackage->package_code,
-                'package_name' => $userPackage->package->name ?? 'N/A',
-                'remaining_classes' => $userPackage->remaining_classes,
-                'expiry_date' => $userPackage->expiry_date?->toDateString()
-            ];
+                    if (!isset($summary[$disciplineId])) {
+                        $summary[$disciplineId] = [
+                            'discipline_id' => $disciplineId,
+                            'discipline_name' => $disciplineName,
+                            'total_packages' => 0,
+                            'total_classes_remaining' => 0,
+                            'packages' => []
+                        ];
+                    }
+
+                    // Verificar si este paquete ya está en la lista de esta disciplina
+                    $packageExists = collect($summary[$disciplineId]['packages'])->contains('id', $userPackage->id);
+
+                    if (!$packageExists) {
+                        $summary[$disciplineId]['total_packages']++;
+                        $summary[$disciplineId]['total_classes_remaining'] += $userPackage->remaining_classes;
+                        $summary[$disciplineId]['packages'][] = [
+                            'id' => $userPackage->id,
+                            'package_code' => $userPackage->package_code,
+                            'package_name' => $userPackage->package->name ?? 'N/A',
+                            'remaining_classes' => $userPackage->remaining_classes,
+                            'expiry_date' => $userPackage->expiry_date?->toDateString(),
+                            'disciplines' => $disciplines->pluck('name')->toArray()
+                        ];
+                    }
+                }
+            }
         }
 
         return array_values($summary);

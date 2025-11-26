@@ -25,7 +25,7 @@ class DrinkOrderResource extends JsonResource
                 'id' => $this->drink->id,
                 'name' => $this->drink->name,
                 'price' => (float) $this->drink->price,
-                'image_url' => $this->drink->image_url,
+                'image_url' => $this->drink->image_url  ? $this->drink->image_url : asset('default/protico.png'),
             ],
 
             // Clase asociada (si existe)

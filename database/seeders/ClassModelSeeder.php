@@ -19,7 +19,7 @@ class ClassModelSeeder extends Seeder
         ClassModel::insert([
             // ===== CYCLING CLASSES =====
             [
-                'name' => 'Cycling Beats',
+                'name' => 'Ride and ride',
                 'discipline_id' => 1, // cycling
                 'type' => 'presencial',
                 'duration_minutes' => 50,
@@ -27,12 +27,12 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Clase de cycling con música energizante y ritmos electrónicos',
                 'difficulty_level' => 'all_levels',
                 'music_genre' => 'electro',
-
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling Power',
+                'name' => 'Reload',
                 'discipline_id' => 1, // cycling
                 'type' => 'presencial',
                 'duration_minutes' => 45,
@@ -40,11 +40,12 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Entrenamiento intenso de cycling para quemar calorías y ganar resistencia',
                 'difficulty_level' => 'advanced',
                 'music_genre' => 'rock',
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cycling Cardio',
+                'name' => 'Rsistanc',
                 'discipline_id' => 1, // cycling
                 'type' => 'presencial',
                 'duration_minutes' => 30,
@@ -52,6 +53,7 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Sesión corta pero intensa de cycling perfecto para el lunch break',
                 'difficulty_level' => 'intermediate',
                 'music_genre' => 'pop',
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -66,6 +68,7 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Entrenamiento completo en reformer para fortalecer todo el cuerpo',
                 'difficulty_level' => 'intermediate',
                 'music_genre' => 'instrumental',
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -78,6 +81,7 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Clase especializada en fortalecer el core usando el reformer',
                 'difficulty_level' => 'advanced',
                 'music_genre' => 'ambient',
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -92,6 +96,7 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Clase de pilates en colchoneta ideal para principiantes',
                 'difficulty_level' => 'beginner',
                 'music_genre' => 'classical',
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -104,6 +109,7 @@ class ClassModelSeeder extends Seeder
                 'description' => 'Secuencia fluida de pilates que combina fuerza y flexibilidad',
                 'difficulty_level' => 'intermediate',
                 'music_genre' => 'new_age',
+                'color_hex' => '#9D5AA9',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

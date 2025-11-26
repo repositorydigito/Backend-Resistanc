@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('instructors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null')->comment('Si el instructor tiene cuenta de usuario');
             $table->string('name')->comment('Nombre del instructor');
             $table->string('email')->unique()->comment('Correo electrónico del instructor');
             $table->string('phone', 15)->nullable()->comment('Teléfono del instructor');
@@ -33,6 +32,11 @@ return new class extends Migration
 
             $table->enum('type_document', ['dni', 'passport', 'other'])->default('dni');
             $table->string('document_number', 15)->unique();
+
+            $table->string('presentation_image')->nullable()->comment('URL de la imagen de presentacion del instructor');
+            $table->boolean('send_presentation')->default(false)->comment('Saber si se envio la presentacion del nuevo instructor');
+            // Relaciones
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null')->comment('Si el instructor tiene cuenta de usuario');
 
             // Índices
             $table->index('status');

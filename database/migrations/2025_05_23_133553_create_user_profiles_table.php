@@ -9,6 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
+
     public function up(): void
     {
         Schema::create('user_profiles', function (Blueprint $table) {
@@ -32,6 +33,16 @@ return new class extends Migration
 
             $table->boolean('is_active')->default(true)->comment('Indica si el perfil está activo');
             $table->string('observations')->nullable()->comment('Observaciones adicionales');
+
+            $table->string('adress')->nullable()->comment('Direccion');
+            $table->string('phone')->nullable()->comment('Telefono');
+
+
+            $table->string('fiscal_address')->nullable()->comment('Dirección fiscal completa');
+            $table->string('district')->nullable()->comment('Distrito');
+            $table->string('province')->nullable()->comment('Provincia');
+            $table->string('department')->nullable()->comment('Departamento');
+            $table->string('ubigeo', 6)->nullable()->comment('Código de ubicación geográfica');
 
 
             // RELACIONES

@@ -45,6 +45,12 @@ class UserMembershipsRelationManager extends RelationManager
                                 $set('discipline_id', $membership->discipline_id);
                                 $set('total_free_classes', $membership->discipline_quantity);
                                 $set('remaining_free_classes', $membership->discipline_quantity);
+                                $shakeQuantity = ($membership->is_benefit_shake ?? false)
+                                    ? (int) ($membership->shake_quantity ?? 0)
+                                    : 0;
+                                $set('total_free_shakes', $shakeQuantity);
+                                $set('remaining_free_shakes', $shakeQuantity);
+                                $set('used_free_shakes', 0);
                             }
                         }
                     }),
@@ -71,6 +77,27 @@ class UserMembershipsRelationManager extends RelationManager
 
                 Forms\Components\TextInput::make('used_free_classes')
                     ->label('Clases Gratis Usadas')
+                    ->numeric()
+                    ->required()
+                    ->minValue(0)
+                    ->default(0),
+
+                Forms\Components\TextInput::make('total_free_shakes')
+                    ->label('Total de Shakes Gratis')
+                    ->numeric()
+                    ->required()
+                    ->minValue(0)
+                    ->default(0),
+
+                Forms\Components\TextInput::make('remaining_free_shakes')
+                    ->label('Shakes Gratis Restantes')
+                    ->numeric()
+                    ->required()
+                    ->minValue(0)
+                    ->default(0),
+
+                Forms\Components\TextInput::make('used_free_shakes')
+                    ->label('Shakes Canjeados')
                     ->numeric()
                     ->required()
                     ->minValue(0)
@@ -147,6 +174,14 @@ class UserMembershipsRelationManager extends RelationManager
                     ->sortable()
                     ->alignCenter()
                     ->color(fn($record) => $record->remaining_free_classes > 0 ? 'success' : 'danger')
+                    ->weight('bold'),
+
+                Tables\Columns\TextColumn::make('remaining_free_shakes')
+                    ->label('Shakes')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter()
+                    ->color(fn($record) => $record->remaining_free_shakes > 0 ? 'success' : 'danger')
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('activation_date')

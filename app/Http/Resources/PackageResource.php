@@ -14,6 +14,11 @@ class PackageResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Calcular precios con IGV
+        $igvPercentage = (float) ($this->igv ?? 18); // IGV por defecto 18% si no está definido
+        $priceWithIgv = $this->price_soles * (1 + ($igvPercentage / 100));
+        $originalPriceWithIgv = $this->original_price_soles * (1 + ($igvPercentage / 100));
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -21,8 +26,8 @@ class PackageResource extends JsonResource
             'description' => $this->description,
             'short_description' => $this->short_description,
             'classes_quantity' => $this->classes_quantity,
-            'price_soles' => number_format($this->price_soles, 2, '.', ''), // Formato: 999.99
-            'original_price_soles' => number_format($this->original_price_soles, 2, '.', ''),
+            'price_soles' => number_format($priceWithIgv, 2, '.', ''), // Precio con IGV
+            'original_price_soles' => number_format($originalPriceWithIgv, 2, '.', ''), // Precio original con IGV
 
             'package_type' => $this->package_type,
             'billing_type' => $this->billing_type,
@@ -41,15 +46,16 @@ class PackageResource extends JsonResource
             'updated_at' => $this->updated_at?->toISOString(),
             'color_hex' => $this->color_hex,
             'commercial_type' => $this->commercial_type,
-            'icon_url' =>  $this->icon_url ?  asset('storage/' . $this->icon_url)  : '', // Ensure the URL is absolute
+            'icon_url' =>  $this->icon_url ?  asset('storage/' . $this->icon_url)  : asset('default/icon.png'), // Ensure the URL is absolute
 
+            'is_membresia' => $this->is_membresia,
             // Computed attributes using model accessors
             'is_unlimited' => $this->is_unlimited,
             'is_on_sale' => $this->is_on_sale,
             'discount_percentage' => $this->discount_percentage,
             'features_string' => $this->features_string,
             'restrictions_string' => $this->restrictions_string,
-            'price_per_credit' => round($this->price_per_credit, 2),
+            'price_per_credit' => round($this->price_per_credit * (1 + ($igvPercentage / 100)), 2), // Precio por crédito con IGV
             'type_display_name' => $this->type_display_name,
             'billing_type_display_name' => $this->billing_type_display_name,
             'validity_period' => $this->validity_period,
@@ -58,6 +64,21 @@ class PackageResource extends JsonResource
             // Conditional relationships (if loaded)
             // TODO: Add user packages relationship when needed
 
+
+            // ✅ AGREGAR INFORMACIÓN DE DISCIPLINAS
+            'disciplines' => $this->whenLoaded('disciplines', function () {
+                return $this->disciplines->map(function ($discipline) {
+                    return [
+                        'id' => $discipline->id,
+                        'name' => $discipline->name,
+                        'display_name' => $discipline->display_name,
+                        'icon_url' => $discipline->icon_url ? asset('storage/' . $discipline->icon_url) : asset('default/icon.png'),
+                        'color_hex' => $discipline->color_hex,
+                        'is_active' => $discipline->is_active,
+                        'order' => $discipline->order,
+                    ];
+                });
+            }),
 
             // ✅ AGREGAR INFORMACIÓN DE MEMBRESÍA
             'membership' => $this->whenLoaded('membership', function () {
@@ -80,7 +101,7 @@ class PackageResource extends JsonResource
                         'name' => $this->membership->discipline->name ?? null,
                         'icon_url' => $this->membership->discipline && $this->membership->discipline->icon_url
                             ? asset('storage/' . $this->membership->discipline->icon_url)
-                            : null,
+                            : asset('default/icon.png'),
                         'quantity' => $this->membership->discipline_quantity ?? 0
                     ]
                 ];

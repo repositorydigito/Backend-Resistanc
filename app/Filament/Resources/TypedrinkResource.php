@@ -70,13 +70,14 @@ class TypedrinkResource extends Resource
                             ->required()
                             ->maxLength(255),
                         Forms\Components\TextInput::make('price')
-                            ->label('Precio')
+                            ->label('Precio (S/)')
                             ->numeric()
                             ->required()
                             ->minValue(0)
                             ->maxValue(9999)
                             ->default(0)
-                            ->step(0.01),
+                            ->step(0.01)
+                            ->prefix('S/'),
 
                     ])
             ]);
@@ -97,8 +98,10 @@ class TypedrinkResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Precio')
-                    ->money('PEN', true)
-                    ->sortable(),
+                    ->money('PEN')
+                    ->sortable()
+                    ->weight('bold')
+                    ->color('success'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('¿Está activa?')
                     ->boolean(),

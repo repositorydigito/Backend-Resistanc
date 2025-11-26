@@ -46,9 +46,15 @@ final class UserProfile extends Model
         'emergency_contact_phone',
         'medical_conditions',
         'fitness_goals',
-
+        'adress',
+        'phone',
         'is_active',
         'observations',
+        'fiscal_address',
+        'district',
+        'province',
+        'department',
+        'ubigeo',
         // Relaciones
         'user_id',
     ];
@@ -70,6 +76,21 @@ final class UserProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Eliminar el usuario asociado cuando se elimina el perfil
+        static::deleting(function (UserProfile $userProfile) {
+            if ($userProfile->user) {
+                $userProfile->user->delete();
+            }
+        });
     }
 
     // En el modelo UserProfile
@@ -144,5 +165,43 @@ final class UserProfile extends Model
     public function waitingClasses(): HasManyThrough
     {
         return $this->hasManyThrough(WaitingClass::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
+
+    /**
+     * Relación "falsa" para suscripciones de Stripe.
+     * Los datos reales se obtienen desde Stripe API en el RelationManager.
+     * Esta relación devuelve una consulta vacía.
+     */
+    public function userSubscriptions(): HasManyThrough
+    {
+        // Usar la tabla subscriptions de Cashier, pero devolver consulta vacía
+        // ya que los datos vienen directamente de Stripe
+        return $this->hasManyThrough(
+            \Laravel\Cashier\Subscription::class,
+            User::class,
+            'id',
+            'user_id',
+            'user_id',
+            'id'
+        )->whereRaw('1 = 0');
+    }
+
+    /**
+     * Relación "falsa" para transacciones de Stripe.
+     * Los datos reales se obtienen desde Stripe API en el RelationManager.
+     * Esta relación devuelve una consulta vacía.
+     */
+    public function userTransactions(): HasManyThrough
+    {
+        // Devolver una relación vacía ya que los datos vienen directamente de Stripe
+        // No hay tabla de transacciones en la BD, todo viene de Stripe
+        return $this->hasManyThrough(
+            \App\Models\Transaction::class,
+            User::class,
+            'id',
+            'user_id',
+            'user_id',
+            'id'
+        )->whereRaw('1 = 0');
     }
 }

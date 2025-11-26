@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\Company;
 use App\Models\Discipline;
+use App\Models\LegalPolicy;
 use App\Models\Product;
 use App\Models\ProductBrand;
 use App\Models\Studio;
@@ -40,7 +41,8 @@ class DatabaseSeeder extends Seeder
         $this->call(StudioSeeder::class);
 
         // Paquetes
-        $this->call(PackageSeeder::class);
+        // $this->call(PackageSeeder::class);
+        // $this->call(PackageNewSeeder::class);
 
         // Clientes
         $this->call(ClientSeeder::class);
@@ -70,7 +72,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProductTagSeeder::class);
 
         // Productos
-        $this->call(ProductSeeder::class);
+        // $this->call(ProductSeeder::class);
 
         // Opciones de variacion del producto
         $this->call(ProductOptionTypeSeeder::class);
@@ -98,6 +100,19 @@ class DatabaseSeeder extends Seeder
 
         // Plantillas de email
         $this->call(TemplateEmailSeeder::class);
+
+        // Preguntas frecuentes
+        $this->call(FaqSeeder::class);
+
+        // Servicios
+        $this->call(ServiceSeeder::class);
+
+        // Politicas y privacidad
+        $this->call(LegalPolicySeeder::class);
+
+        // Promociones y codigos
+        $this->call(PromoCodesSeeder::class);
+
 
         $this->command->info('🎉 Database seeding completed!');
     }

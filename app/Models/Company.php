@@ -8,51 +8,71 @@ class Company extends Model
 {
      protected $fillable = [
         'name',
-        'legal_name',
-        'tax_id',
+        'social_reason',
+        'ruc',
+        'commercial_name',
+
         'address',
+        'ubigeo',
+        'department',
+        'province',
+        'district',
+        'urbanization',
+        'establishment_code',
         'phone',
+        'phone_whassap',
+        'phone_help',
         'email',
         'logo_path',
-        'website',
-        'settings',
-        'timezone',
-        'currency',
-        'locale',
+
+
         'signature_image', // Ruta de la imagen de la firma
         'social_networks', // Redes sociales
 
-        // Facturacion con nube Fac
-        'url_facturacion',
-        'token_facturacion'
+        // Redes sociales
+        'facebook_url',
+        'instagram_url',
+        'twitter_url',
+        'linkedin_url',
+        'youtube_url',
+        'tiktok_url',
+        'whatsapp_url',
+        'website_url',
+
+
+
+        // Facturacion greenter
+        'is_production',
+        'invoice_series',
+        'invoice_initial_correlative',
+
+        // Es produccion
+        'sol_user_production',
+        'sol_user_password_production',
+        'cert_path_production',
+
+        'client_id_production',
+        'client_secret_production',
+
+        // QA
+        'sol_user_evidence',
+        'sol_user_password_evidence',
+        'cert_path_evidence',
+
+        'client_id_evidence',
+        'client_secret_evidence',
+
+        'stripe_commission_percentage', // Porcentaje de comisión de Stripe
+        'months_points', // Cantidad de meses que duran los puntos
+
     ];
 
     protected $casts = [
-        'settings' => 'array',
-        'social_networks' => 'array',
-        'established_at' => 'datetime'
+        'social_networks' => 'array', // Esto convierte automáticamente el JSON a array
+        'is_production' => 'boolean',
+        'invoice_initial_correlative' => 'integer',
+        'stripe_commission_percentage' => 'decimal:2',
+        'months_points' => 'integer',
     ];
 
-    protected $appends = ['logo_url'];
-
-    public function getLogoUrlAttribute()
-    {
-        if (!$this->logo_path) {
-            return asset('images/default-company-logo.png');
-        }
-
-        return str_starts_with($this->logo_path, 'http')
-            ? $this->logo_path
-            : asset('storage/'.$this->logo_path);
-    }
-
-    public static function current()
-    {
-        return cache()->rememberForever('current_company', function() {
-            return self::firstOrCreate([], [
-                'name' => config('app.name'),
-                'tax_id' => '000000000'
-            ]);
-        });
-    }
 }

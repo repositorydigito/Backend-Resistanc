@@ -29,7 +29,7 @@ return new class extends Migration
             $table->decimal('exchange_rate', 10, 4)->nullable()->comment('Tasa de cambio');
 
             // Gateway
-            $table->enum('gateway_provider', ['culqi', 'niubiz', 'paypal', 'stripe', 'izipay', 'payu'])->nullable()->comment('Proveedor del gateway de pago');
+            $table->enum('gateway_provider', ['culqi', 'niubiz', 'paypal', 'stripe', 'izipay', 'payu', 'mercadopago'])->nullable()->comment('Proveedor del gateway de pago');
             $table->string('gateway_transaction_id')->nullable()->comment('ID de transacción del gateway');
             $table->json('gateway_response')->nullable()->comment('Respuesta completa del gateway');
             $table->string('confirmation_code', 100)->nullable()->comment('Código de confirmación');

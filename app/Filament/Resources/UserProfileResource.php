@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Mockery\Matcher\Not;
 
 class UserProfileResource extends Resource
 {
@@ -313,38 +312,37 @@ class UserProfileResource extends Resource
                         }
                     })
                     ->visible(fn(UserProfile $record) => $record->user && !$record->user->hasVerifiedEmail()),
-                // ->authorize('resendVerification'),
 
-                // Tables\Actions\DeleteAction::make()
-                //     ->icon('heroicon-o-trash')
-                //     ->color('danger')
-                //     ->requiresConfirmation()
-                //     ->modalHeading('Eliminar cliente')
-                //     ->modalDescription('¿Estás seguro de que quieres eliminar este cliente? Esta acción también eliminará el usuario asociado y no se puede deshacer.')
-                //     ->modalSubmitActionLabel('Sí, eliminar')
-                //     ->action(function (UserProfile $record) {
-                //         // Eliminar el usuario relacionado primero
-                //         if ($record->user) {
-                //             $record->user->delete();
-                //         }
-                //         // Luego eliminar el perfil
-                //         $record->delete();
-                //     }),
+                Tables\Actions\DeleteAction::make()
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Eliminar cliente')
+                    ->modalDescription('¿Estás seguro de que quieres eliminar este cliente? Esta acción también eliminará el usuario asociado y no se puede deshacer.')
+                    ->modalSubmitActionLabel('Sí, eliminar')
+                    ->action(function (UserProfile $record) {
+                        // Eliminar el usuario relacionado primero
+                        if ($record->user) {
+                            $record->user->delete();
+                        }
+                        // Luego eliminar el perfil
+                        $record->delete();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    // Tables\Actions\DeleteBulkAction::make()
-                    //     ->icon('heroicon-o-trash')
-                    //     ->action(function ($records) {
-                    //         foreach ($records as $record) {
-                    //             // Eliminar el usuario relacionado primero
-                    //             if ($record->user) {
-                    //                 $record->user->delete();
-                    //             }
-                    //             // Luego eliminar el perfil
-                    //             $record->delete();
-                    //         }
-                    //     }),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->icon('heroicon-o-trash')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                // Eliminar el usuario relacionado primero
+                                if ($record->user) {
+                                    $record->user->delete();
+                                }
+                                // Luego eliminar el perfil
+                                $record->delete();
+                            }
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -355,7 +353,9 @@ class UserProfileResource extends Resource
         return [
             RelationManagers\UserPackagesRelationManager::class,
             RelationManagers\UserMembershipsRelationManager::class,
-            RelationManagers\UserPaymentMethodRelationManager::class,
+            RelationManagers\PaymentMethodsRelationManager::class,
+            RelationManagers\SubscriptionsRelationManager::class,
+            RelationManagers\TransactionsRelationManager::class,
             RelationManagers\ClassScheduleSeatsRelationManager::class,
             RelationManagers\DrinkUserRelationManager::class,
             RelationManagers\UserFavorityRelationManager::class,

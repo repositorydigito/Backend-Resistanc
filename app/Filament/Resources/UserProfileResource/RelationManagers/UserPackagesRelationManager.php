@@ -10,7 +10,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UserPackagesRelationManager extends RelationManager
@@ -25,24 +25,24 @@ class UserPackagesRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Select::make('package_id')
-                    ->label('Paquete Free Trial')
+                    ->label('Paquete asignable / Free Trial')
                     ->relationship(
                         name: 'package',
                         titleAttribute: 'name',
                         modifyQueryUsing: fn(Builder $query) => $query
                             ->where('status', 'active')
-                            ->where('type', 'free_trial')
-                            ->orderBy('discipline_id')
-                            ->with('discipline')
+                            ->whereIn('buy_type', ['free_trial', 'assignable'])
+                            ->orderBy('name')
+                            ->with('disciplines')
                     )
                     ->getOptionLabelFromRecordUsing(
                         fn(Package $record) =>
-                        $record->name . ' - ' . ($record->discipline->name ?? 'Sin disciplina') . ' (' . $record->classes_quantity . ' clases)'
+                        $record->name . ' - ' . ($record->disciplines->pluck('name')->join(', ') ?: 'Sin disciplina') . ' (' . $record->classes_quantity . ' clases)'
                     )
                     ->required()
                     ->searchable()
                     ->preload()
-                    ->helperText('Solo se muestran paquetes de tipo Free Trial')
+                    ->helperText('Se muestran paquetes con buy_type Free Trial o Asignable')
                     ->reactive()
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
@@ -69,11 +69,12 @@ class UserPackagesRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('package.discipline.name')
-                    ->label('Disciplina')
+                Tables\Columns\TextColumn::make('package.disciplines')
+                    ->label('Disciplinas')
+                    ->getStateUsing(fn($record) => $record->package?->disciplines->pluck('name')->join(', ') ?: 'N/A')
                     ->badge()
                     ->color('primary')
-                    ->sortable(),
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -90,7 +91,6 @@ class UserPackagesRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('remaining_classes')
                     ->label('Clases')
-                    // ->formatStateUsing(fn($state, $record) => "{$state}/{$record->total_classes}")
                     ->badge()
                     ->color(fn(int $state): string => match (true) {
                         $state > 10 => 'success',
@@ -111,10 +111,34 @@ class UserPackagesRelationManager extends RelationManager
                     })
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('amount_paid_soles')
-                    ->label('Monto')
+                Tables\Columns\TextColumn::make('promo_code_used')
+                    ->label('Código Promo')
+                    ->badge()
+                    ->color('success')
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('discount_percentage')
+                    ->label('Descuento')
+                    ->suffix('%')
+                    ->badge()
+                    ->color('warning')
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('original_package_price_soles')
+                    ->label('Precio Original')
                     ->money('PEN')
-                    ->sortable(),
+                    ->getStateUsing(fn($record) => $record->original_package_price_soles ?? $record->package?->price_soles)
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('real_amount_paid_soles')
+                    ->label('Monto Real Pagado')
+                    ->money('PEN')
+                    ->sortable()
+                    ->weight('bold')
+                    ->color(fn($record) => $record->promo_code_used ? 'success' : null)
+                    ->getStateUsing(fn($record) => $record->real_amount_paid_soles ?? $record->amount_paid_soles),
 
                 Tables\Columns\TextColumn::make('purchase_date')
                     ->label('Compra')
@@ -144,37 +168,40 @@ class UserPackagesRelationManager extends RelationManager
                         ->where('expiry_date', '>=', now())
                         ->where('status', 'active')),
 
-
+                Tables\Filters\Filter::make('with_promo_code')
+                    ->label('Con Código Promocional')
+                    ->query(fn(Builder $query) => $query->whereNotNull('promo_code_used'))
+                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
                     ->label('Eliminar')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->modalHeading('Eliminar Paquete Free Trial')
-                    ->modalDescription('¿Estás seguro de que quieres eliminar este paquete Free Trial? Esta acción no se puede deshacer.')
+                    ->modalHeading('Eliminar Paquete Asignado')
+                    ->modalDescription('¿Estás seguro de que quieres eliminar este paquete? Esta acción no se puede deshacer.')
                     ->modalSubmitActionLabel('Sí, eliminar')
-                    ->visible(fn($record) => $record->package && $record->package->type === 'free_trial'),
+                    ->visible(fn($record) => $record->package && in_array($record->package->buy_type, ['free_trial', 'assignable'])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-
+                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->label('Asignar Paquete Free Trial')
+                    ->label('Asignar Paquete (Free/Asignable)')
                     ->icon('heroicon-o-gift')
                     ->color('success')
-                    ->modalHeading('Asignar Paquete Free Trial')
-                    ->modalDescription('Selecciona un paquete de tipo Free Trial para asignar al cliente')
+                    ->modalHeading('Asignar Paquete')
+                    ->modalDescription('Selecciona un paquete de tipo Free Trial o Asignable para asignar al cliente')
                     ->modalSubmitActionLabel('Asignar Paquete')
-                    ->createAnother(false) // Deshabilitar "Crear y crear otro"
+                    ->createAnother(false)
                     ->using(function (array $data): \App\Models\UserPackage {
-                        // Verificar que el paquete seleccionado sea free_trial
+                        // Verificar que el paquete seleccionado sea free_trial o assignable (por buy_type)
                         $package = Package::find($data['package_id']);
-                        if ($package && $package->type !== 'free_trial') {
-                            throw new \Exception('Solo se pueden asignar paquetes de tipo Free Trial');
+                        if ($package && !in_array($package->buy_type, ['free_trial', 'assignable'])) {
+                            throw new \Exception('Solo se pueden asignar paquetes con buy_type Free Trial o Asignable');
                         }
 
                         // Obtener el usuario del perfil desde el contexto del RelationManager
@@ -201,10 +228,10 @@ class UserPackagesRelationManager extends RelationManager
                             'activation_date' => now(),
                             'expiry_date' => $expiryDate,
                             'status' => 'active',
-                            'notes' => 'Paquete Free Trial asignado por administrador',
+                            'notes' => 'Paquete asignado por administrador (Free/Asignable)',
                         ]);
                     })
-                    ->successNotificationTitle('Paquete Free Trial asignado exitosamente'),
+                    ->successNotificationTitle('Paquete asignado exitosamente'),
             ])
             ->defaultSort('purchase_date', 'desc');
     }
@@ -214,15 +241,15 @@ class UserPackagesRelationManager extends RelationManager
         $package = Package::find($packageId);
         if (!$package) return;
 
-        // Configurar automáticamente todos los campos para paquete free_trial
+        // Configurar automáticamente todos los campos para paquete free_trial/assignable
         $set('remaining_classes', $package->classes_quantity);
         $set('used_classes', 0);
-        $set('amount_paid_soles', 0); // Free trial es gratuito
+        $set('amount_paid_soles', 0);
         $set('currency', 'PEN');
         $set('purchase_date', now()->toDateString());
         $set('activation_date', now()->toDateString());
         $set('status', 'active');
-        $set('notes', 'Paquete Free Trial asignado por administrador');
+        $set('notes', 'Paquete asignado por administrador');
 
         // Calcular fecha de expiración
         $expiryDate = $package->duration_in_months

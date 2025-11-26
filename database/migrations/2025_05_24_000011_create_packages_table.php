@@ -31,6 +31,7 @@ return new class extends Migration
 
             // Branding y visual
             $table->boolean('is_featured')->default(false)->comment('Si el paquete es destacado');
+            $table->boolean('is_membresia')->default(false)->comment('Si el paquete va tener pago recurrente');
             $table->boolean('is_popular')->default(false)->comment('Si el paquete es popular');
             $table->unsignedTinyInteger('display_order')->default(0)->comment('Orden de visualización del paquete');
             $table->string('color_hex')->nullable()->default('#d4691a')->comment('Color del paquete');
@@ -38,7 +39,7 @@ return new class extends Migration
             // Tipos y segmentación
             $table->enum('status', ['active', 'inactive', 'coming_soon', 'discontinued'])->default('active')->comment('Estado del paquete');
             $table->enum('buy_type', ['affordable', 'assignable'])->default('affordable')->comment('Tipo de compra del paquete');
-            $table->enum('type', ['free_trial','fixed', 'temporary'])->comment('Tipo de paquete');
+            $table->enum('type', ['free_trial', 'fixed', 'temporary'])->comment('Tipo de paquete');
             $table->date('start_date')->nullable()->comment('Fecha de inicio del paquete');
             $table->date('end_date')->nullable()->comment('Fecha de finalización del paquete');
             $table->enum('mode_type', ['presencial', 'virtual', 'mixto'])->default('presencial')->comment('Tipo de modalidad del paquete');
@@ -49,13 +50,19 @@ return new class extends Migration
             $table->json('features')->nullable()->comment('Características y beneficios del paquete')->comment('Características y beneficios del paquete');
             $table->json('restrictions')->nullable()->comment('Restricciones y condiciones')->comment('Restricciones y condiciones del paquete');
 
+
+
             // nuevo
             $table->string('icon_url')->nullable()->comment('URL de la imagen del paquete');
             $table->integer('duration_in_months')->nullable()->comment('Duración del paquete en meses');
 
+            $table->string('stripe_product_id')->nullable()->comment('ID del producto en Stripe');
+            $table->decimal('igv', 5, 2)->default(18.00)->comment('IGV en porcentaje (ej: 18.00 para 18%)');
+            $table->integer('recurrence_months')->nullable()->comment('Meses de recurrencia si es membresía');
+            $table->string('stripe_price_id')->nullable()->comment('ID del precio en Stripe');
+
             // Relaciones
             $table->foreignId('membership_id')->nullable()->constrained('memberships')->onDelete('set null');
-            $table->foreignId('discipline_id')->constrained('disciplines');
 
             // Índices
             $table->index(['status', 'display_order']);

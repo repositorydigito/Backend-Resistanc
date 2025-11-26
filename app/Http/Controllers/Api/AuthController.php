@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
@@ -14,11 +13,14 @@ use App\Http\Resources\LoginResource;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\SimpleUserResource;
 use App\Models\User;
+use App\Models\UserProfile;
+use App\Mail\EmailVerificationMailable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Dedoc\Scramble\Attributes\BodyParameter;
 use Illuminate\Support\Facades\Log;
@@ -39,96 +41,104 @@ final class AuthController extends Controller
      * Genera automáticamente un token de acceso para la API.
      *
      */
-    public function register(RegisterRequest $request): AuthResource
+    public function register(Request $request)
     {
-        $validated = $request->validated();
 
-        $user = DB::transaction(function () use ($validated) {
+        // Validación mejorada
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255|min:2',
+            'last_name' => 'required|string|max:255|min:2',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|confirmed|min:8',
+            'birth_date' => 'nullable|date',
+            'gender' => 'required|string',
+            'phone' => 'required|string|min:9|max:20', // Cambiado a string para permitir formatos como +51 999999999
+            'adress' => 'required|string|max:255',
+            'shoe_size_eu' => 'nullable|string|max:5',
+            // 'device_name' => 'nullable|string|max:255'
+        ]);
+
+        try {
+            // Crear usuario con contraseña hasheada explícitamente
             $user = User::create([
-                'name' => $validated['name'],
+                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
                 'email' => $validated['email'],
-                'password' => $validated['password'], // Auto-hashed by model
+                'password' => Hash::make($validated['password']), // Hash explícito
             ]);
 
-            // Asignar rol de Cliente por defecto
+            // $stripeCustomer = $user->createAsStripeCustomer();
+
+            // Crear perfil de usuario
+            UserProfile::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'birth_date' => $validated['birth_date'],
+                'gender' => $validated['gender'],
+                'phone' => $validated['phone'],
+                'adress' => $validated['adress'],
+                'shoe_size_eu' => $validated['shoe_size_eu'] ?? null,
+                'user_id' => $user->id
+            ]);
+
+            // Asignar rol
             $user->assignRole('Cliente');
 
-            // Enviar email de verificación
-            $user->sendEmailVerificationNotification();
+            // Enviar verificación usando EmailVerificationMailable
+            Mail::to($user->email)->send(new EmailVerificationMailable($user));
 
-            // Create login audit for registration
-            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-            $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
-            $user->loginAudits()->create([
-                'ip' => $ipAddress,
-                'user_agent' => $userAgent,
-                'success' => true,
-                'created_at' => now(),
+            // Generar token
+            $deviceName = $validated['device_name'] ?? 'API Token';
+            $token = $user->createToken($deviceName)->plainTextToken;
+
+            // Cargar relaciones y preparar respuesta
+            $user->load(['profile', 'loginAudits']);
+            $user->token = $token;
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Registro de usuario exitoso',
+                'datoAdicional' => new AuthResource($user)
+            ], 200); // 201 Created es más semántico que 200
+
+        } catch (ValidationException $e) {
+            // Errores de validación (aunque no debería llegar aquí por el validate inicial)
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'register',
+                'description' => 'Error de validación al registrar usuario',
+                'data' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 2,
+                'mensajeUsuario' => 'Datos inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200); // 422 Unprocessable Entity
+
+        } catch (\Throwable $e) {
+
+            // Otros errores
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'register',
+                'description' => 'Error al registrar usuario',
+                'data' => $e->getMessage(),
             ]);
 
-            return $user;
-        });
-
-        // Generate API token
-        $deviceName = $validated['device_name'] ?? 'API Token';
-        $token = $user->createToken($deviceName)->plainTextToken;
-
-        // Add token to user for resource
-        $user->token = $token;
-
-        // Load relationships for response
-        $user->load(['profile', 'loginAudits']);
-
-        return new AuthResource($user);
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al registrar usuario',
+                'datoAdicional' => $e->getMessage()
+            ], 200); // 500 Internal Server Error
+        }
     }
 
     /**
      * Iniciar sesión
-     *
-     * Autentica un usuario existente y genera un token de acceso para la API.
-     * Registra el intento de login en la auditoría del sistema.
-     *
-     * @summary Iniciar sesión
-     * @operationId loginUser
-     *
-     * @param  \App\Http\Requests\LoginRequest  $request
-     * @return \App\Http\Resources\AuthResource
-     *
-     * @response 200 {
-     *   "exito": true,
-     *   "codMensaje": 1,
-     *   "mensajeUsuario": "Login Exitoso",
-     *   "datoAdicional": {
-     *     "id": 1,
-     *     "nombre": "Ana Lucía Torres",
-     *     "correo": "ana.torres@ejemplo.com",
-     *     "roles": [
-     *       {
-     *         "id": 1,
-     *         "nombre": "Cliente"
-     *       }
-     *     ],
-     *     "token": "1|abc123def456..."
-     *   }
-     * }
-     *
-     * @responseHeaders {
-     *   "Authorization": "Bearer 1|abc123def456..."
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Las credenciales proporcionadas son incorrectas.",
-     *   "datoAdicional": null
-     * }
-     *
-     * @response 200 {
-     *   "exito": false,
-     *   "codMensaje": 0,
-     *   "mensajeUsuario": "Tu dirección de correo electrónico no ha sido verificada. Por favor, verifica tu email antes de iniciar sesión.",
-     *   "datoAdicional": null
-     * }
      */
     #[BodyParameter('email', description: 'Correo electrónico del usuario', type: 'string', example: 'aizencode@gmail.com')]
     #[BodyParameter('password', description: 'Contraseña del usuario', type: 'string', example: '123456789')]
@@ -231,12 +241,15 @@ final class AuthController extends Controller
                 'datoAdicional' => LoginResource::make($user)->toArray(request()),
             ])->header('Authorization', 'Bearer ' . $token);
         } catch (ValidationException $e) {
-            Log::error('Error en Atención [login]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'login',
+                'description' => 'Error de validación al iniciar sesión',
+                'data' => $e->getMessage(),
             ]);
+
+
 
             return response()->json([
                 'exito' => false,
@@ -245,12 +258,14 @@ final class AuthController extends Controller
                 'datoAdicional' => $e->errors(),
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Error en Atención [login]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'login',
+                'description' => 'Error interno al iniciar sesión',
+                'data' => $e->getMessage(),
             ]);
+
 
             return response()->json([
                 'exito' => false,
@@ -297,19 +312,62 @@ final class AuthController extends Controller
             // Load relationships for response
             $user->load(['roles', 'profile']);
 
+            // Preparar información completa del usuario
+            $userData = [
+                'id' => $user->id,
+                'code' => $user->code,
+                'name' => $user->name,
+                'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at?->toISOString(),
+                'created_at' => $user->created_at?->toISOString(),
+                'updated_at' => $user->updated_at?->toISOString(),
+
+                // Roles
+                'roles' => $user->roles->map(function ($role) {
+                    return [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                        'guard_name' => $role->guard_name,
+                    ];
+                }),
+
+                // Información del perfil (si existe)
+                'profile' => $user->profile ? [
+                    'id' => $user->profile->id,
+                    'first_name' => $user->profile->first_name,
+                    'last_name' => $user->profile->last_name,
+                    'full_name' => $user->profile->first_name . ' ' . $user->profile->last_name,
+                    'birth_date' => $user->profile->birth_date?->toDateString(),
+                    'age' => $user->profile->birth_date ? $user->profile->age : null,
+                    'gender' => $user->profile->gender,
+                    'phone' => $user->profile->phone,
+                    'adress' => $user->profile->adress,
+                    'shoe_size_eu' => $user->profile->shoe_size_eu,
+                    'profile_image' => $user->profile->profile_image ? asset('storage/' . $user->profile->profile_image) : null,
+                    'emergency_contact_name' => $user->profile->emergency_contact_name,
+                    'emergency_contact_phone' => $user->profile->emergency_contact_phone,
+                    'medical_conditions' => $user->profile->medical_conditions,
+                    'is_active' => $user->profile->is_active,
+                    'created_at' => $user->profile->created_at?->toISOString(),
+                    'updated_at' => $user->profile->updated_at?->toISOString(),
+                ] : null,
+            ];
+
             return response()->json([
                 'exito' => true,
                 'codMensaje' => 1,
                 'mensajeUsuario' => 'Usuario autenticado',
-                'datoAdicional' => new UserResource($user),
+                'datoAdicional' => $userData,
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Error en Atención [me]', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all()
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'me',
+                'description' => 'Error interno al obtener usuario autenticado',
+                'data' => $e->getMessage(),
             ]);
+
 
             return response()->json([
                 'exito' => false,
@@ -326,25 +384,41 @@ final class AuthController extends Controller
      */
     public function resendVerificationEmail(Request $request): JsonResponse
     {
-        $user = $request->user();
 
-        if ($user->hasVerifiedEmail()) {
+        try {
+            $user = $request->user();
+
+            if ($user->hasVerifiedEmail()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Tu email ya ha sido verificado.',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            Mail::to($user->email)->send(new EmailVerificationMailable($user));
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Email de verificación enviado correctamente.',
+                'datoAdicional' => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => null,
+                'action' => 'resend_verification_email',
+                'description' => 'Error al reenviar el email de verificación',
+                'data' => $e->getMessage(),
+            ]);
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Tu email ya ha sido verificado.',
-                'datoAdicional' => null,
+                'mensajeUsuario' => 'Error al reenviar el email de verificación.',
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
-
-        $user->sendEmailVerificationNotification();
-
-        return response()->json([
-            'exito' => true,
-            'codMensaje' => 1,
-            'mensajeUsuario' => 'Email de verificación enviado correctamente.',
-            'datoAdicional' => null,
-        ]);
     }
 
     /**
@@ -352,13 +426,32 @@ final class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // Revoke current token
-        $request->user()->currentAccessToken()?->delete();
 
-        return response()->json([
-            'message' => 'Sesión cerrada exitosamente.',
-            'logged_out_at' => now()->toISOString(),
-        ]);
+
+        try {
+            // Revoke current token
+            $request->user()->currentAccessToken()?->delete();
+
+            return response()->json([
+                'message' => 'Sesión cerrada exitosamente.',
+                'logged_out_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $th) {
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'logout',
+                'description' => 'Error al cerrar sesión',
+                'data' => $e->getMessage(),
+            ]);
+
+
+
+            return response()->json([
+                'message' => 'Error al cerrar sesión.',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -366,17 +459,31 @@ final class AuthController extends Controller
      */
     public function logoutAll(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $tokensCount = $user->tokens()->count();
 
-        // Revoke all tokens
-        $user->tokens()->delete();
+        try {
+            $user = $request->user();
+            $tokensCount = $user->tokens()->count();
 
-        return response()->json([
-            'message' => 'Todas las sesiones han sido cerradas exitosamente.',
-            'tokens_revoked' => $tokensCount,
-            'logged_out_at' => now()->toISOString(),
-        ]);
+            // Revoke all tokens
+            $user->tokens()->delete();
+
+            return response()->json([
+                'message' => 'Todas las sesiones han sido cerradas exitosamente.',
+                'tokens_revoked' => $tokensCount,
+                'logged_out_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => null,
+                'action' => 'logout_all',
+                'description' => 'Error al cerrar todas las sesiones',
+                'data' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Error al cerrar todas las sesiones.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -384,138 +491,69 @@ final class AuthController extends Controller
      */
     public function refresh(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $currentToken = $request->user()->currentAccessToken();
 
-        // Get device name from request or use current token name
-        $deviceName = $request->input('device_name', $currentToken->name);
+        try {
+            $user = $request->user();
+            $currentToken = $request->user()->currentAccessToken();
 
-        // Create new token
-        $newToken = $user->createToken($deviceName)->plainTextToken;
+            // Get device name from request or use current token name
+            $deviceName = $request->input('device_name', $currentToken->name);
 
-        // Revoke current token
-        $currentToken?->delete();
+            // Create new token
+            $newToken = $user->createToken($deviceName)->plainTextToken;
 
-        return response()->json([
-            'message' => 'Token renovado exitosamente.',
-            'token' => [
-                'access_token' => $newToken,
-                'token_type' => 'Bearer',
-            ],
-            'refreshed_at' => now()->toISOString(),
-        ]);
+            // Revoke current token
+            $currentToken?->delete();
+
+            return response()->json([
+                'message' => 'Token renovado exitosamente.',
+                'token' => [
+                    'access_token' => $newToken,
+                    'token_type' => 'Bearer',
+                ],
+                'refreshed_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $e) {
+
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'refresh_token',
+                'description' => 'error al renovar token',
+                'data' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Error al renovar el token.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-
-
-    // public function redirectToFacebook()
-    // {
-    //     return Socialite::driver('facebook')->redirect();
-    // }
-
-
-    // public function loginWithFacebookToken(Request $request)
-    // {
-    //     $accessToken = $request->input('access_token');
-
-    //     try {
-    //         $facebookUser = Socialite::driver('facebook')->stateless()->userFromToken($accessToken);
-
-    //         $user = User::firstOrCreate(
-    //             ['email' => $facebookUser->getEmail()],
-    //             [
-    //                 'name' => $facebookUser->getName(),
-    //                 'password' => bcrypt(Str::random(16)),
-    //             ]
-    //         );
-
-    //         $token = $user->createToken('Facebook Login')->plainTextToken;
-
-    //         return response()->json([
-    //             'user' => $user,
-    //             'token' => [
-    //                 'access_token' => $token,
-    //                 'token_type' => 'Bearer',
-    //             ],
-    //         ]);
-    //     } catch (\Throwable $e) {
-    //         return response()->json([
-    //             'message' => 'Error al autenticar con Facebook.',
-    //             'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
-
-
-    // public function redirectToGoogle()
-    // {
-    //     return Socialite::driver('google')->redirect();
-    // }
-
-    // public function loginWithGoogleToken(Request $request)
-    // {
-    //     $accessToken = $request->input('access_token');
-
-    //     try {
-    //         $googleUser = Socialite::driver('google')->stateless()->userFromToken($accessToken);
-
-    //         $user = User::firstOrCreate(
-    //             ['email' => $googleUser->getEmail()],
-    //             [
-    //                 'name' => $googleUser->getName(),
-    //                 'password' => bcrypt(Str::random(16)),
-    //             ]
-    //         );
-
-    //         $token = $user->createToken('Google Login')->plainTextToken;
-
-    //         return response()->json([
-    //             'user' => $user,
-    //             'token' => [
-    //                 'access_token' => $token,
-    //                 'token_type' => 'Bearer',
-    //             ],
-    //         ]);
-    //     } catch (\Throwable $e) {
-    //         return response()->json([
-    //             'message' => 'Error al autenticar con Google.',
-    //             'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
     /**
-     * Actualizar información completa del usuario
+     * Actualizar información del usuario y perfil
      */
-    public function updateMe(Request $request): AuthResource
+    public function updateMe(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        // Validar datos de entrada
-        $validated = $request->validate([
-            // Datos básicos del usuario
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255',
+            // Validar datos de entrada
+            $validated = $request->validate([
+                // Datos básicos del usuario
+                'name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
 
-            // Datos del perfil
-            'profile.first_name' => 'sometimes|string|max:255',
-            'profile.last_name' => 'sometimes|string|max:255',
-            'profile.birth_date' => 'sometimes|date|before:today',
-            'profile.gender' => 'sometimes|in:male,female,other',
-            'profile.shoe_size_eu' => 'sometimes|integer|min:20|max:50',
-            'profile.profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
+                // Datos del perfil
+                'first_name' => 'sometimes|string|max:255',
+                'last_name' => 'sometimes|string|max:255',
+                'birth_date' => 'sometimes|date|before:today',
+                'gender' => 'sometimes|in:male,female,other,na',
+                'phone' => 'sometimes|string|max:20',
+                'adress' => 'sometimes|string|max:255',
+                'shoe_size_eu' => 'sometimes|string|max:5',
+                'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
 
-            // Datos de contactos
-            'contacts' => 'sometimes|array',
-            'contacts.*.phone' => 'sometimes|string|max:20',
-            'contacts.*.address_line' => 'sometimes|string|max:255',
-            'contacts.*.city' => 'sometimes|string|max:100',
-            'contacts.*.country' => 'sometimes|string|size:2',
-            'contacts.*.is_primary' => 'sometimes|boolean',
-        ]);
-
-        $user = DB::transaction(function () use ($user, $validated) {
             // Actualizar datos básicos del usuario
             if (isset($validated['name'])) {
                 $user->name = $validated['name'];
@@ -523,92 +561,124 @@ final class AuthController extends Controller
 
             if (isset($validated['email']) && $validated['email'] !== $user->email) {
                 $user->email = $validated['email'];
-                // Reset email verification if email changed
-                $user->email_verified_at = null;
+                $user->email_verified_at = null; // Reset email verification if email changed
             }
 
             $user->save();
 
+            if ($user->hasStripeId()) {
+                $user->syncStripeCustomerDetails();
+            }
+
             // Actualizar o crear perfil
-            if (isset($validated['profile'])) {
-                $profileData = $validated['profile'];
+            $profileData = collect($validated)->except(['name', 'email'])->toArray();
 
-                // Manejar la subida de imagen de perfil
-                if (isset($profileData['profile_image']) && $profileData['profile_image'] instanceof \Illuminate\Http\UploadedFile) {
-                    // Eliminar imagen anterior si existe
-                    if ($user->profile && $user->profile->profile_image) {
-                        \Storage::disk('public')->delete($user->profile->profile_image);
-                    }
-
-                    // Guardar nueva imagen
-                    $imagePath = $profileData['profile_image']->store('user/profile', 'public');
-                    $profileData['profile_image'] = $imagePath;
+            // Manejar la subida de imagen de perfil
+            if (isset($profileData['profile_image']) && $profileData['profile_image'] instanceof \Illuminate\Http\UploadedFile) {
+                // Eliminar imagen anterior si existe
+                if ($user->profile && $user->profile->profile_image) {
+                    \Storage::disk('public')->delete($user->profile->profile_image);
                 }
 
-                if ($user->profile) {
-                    $user->profile->update($profileData);
-                } else {
-                    $user->profile()->create($profileData);
-                }
+                // Guardar nueva imagen
+                $imagePath = $profileData['profile_image']->store('user/profile', 'public');
+                $profileData['profile_image'] = $imagePath;
             }
 
-            // Actualizar contactos
-            if (isset($validated['contacts'])) {
-                foreach ($validated['contacts'] as $contactData) {
-                    // Si es contacto primario, desactivar otros
-                    if (isset($contactData['is_primary']) && $contactData['is_primary']) {
-                        $user->contacts()->update(['is_primary' => false]);
-                    }
-
-                    // Si el contacto tiene ID, actualizar
-                    if (isset($contactData['id'])) {
-                        $contact = $user->contacts()->find($contactData['id']);
-                        if ($contact) {
-                            $contact->update($contactData);
-                        }
-                    } else {
-                        // Si no tiene ID, verificar si ya existe un contacto con ese teléfono
-                        if (isset($contactData['phone'])) {
-                            $existingContact = $user->contacts()->where('phone', $contactData['phone'])->first();
-                            if ($existingContact) {
-                                // Actualizar el contacto existente
-                                $existingContact->update($contactData);
-                            } else {
-                                // Crear nuevo contacto
-                                $user->contacts()->create($contactData);
-                            }
-                        } else {
-                            // Si no hay teléfono, crear nuevo contacto
-                            $user->contacts()->create($contactData);
-                        }
-                    }
-                }
+            if ($user->profile) {
+                $user->profile->update($profileData);
+            } else {
+                $user->profile()->create($profileData);
             }
 
-            // Create update audit
-            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-            $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? request()->ip() ?? '127.0.0.1';
-            $user->loginAudits()->create([
-                'ip' => $ipAddress,
-                'user_agent' => $userAgent,
-                'success' => true,
-                'created_at' => now(),
+            // Cargar relaciones para la respuesta
+            $user->load(['profile']);
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Perfil actualizado exitosamente',
+                'datoAdicional' => new UserResource($user)
+            ], 200);
+        } catch (ValidationException $e) {
+            // Verificar si es error de email duplicado
+            if (isset($e->errors()['email']) && str_contains($e->errors()['email'][0], 'unique')) {
+
+                Log::create([
+                    'user_id' => null,
+                    'action' => 'update_me',
+                    'description' => 'Error de email duplicado al actualizar perfil',
+                    'data' => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'El correo electrónico ya está registrado por otro usuario',
+                    'datoAdicional' => null,
+                ], 200);
+            }
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_me',
+                'description' => 'Error de validación al actualizar perfil',
+                'data' => $e->getMessage(),
             ]);
 
-            return $user;
-        });
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error de validación',
+                'datoAdicional' => $e->errors(),
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Manejar errores de base de datos específicos
+            if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'Duplicate entry')) {
+                Log::create([
+                    'user_id' => null,
+                    'action' => 'update_me',
+                    'description' => 'Error de email duplicado al actualizar perfil',
+                    'data' => $e->getMessage(),
+                ]);
+                Log::create([
+                    'user_id' => null,
+                    'action' => 'update_me',
+                    'description' => 'Error de validación al actualizar perfil',
+                    'data' => $e->getMessage(),
+                ]);
 
-        // Generate new API token
-        $deviceName = $request->input('device_name', 'API Token Updated');
-        $token = $user->createToken($deviceName)->plainTextToken;
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'El correo electrónico ya está registrado por otro usuario',
+                    'datoAdicional' => null,
+                ], 200);
+            }
 
-        // Add token to user for resource
-        $user->token = $token;
 
-        // Load relationships for response
-        $user->load(['profile', 'loginAudits']);
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error de base de datos al actualizar perfil',
+                'datoAdicional' => null,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_me',
+                'description' => 'Error interno al actualizar perfil',
+                'data' => $e->getMessage(),
+            ]);
 
-        return new AuthResource($user);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al actualizar perfil',
+                'datoAdicional' => null,
+            ], 200);
+        }
     }
     /**
      * Editar contraseña
@@ -669,18 +739,35 @@ final class AuthController extends Controller
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_password',
+                'description' => 'Error de validación al actualizar la contraseña',
+                'data' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error de validación',
                 'datoAdicional' => $e->errors(),
             ], 200);
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => null,
+                'action' => 'update_password',
+                'description' => 'Error interno al actualizar la contraseña',
+                'data' => $e->getMessage(),
+            ]);
+
+
             return response()->json([
                 'exito' => false,
                 'codMensaje' => 0,
                 'mensajeUsuario' => 'Error al actualizar la contraseña',
-                'datoAdicional' => $th->getMessage(),
+                'datoAdicional' => $e->getMessage(),
             ], 200);
         }
     }

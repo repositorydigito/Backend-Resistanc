@@ -195,6 +195,18 @@ class SeatAssignmentsRelationManager extends RelationManager
                     ->modalDescription('¿Deseas asignar usuarios de la lista de espera a asientos disponibles?')
                     ->visible(fn() => $this->hasWaitingListUsers()),
 
+                // 🆕 Botón para generar/actualizar números de asientos
+                Tables\Actions\Action::make('generateSeatNumbers')
+                    ->label('🔢 Generar Números de Asientos')
+                    ->icon('heroicon-o-hashtag')
+                    ->color('success')
+                    ->action(function () {
+                        $this->generateSeatNumbers();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Generar Números de Asientos')
+                    ->modalDescription('Esto actualizará los números de asientos del estudio basándose en fila y columna. Los asientos se ordenarán por fila y luego por columna, asignando números secuenciales del 1 en adelante. Esto actualiza los números para que se muestren correctamente en el mapa de asientos del frontend. ¿Continuar?'),
+
                 // Tables\Actions\Action::make('releaseExpired')
                 //     ->label('Liberar Expirados')
                 //     ->icon('heroicon-o-clock')
@@ -340,12 +352,24 @@ class SeatAssignmentsRelationManager extends RelationManager
         $schedule = $this->getOwnerRecord();
         $studio = $schedule->studio;
 
-        // Obtener todos los asientos activos del estudio
-        $seats = Seat::where('studio_id', $studio->id)
-            ->where('is_active', true)
-            ->get();
+        // ✅ Obtener TODOS los asientos del estudio (activos e inactivos)
+        $seats = Seat::where('studio_id', $studio->id)->get();
+
+        // ✅ Asegurar que todos los asientos del studio tengan seat_number asignado
+        $seatsWithoutNumber = $seats->filter(function ($seat) {
+            return $seat->seat_number === null;
+        });
+
+        if ($seatsWithoutNumber->isNotEmpty()) {
+            // Reordenar los números de asientos del studio
+            $studio->reorderSeatNumbers();
+            
+            // Recargar los asientos para obtener los seat_number actualizados
+            $seats = Seat::where('studio_id', $studio->id)->get();
+        }
 
         $created = 0;
+        $blocked = 0;
         foreach ($seats as $seat) {
             // Solo crear si no existe ya
             $exists = ClassScheduleSeat::where('class_schedules_id', $schedule->id)
@@ -353,19 +377,31 @@ class SeatAssignmentsRelationManager extends RelationManager
                 ->exists();
 
             if (!$exists) {
+                // ✅ Si el asiento está inactivo en la sala, marcarlo como 'blocked' en el horario
+                $status = $seat->is_active ? 'available' : 'blocked';
+                
+                if ($status === 'blocked') {
+                    $blocked++;
+                }
+
                 ClassScheduleSeat::create([
                     'code' => $schedule->code . '-' . $seat->id,
                     'class_schedules_id' => $schedule->id,
                     'seats_id' => $seat->id,
-                    'status' => 'available',
+                    'status' => $status,
                 ]);
                 $created++;
             }
         }
 
+        $message = "Se generaron {$created} asientos automáticamente.";
+        if ($blocked > 0) {
+            $message .= " {$blocked} asientos están bloqueados (inactivos en la sala).";
+        }
+
         Notification::make()
             ->title('Asientos Generados')
-            ->body("Se generaron {$created} asientos automáticamente.")
+            ->body($message)
             ->success()
             ->send();
     }
@@ -398,7 +434,7 @@ class SeatAssignmentsRelationManager extends RelationManager
             ->get()
             ->mapWithKeys(function ($waiting) use ($schedule, $packageValidationService) {
                 $userName = $waiting->user->name ?? 'Usuario Desconocido';
-                
+
                 // Obtener información de paquetes disponibles para la disciplina
                 $schedule->load(['class.discipline']);
                 $disciplineId = $schedule->class->discipline_id;
@@ -791,6 +827,53 @@ class SeatAssignmentsRelationManager extends RelationManager
             Notification::make()
                 ->title('Error en Reasignación')
                 ->body("Error reasignando asiento: " . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
+     * Generar/actualizar números de asientos del estudio
+     */
+    protected function generateSeatNumbers(): void
+    {
+        $schedule = $this->getOwnerRecord();
+
+        if (!$schedule->studio) {
+            Notification::make()
+                ->title('Error')
+                ->body('El horario de clase no tiene un estudio asignado.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        try {
+            $studio = $schedule->studio;
+
+            // Reordenar los números de asientos del estudio
+            $studio->reorderSeatNumbers();
+
+            // Contar asientos actualizados
+            $seatsCount = $studio->seats()->whereNotNull('seat_number')->count();
+            $totalSeats = $studio->seats()->count();
+
+            Notification::make()
+                ->title('Números de Asientos Actualizados')
+                ->body("Se actualizaron los números de asientos. {$seatsCount} de {$totalSeats} asientos tienen número asignado.")
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error al generar números de asientos', [
+                'schedule_id' => $schedule->id,
+                'studio_id' => $schedule->studio_id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            Notification::make()
+                ->title('Error al Generar Números')
+                ->body("Error al actualizar números de asientos: " . $e->getMessage())
                 ->danger()
                 ->send();
         }

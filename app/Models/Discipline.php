@@ -13,6 +13,7 @@ final class Discipline extends Model
 
     protected $fillable = [
         'name',
+        'order',
         'display_name',
         'description',
         'icon_url',
@@ -58,6 +59,14 @@ final class Discipline extends Model
     }
 
     /**
+     * Scope to order by sort_order.
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order');
+    }
+
+    /**
      * Get the equipment required as a formatted string.
      */
     public function getEquipmentRequiredStringAttribute(): string
@@ -68,9 +77,17 @@ final class Discipline extends Model
 
         return implode(', ', $this->equipment_required);
     }
-    public function packages(): HasMany
+
+    /**
+     * Get the display name or fallback to name.
+     */
+    public function getDisplayNameAttribute($value): string
     {
-        return $this->hasMany(Package::class, 'discipline_id');
+        return $value ?: $this->name;
+    }
+    public function packages()
+    {
+        return $this->belongsToMany(Package::class);
     }
 
     // Tablas polimórficas
@@ -84,5 +101,10 @@ final class Discipline extends Model
     public function memberships()
     {
         return $this->belongsTo(Membership::class);
+    }
+
+    public function studios()
+    {
+        return $this->belongsToMany(Studio::class);
     }
 }

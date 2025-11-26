@@ -1,105 +1,61 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verificado - Resistance</title>
+
+<x-app>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        * {
+            /* outline: 1px solid red; */
         }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
+
+
+        .verificacion__titulo {
+            color: #5D6D7A;
+            font-weight: 500;
+            font-size: 2.5rem;
         }
-        .logo {
-            margin-bottom: 30px;
+
+        .verificacion__parrafo {
+            color: #303840;
+            font-size: 1.3rem;
         }
-        .logo img {
-            max-width: 200px;
-            height: auto;
-        }
-        .success-icon {
-            font-size: 4rem;
-            color: #10b981;
-            margin-bottom: 20px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        p {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-        .btn {
-            background-color: #007bff;
+
+        .verificacion__btn {
             color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 10px;
-        }
-        .btn:hover {
-            background-color: #0056b3;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-        }
-        .btn-secondary:hover {
-            background-color: #545b62;
-        }
-        .message {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            border-radius: 32px;
+            background: var(--Gradient-Bicolor, linear-gradient(135deg, #B0694C 31.48%, #A267B4 113.36%));
+
+            /* purple shadow */
+            box-shadow: 0 1px 2px 0 rgba(67, 54, 84, 0.30), 0 1px 3px 1px rgba(67, 54, 84, 0.15);
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <img src="{{ asset('image/logos/resistance-logo-two.png') }}" alt="Resistance Logo">
+
+    <div class="verificacion">
+
+        <div class="verificacion__container container">
+            <div
+                class="verificacion__contenido min-h-96 bg-white mt-36 mb-24 rounded-3xl p-8 lg:p-14 flex flex-col gap-4 justify-center items-center content-center place-content-center
+">
+
+                <img class="h-52 w-52 object-contain" src="{{ asset('image/emails/activacion/success.png') }}"
+                    alt="">
+
+                <h2 class="verificacion__titulo text-center"> ¡Tu correo está verificado!</h2>
+
+                <p class="verificacion__parrafo text-center">
+                    {{ $message }}
+                </p>
+
+                <img class="h-6 object-contain" src="{{ asset('image/emails/activacion/logo-arcoiris.png') }}"
+                    alt="">
+
+                <div class="w-full flex justify-center">
+                    <a class="btn verificacion__btn w-auto lg:w-80" href="{{ route('home') }}" class="btn">
+                        Ir al inicio
+                    </a>
+                </div>
+
+            </div>
         </div>
 
-        <div class="success-icon">✅</div>
-
-        <h1>¡Email Verificado!</h1>
-
-        <div class="message">
-            {{ $message }}
-        </div>
-
-        <p>
-            Tu cuenta ha sido verificada exitosamente. Ahora puedes acceder a todos los servicios de Resistance.
-        </p>
-
-        <a href="{{ route('home') }}" class="btn">
-            Ir al inicio
-        </a>
-
-        <p style="margin-top: 30px; font-size: 14px; color: #999;">
-            Gracias por verificar tu cuenta.
-        </p>
     </div>
-</body>
-</html>
+
+</x-app>
