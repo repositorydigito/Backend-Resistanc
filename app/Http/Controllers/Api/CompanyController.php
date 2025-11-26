@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\CompanyResource;
+use App\Models\Company;
+use App\Models\Log;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+/**
+ * @tags Informacion de la empresa
+ */
+
+class CompanyController extends Controller
+{
+
+    /**
+     * Obtener informacion de la empresa
+     *
+     */
+    public function show()
+    {
+        try {
+            $company = Company::first();
+
+            if (!$company) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'Empresa no encontrada',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Información de la empresa obtenida correctamente',
+                'datoAdicional' => new CompanyResource($company)
+            ], 200);
+        } catch (\Throwable $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener informacion de la empresa',
+                'description' => 'Error al obtener informacion de la empresa',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error al obtener la información de la empresa',
+                'datoAdicional' => $e->getMessage()
+            ], 200);
+        }
+    }
+}

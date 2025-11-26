@@ -1,0 +1,920 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Package;
+use Carbon\Carbon;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class PackageSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $this->command->info('🌱 Seeders de Paquetes');
+
+        $currentYear =  now()->year;
+        // Paquetes
+
+        $packages = [
+            // CYCLING PACKAGES
+            [
+
+                'name' => 'Prueba Gratis',
+                'slug' => 'prueba-gratis-cycling',
+                'description' => 'Prueba gratuita de cycling para nuevos usuarios',
+                'short_description' => '1 clase gratis para conocer nuestro cycling',
+                'classes_quantity' => 1,
+                'price_soles' => 0.00,
+                'original_price_soles' => 35.00,
+                'buy_type' => 'assignable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 0,
+                'start_date' => now(),
+                'end_date' => now()->addMonths(3),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 1,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 1,
+                'features' => json_encode(['Clase de prueba gratuita', 'Acceso completo a instalaciones']),
+                'restrictions' => json_encode(['Solo para nuevos usuarios', 'Una vez por persona']),
+                'target_audience' => 'beginner',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+
+            ],
+            [
+
+                'name' => '1 Clase',
+                'slug' => '1-clase',
+                'description' => 'Paquete básico de cycling con 1 clase',
+                'short_description' => '1 clase de cycling válida por 1 mes',
+                'classes_quantity' => 1,
+                'price_soles' => 35.00,
+                'original_price_soles' => 35.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 1,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 2,
+                'features' => json_encode(['Acceso a clases de cycling', 'Equipamiento incluido']),
+                'restrictions' => json_encode(['Válido por 30 días']),
+                'target_audience' => 'beginner',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+
+            ],
+            [
+                'name' => '5 Clases',
+                'slug' => '5-clases',
+                'description' => 'Paquete mensual de cycling con 5 clases',
+                'short_description' => '5 clases de cycling válidas por 1 mes',
+                'classes_quantity' => 5,
+                'price_soles' => 250.00,
+                'original_price_soles' => 250.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 2,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 3,
+                'features' => json_encode(['5 clases de cycling', 'Equipamiento incluido', 'Asesoría básica']),
+                'restrictions' => json_encode(['Válido por 30 días']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '12 Clases',
+                'slug' => '12-clases',
+                'description' => 'Paquete bimestral de cycling con 12 clases',
+                'short_description' => '12 clases de cycling válidas por 2 meses',
+                'classes_quantity' => 12,
+                'price_soles' => 450.00,
+                'original_price_soles' => 450.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 2, // 2 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 3,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 4,
+                'features' => json_encode(['12 clases de cycling', 'Equipamiento incluido', 'Asesoría personalizada']),
+                'restrictions' => json_encode(['Válido por 60 días']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '24 Clases',
+                'slug' => '24-clases',
+                'description' => 'Paquete semestral de cycling con 24 clases',
+                'short_description' => '24 clases de cycling válidas por 6 meses',
+                'classes_quantity' => 24,
+                'price_soles' => 850.00,
+                'original_price_soles' => 850.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'offer',
+                'duration_in_months' => 6, // 6 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 5,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 5,
+                'features' => json_encode(['24 clases de cycling', 'Equipamiento incluido', 'Asesoría personalizada', 'Prioridad en reservas']),
+                'restrictions' => json_encode(['Válido por 6 meses']),
+                'target_audience' => 'advanced',
+
+                'membership_id' => 2, // RSISTANC GOLD
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '40 Clases',
+                'slug' => '40-clases',
+                'description' => 'Paquete anual de cycling con 40 clases',
+                'short_description' => '40 clases de cycling válidas por 1 año',
+                'classes_quantity' => 40,
+                'price_soles' => 1700.00,
+                'original_price_soles' => 1700.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 12, // 12 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 7,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 6,
+                'features' => json_encode(['40 clases de cycling', 'Equipamiento incluido', 'Asesoría personalizada', 'Máxima prioridad en reservas', 'Acceso a eventos especiales']),
+                'restrictions' => json_encode(['Válido por 1 año']),
+                'target_audience' => 'advanced',
+
+                'membership_id' => 3, // RSISTANC BLACK
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // PILATES PACKAGES
+            [
+                'name' => 'Prueba Gratis',
+                'slug' => 'prueba-gratis-pilates',
+                'description' => 'Prueba gratuita de pilates para nuevos usuarios',
+                'short_description' => '1 clase gratis para conocer nuestro pilates',
+                'classes_quantity' => 1,
+                'price_soles' => 0.00,
+                'original_price_soles' => 69.00,
+
+                'buy_type' => 'assignable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 0, // 1 months for temporary packages
+                'start_date' => now(),
+                'end_date' => now()->addMonths(3),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 1,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 7,
+                'features' => json_encode(['Clase de prueba gratuita', 'Acceso completo a instalaciones', 'Evaluación postural']),
+                'restrictions' => json_encode(['Solo para nuevos usuarios', 'Una vez por persona']),
+                'target_audience' => 'beginner',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '1 Clase',
+                'slug' => '1-clase',
+                'description' => 'Paquete básico de pilates con 1 clase',
+                'short_description' => '1 clase de pilates válida por 1 mes',
+                'classes_quantity' => 1,
+                'price_soles' => 69.00,
+                'original_price_soles' => 69.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 1,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 8,
+                'features' => json_encode(['Acceso a clases de pilates', 'Equipamiento especializado', 'Instrucción personalizada']),
+                'restrictions' => json_encode(['Válido por 30 días']),
+                'target_audience' => 'beginner',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '4 Clases',
+                'slug' => '4-clases',
+                'description' => 'Paquete mensual de pilates con 4 clases',
+                'short_description' => '4 clases de pilates válidas por 1 mes',
+                'classes_quantity' => 4,
+                'price_soles' => 250.00,
+                'original_price_soles' => 250.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 2,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 9,
+                'features' => json_encode(['4 clases de pilates', 'Equipamiento especializado', 'Instrucción personalizada', 'Evaluación de progreso']),
+                'restrictions' => json_encode(['Válido por 30 días']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '8 Clases',
+                'slug' => '8-clases',
+                'description' => 'Paquete bimestral de pilates con 8 clases',
+                'short_description' => '8 clases de pilates válidas por 2 meses',
+                'classes_quantity' => 8,
+                'price_soles' => 450.00,
+                'original_price_soles' => 450.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 2, // 2 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 3,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 10,
+                'features' => json_encode(['8 clases de pilates', 'Equipamiento especializado', 'Instrucción personalizada', 'Evaluación de progreso']),
+                'restrictions' => json_encode(['Válido por 60 días']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '12 Clases',
+                'slug' => '12-clases',
+                'description' => 'Paquete bimestral extendido de pilates con 12 clases',
+                'short_description' => '12 clases de pilates válidas por 2 meses',
+                'classes_quantity' => 12,
+                'price_soles' => 540.00,
+                'original_price_soles' => 540.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 2, // 2 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 3,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 11,
+                'features' => json_encode(['12 clases de pilates', 'Equipamiento especializado', 'Instrucción personalizada', 'Evaluación de progreso', 'Plan personalizado']),
+                'restrictions' => json_encode(['Válido por 60 días']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => 1, // RSISTANC
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '20 Clases',
+                'slug' => '20-clases',
+                'description' => 'Paquete semestral de pilates con 20 clases',
+                'short_description' => '20 clases de pilates válidas por 6 meses',
+                'classes_quantity' => 20,
+                'price_soles' => 950.00,
+                'original_price_soles' => 950.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'offer',
+                'duration_in_months' => 6, // 6 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 5,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 12,
+                'features' => json_encode(['20 clases de pilates', 'Equipamiento especializado', 'Instrucción personalizada', 'Evaluación de progreso', 'Plan personalizado', 'Prioridad en reservas']),
+                'restrictions' => json_encode(['Válido por 6 meses']),
+                'target_audience' => 'advanced',
+
+                'membership_id' => 2, // RSISTANC GOLD
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => '40 Clases',
+                'slug' => '40-clases',
+                'description' => 'Paquete anual de pilates con 40 clases',
+                'short_description' => '40 clases de pilates válidas por 1 año',
+                'classes_quantity' => 40,
+                'price_soles' => 1800.00,
+                'original_price_soles' => 1800.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'fixed',
+                'commercial_type' => 'basic',
+                'duration_in_months' => 12, // 12 months for temporary packages
+                'start_date' => null,
+                'end_date' => null,
+                'is_virtual_access' => false,
+                'priority_booking_days' => 7,
+                'auto_renewal' => false,
+                'is_featured' => false,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 13,
+                'features' => json_encode(['40 clases de pilates', 'Equipamiento especializado', 'Instrucción personalizada', 'Evaluación de progreso', 'Plan personalizado', 'Máxima prioridad en reservas', 'Acceso a eventos especiales', 'Sesiones de evaluación trimestrales']),
+                'restrictions' => json_encode(['Válido por 6 meses']),
+                'target_audience' => 'advanced',
+
+                'membership_id' => 3, // RSISTANC BLACK
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            [
+                'name' => 'San Valentín',
+                'slug' => 'san-valentin',
+                'description' => 'Paquete especial de San Valentín para parejas que quieren entrenar juntas',
+                'short_description' => '8 clases de cycling para compartir en pareja',
+                'classes_quantity' => 8,
+                'price_soles' => 320.00,
+                'original_price_soles' => 400.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 2, 1),
+                'end_date' => Carbon::create($currentYear, 2, 20),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 3,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 1,
+                'features' => json_encode(['8 clases de cycling', 'Descuento para parejas', 'Reservas conjuntas', 'Regalo especial San Valentín']),
+                'restrictions' => json_encode(['Válido solo en febrero', 'Para 2 personas', 'Debe reservar en pareja']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'San Valentín',
+                'slug' => 'san-valentin',
+                'description' => 'Especial de San Valentín para fortalecer el vínculo a través del pilates',
+                'short_description' => '6 clases de pilates en pareja',
+                'classes_quantity' => 6,
+                'price_soles' => 450.00,
+                'original_price_soles' => 550.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 2, 1),
+                'end_date' => Carbon::create($currentYear, 2, 20),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 3,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 2,
+                'features' => json_encode(['6 clases de pilates', 'Sesiones en pareja', 'Evaluación postural conjunta', 'Kit romántico']),
+                'restrictions' => json_encode(['Válido solo en febrero', 'Para 2 personas']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // DÍA DE LA MADRE - Segundo domingo de mayo
+            [
+                'name' => 'Día de la Madre ',
+                'slug' => 'dia-madre',
+                'description' => 'Paquete especial para celebrar a mamá con bienestar y relajación',
+                'short_description' => '10 clases mixtas para el bienestar de mamá',
+                'classes_quantity' => 10,
+                'price_soles' => 380.00,
+                'original_price_soles' => 500.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 5, 1),
+                'end_date' => Carbon::create($currentYear, 5, 20),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 4,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 3,
+                'features' => json_encode(['10 clases mixtas', 'Clases de relajación', 'Gift especial para mamá', 'Horarios flexibles']),
+                'restrictions' => json_encode(['Válido en mayo', 'Promoción especial mamás']),
+                'target_audience' => 'beginner',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // DÍA DEL PADRE - Tercer domingo de junio
+            [
+                'name' => 'Día del Padre',
+                'slug' => 'dia-padre',
+                'description' => 'Paquete intensivo para papás que quieren mantenerse en forma',
+                'short_description' => '12 clases de cycling de alta intensidad',
+                'classes_quantity' => 12,
+                'price_soles' => 420.00,
+                'original_price_soles' => 520.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 6, 1),
+                'end_date' => Carbon::create($currentYear, 6, 25),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 4,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 4,
+                'features' => json_encode(['12 clases de cycling', 'Entrenamiento intensivo', 'Plan nutricional básico', 'Regalo especial papá']),
+                'restrictions' => json_encode(['Válido en junio', 'Promoción especial papás']),
+                'target_audience' => 'advanced',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // FIESTAS PATRIAS - 28 de Julio
+            [
+                'name' => 'Fiestas Patrias',
+                'slug' => 'fiestas-patrias',
+                'description' => 'Celebra la independencia con fuerza y energía peruana',
+                'short_description' => '15 clases para celebrar nuestro Perú',
+                'classes_quantity' => 15,
+                'price_soles' => 480.00,
+                'original_price_soles' => 650.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 7, 15),
+                'end_date' => Carbon::create($currentYear, 8, 5),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 5,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 5,
+                'features' => json_encode(['15 clases mixtas', 'Evento especial 28 de julio', 'Música peruana en clases', 'Merchandising patrio']),
+                'restrictions' => json_encode(['Válido julio-agosto', 'Edición limitada Fiestas Patrias']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // HALLOWEEN - 31 de octubre
+            [
+                'name' => 'Halloween',
+                'slug' => 'halloween',
+                'description' => 'Entrena en la oscuridad con música temática de Halloween',
+                'short_description' => '8 clases con ambiente Halloween',
+                'classes_quantity' => 8,
+                'price_soles' => 300.00,
+                'original_price_soles' => 380.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 10, 15),
+                'end_date' => Carbon::create($currentYear, 11, 5),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 3,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 6,
+                'features' => json_encode(['8 clases temáticas', 'Ambiente Halloween', 'Música de terror fitness', 'Premios por disfraces']),
+                'restrictions' => json_encode(['Válido octubre-noviembre', 'Temática Halloween']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // CYBER DAYS - 24 al 28 de marzo
+            [
+                'name' => 'Cyber Days',
+                'slug' => 'cyber-days',
+                'description' => 'Aprovecha los Cyber Days con descuentos increíbles',
+                'short_description' => '20 clases con 40% de descuento',
+                'classes_quantity' => 20,
+                'price_soles' => 600.00,
+                'original_price_soles' => 1000.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'mixto',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 3, 24),
+                'end_date' => Carbon::create($currentYear, 3, 28),
+                'is_virtual_access' => true,
+                'priority_booking_days' => 7,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 7,
+                'features' => json_encode(['20 clases mixtas', '40% de descuento', 'Acceso virtual incluido', 'Solo por Cyber Days']),
+                'restrictions' => json_encode(['Solo del 24-28 marzo', 'Cantidad limitada', 'No acumulable']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // CYBER WOW ABRIL - 7 al 10 de abril
+            [
+                'name' => 'Cyber Wow',
+                'slug' => 'cyber-wow',
+                'description' => 'Cyber Wow de abril con ofertas explosivas',
+                'short_description' => '16 clases con precio increíble',
+                'classes_quantity' => 16,
+                'price_soles' => 480.00,
+                'original_price_soles' => 720.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 4, 7),
+                'end_date' => Carbon::create($currentYear, 4, 10),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 5,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 8,
+                'features' => json_encode(['16 clases de cycling', '33% de descuento', 'Solo 4 días disponible', 'Cyber Wow exclusivo']),
+                'restrictions' => json_encode(['Solo del 7-10 abril', 'Oferta limitada']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // CYBER WOW JULIO - 14 al 17 de julio
+            // [
+            //     'name' => 'Cyber Wow',
+            //     'slug' => 'cyber-wow',
+            //     'description' => 'Prepárate para el verano con ofertas Cyber Wow',
+            //     'short_description' => '18 clases para el cuerpo de verano',
+            //     'classes_quantity' => 18,
+            //     'price_soles' => 540.00,
+            //     'original_price_soles' => 810.00,
+
+            //     'buy_type' => 'affordable',
+            //     'mode_type' => 'presencial',
+            //     'billing_type' => 'one_time',
+            //     'type' => 'temporary',
+            //     'commercial_type' => 'offer',
+            //     'start_date' => Carbon::create($currentYear, 7, 14),
+            //     'end_date' => Carbon::create($currentYear, 7, 17),
+            //     'is_virtual_access' => false,
+            //     'priority_booking_days' => 5,
+            //     'auto_renewal' => false,
+            //     'is_featured' => true,
+            //     'is_popular' => false,
+            //     'status' => 'active',
+            //     'display_order' => 9,
+            //     'features' => json_encode(['18 clases mixtas', 'Operación bikini', 'Plan nutricional verano', 'Descuento 33%']),
+            //     'restrictions' => json_encode(['Solo del 14-17 julio', 'Edición verano']),
+            //     'target_audience' => 'intermediate',
+
+            //     'created_at' => now(),
+            //     'updated_at' => now(),
+            // ],
+
+            // BLACK FRIDAY - Finales de noviembre
+            [
+                'name' => 'Black Friday',
+                'slug' => 'black-friday',
+                'description' => 'La mejor oferta del año en Black Friday',
+                'short_description' => '50 clases con descuento histórico',
+                'classes_quantity' => 50,
+                'price_soles' => 1200.00,
+                'original_price_soles' => 2000.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'mixto',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 11, 24),
+                'end_date' => Carbon::create($currentYear, 11, 27),
+                'is_virtual_access' => true,
+                'priority_booking_days' => 10,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 10,
+                'features' => json_encode(['50 clases mixtas', '40% de descuento', 'Acceso virtual incluido', 'Válido 1 año completo', 'Máxima prioridad reservas']),
+                'restrictions' => json_encode(['Solo Black Friday', 'Cantidad muy limitada', 'Oferta histórica']),
+                'target_audience' => 'advanced',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // CYBER MONDAY
+            [
+                'name' => 'Cyber Monday',
+                'slug' => 'cyber-monday',
+                'description' => 'Cyber Monday con acceso digital premium',
+                'short_description' => '25 clases con acceso virtual premium',
+                'classes_quantity' => 25,
+                'price_soles' => 750.00,
+                'original_price_soles' => 1100.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'virtual',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'offer',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 11, 27),
+                'end_date' => Carbon::create($currentYear, 11, 27),
+                'is_virtual_access' => true,
+                'priority_booking_days' => 7,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => false,
+                'status' => 'active',
+                'display_order' => 11,
+                'features' => json_encode(['25 clases virtuales', 'Acceso premium digital', '32% de descuento', 'Solo un día disponible']),
+                'restrictions' => json_encode(['Solo Cyber Monday', 'Modalidad virtual únicamente']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // CYBER WOW NOVIEMBRE - 3 al 6 de noviembre
+            // [
+            //     'name' => 'Cyber Wow Nov - Pre Black Friday',
+            //     'slug' => 'cyber-wow-noviembre-pre-black',
+            //     'description' => 'Anticípate al Black Friday con Cyber Wow de noviembre',
+            //     'short_description' => '22 clases antes del Black Friday',
+            //     'classes_quantity' => 22,
+            //     'price_soles' => 660.00,
+            //     'original_price_soles' => 990.00,
+
+            //     'buy_type' => 'affordable',
+            //     'mode_type' => 'presencial',
+            //     'billing_type' => 'one_time',
+            //     'type' => 'temporary',
+            //     'commercial_type' => 'offer',
+            //     'start_date' => Carbon::create($currentYear, 11, 3),
+            //     'end_date' => Carbon::create($currentYear, 11, 6),
+            //     'is_virtual_access' => false,
+            //     'priority_booking_days' => 6,
+            //     'auto_renewal' => false,
+            //     'is_featured' => true,
+            //     'is_popular' => false,
+            //     'status' => 'active',
+            //     'display_order' => 12,
+            //     'features' => json_encode(['22 clases de cycling', 'Pre Black Friday', '33% de descuento', 'Preparación para fin de año']),
+            //     'restrictions' => json_encode(['Solo del 3-6 noviembre', 'Antes del Black Friday']),
+            //     'target_audience' => 'intermediate',
+
+            //     'created_at' => now(),
+            //     'updated_at' => now(),
+            // ],
+
+            // DÍA DEL CÁNCER DE MAMA - 19 de octubre
+            [
+                'name' => 'Lucha Contra el Cáncer de Mama',
+                'slug' => 'lucha-cancer-mama',
+                'description' => 'Mes rosa dedicado a la lucha contra el cáncer de mama',
+                'short_description' => '10 clases especiales para la causa rosa',
+                'classes_quantity' => 10,
+                'price_soles' => 350.00,
+                'original_price_soles' => 450.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 10, 1),
+                'end_date' => Carbon::create($currentYear, 10, 31),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 4,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 13,
+                'features' => json_encode(['10 clases especiales', 'Donación a la causa', 'Ambiente rosa en studio', 'Charlas de prevención']),
+                'restrictions' => json_encode(['Solo octubre', 'Parte de donación incluida']),
+                'target_audience' => 'beginner',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // PRIDE MONTH - Junio completo
+            [
+                'name' => 'Mes Pride',
+                'slug' => 'mes-pride-cycling',
+                'description' => 'Celebra la diversidad durante todo el mes del orgullo',
+                'short_description' => '30 clases para celebrar la diversidad',
+                'classes_quantity' => 30,
+                'price_soles' => 900.00,
+                'original_price_soles' => 1200.00,
+
+                'buy_type' => 'affordable',
+                'mode_type' => 'presencial',
+                'billing_type' => 'one_time',
+                'type' => 'temporary',
+                'commercial_type' => 'promotion',
+                'duration_in_months' => 1, // 1 months for temporary packages
+                'start_date' => Carbon::create($currentYear, 6, 1),
+                'end_date' => Carbon::create($currentYear, 6, 30),
+                'is_virtual_access' => false,
+                'priority_booking_days' => 5,
+                'auto_renewal' => false,
+                'is_featured' => true,
+                'is_popular' => true,
+                'status' => 'active',
+                'display_order' => 14,
+                'features' => json_encode(['30 clases mixtas', 'Celebración diversidad', 'Decoración Pride', 'Evento especial Pride']),
+                'restrictions' => json_encode(['Solo junio', 'Mes completo Pride']),
+                'target_audience' => 'intermediate',
+
+                'membership_id' => null, // No membership required for trial
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ];
+
+        Package::insert($packages);
+
+        // Fin paquetes
+    }
+}

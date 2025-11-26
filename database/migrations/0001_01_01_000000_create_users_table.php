@@ -13,10 +13,27 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('code')->unique()->comment('Codigo unico de usuario');
+            $table->string('name')->comment('Nombre del usuario');
+            $table->string('email')->unique('Email del usuario');
+            $table->timestamp('email_verified_at')->nullable()->comment('Verificacion del usuario');
+            $table->string('password')->nullable()->comment('Contrasenia del usuario');
+            $table->string('google_id')->nullable()->comment('id del logueo por google');
+            $table->string('facebook_id')->nullable()->comment('id del logueo por facebook');
+            $table->string('avatar')->nullable()->comment('URL del avatar del usuario');
+
+
+
+            // Campos esenciales para facturación con Greenter
+            $table->string('document_type', 10)->nullable()->comment('Tipo de documento: DNI, RUC, CE, etc.');
+            $table->string('document_number', 20)->nullable()->comment('Número de documento de identidad');
+            $table->string('business_name')->nullable()->comment('Razón social o nombre comercial');
+            $table->boolean('is_company')->default(false)->comment('Indica si es una empresa');
+
+            // Índices para optimizar consultas de facturación
+            $table->index(['document_type', 'document_number'], 'idx_users_document');
+            $table->index('is_company', 'idx_users_company');
+
             $table->rememberToken();
             $table->timestamps();
         });

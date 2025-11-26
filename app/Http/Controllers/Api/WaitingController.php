@@ -1,0 +1,985 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\ClassScheduleResource;
+use App\Http\Resources\WaitingResource;
+use App\Models\ClassSchedule;
+use App\Models\WaitingClass;
+use App\Services\PackageValidationService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+
+/**
+ * @tags Lista de espera
+ */
+final class WaitingController extends Controller
+{
+    /**
+     * Listar entradas en la lista de espera del usuario autenticado
+     */
+
+
+    public function indexWaitingList(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+
+            // Validar parámetros de filtro
+            $request->validate([
+                'status' => 'sometimes|array',
+                'status.*' => 'string|in:waiting,notified,confirmed,expired,cancelled',
+                'date_from' => 'sometimes|date',
+                'date_to' => 'sometimes|date|after_or_equal:date_from',
+                'upcoming' => 'sometimes|boolean',
+                'per_page' => 'sometimes|integer|min:1|max:50',
+                'page' => 'sometimes|integer|min:1',
+                'order_by' => 'sometimes|string|in:scheduled_date,created_at,start_time',
+                'order_direction' => 'sometimes|string|in:asc,desc'
+            ]);
+
+            // Construir query base
+            $query = WaitingClass::where('user_id', $userId)
+                ->with(['classSchedule.class.discipline', 'classSchedule.studio', 'classSchedule.instructor']);
+
+            // Filtro por estado (si no se especifica, por defecto solo 'waiting')
+            if ($request->filled('status')) {
+                $statuses = is_array($request->status) ? $request->status : [$request->status];
+                $query->whereIn('status', $statuses);
+            } else {
+                // Por defecto solo mostrar 'waiting' si no se especifica
+                // $query->where('status', 'waiting');
+            }
+
+            // Filtros de fecha del horario de clase
+            if ($request->filled('date_from')) {
+                $query->whereHas('classSchedule', function ($q) use ($request) {
+                    $q->where('scheduled_date', '>=', $request->date_from);
+                });
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereHas('classSchedule', function ($q) use ($request) {
+                    $q->where('scheduled_date', '<=', $request->date_to);
+                });
+            }
+
+            // Filtro para clases próximas (futuras)
+            if ($request->boolean('upcoming', false)) {
+                $query->whereHas('classSchedule', function ($q) {
+                    $q->where('scheduled_date', '>=', now()->toDateString());
+                });
+            }
+
+            // Ordenamiento
+            $orderBy = $request->string('order_by', 'created_at')->toString();
+            $orderDirection = $request->string('order_direction', 'asc')->toString();
+
+            if ($orderBy === 'scheduled_date' || $orderBy === 'start_time') {
+                // Ordenar por campos del horario de clase usando subquery
+                $query->orderBy(
+                    DB::raw('(SELECT ' . $orderBy . ' FROM class_schedules WHERE class_schedules.id = waiting_classes.class_schedules_id)'),
+                    $orderDirection
+                );
+            } else {
+                // Ordenar por campos de waiting_classes
+                $query->orderBy($orderBy, $orderDirection);
+            }
+
+            // Aplicar paginación si se solicita
+            if ($request->has('per_page')) {
+                $waitingList = $query->paginate(
+                    perPage: $request->integer('per_page', 15),
+                    page: $request->integer('page', 1)
+                );
+
+                if ($waitingList->isEmpty()) {
+                    return response()->json([
+                        'exito' => true,
+                        'codMensaje' => 1,
+                        'mensajeUsuario' => 'No tienes entradas en lista de espera',
+                        'datoAdicional' => [
+                            'waiting_list' => [],
+                            'summary' => [
+                                'total_entries' => 0,
+                                'total_schedules' => 0
+                            ],
+                            'pagination' => [
+                                'current_page' => $waitingList->currentPage(),
+                                'last_page' => $waitingList->lastPage(),
+                                'per_page' => $waitingList->perPage(),
+                                'total' => $waitingList->total(),
+                                'from' => $waitingList->firstItem(),
+                                'to' => $waitingList->lastItem(),
+                                'has_more_pages' => $waitingList->hasMorePages(),
+                            ]
+                        ]
+                    ], 200);
+                }
+
+                // Agrupar por horario de clase
+                $groupedBySchedule = $waitingList->groupBy('class_schedules_id');
+
+                $formattedData = [];
+                $totalSchedules = 0;
+                $totalWaitingEntries = 0;
+
+                foreach ($groupedBySchedule as $scheduleId => $waitingEntries) {
+                    $firstEntry = $waitingEntries->first();
+                    $schedule = $firstEntry->classSchedule;
+
+                    $totalSchedules++;
+                    $totalWaitingEntries += $waitingEntries->count();
+
+                    $formattedData[] = $this->formatWaitingListEntry($schedule, $waitingEntries, $scheduleId, $userId);
+                }
+
+                // Ordenar por fecha de clase si no se ordenó por query
+                if ($orderBy === 'created_at') {
+                    usort($formattedData, function ($a, $b) {
+                        $dateA = $a['schedule_info']['scheduled_date'];
+                        $timeA = $a['schedule_info']['start_time'];
+                        $dateB = $b['schedule_info']['scheduled_date'];
+                        $timeB = $b['schedule_info']['start_time'];
+
+                        if ($dateA instanceof \Carbon\Carbon) {
+                            $dateA = $dateA->format('Y-m-d');
+                        }
+                        if ($dateB instanceof \Carbon\Carbon) {
+                            $dateB = $dateB->format('Y-m-d');
+                        }
+
+                        $dateTimeA = \Carbon\Carbon::parse($dateA . ' ' . $timeA);
+                        $dateTimeB = \Carbon\Carbon::parse($dateB . ' ' . $timeB);
+
+                        return $dateTimeA->timestamp <=> $dateTimeB->timestamp;
+                    });
+                }
+
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Lista de espera obtenida exitosamente',
+                    'datoAdicional' => [
+                        'waiting_list' => $formattedData,
+                        'summary' => [
+                            'total_entries' => $totalWaitingEntries,
+                            'total_schedules' => $totalSchedules
+                        ],
+                        'pagination' => [
+                            'current_page' => $waitingList->currentPage(),
+                            'last_page' => $waitingList->lastPage(),
+                            'per_page' => $waitingList->perPage(),
+                            'total' => $waitingList->total(),
+                            'from' => $waitingList->firstItem(),
+                            'to' => $waitingList->lastItem(),
+                            'has_more_pages' => $waitingList->hasMorePages(),
+                        ]
+                    ]
+                ], 200);
+            } else {
+                // Sin paginación - obtener todos los resultados
+                $waitingList = $query->get();
+
+                if ($waitingList->isEmpty()) {
+                    return response()->json([
+                        'exito' => true,
+                        'codMensaje' => 1,
+                        'mensajeUsuario' => 'No tienes entradas en lista de espera',
+                        'datoAdicional' => [
+                            'waiting_list' => [],
+                            'summary' => [
+                                'total_entries' => 0,
+                                'total_schedules' => 0
+                            ]
+                        ]
+                    ], 200);
+                }
+
+                // Agrupar por horario de clase
+                $groupedBySchedule = $waitingList->groupBy('class_schedules_id');
+
+                $formattedData = [];
+                $totalSchedules = 0;
+                $totalWaitingEntries = 0;
+
+                foreach ($groupedBySchedule as $scheduleId => $waitingEntries) {
+                    $firstEntry = $waitingEntries->first();
+                    $schedule = $firstEntry->classSchedule;
+
+                    $totalSchedules++;
+                    $totalWaitingEntries += $waitingEntries->count();
+
+                    $formattedData[] = $this->formatWaitingListEntry($schedule, $waitingEntries, $scheduleId, $userId);
+                }
+
+                // Ordenar por fecha de clase si no se ordenó por query
+                if ($orderBy === 'created_at') {
+                    usort($formattedData, function ($a, $b) {
+                        $dateA = $a['schedule_info']['scheduled_date'];
+                        $timeA = $a['schedule_info']['start_time'];
+                        $dateB = $b['schedule_info']['scheduled_date'];
+                        $timeB = $b['schedule_info']['start_time'];
+
+                        if ($dateA instanceof \Carbon\Carbon) {
+                            $dateA = $dateA->format('Y-m-d');
+                        }
+                        if ($dateB instanceof \Carbon\Carbon) {
+                            $dateB = $dateB->format('Y-m-d');
+                        }
+
+                        $dateTimeA = \Carbon\Carbon::parse($dateA . ' ' . $timeA);
+                        $dateTimeB = \Carbon\Carbon::parse($dateB . ' ' . $timeB);
+
+                        return $dateTimeA->timestamp <=> $dateTimeB->timestamp;
+                    });
+                }
+
+                return response()->json([
+                    'exito' => true,
+                    'codMensaje' => 1,
+                    'mensajeUsuario' => 'Lista de espera obtenida exitosamente',
+                    'datoAdicional' => [
+                        'waiting_list' => $formattedData,
+                        'summary' => [
+                            'total_entries' => $totalWaitingEntries,
+                            'total_schedules' => $totalSchedules
+                        ]
+                    ]
+                ], 200);
+            }
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Listar entradas en la lista de espera del usuario autenticado',
+                'description' => 'Error interno al obtener lista de espera',
+                'data' => $e->getMessage(),
+            ]);
+
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'message' => 'Error interno al obtener lista de espera',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+    }
+
+    /**
+     * Formatear entrada de lista de espera
+     */
+    private function formatWaitingListEntry($schedule, $waitingEntries, $scheduleId, $userId)
+    {
+        return [
+            'schedule_info' => [
+                'id' => $schedule->id,
+                'scheduled_date' => $schedule->scheduled_date,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+                'status' => $schedule->status,
+                'max_capacity' => $schedule->max_capacity,
+                'available_spots' => $schedule->available_spots,
+                'booked_spots' => $schedule->booked_spots,
+                'waitlist_spots' => $schedule->waitlist_spots,
+                'theme' => $schedule->theme ?? null
+            ],
+            'class' => [
+                'id' => $schedule->class->id,
+                'name' => $schedule->class->name,
+                'color_hex' => $schedule->class->color_hex,
+                'icon_url' => $schedule->class->icon_url ? asset('storage/') . '/' . $schedule->class->icon_url : asset('default/icon.png'),
+                'discipline' => $schedule->class->discipline->name ?? 'N/A',
+                'img_url' => $schedule->class->img_url ? asset('storage/') . '/' . $schedule->class->img_url : asset('default/class.jpg'),
+                'discipline_img' => $schedule->class->discipline->icon_url ? asset('storage/') . '/' . $schedule->class->discipline->icon_url : asset('default/icon.png'),
+            ],
+            'instructor' => [
+                'id' => $schedule->instructor->id,
+                'name' => $schedule->instructor->name,
+                'profile_image' => $schedule->instructor->profile_image ? asset('storage/') . '/' . $schedule->instructor->profile_image : asset('default/entrenador.jpg'),
+                'rating_average' => $schedule->instructor->rating_average ?? null,
+                'is_head_coach' => $schedule->instructor->is_head_coach ?? false,
+            ],
+            'studio' => [
+                'id' => $schedule->studio->id,
+                'name' => $schedule->studio->name,
+                'location' => $schedule->studio->location ?? 'N/A',
+            ],
+            'waiting_entries' => [
+                'total_entries' => $waitingEntries->count(),
+                'entries' => $waitingEntries->map(function ($entry) {
+                    return [
+                        'id' => $entry->id,
+                        'status' => $entry->status,
+                        'created_at' => $entry->created_at->toISOString(),
+                        'updated_at' => $entry->updated_at->toISOString()
+                    ];
+                }),
+                'status_summary' => [
+                    'waiting' => $waitingEntries->where('status', 'waiting')->count(),
+                    'notified' => $waitingEntries->where('status', 'notified')->count(),
+                    'confirmed' => $waitingEntries->where('status', 'confirmed')->count(),
+                    'expired' => $waitingEntries->where('status', 'expired')->count(),
+                    'cancelled' => $waitingEntries->where('status', 'cancelled')->count(),
+                ]
+            ],
+            'position_info' => [
+                'my_position' => $waitingEntries->first()->id,
+                'total_people_ahead' => WaitingClass::where('class_schedules_id', $scheduleId)
+                    ->where('status', 'waiting')
+                    ->where('id', '<', $waitingEntries->first()->id)
+                    ->count()
+            ]
+        ];
+    }
+
+
+    /**
+     * Obtener lista de espera para un horario específico
+     */
+
+    public function show(Request $request)
+    {
+        try {
+            $request->validate([
+                'id' => 'required|integer|exists:class_schedules,id',
+            ]);
+
+
+            $classScheduleId = $request->input('id');
+            $userId = Auth::id();
+
+
+
+            // Verificar que el horario existe
+            $classSchedule = ClassSchedule::with(['class.discipline', 'studio', 'instructor'])
+                ->find($classScheduleId);
+
+            if (!$classSchedule) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'El horario de clase no existe',
+                    'datoAdicional' => null
+                ], 404);
+            }
+
+            // Obtener todas las entradas en lista de espera del usuario para este horario
+            // Incluir estados activos: waiting, notified, confirmed (excluir expired y cancelled)
+            $waitingList = WaitingClass::where('user_id', $userId)
+                ->where('class_schedules_id', $classScheduleId)
+                ->whereIn('status', ['waiting', 'notified', 'confirmed'])
+                ->with(['classSchedule.class.discipline', 'classSchedule.studio', 'classSchedule.instructor', 'user'])
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            // Obtener TODA la lista de espera para este horario ordenada correctamente
+            // Incluir estados activos: waiting, notified, confirmed (excluir expired y cancelled)
+            $allWaitingList = WaitingClass::where('class_schedules_id', $classScheduleId)
+                ->whereIn('status', ['waiting', 'notified', 'confirmed'])
+                ->join('users', 'waiting_classes.user_id', '=', 'users.id')
+                ->select('waiting_classes.*')
+                ->orderBy('waiting_classes.created_at', 'asc')
+                ->orderBy('waiting_classes.id', 'asc') // Ordenar por ID en caso de empate en created_at
+                ->get()
+                ->load('user'); // Cargar la relación user después del JOIN
+
+            // Calcular la posición del usuario en la lista de espera
+            $userPosition = null;
+            $totalPeopleAhead = 0;
+
+            if (!$waitingList->isEmpty()) {
+                // Encontrar la primera entrada del usuario en la lista ordenada
+                $userFirstEntry = $waitingList->first();
+
+                // Buscar la posición de esta entrada en la lista completa ordenada
+                $position = 1;
+                foreach ($allWaitingList as $entry) {
+                    if ($entry->id === $userFirstEntry->id) {
+                        $userPosition = $position;
+                        $totalPeopleAhead = $position - 1;
+                        break;
+                    }
+                    $position++;
+                }
+            }
+
+            // Si no tiene entradas en lista de espera, retornar información del horario sin lista de espera
+            if ($waitingList->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No tienes entradas en lista de espera para este horario',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            // Si tiene entradas en lista de espera, usar el resource
+            $waitingEntries = $waitingList->map(function ($entry) {
+                return [
+                    'id' => $entry->id,
+                    'status' => $entry->status,
+                    'created_at' => $entry->created_at->toISOString(),
+                    'updated_at' => $entry->updated_at->toISOString()
+                ];
+            });
+
+            $formattedData = [
+                'classSchedule' => new ClassScheduleResource($classSchedule),
+                'waiting_entries' => [
+                    'total_entries' => $waitingList->count(),
+                    'entries' => $waitingEntries
+                ],
+                'position_info' => [
+                    'my_position' => $userPosition,
+                    'total_people_ahead' => $totalPeopleAhead,
+                    'total_waiting_list' => $allWaitingList->count(),
+                    'waiting_list_order' => $allWaitingList->map(function ($entry, $index) use ($userId) {
+                        return [
+                            'position' => $index + 1,
+                            'waiting_id' => $entry->id,
+                            'user_id' => $entry->user_id,
+                            'user_name' => $entry->user->name,
+                            'created_at' => $entry->created_at->toISOString(),
+                            'is_user' => $entry->user_id === $userId
+                        ];
+                    })
+                ],
+                'has_waiting_list' => true
+            ];
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => 'Lista de espera obtenida exitosamente',
+                'datoAdicional' => $formattedData
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Obtener lista de espera para un horario específico',
+                'description' => 'Error interno al obtener lista de espera',
+                'data' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al obtener lista de espera',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+    }
+
+
+    /**
+     * Agregar a la lista de espera
+     */
+
+
+    public function addWaitingList(Request $request)
+    {
+        try {
+            // Validar datos de entrada
+            $request->validate([
+                'class_schedule_id' => 'required|integer|exists:class_schedules,id',
+                'quantity' => 'required|integer|min:1'
+            ]);
+
+            $userId = Auth::id();
+            $classScheduleId = $request->input('class_schedule_id');
+            $quantity = $request->input('quantity');
+
+            // Obtener el horario de clase con sus relaciones
+            $classSchedule = ClassSchedule::with(['class.discipline'])->findOrFail($classScheduleId);
+
+            // Verificar que el horario está activo
+            if ($classSchedule->status === 'cancelled') {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No se puede agregar a la lista de espera de un horario cancelado',
+                    'datoAdicional' => ['reason' => 'schedule_cancelled']
+                ], 200);
+            }
+
+            // Verificar que no sea un horario pasado
+            $scheduledDate = $classSchedule->scheduled_date instanceof \Carbon\Carbon
+                ? $classSchedule->scheduled_date->format('Y-m-d')
+                : $classSchedule->scheduled_date;
+
+            $scheduleDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $classSchedule->start_time);
+            if ($scheduleDateTime->isPast()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No se puede agregar a la lista de espera de un horario pasado',
+                    'datoAdicional' => ['reason' => 'schedule_past']
+                ], 200);
+            }
+
+            // 🎯 VALIDAR PAQUETES DISPONIBLES PARA LA DISCIPLINA
+            $packageValidationService = new PackageValidationService();
+            $packageValidation = $packageValidationService->validateUserPackagesForSchedule($classSchedule, $userId);
+
+            if (!$packageValidation['valid']) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => $packageValidation['message'],
+                    'datoAdicional' => [
+                        'reason' => 'insufficient_packages',
+                        'discipline_required' => $packageValidation['discipline_required'],
+                        'available_packages' => $packageValidation['available_packages']
+                    ]
+                ], 200);
+            }
+
+            // Verificar cuántas veces el usuario ya está en la lista de espera para este horario
+            $existingWaitingCount = WaitingClass::where('class_schedules_id', $classScheduleId)
+                ->where('user_id', $userId)
+                ->where('status', 'waiting')
+                ->count();
+
+            // Si el usuario ya está en la lista de espera, informar y retornar el ID del horario
+            if ($existingWaitingCount > 0) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 2,
+                    'mensajeUsuario' => 'Ya te encuentras en la lista de espera para este horario',
+                    'datoAdicional' => [
+                        'reason' => 'already_in_waiting_list',
+                        'class_schedule_id' => $classScheduleId,
+                        'current_waiting_count' => $existingWaitingCount,
+                        'note' => 'Usa el class_schedule_id para consultar los detalles de la lista de espera'
+                    ]
+                ], 200);
+            }
+
+            // Obtener la cantidad total de asientos disponibles en los paquetes del usuario
+            $disciplineId = $classSchedule->class->discipline_id;
+            $availablePackages = $packageValidationService->getUserAvailablePackagesForDiscipline($userId, $disciplineId);
+
+            // También obtener membresías disponibles (directas + del grupo de disciplinas)
+            $availableMemberships = $packageValidationService->getUserAvailableMembershipsForDiscipline($userId, $disciplineId);
+
+            // 🎯 Obtener membresías adicionales cuya disciplina está en el grupo de disciplinas de los paquetes del usuario
+            $membershipsFromPackageGroups = $packageValidationService->getUserMembershipsFromPackageDisciplineGroups($userId, $disciplineId);
+
+            // Combinar ambas colecciones (membresías directas + membresías del grupo de paquetes)
+            $availableMemberships = $availableMemberships->merge($membershipsFromPackageGroups)->unique('id');
+
+            // Calcular total de clases disponibles (paquetes + membresías)
+            $totalAvailableSeats = $availablePackages->sum('remaining_classes') + $availableMemberships->sum('remaining_free_classes');
+
+            // Verificar si la cantidad solicitada excede los asientos disponibles
+            $totalRequestedEntries = $existingWaitingCount + $quantity;
+            if ($totalRequestedEntries > $totalAvailableSeats) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'La cantidad solicitada excede los asientos disponibles en tus paquetes',
+                    'datoAdicional' => [
+                        'reason' => 'insufficient_available_seats',
+                        'current_waiting_count' => $existingWaitingCount,
+                        'requested_quantity' => $quantity,
+                        'total_requested' => $totalRequestedEntries,
+                        'max_allowed' => $totalAvailableSeats,
+                        'available_packages_count' => $availablePackages->count(),
+                        'available_memberships_count' => $availableMemberships->count()
+                    ]
+                ], 200);
+            }
+
+            // Usar transacción para asegurar consistencia al consumir clases
+            $createdEntries = [];
+            $consumedPackages = [];
+            $consumedMemberships = [];
+            $currentTime = now();
+            $disciplineId = $classSchedule->class->discipline_id;
+
+            \Illuminate\Support\Facades\DB::transaction(function () use (
+                $quantity,
+                $userId,
+                $classScheduleId,
+                $disciplineId,
+                $packageValidationService,
+                $currentTime,
+                &$createdEntries,
+                &$consumedPackages,
+                &$consumedMemberships
+            ) {
+                // Crear múltiples entradas en la lista de espera consumiendo clases inmediatamente
+                for ($i = 0; $i < $quantity; $i++) {
+                    // Consumir clase priorizando membresías sobre paquetes
+                    $consumptionResult = $packageValidationService->consumeClassFromBestOption($userId, $disciplineId);
+
+                    if (!$consumptionResult['success']) {
+                        throw new \Exception($consumptionResult['message'] ?? 'No se pudo consumir la clase');
+                    }
+
+                    $userPackageId = null;
+
+                    // Guardar información de lo que se consumió
+                    if (isset($consumptionResult['consumed_membership'])) {
+                        // Se consumió de una membresía
+                        $consumedMemberships[] = $consumptionResult['consumed_membership'];
+                        $userPackageId = null; // Las membresías no se guardan en user_package_id
+                    } elseif (isset($consumptionResult['consumed_package'])) {
+                        // Se consumió de un paquete
+                        $consumedPackages[] = $consumptionResult['consumed_package'];
+                        $userPackageId = $consumptionResult['consumed_package']['id'];
+                    }
+
+                    $waitingEntry = WaitingClass::create([
+                        'class_schedules_id' => $classScheduleId,
+                        'user_id' => $userId,
+                        'user_package_id' => $userPackageId, // Guardar ID del paquete si se usó, null si fue membresía
+                        'status' => 'waiting',
+                        'created_at' => $currentTime,
+                        'updated_at' => $currentTime,
+                    ]);
+
+                    $createdEntries[] = $waitingEntry;
+                }
+            });
+
+            // Log de consumo exitoso
+            Log::info('Usuario agregado a lista de espera - clases consumidas', [
+                'user_id' => $userId,
+                'schedule_id' => $classScheduleId,
+                'quantity' => $quantity,
+                'discipline_required' => $packageValidation['discipline_required'],
+                'consumed_packages_count' => count($consumedPackages),
+                'consumed_memberships_count' => count($consumedMemberships),
+            ]);
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => "Se agregaron {$quantity} entradas a la lista de espera exitosamente",
+                'datoAdicional' => [
+                    'waiting_entries' => $createdEntries,
+                    'waiting_summary' => [
+                        'quantity_added' => $quantity,
+                        'total_waiting_entries' => $existingWaitingCount + $quantity,
+                        'max_allowed_entries' => $totalAvailableSeats,
+                        'remaining_entries' => $totalAvailableSeats - ($existingWaitingCount + $quantity)
+                    ],
+                    'consumption_details' => [
+                        'consumed_packages' => $consumedPackages,
+                        'consumed_memberships' => $consumedMemberships,
+                        'total_consumed' => count($consumedPackages) + count($consumedMemberships),
+                        'note' => 'Las clases han sido consumidas inmediatamente al agregar a la lista de espera. Si el usuario abandona la lista o se cancela, se deberá reembolsar manualmente.'
+                    ]
+                ]
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Agregar a la lista de espera',
+                'description' => 'Error interno al agregar a la lista de espera',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al agregar a la lista de espera',
+                'datoAdicional' => null
+            ], 200);
+        }
+    }
+
+
+    /**
+     * Verificar si el usuario está en la lista de espera de un horario específico
+     */
+
+    public function checkWaitingStatus(Request $request)
+    {
+        try {
+            // Validar datos de entrada
+            $request->validate([
+                'id' => 'required|integer|exists:class_schedules,id',
+            ]);
+
+            $userId = Auth::id();
+            $classScheduleId = $request->input('id');
+
+            // Verificar que el horario existe
+            $classSchedule = ClassSchedule::with(['class.discipline', 'studio', 'instructor'])
+                ->find($classScheduleId);
+
+            if (!$classSchedule) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'El horario de clase no existe',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            // Buscar entradas del usuario en la lista de espera para este horario
+            $waitingEntries = WaitingClass::where('class_schedules_id', $classScheduleId)
+                ->where('user_id', $userId)
+                ->where('status', 'waiting')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            // Obtener TODA la lista de espera para este horario para calcular posición
+            $allWaitingList = WaitingClass::where('class_schedules_id', $classScheduleId)
+                ->where('status', 'waiting')
+                ->orderBy('created_at', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            // Calcular la posición del usuario en la lista de espera
+            $userPosition = null;
+            $totalPeopleAhead = 0;
+
+            if (!$waitingEntries->isEmpty()) {
+                // Encontrar la primera entrada del usuario en la lista ordenada
+                $userFirstEntry = $waitingEntries->first();
+
+                // Buscar la posición de esta entrada en la lista completa ordenada
+                $position = 1;
+                foreach ($allWaitingList as $entry) {
+                    if ($entry->id === $userFirstEntry->id) {
+                        $userPosition = $position;
+                        $totalPeopleAhead = $position - 1;
+                        break;
+                    }
+                    $position++;
+                }
+            }
+
+            $isInWaitingList = !$waitingEntries->isEmpty();
+
+            $formattedData = [
+                'is_in_waiting_list' => $isInWaitingList,
+                'class_schedule_info' => [
+                    'id' => $classSchedule->id,
+                    'scheduled_date' => $classSchedule->scheduled_date,
+                    'start_time' => $classSchedule->start_time,
+                    'end_time' => $classSchedule->end_time,
+                    'status' => $classSchedule->status,
+                    'max_capacity' => $classSchedule->max_capacity,
+                    'available_spots' => $classSchedule->available_spots,
+                    'booked_spots' => $classSchedule->booked_spots,
+                    'waitlist_spots' => $classSchedule->waitlist_spots,
+                    'theme' => $classSchedule->theme ?? null
+                ],
+                'class' => [
+                    'id' => $classSchedule->class->id,
+                    'name' => $classSchedule->class->name,
+                    'discipline' => $classSchedule->class->discipline->name ?? 'N/A',
+                    'img_url' => $classSchedule->class->img_url ? asset('storage/') . '/' . $classSchedule->class->img_url : asset('default/class.jpg'),
+                    'icon_url' => $classSchedule->class->icon_url ? asset('storage/') . '/' . $classSchedule->class->icon_url : asset('default/icon.png'),
+                    'discipline_img' => $classSchedule->class->discipline->icon_url ? asset('storage/') . '/' . $classSchedule->class->discipline->icon_url : asset('default/icon.png'),
+                ],
+                'instructor' => [
+                    'id' => $classSchedule->instructor->id,
+                    'name' => $classSchedule->instructor->name,
+                    'profile_image' => $classSchedule->instructor->profile_image ? asset('storage/') . '/' . $classSchedule->instructor->profile_image : null,
+                    'rating_average' => $classSchedule->instructor->rating_average ?? null,
+                    'is_head_coach' => $classSchedule->instructor->is_head_coach ?? false,
+                ],
+                'studio' => [
+                    'id' => $classSchedule->studio->id,
+                    'name' => $classSchedule->studio->name,
+                    'location' => $classSchedule->studio->location ?? 'N/A',
+                ]
+            ];
+
+            // Si está en la lista de espera, agregar información adicional
+            if ($isInWaitingList) {
+                $formattedData['waiting_info'] = [
+                    'total_user_entries' => $waitingEntries->count(),
+                    'user_entries' => $waitingEntries->map(function ($entry) {
+                        return [
+                            'id' => $entry->id,
+                            'status' => $entry->status,
+                            'created_at' => $entry->created_at->toISOString(),
+                            'updated_at' => $entry->updated_at->toISOString()
+                        ];
+                    }),
+                    'position_info' => [
+                        'my_position' => $userPosition,
+                        'total_people_ahead' => $totalPeopleAhead,
+                        'total_waiting_list' => $allWaitingList->count()
+                    ]
+                ];
+            }
+
+            $message = $isInWaitingList
+                ? 'El usuario está en la lista de espera para este horario'
+                : 'El usuario no está en la lista de espera para este horario';
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => $message,
+                'datoAdicional' => $formattedData
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verificar si el usuario está en la lista de espera de un horario específico',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Verificar si el usuario está en la lista de espera de un horario específico',
+                'description' => 'Error interno al verificar estado en lista de espera',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al verificar estado en lista de espera',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+    }
+
+    /**
+     * Abandonar la lista de espera
+     */
+
+    public function destroy(Request $request)
+    {
+
+        try {
+            // Validar datos de entrada
+            $request->validate([
+                'class_schedule_id' => 'required|integer|exists:class_schedules,id',
+            ]);
+
+            $userId = Auth::id();
+            $classScheduleId = $request->input('class_schedule_id');
+
+            // 🚫 Verificar si el usuario tiene entradas con estado 'confirmed' - no puede abandonar
+            $confirmedEntries = WaitingClass::where('class_schedules_id', $classScheduleId)
+                ->where('user_id', $userId)
+                ->where('status', 'confirmed')
+                ->get();
+
+            if ($confirmedEntries->isNotEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No puedes abandonar la lista de espera. Tu reserva ya ha sido confirmada',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            // Buscar todas las entradas del usuario en la lista de espera para esta clase (solo waiting y notified)
+            $waitingEntries = WaitingClass::where('class_schedules_id', $classScheduleId)
+                ->where('user_id', $userId)
+                ->whereIn('status', ['waiting', 'notified'])
+                ->get();
+
+            if ($waitingEntries->isEmpty()) {
+                return response()->json([
+                    'exito' => false,
+                    'codMensaje' => 0,
+                    'mensajeUsuario' => 'No estás en la lista de espera para esta clase',
+                    'datoAdicional' => null
+                ], 200);
+            }
+
+            // Contar cuántas entradas se van a eliminar
+            $entriesToDelete = $waitingEntries->count();
+
+            // Reembolsar clases consumidas antes de eliminar
+            $refundedPackages = [];
+            $packageValidationService = new PackageValidationService();
+
+            \Illuminate\Support\Facades\DB::transaction(function () use (
+                $waitingEntries,
+                $userId,
+                $classScheduleId,
+                $packageValidationService,
+                &$refundedPackages
+            ) {
+                // Reembolsar clases de paquetes (las que tienen user_package_id)
+                foreach ($waitingEntries as $entry) {
+                    if ($entry->user_package_id) {
+                        // Reembolsar clase al paquete
+                        $refundResult = $packageValidationService->refundClassToPackage($entry->user_package_id, $userId);
+                        if ($refundResult['success']) {
+                            $refundedPackages[] = $refundResult['refunded_package'];
+                        }
+                    }
+                    // Nota: Si se consumió de una membresía, no podemos reembolsar automáticamente
+                    // porque no tenemos el user_membership_id guardado en la tabla
+                }
+
+                // Eliminar todas las entradas del usuario en la lista de espera para esta clase (solo waiting y notified)
+                WaitingClass::where('class_schedules_id', $classScheduleId)
+                    ->where('user_id', $userId)
+                    ->whereIn('status', ['waiting', 'notified'])
+                    ->delete();
+            });
+
+            $deletedCount = $entriesToDelete;
+
+            return response()->json([
+                'exito' => true,
+                'codMensaje' => 1,
+                'mensajeUsuario' => "Has sido eliminado de la lista de espera. Se eliminaron {$deletedCount} entradas.",
+                'datoAdicional' => [
+                    'deleted_entries_count' => $deletedCount,
+                    'class_schedule_id' => $classScheduleId,
+                    'refunded_packages' => $refundedPackages,
+                    'refunded_packages_count' => count($refundedPackages),
+                    'note' => 'Se eliminaron todas las entradas del usuario en la lista de espera para esta clase. Las clases de paquetes han sido reembolsadas. Si se consumieron clases de membresías, no se pueden reembolsar automáticamente.'
+                ]
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Abandonar la lista de espera',
+                'description' => 'Datos de entrada inválidos',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Datos de entrada inválidos',
+                'datoAdicional' => $e->errors()
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'Abandonar la lista de espera',
+                'description' => 'Error interno al eliminar de la lista de espera',
+                'data' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'exito' => false,
+                'codMensaje' => 0,
+                'mensajeUsuario' => 'Error interno al eliminar de la lista de espera',
+                'datoAdicional' => $e->getMessage(),
+            ], 200);
+        }
+    }
+}
