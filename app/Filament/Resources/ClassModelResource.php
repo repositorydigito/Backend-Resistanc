@@ -93,40 +93,7 @@ class ClassModelResource extends Resource
                             ->default(3),
 
 
-                        // Forms\Components\Select::make('instructor_id')
-                        //     ->searchable()
-                        //     ->label('Instructor')
-                        //     ->options(function () {
-                        //         // Debug: Ver qué instructores tienes
-                        //         $instructors = \App\Models\Instructor::with('user')->get();
 
-                        //         foreach ($instructors as $instructor) {
-                        //             Log::info('Instructor: ' . $instructor->name);
-                        //             if ($instructor->user) {
-                        //                 Log::info('User roles: ' . $instructor->user->roles->pluck('name'));
-                        //             }
-                        //         }
-
-                        //         return \App\Models\Instructor::where('status', 'active')
-                        //             ->pluck('name', 'id');
-                        //     })
-                        //     ->preload()
-                        //     ->required(),
-
-
-
-
-                        // Forms\Components\Select::make('studio_id')
-                        //     ->label('Sala')
-                        //     ->searchable()
-                        //     ->preload()
-                        //     ->relationship('studio', 'name')
-                        //     ->required(),
-
-                        // Forms\Components\TextInput::make('max_capacity')
-                        //     ->label('Capacidad Máxima')
-                        //     ->required()
-                        //     ->numeric(),
                         ColorPicker::make('color_hex')
                             ->label('Color')
                             ->required()
@@ -140,20 +107,7 @@ class ClassModelResource extends Resource
                                 'grabada' => 'Grabada',
                             ])
                             ->required(),
-                        // Forms\Components\TextInput::make('duration_minutes')
-                        //     ->label('Duración (minutos)')
-                        //     ->required()
-                        //     ->numeric(),
 
-                        // Forms\Components\Select::make('difficulty_level')
-                        //     ->label('Nivel de Dificultad')
-                        //     ->options([
-                        //         'beginner' => 'Principiante',
-                        //         'intermediate' => 'Intermedio',
-                        //         'advanced' => 'Avanzado',
-                        //         'all_levels' => 'Todos los Niveles',
-                        //     ])
-                        //     ->required(),
 
                         Forms\Components\Select::make('status')
                             ->label('Estado')
@@ -164,12 +118,7 @@ class ClassModelResource extends Resource
                             ])
                             ->default('active')
                             ->required(),
-                        // Forms\Components\TextInput::make('music_genre')
-                        //     ->label('Género Musical')
-                        //     ->maxLength(100),
-                        // Forms\Components\Textarea::make('special_requirements')
-                        //     ->label('Requerimientos Especiales')
-                        //     ->columnSpanFull(),
+
 
 
                         Forms\Components\Textarea::make('description')
@@ -214,34 +163,7 @@ class ClassModelResource extends Resource
                         default => 'gray',
                     })
                     ->label('Modalidad'),
-                // Tables\Columns\TextColumn::make('duration_minutes')
-                //     ->label('Duración (minutos)')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('max_capacity')
-                //     ->label('Capacidad Máxima')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('difficulty_level')
-                //     ->formatStateUsing(fn(string $state): string => match ($state) {
-                //         'beginner' => 'Principiante',
-                //         'intermediate' => 'Intermedio',
-                //         'advanced' => 'Avanzado',
-                //         'all_levels' => 'Todos los Niveles',
-                //         default => ucfirst($state),
-                //     })
-                //     ->badge()
-                //     ->color(fn(string $state): string => match ($state) {
-                //         'beginner' => 'success',
-                //         'intermediate' => 'warning',
-                //         'advanced' => 'danger',
-                //         'all_levels' => 'primary',
-                //         default => 'gray',
-                //     })
-                //     ->label('Nivel de Dificultad'),
-                // Tables\Columns\TextColumn::make('music_genre')
-                //     ->label('Género Musical')
-                //     ->searchable(),
+
                 Tables\Columns\IconColumn::make('is_featured')
                     ->label('Destacada')
                     ->boolean(),
@@ -260,14 +182,7 @@ class ClassModelResource extends Resource
                         default => 'gray',
                     })
                     ->label('Estado'),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->filters([
                 //

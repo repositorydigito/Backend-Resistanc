@@ -373,7 +373,7 @@ class ClassScheduleResource extends Resource
                         //         return view('filament.forms.components.studio-seat-map', compact('studio'))->render();
                         //     })
                         //     ->columnSpanFull()
-                        //     ->visible(fn(Get $get): bool => filled($get('studio_id'))),http://backend-resistanc.test/admin/class-schedules/5/edit
+                        //     ->visible(fn(Get $get): bool => filled($get('studio_id'))),
                         // Forms\Components\Toggle::make('is_holiday_schedule')
                         //     ->label('Horario de Feriado')
                         //     ->required(),
