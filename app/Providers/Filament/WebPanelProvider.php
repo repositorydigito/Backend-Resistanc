@@ -37,7 +37,7 @@ class WebPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Web/Widgets'), for: 'App\\Filament\\Web\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

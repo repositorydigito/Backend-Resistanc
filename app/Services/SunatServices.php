@@ -24,7 +24,7 @@ class SunatServices
     public function __construct()
     {
         $this->company = Company::first();
-        
+
         if (!$this->company) {
             throw new \RuntimeException('No se encontró configuración de empresa');
         }
@@ -42,8 +42,8 @@ class SunatServices
         $see = new See();
 
         // Usar certificado según el modo (producción o pruebas)
-        $certPath = $this->company->is_production 
-            ? $this->company->cert_path_production 
+        $certPath = $this->company->is_production
+            ? $this->company->cert_path_production
             : $this->company->cert_path_evidence;
 
         if (!$certPath || !Storage::exists($certPath)) {
@@ -52,14 +52,14 @@ class SunatServices
 
         $see->setCertificate(Storage::get($certPath));
         $see->setService($this->company->is_production ? SunatEndpoints::FE_PRODUCCION : SunatEndpoints::FE_BETA);
-        
+
         // Usar credenciales según el modo
-        $solUser = $this->company->is_production 
-            ? $this->company->sol_user_production 
+        $solUser = $this->company->is_production
+            ? $this->company->sol_user_production
             : $this->company->sol_user_evidence;
-            
-        $solPassword = $this->company->is_production 
-            ? $this->company->sol_user_password_production 
+
+        $solPassword = $this->company->is_production
+            ? $this->company->sol_user_password_production
             : $this->company->sol_user_password_evidence;
 
         if (!$solUser || !$solPassword) {
@@ -67,13 +67,13 @@ class SunatServices
         }
 
         $see->setClaveSOL($this->company->ruc ?? '20000000001', $solUser, $solPassword);
-        
+
         return $see;
     }
 
     /**
      * Genera una factura usando la información de la compañía desde la BD
-     * 
+     *
      * @param array $invoiceData Datos de la factura (cliente, detalles, montos, etc.)
      * @param int|null $correlative Número correlativo (opcional, se genera automáticamente si no se proporciona)
      * @return Invoice
@@ -86,7 +86,7 @@ class SunatServices
 
         // Obtener serie configurada o usar por defecto
         $serie = $this->company->invoice_series ?? 'F001';
-        
+
         // Obtener correlativo
         if ($correlative === null) {
             $this->currentCorrelative = $this->getNextCorrelative();
@@ -213,7 +213,7 @@ class SunatServices
     public function getLegends(float $totalAmount = 0): array
     {
         $amountInWords = $this->numberToWords($totalAmount);
-        
+
         $legend = (new Legend())
             ->setCode('1000') // Monto en letras - Catalog. 52
             ->setValue($amountInWords);
@@ -229,25 +229,24 @@ class SunatServices
         $formatter = new NumberFormatter('es_PE', NumberFormatter::SPELLOUT);
         $entero = floor($number);
         $decimal = round(($number - $entero) * 100);
-        
+
         $words = $formatter->format($entero);
         $words = mb_strtoupper(mb_substr($words, 0, 1)) . mb_substr($words, 1);
-        
+
         return "SON {$words} CON " . str_pad($decimal, 2, '0', STR_PAD_LEFT) . "/100 SOLES";
     }
 
     /**
      * Obtiene el siguiente correlativo disponible
-     * TODO: Implementar lógica para obtener el siguiente correlativo desde BD o archivo
      */
     protected function getNextCorrelative(): int
     {
         $initialCorrelative = $this->company->invoice_initial_correlative ?? 1;
-        
+
         // Por ahora retorna el inicial, pero debería consultar el último usado
         // y devolver el siguiente. Esto se puede implementar con una tabla o archivo
         // que almacene el último correlativo usado por serie.
-        
+
         return $initialCorrelative;
     }
 
@@ -291,9 +290,9 @@ class SunatServices
         try {
             $see = $this->getSee();
             $invoice = $this->getInvoice($invoiceData, $correlative);
-            
+
             $result = $see->send($invoice);
-            
+
             return $this->sunatResponse($result);
         } catch (\Exception $e) {
             return [
