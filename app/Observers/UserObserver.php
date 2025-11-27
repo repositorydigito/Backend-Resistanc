@@ -26,7 +26,7 @@ class UserObserver
     /**
      * Asegura que el usuario tenga un cliente de Stripe válido.
      * Si no tiene stripe_id o el cliente no existe en Stripe, lo crea.
-     * 
+     *
      * @param User $user
      * @return void
      */
@@ -41,7 +41,7 @@ class UserObserver
                 ]);
 
                 $user->createAsStripeCustomer();
-                
+
                 Log::info('Cliente de Stripe creado exitosamente', [
                     'user_id' => $user->id,
                     'stripe_id' => $user->stripe_id,
@@ -51,11 +51,11 @@ class UserObserver
 
             // Si tiene stripe_id, verificar que el cliente exista en Stripe
             $stripeId = $user->stripe_id;
-            
+
             try {
                 $stripe = new StripeClient(config('services.stripe.secret'));
                 $customer = $stripe->customers->retrieve($stripeId);
-                
+
                 // Si el cliente existe y no está eliminado, todo está bien
                 if ($customer && !$customer->deleted) {
                     Log::info('Cliente de Stripe ya existe y es válido', [
@@ -79,14 +79,14 @@ class UserObserver
 
                     // Crear nuevo cliente
                     $user->createAsStripeCustomer();
-                    
+
                     Log::info('Nuevo cliente de Stripe creado después de limpiar stripe_id inválido', [
                         'user_id' => $user->id,
                         'new_stripe_id' => $user->stripe_id,
                     ]);
                     return;
                 }
-                
+
                 // Si es otro error, relanzarlo
                 throw $e;
             }

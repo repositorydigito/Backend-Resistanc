@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique()->comment('Codigo unico de usuario');
             $table->string('name')->comment('Nombre del usuario');
-            $table->string('email')->unique('Email del usuario');
+            $table->string('email')->unique()->comment('email del usuario');
             $table->timestamp('email_verified_at')->nullable()->comment('Verificacion del usuario');
             $table->string('password')->nullable()->comment('Contrasenia del usuario');
             $table->string('google_id')->nullable()->comment('id del logueo por google');

@@ -49,7 +49,7 @@ Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(
 require __DIR__ . '/apisapp/auth/api-auth.php';
 
 // Apis de auth de redes facebook
-require __DIR__ . '/apisapp/auth/api-auth-facebook.php';
+
 
 // Apis de carrito de compras de productos
 require __DIR__ . '/apisapp/api-paquetes.php';

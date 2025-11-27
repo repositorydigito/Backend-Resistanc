@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->string('name', 100)->comment('Nombre de la sala');
             $table->string('location')->comment('Ubicación de la sala');
-            $table->unsignedTinyInteger('max_capacity')->comment('Capacidad máxima de la sala');
+            $table->unsignedTinyInteger('max_capacity')->nullable()->comment('Capacidad máxima de la sala');
             $table->json('equipment_available')->nullable()->comment('Equipamiento disponible en la sala');
             $table->json('amenities')->nullable()->comment('Vestuarios, duchas, etc.')->comment('Amenidades disponibles en la sala');
 

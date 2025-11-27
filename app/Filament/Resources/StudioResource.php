@@ -72,28 +72,21 @@ class StudioResource extends Resource
                             ]),
 
                         // Sección 2: Capacidad y distribución
-                        Section::make('Capacidad')
-                            ->columns(2)
-                            ->schema([
-                                Forms\Components\TextInput::make('max_capacity')
-                                    ->label('Aforo total')
-                                    // ->required()
-                                    ->numeric(),
+                        // Section::make('Capacidad')
+                        //     ->columns(2)
+                        //     ->schema([
+                        //         Forms\Components\TextInput::make('max_capacity')
+                        //             ->label('Aforo total')
+                        //             // ->required()
+                        //             ->numeric(),
 
-                                Forms\Components\TextInput::make('capacity_per_seat')
-                                    ->label('Espacios Disponibles')
-                                    // ->required()
-                                    ->numeric(),
+                        //         Forms\Components\TextInput::make('capacity_per_seat')
+                        //             ->label('Espacios Disponibles')
+                        //             // ->required()
+                        //             ->numeric(),
 
-                                // Forms\Components\Select::make('addressing')
-                                //     ->label('Direccionamiento')
-                                //     ->options([
-                                //         'right_to_left' => 'Derecha a Izquierda',
-                                //         'left_to_right' => 'Izquierda a Derecha',
-                                //         'center' => 'Centro',
-                                //     ])
-                                //     ->required(),
-                            ]),
+
+                        //     ]),
 
                         // Sección 3: Configuración de asientos
                         Section::make('Configuración de asientos')
@@ -161,13 +154,13 @@ class StudioResource extends Resource
                             ]),
 
                         // Sección 4: Equipamiento y servicios
-                        Section::make('Equipamiento y servicios')
+                        Section::make('Informacion adicional')
                             ->schema([
-                                Forms\Components\TagsInput::make('equipment_available')
-                                    ->dehydrated(true)
-                                    ->label('Equipamiento Disponible')
-                                    ->placeholder('Presiona Enter después de cada equipo')
-                                    ->columnSpanFull(),
+                                // Forms\Components\TagsInput::make('equipment_available')
+                                //     ->dehydrated(true)
+                                //     ->label('Equipamiento Disponible')
+                                //     ->placeholder('Presiona Enter después de cada equipo')
+                                //     ->columnSpanFull(),
 
                                 Forms\Components\TagsInput::make('amenities')
                                     ->dehydrated(true)
@@ -189,10 +182,10 @@ class StudioResource extends Resource
                 Tables\Columns\TextColumn::make('location')
                     ->label('Ubicación')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('max_capacity')
-                    ->label('Aforo')
-                    ->numeric()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('max_capacity')
+                //     ->label('Aforo')
+                //     ->numeric()
+                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('seats_count')
                     ->label('Espacios')

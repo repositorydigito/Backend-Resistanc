@@ -23,9 +23,9 @@ final class TestController extends Controller
 
         try {
             return response()->json([
-                'exito' => false,
+                'exito' => true,
                 'codMensaje' => 0,
-                'mensajeUsuario' => 'Error en el sistema',
+                'mensajeUsuario' => 'API funcionando correctamente',
                 'datoAdicional' => [
                     'message' => '🚀 API RSISTANC está funcionando correctamente!',
                     'timestamp' => now()->toISOString(),
@@ -41,7 +41,7 @@ final class TestController extends Controller
                 'user_id' => Auth::id(),
                 'action' => 'Verifica el estado de la API',
                 'description' => 'Error en el sistema',
-                'data' => $e->getMessage(),
+                'data' => $th->getMessage(),
             ]);
 
             return response()->json([

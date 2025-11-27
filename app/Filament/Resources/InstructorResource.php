@@ -180,6 +180,7 @@ class InstructorResource extends Resource
                                         'on_leave' => 'En Licencia',
                                         'terminated' => 'Terminado',
                                     ])
+                                    ->default('active')
                                     ->required(),
                             ]),
 
@@ -228,37 +229,37 @@ class InstructorResource extends Resource
                             ]),
 
                         // Sección 5: Horario de disponibilidad
-                        Section::make('Horario de disponibilidad')
-                            ->schema([
-                                Forms\Components\Repeater::make('availability_schedule')
-                                    ->label('')
-                                    ->defaultItems(0)
-                                    ->schema([
-                                        Forms\Components\Select::make('day')
-                                            ->label('Día')
-                                            ->options([
-                                                'monday' => 'Lunes',
-                                                'tuesday' => 'Martes',
-                                                'wednesday' => 'Miércoles',
-                                                'thursday' => 'Jueves',
-                                                'friday' => 'Viernes',
-                                                'saturday' => 'Sábado',
-                                                'sunday' => 'Domingo',
-                                            ])
-                                            ->required(),
-                                        Forms\Components\TimePicker::make('start_time')
-                                            ->label('Hora de Inicio')
-                                            ->required(),
-                                        Forms\Components\TimePicker::make('end_time')
-                                            ->label('Hora de Fin')
-                                            ->required(),
-                                    ])
-                                    ->columns(3)
-                                    ->addActionLabel('Agregar Horario')
-                                    ->reorderable()
-                                    ->collapsible()
-                                    ->columnSpanFull()
-                            ]),
+                        // Section::make('Horario de disponibilidad')
+                        //     ->schema([
+                        //         Forms\Components\Repeater::make('availability_schedule')
+                        //             ->label('')
+                        //             ->defaultItems(0)
+                        //             ->schema([
+                        //                 Forms\Components\Select::make('day')
+                        //                     ->label('Día')
+                        //                     ->options([
+                        //                         'monday' => 'Lunes',
+                        //                         'tuesday' => 'Martes',
+                        //                         'wednesday' => 'Miércoles',
+                        //                         'thursday' => 'Jueves',
+                        //                         'friday' => 'Viernes',
+                        //                         'saturday' => 'Sábado',
+                        //                         'sunday' => 'Domingo',
+                        //                     ])
+                        //                     ->required(),
+                        //                 Forms\Components\TimePicker::make('start_time')
+                        //                     ->label('Hora de Inicio')
+                        //                     ->required(),
+                        //                 Forms\Components\TimePicker::make('end_time')
+                        //                     ->label('Hora de Fin')
+                        //                     ->required(),
+                        //             ])
+                        //             ->columns(3)
+                        //             ->addActionLabel('Agregar Horario')
+                        //             ->reorderable()
+                        //             ->collapsible()
+                        //             ->columnSpanFull()
+                        //     ]),
                     ])
             ]);
     }
