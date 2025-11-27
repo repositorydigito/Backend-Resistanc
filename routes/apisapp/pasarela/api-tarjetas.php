@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\Api\UserPayMethodController;
 use Illuminate\Support\Facades\Route;
 
 // Tarjetas

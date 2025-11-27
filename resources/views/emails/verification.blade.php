@@ -1,111 +1,3 @@
-{{-- <!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Verifica tu cuenta</title>
-    <style>
-        * {
-
-        }
-
-        main {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-
-        .maincontainer {
-            background-color: #e7e7e7;
-            padding: 3rem 2rem;
-
-        }
-
-        .maincontainer__content {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #fff;
-            border-radius: 30px;
-            padding: 1.5rem;
-        }
-
-        .content__body {}
-
-        .header {
-            display: grid;
-            place-items: center;
-            text-align: center;
-            gap: 1rem;
-        }
-
-        .header__logo {
-
-            width: 100%;
-            display: grid;
-            place-items: center;
-            place-content: center;
-        }
-
-        .logo {
-            height: 50px;
-            object-fit: contain;
-            margin: 0 auto;
-        }
-    </style>
-</head>
-
-<body>
-    <main class="main">
-        <div class="maincontainer">
-            <div class="maincontainer__content">
-                <div class="header">
-
-                    <div class="header__logo">
-                        <img class=" logo"
-                            src="https://raw.githubusercontent.com/cr0ybot/ingress-logos/master/resistance_hexagon/ingress-resistance.png"
-                            alt="">
-                    </div>
-
-                </div>
-
-                <div class="content">
-                    <h2>¡Hola, {{ $user->name }}!</h2>
-
-                    <div class="content__body">
-                        {!! $data->body !!}
-                    </div>
-
-
-                    <a href="{{ $verificationUrl }}" class="button">Verificar mi cuenta</a>
-
-                    <p>Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu navegador:</p>
-                    <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
-                        {{ $verificationUrl }}
-                    </p>
-
-                    <p><strong>Nota:</strong> Este enlace expirará en 60 minutos por seguridad.</p>
-
-                    <p>Si no creaste una cuenta en Resistanc Studio, puedes ignorar este correo.</p>
-                </div>
-
-                <div class="footer">
-                    <p>© {{ date('Y') }} Resistanc Studio. Todos los derechos reservados.</p>
-                    <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
-</body>
-
-</html> --}}
-
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -119,7 +11,7 @@
             padding: 0;
             margin: 0;
             box-sizing: border-box;
-            /* outline: 1px solid red; */
+            outline: 1px solid red;
         }
 
 
@@ -143,21 +35,6 @@
 
         }
 
-        .code {
-            background: linear-gradient(94deg, #E7D4D8 0%, #E5D7EA 28.85%, #E7DFE9 50.48%, #D9D9D2 69.71%, #CDD6D7 100%);
-            padding: .5rem 1rem;
-            align-items: center;
-            border-radius: 16px;
-            font-size: 1.7rem;
-            letter-spacing: .8rem;
-            font-weight: 500;
-            text-align: center;
-            display: inline-block;
-            justify-content: center;
-            justify-items: center;
-
-            margin: auto;
-        }
 
         .main {
             display: grid;
@@ -332,8 +209,11 @@
 
 
         .verificacion__btn {
+            position: relative;
+
             margin-top: 1rem;
             margin-bottom: 1rem;
+            background: blue;
         }
 
         .verificacion__btn a {
@@ -341,13 +221,30 @@
             all: unset;
         }
 
-        .verificacion__btn--enlace {
-            margin: auto;
+        a {
+            all: unset;
+        }
 
-            padding: .5rem 1rem;
-            background: #899830;
-            color: #fff;
-            border-radius: 30px;
+        .verificacion__btn--enlace {
+            display: inline-block !important;
+            padding: 12px 30px !important;
+            background: #899830 !important;
+            color: #ffffff !important;
+            text-decoration: none !important;
+            border-radius: 30px !important;
+            font-weight:600;
+            text-align: center !important;
+            font-size: .8rem !important;
+            border: none !important;
+            cursor: pointer !important;
+            margin: auto !important;
+            text-transform: uppercase !important;
+        }
+
+        /* Para asegurar que no herede estilos */
+        .verificacion__btn a {
+            text-decoration: none !important;
+            color: inherit !important;
         }
     </style>
 </head>
@@ -432,7 +329,19 @@
 
 
                     <div class="verificacion__btn">
-                        <a href="{{ $verificationUrl }}" class="verificacion__btn--enlace">Verificar mi cuenta</a>
+                        <span class="verificacion__btn--enlace">ACTIVAR MI CUENTA</span>
+                        <!-- Enlace transparente que cubre todo el botón -->
+                        {{-- <a href="{{ $verificationUrl }}"
+                            style="position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              opacity: 0;
+              cursor: pointer;
+              z-index: 10;
+              text-decoration: none !important;">
+                        </a> --}}
                     </div>
 
 

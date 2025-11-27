@@ -337,11 +337,7 @@ final class ClassScheduleController extends Controller
             // Obtener el mapa de asientos del modelo
             $seatMapData = $classSchedule->getSeatMap();
 
-            // Log para debugging
-            Log::info('Datos del mapa de asientos', [
-                'class_schedule_id' => $classSchedule->id,
-                'summary_data' => $seatMapData['summary'] ?? 'no summary'
-            ]);
+
 
             // Verificar que el método devolvió datos válidos
             if (!$seatMapData || (is_array($seatMapData) && empty($seatMapData))) {
@@ -424,11 +420,11 @@ final class ClassScheduleController extends Controller
             $classSchedule->loadMissing('class');
             // Log inicial para debugging
 
-            Log::info('Iniciando reserva de asientos', [
-                'schedule_id' => $classSchedule->id,
-                'request_data' => $request->validated(),
-                'user_id' => Auth::id()
-            ]);
+            // Log::info('Iniciando reserva de asientos', [
+            //     'schedule_id' => $classSchedule->id,
+            //     'request_data' => $request->validated(),
+            //     'user_id' => Auth::id()
+            // ]);
 
             // Verificar que el horario permite reservas
             if ($classSchedule->status === 'cancelled') {
@@ -505,12 +501,12 @@ final class ClassScheduleController extends Controller
             }
 
             // Log de paquetes disponibles para debugging
-            Log::info('Paquetes validados para reserva', [
-                'user_id' => $userId,
-                'schedule_id' => $classSchedule->id,
-                'discipline_required' => $packageValidation['discipline_required'],
-                'available_packages_count' => count($packageValidation['available_packages'])
-            ]);
+            // Log::info('Paquetes validados para reserva', [
+            //     'user_id' => $userId,
+            //     'schedule_id' => $classSchedule->id,
+            //     'discipline_required' => $packageValidation['discipline_required'],
+            //     'available_packages_count' => count($packageValidation['available_packages'])
+            // ]);
 
             // Usar transacción para asegurar consistencia
             return DB::transaction(function () use ($classSchedule, $classScheduleSeatIds, $userId, $minutesToExpire, $packageValidationService, $packageValidation) {
@@ -532,32 +528,32 @@ final class ClassScheduleController extends Controller
                 $totalAvailableSeats = $availablePackages->sum('remaining_classes') + $availableMemberships->sum('remaining_free_classes');
 
                 // Log del orden de consumo de paquetes y membresías
-                Log::info('Orden de consumo de paquetes y membresías (más cercanos a vencer primero)', [
-                    'user_id' => $userId,
-                    'schedule_id' => $classSchedule->id,
-                    'packages_order' => $availablePackages->map(function ($package) {
-                        return [
-                            'package_id' => $package->id,
-                            'package_code' => $package->package_code,
-                            'package_name' => $package->package->name ?? 'N/A',
-                            'remaining_classes' => $package->remaining_classes,
-                            'expiry_date' => $package->expiry_date?->toDateString(),
-                            'days_remaining' => $package->days_remaining,
-                            'type' => 'package'
-                        ];
-                    })->toArray(),
-                    'memberships_order' => $availableMemberships->map(function ($membership) {
-                        return [
-                            'membership_id' => $membership->id,
-                            'membership_name' => $membership->membership->name ?? 'N/A',
-                            'discipline_name' => $membership->discipline->name ?? 'N/A',
-                            'remaining_free_classes' => $membership->remaining_free_classes,
-                            'expiry_date' => $membership->expiry_date?->toDateString(),
-                            'days_remaining' => $membership->days_remaining,
-                            'type' => 'membership'
-                        ];
-                    })->toArray()
-                ]);
+                // Log::info('Orden de consumo de paquetes y membresías (más cercanos a vencer primero)', [
+                //     'user_id' => $userId,
+                //     'schedule_id' => $classSchedule->id,
+                //     'packages_order' => $availablePackages->map(function ($package) {
+                //         return [
+                //             'package_id' => $package->id,
+                //             'package_code' => $package->package_code,
+                //             'package_name' => $package->package->name ?? 'N/A',
+                //             'remaining_classes' => $package->remaining_classes,
+                //             'expiry_date' => $package->expiry_date?->toDateString(),
+                //             'days_remaining' => $package->days_remaining,
+                //             'type' => 'package'
+                //         ];
+                //     })->toArray(),
+                //     'memberships_order' => $availableMemberships->map(function ($membership) {
+                //         return [
+                //             'membership_id' => $membership->id,
+                //             'membership_name' => $membership->membership->name ?? 'N/A',
+                //             'discipline_name' => $membership->discipline->name ?? 'N/A',
+                //             'remaining_free_classes' => $membership->remaining_free_classes,
+                //             'expiry_date' => $membership->expiry_date?->toDateString(),
+                //             'days_remaining' => $membership->days_remaining,
+                //             'type' => 'membership'
+                //         ];
+                //     })->toArray()
+                // ]);
 
                 // Validar que el usuario no reserve más asientos de los que tiene disponibles
                 if (count($classScheduleSeatIds) > $totalAvailableSeats) {
@@ -911,12 +907,12 @@ final class ClassScheduleController extends Controller
                         ->whereIn('status', ['pending', 'confirmed'])
                         ->update(['status' => 'canceled']);
 
-                    Log::info('Reservas de zapatos canceladas automáticamente al liberar asientos', [
-                        'class_schedule_id' => $classScheduleId,
-                        'user_id' => $userId,
-                        'total_reservations_canceled' => $canceledFootwearCount,
-                        'canceled_by_size' => $canceledFootwearBySize
-                    ]);
+                    // Log::info('Reservas de zapatos canceladas automáticamente al liberar asientos', [
+                    //     'class_schedule_id' => $classScheduleId,
+                    //     'user_id' => $userId,
+                    //     'total_reservations_canceled' => $canceledFootwearCount,
+                    //     'canceled_by_size' => $canceledFootwearBySize
+                    // ]);
                 }
 
                 // 🎯 Asignar automáticamente asientos liberados a usuarios de la lista de espera
@@ -1054,13 +1050,13 @@ final class ClassScheduleController extends Controller
                         'consumption_details' => $consumptionResult['consumed_membership'] ?? $consumptionResult['consumed_package'] ?? null
                     ];
 
-                    Log::info('Asiento asignado automáticamente desde lista de espera', [
-                        'class_schedule_id' => $classScheduleId,
-                        'waiting_user_id' => $waitingUser->id,
-                        'user_id' => $waitingUser->user_id,
-                        'seat_id' => $seat->id,
-                        'seat_number' => $seat->seat?->seat_number
-                    ]);
+                    // Log::info('Asiento asignado automáticamente desde lista de espera', [
+                    //     'class_schedule_id' => $classScheduleId,
+                    //     'waiting_user_id' => $waitingUser->id,
+                    //     'user_id' => $waitingUser->user_id,
+                    //     'seat_id' => $seat->id,
+                    //     'seat_number' => $seat->seat?->seat_number
+                    // ]);
                 }
 
                 // Preparar respuesta exitosa
@@ -1414,11 +1410,11 @@ final class ClassScheduleController extends Controller
                     ];
                 });
 
-                Log::info('Usuario ya cuenta con asientos reservados en el horario', [
-                    'user_id' => $userId,
-                    'schedule_id' => $classSchedule->id,
-                    'existing_reservations' => $existingSeatsSummary,
-                ]);
+                // Log::info('Usuario ya cuenta con asientos reservados en el horario', [
+                //     'user_id' => $userId,
+                //     'schedule_id' => $classSchedule->id,
+                //     'existing_reservations' => $existingSeatsSummary,
+                // ]);
 
                 return response()->json([
                     'exito' => false,
@@ -1457,16 +1453,7 @@ final class ClassScheduleController extends Controller
             // Incluso si validateUserPackagesForSchedule retorna valid: false, si hay paquetes o membresías, puede reservar
             $canReserve = (count($availablePackages) > 0 || count($availableMemberships) > 0) || $validation['valid'];
 
-            // Log para debugging
-            Log::info('Verificación de disponibilidad de paquetes', [
-                'user_id' => $userId,
-                'schedule_id' => $classSchedule->id,
-                'discipline_required' => $validation['discipline_required'],
-                'validation_valid' => $validation['valid'],
-                'available_packages_count' => count($availablePackages),
-                'available_memberships_count' => count($availableMemberships),
-                'can_reserve' => $canReserve,
-            ]);
+
 
             return response()->json([
                 'exito' => true,
