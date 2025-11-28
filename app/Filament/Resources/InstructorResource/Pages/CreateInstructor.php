@@ -21,16 +21,17 @@ class CreateInstructor extends CreateRecord
         $userEmail = $data['user_email'];
         $userPassword = $data['user_password'];
 
+        // COMENTADO: Causa error de JSON en Livewire
         // Validar que el email no exista ya
-        if (User::where('email', $userEmail)->exists()) {
-            Notification::make()
-                ->title('Error')
-                ->body('El correo electrónico ya está registrado.')
-                ->danger()
-                ->send();
+        // if (User::where('email', $userEmail)->exists()) {
+        //     Notification::make()
+        //         ->title('Error')
+        //         ->body('El correo electrónico ya está registrado.')
+        //         ->danger()
+        //         ->send();
 
-            $this->halt();
-        }
+        //     $this->halt();
+        // }
 
         // Crear el usuario primero
         $user = User::create([

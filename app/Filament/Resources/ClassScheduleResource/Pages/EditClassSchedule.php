@@ -37,17 +37,18 @@ class EditClassSchedule extends EditRecord
             ->where('id', '!=', $this->record->id) // Excluir el registro actual
             ->first();
 
-        if ($existing) {
-            $class = $existing->class->name ?? 'Clase';
-            Notification::make()
-                ->title('Error: Horario duplicado')
-                ->body("Ya existe otro horario para esta clase el {$data['scheduled_date']} a las {$data['start_time']}. Horario ID: {$existing->id}")
-                ->danger()
-                ->persistent()
-                ->send();
-            
-            $this->halt(); // Detener el proceso de actualización
-        }
+        // COMENTADO: Causa error de JSON en Livewire
+        // if ($existing) {
+        //     $class = $existing->class->name ?? 'Clase';
+        //     Notification::make()
+        //         ->title('Error: Horario duplicado')
+        //         ->body("Ya existe otro horario para esta clase el {$data['scheduled_date']} a las {$data['start_time']}. Horario ID: {$existing->id}")
+        //         ->danger()
+        //         ->persistent()
+        //         ->send();
+        //     
+        //     $this->halt(); // Detener el proceso de actualización
+        // }
 
         return $data;
     }
