@@ -39,7 +39,7 @@ class PostResource extends Resource
                 Forms\Components\Toggle::make('is_featured')
                     ->label('Destacado')
                     ->default(false),
-                Section::make('Información del Articulo')
+                Section::make('Información del Artículo')
                     ->schema([
                         Forms\Components\TextInput::make('title')
                             ->label('Título')
@@ -53,8 +53,7 @@ class PostResource extends Resource
                             ->preserveFilenames()
                             ->columnSpanFull()
                             ->required(fn(callable $get) => $get('status') === 'published')
-                            ->live() // Importante: notifica cambios en tiempo real
-                        ,
+                            ->live(), // Importante: notifica cambios en tiempo real
                         Forms\Components\Select::make('status')
                             ->options([
                                 'draft' => 'Borrador',
