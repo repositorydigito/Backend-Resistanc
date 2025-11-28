@@ -33,10 +33,9 @@ class DatabaseSeeder extends Seeder
         $this->call(ClassModelSeeder::class);
 
         // Salas o estudios
-        $this->call(StudioSeeder::class);
+        // $this->call(StudioSeeder::class);
 
         // Paquetes
-        // $this->call(PackageSeeder::class);
         // $this->call(PackageNewSeeder::class);
 
         // Clientes
@@ -55,7 +54,7 @@ class DatabaseSeeder extends Seeder
         $this->call(DrinkSeeder::class);
 
         // Horarios
-        $this->call(ClassScheduleSeeder::class);
+        // $this->call(ClassScheduleSeeder::class);
 
         // Marcas de los productos
         $this->call(ProductBrandSeeder::class);

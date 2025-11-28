@@ -14,9 +14,7 @@
             outline: 1px solid red;
         }
 
-
-
-        html {
+       html {
             background: #EFF0F2;
         }
 
@@ -25,14 +23,6 @@
             height: 100vh;
             width: 100vw;
             color: #5D6D7A;
-        }
-
-        .code__content {
-
-            display: grid;
-            justify-content: center;
-            justify-items: center;
-
         }
 
 

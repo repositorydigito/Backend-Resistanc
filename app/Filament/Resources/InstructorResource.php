@@ -91,6 +91,9 @@ class InstructorResource extends Resource
                 Section::make('Información del instructor')
                     ->columns(2)
                     ->schema([
+
+
+
                         // Sección 2: Información personal
                         Section::make('Datos personales')
                             ->columns(2)
@@ -100,7 +103,18 @@ class InstructorResource extends Resource
                                     ->directory('instructors/profiles')
                                     ->disk('public')
                                     ->visibility('public')
-                                    ->extraAttributes(['class' => 'h-64 w-64'])
+                                    // ->extraAttributes(['class' => 'h-64 w-64'])
+                                    ->preserveFilenames()
+                                    ->maxSize(2048)
+                                    ->columnSpanFull()
+                                    ->image(),
+
+                                Forms\Components\FileUpload::make(' presentation_image')
+                                    ->label('Imagen de presentacion')
+                                    ->directory('instructors/prestation')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    // ->extraAttributes(['class' => 'h-64 w-64'])
                                     ->preserveFilenames()
                                     ->maxSize(2048)
                                     ->columnSpanFull()
