@@ -45,22 +45,6 @@ class ServiceSeeder extends Seeder
                 'order' => 4,
                 'is_active' => true,
             ],
-            [
-                'title' => 'Nutrición',
-                'subtitle' => 'Alimenta tu progreso',
-                'description' => 'Asesoría nutricional personalizada y shakes proteicos para complementar tu entrenamiento.',
-                'image' => '/image/logos/logoBlancoR.svg',
-                'order' => 5,
-                'is_active' => true,
-            ],
-            [
-                'title' => 'Recovery',
-                'subtitle' => 'Recuperación activa',
-                'description' => 'Sesiones de recuperación, masajes y terapias para optimizar tu rendimiento y bienestar.',
-                'image' => '/image/logos/logoBlancoR.svg',
-                'order' => 6,
-                'is_active' => true,
-            ],
         ];
 
         foreach ($services as $service) {
