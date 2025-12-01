@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>¡Asiento asignado desde lista de espera!</title>
+    <title>¡Tu paquete ya está activo!</title>
     <style>
         * {
             padding: 0;
@@ -202,41 +202,13 @@
             object-fit: contain;
             margin-right: .3rem;
         }
-
-        .class-info {
-            background: url('{{ asset('image/emails/activacion/fondo-activacion.png') }}') no-repeat center;
-            background-size: cover;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px auto;
-            max-width: 500px;
-        }
-
-        .class-info h3 {
-            color: #5D6D7A;
-            font-size: 18px;
-            margin: 0 0 15px 0;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .class-info p {
-            font-size: 14px;
-            color: #5D6D7A;
-            margin: 8px 0;
-            text-align: left;
-            padding-left: 10px;
-        }
-
-        .class-info strong {
-            color: #B0694C;
-            font-weight: 600;
-        }
     </style>
 </head>
 
 @php
     $company = \App\Models\Company::first();
+    $package = $userPackage->package;
+    $disciplines = $package->disciplines ?? collect();
 @endphp
 
 <body>
@@ -249,41 +221,14 @@
 
                     <div class="card__imgs">
 
-                        {{-- Produccion --}}
-                        {{-- <img class="card__img--logo" src="" alt="">
-                        <img class="card__img--target" src="" alt=""> --}}
-
-                        {{-- Desarrollo --}}
-
-
-
                         @if ($company->logo_path)
-                            {{-- Desarrollo  --}}
-                            {{-- <img class="card__img--logo"
-                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Logos.svg/1200px-Logos.svg.png"
-                                alt="logo"> --}}
-
-                            {{-- Produccion --}}
                             <img class="card__img--logo" src="{{ asset('storage/' . $company->logo_path) }}"
                                 alt="Logo-rsistanc">
                         @else
-                            {{-- Desarrollo --}}
-                            {{-- <img class="card__img--logo"
-                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Logos.svg/1200px-Logos.svg.png"
-                                alt="logo"> --}}
-
-                            {{-- Produccion --}}
                             <img class="card__img--logo" src="{{ asset('image/emails/logos/logo-correo.png') }}"
                                 alt="">
                         @endif
 
-
-                        {{-- Desarrollo --}}
-                        {{-- <img class="card__img--target"
-                            src="https://media.united.com/assets/m/4beccaf8e41c8b87/original/UNTD24_ClubCard_LgType_MKTG_Card_RGB_2000x1260.png"
-                            alt="card"> --}}
-
-                        {{-- PRODUCCION --}}
                         <img class="card__img--target" src="{{ asset('image/emails/activacion/card-activacion.png') }}"
                             alt="card">
 
@@ -321,30 +266,57 @@
 
 
 
-                    <h1 class="card__saludo">¡Buenas noticias, {{ $user->name }}!</h1>
+                    <h1 class="card__saludo">Hola {{ $user->name }}, </h1>
 
                     <div class="card__body">
 
-                        <p>¡Te tenemos excelentes noticias! Se ha liberado un asiento en la clase para la que estabas en lista de espera y has sido asignado automáticamente.</p>
-                        <p>Tu asiento ha sido reservado automáticamente. Por favor, asegúrate de llegar a tiempo para la clase.</p>
-                        <p>Si no puedes asistir, por favor cancela tu reserva con al menos 1 hora de anticipación para que otra persona pueda tomar tu lugar.</p>
+                        <p>¡Esperamos estés teniendo un súper día! Te dejamos acá el detalle de lo que incluye el paquete <strong>RSISTANC</strong> que acabas de adquirir ❤️</p>
                     </div>
 
-                    <!-- INFORMACIÓN DE LA CLASE -->
+                    <!-- BOTÓN CENTRADO 100% COMPATIBLE -->
+                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center"
+                        style="margin: 20px auto;">
+                        <tr>
+                            <td align="center" bgcolor="#899830"
+                                style="
+            border-radius: 30px;
+            padding: 12px 30px;
+        ">
+                                <a href="{{ config('app.url') }}/packages" target="_blank"
+                                    style="
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    text-decoration: none;
+                    text-transform: uppercase;
+                    display: inline-block;
+                ">
+                                    RESERVAR MI PRIMERA CLASE
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+
+
+
+                    <!-- INFORMACIÓN DEL PAQUETE -->
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
                         style="background: url('{{ asset('image/emails/activacion/fondo-activacion.png') }}') no-repeat center; background-size: cover; border-radius: 15px; padding: 20px; margin: 20px auto; max-width: 500px;">
                         <tr>
                             <td align="center" style="padding-top: 20px;">
                                 <h3 style="color: #5D6D7A; font-size: 22px; margin: 5px 0; font-weight: 600; font-family: Outfit;">
-                                    Detalles de la clase
+                                    {{ strtoupper($package->classes_quantity) }} CLASES
                                 </h3>
+                                <h4 style="color: #5D6D7A; font-size: 18px; margin: 5px 0; font-weight: 100; font-family: Outfit;">
+                                    TU PAQUETE INCLUYE
+                                </h4>
                             </td>
                         </tr>
                         <tr>
                             <td style="padding: 0 20px;">
                                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
                                     style="margin: 15px auto; text-align: left;">
-                                    <!-- Clase -->
+                                    <!-- Clases -->
                                     <tr>
                                         <td style="padding: 8px 0; vertical-align: top;">
                                             <table role="presentation" cellpadding="0" cellspacing="0">
@@ -357,14 +329,15 @@
                                                     <td style="vertical-align: top;">
                                                         <p
                                                             style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Clase:</strong> {{ $classSchedule->class->name ?? 'N/A' }}
+                                                            <strong>{{ $package->classes_quantity }} clases</strong> disponibles para usar
                                                         </p>
                                                     </td>
                                                 </tr>
                                             </table>
                                         </td>
                                     </tr>
-                                    <!-- Fecha -->
+                                    <!-- Disciplinas -->
+                                    @if($disciplines->isNotEmpty())
                                     <tr>
                                         <td style="padding: 8px 0; vertical-align: top;">
                                             <table role="presentation" cellpadding="0" cellspacing="0">
@@ -377,48 +350,7 @@
                                                     <td style="vertical-align: top;">
                                                         <p
                                                             style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Fecha:</strong> {{ \Carbon\Carbon::parse($classSchedule->scheduled_date)->format('d/m/Y') }}
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <!-- Hora -->
-                                    <tr>
-                                        <td style="padding: 8px 0; vertical-align: top;">
-                                            <table role="presentation" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
-                                                            alt="Icono" width="20" height="20"
-                                                            style="display: block;">
-                                                    </td>
-                                                    <td style="vertical-align: top;">
-                                                        <p
-                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Hora:</strong> {{ \Carbon\Carbon::parse($classSchedule->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($classSchedule->end_time)->format('H:i') }}
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <!-- Instructor -->
-                                    @if($classSchedule->instructor)
-                                    <tr>
-                                        <td style="padding: 8px 0; vertical-align: top;">
-                                            <table role="presentation" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
-                                                            alt="Icono" width="20" height="20"
-                                                            style="display: block;">
-                                                    </td>
-                                                    <td style="vertical-align: top;">
-                                                        <p
-                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Instructor:</strong> {{ $classSchedule->instructor->name }}
+                                                            <strong>Disciplinas:</strong> {{ $disciplines->pluck('name')->join(', ') }}
                                                         </p>
                                                     </td>
                                                 </tr>
@@ -426,8 +358,11 @@
                                         </td>
                                     </tr>
                                     @endif
-                                    <!-- Estudio -->
-                                    @if($classSchedule->studio)
+                                    <!-- Validez -->
+                                    @php
+                                        $monthsValid = $userPackage->expiry_date->diffInMonths(now());
+                                        $daysValid = $userPackage->expiry_date->diffInDays(now());
+                                    @endphp
                                     <tr>
                                         <td style="padding: 8px 0; vertical-align: top;">
                                             <table role="presentation" cellpadding="0" cellspacing="0">
@@ -440,16 +375,19 @@
                                                     <td style="vertical-align: top;">
                                                         <p
                                                             style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Estudio:</strong> {{ $classSchedule->studio->name }}
+                                                            <strong>Válido por:</strong> 
+                                                            @if($monthsValid > 0)
+                                                                {{ $monthsValid }} {{ $monthsValid == 1 ? 'mes' : 'meses' }}
+                                                            @else
+                                                                {{ $daysValid }} {{ $daysValid == 1 ? 'día' : 'días' }}
+                                                            @endif
                                                         </p>
                                                     </td>
                                                 </tr>
                                             </table>
                                         </td>
                                     </tr>
-                                    @endif
-                                    <!-- Asiento -->
-                                    @if($seatNumber)
+                                    <!-- Fecha de expiración -->
                                     <tr>
                                         <td style="padding: 8px 0; vertical-align: top;">
                                             <table role="presentation" cellpadding="0" cellspacing="0">
@@ -462,14 +400,13 @@
                                                     <td style="vertical-align: top;">
                                                         <p
                                                             style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Asiento:</strong> {{ $seatNumber }}
+                                                            <strong>Vence el:</strong> {{ $userPackage->expiry_date->format('d/m/Y') }}
                                                         </p>
                                                     </td>
                                                 </tr>
                                             </table>
                                         </td>
                                     </tr>
-                                    @endif
                                 </table>
                             </td>
                         </tr>
@@ -479,25 +416,23 @@
 
 
                     <div class="nota">
-                        <p>Nota: Si no puedes asistir, por favor cancela tu reserva con al menos 1 hora de anticipación.</p>
+                        <p>Nota: Si no realizaste esta compra, por favor ignora este mensaje.</p>
                     </div>
 
                     <div class="linea"></div>
                     <div class="footer__correo">
 
                         @if ($company->signature_image)
-                            {{-- Produccion --}}
                             <img class="footer__firma" src="{{ asset('storage/' . $company->signature_image) }}"
                                 alt="firma">
                         @else
-                            {{-- Produccion --}}
                             <img class="footer__firma" src="{{ asset('image/emails/firma.png') }}" alt="firma">
                         @endif
 
 
 
                         <p class="footer__text">
-                            Estás recibiendo este correo electrónico porque estabas en lista de espera para esta clase.
+                            Estás recibiendo este correo electrónico porque adquiriste un paquete a través de nuestro app.
                         </p>
                         <!-- Redes sociales (compatible con Gmail/Outlook) -->
                         <table role="presentation" cellpadding="0" cellspacing="0" align="center"
@@ -591,3 +526,4 @@
 </body>
 
 </html>
+

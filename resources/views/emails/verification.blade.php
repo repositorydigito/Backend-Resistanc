@@ -120,7 +120,7 @@
         .nota p {
             margin: 1rem 0;
             font-size: 1rem;
-            font-weight: 200;
+            font-weight: 100;
             color: #5D6D7A;
             text-align: center;
         }
@@ -415,7 +415,7 @@
                                 <!-- Imagen del título "BENEFICIOS" con degradado -->
                                 <img src="{{ asset('image/emails/activacion/benficios.png') }}"
                                     alt="BENEFICIOS" width="170" style="display: block; margin: 0 auto;">
-                                <h4 style="color: #5D6D7A; font-size: 22px; margin: 5px 0; font-weight: normal;">
+                                <h4 style="color: #5D6D7A; font-size: 22px; margin: 5px 0; font-weight: 100; font-family: Outfit;">
                                     al activar tu cuenta hoy
                                 </h4>
                             </td>

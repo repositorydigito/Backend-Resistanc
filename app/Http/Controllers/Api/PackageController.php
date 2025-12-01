@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PackageResource;
 use App\Http\Resources\UserPackageResource;
+use App\Mail\PackagePurchasedMailable;
 use App\Models\Package;
 use App\Models\UserPackage;
 use App\Models\UserMembership;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Stripe\StripeClient;
 
 /**
@@ -830,6 +832,25 @@ final class PackageController extends Controller
                 }
 
                 DB::commit();
+
+                // Cargar relaciones necesarias para el correo
+                $userPackage->load(['package.disciplines']);
+
+                // Enviar correo de confirmación de compra
+                try {
+                    Mail::to($user->email)->send(new PackagePurchasedMailable($user, $userPackage));
+                } catch (\Exception $emailException) {
+                    // Log del error pero no fallar la transacción
+                    Log::create([
+                        'user_id' => $userId,
+                        'action' => 'Error al enviar correo de paquete comprado',
+                        'description' => 'Error al enviar correo de paquete comprado',
+                        'data' => json_encode([
+                            'user_package_id' => $userPackage->id,
+                            'error' => $emailException->getMessage(),
+                        ]),
+                    ]);
+                }
 
                 // Calcular precios con IGV para la respuesta
                 $igvPercentage = (float) ($package->igv ?? 18); // IGV por defecto 18% si no está definido
