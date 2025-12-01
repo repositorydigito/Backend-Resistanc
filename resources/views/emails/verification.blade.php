@@ -259,10 +259,12 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .beneficios{
+
+        .beneficios {
             padding: 1rem;
         }
-        .beneficios__list{
+
+        .beneficios__list {
             display: grid;
             gap: 1rem;
             margin-top: 1rem;
@@ -326,16 +328,40 @@
                     </div>
 
 
-                    <div class="">
-                        <h2 class="card__title">
-                            ¡Bienvenido/a a la comunidad
-                        </h2>
-                        <div class="card__title--img">
-                            <img class="" src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
-                                alt="rsistanc-logo">
-                            <h2 class="card__title--negrita logo__studio" style="">STUDIO</h2>
-                        </div>
-                    </div>
+                    <!-- Contenedor -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                        style="text-align:center;">
+                        <tr>
+                            <td align="center">
+
+                                <!-- Imagen + texto juntos -->
+                                <table role="presentation" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="vertical-align:middle; padding-right:5px;">
+                                            <img src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
+                                                alt="rsistanc-logo" style="height:32px; display:block;">
+                                        </td>
+
+                                        <td style="vertical-align:middle;">
+                                            <span
+                                                style="
+                            font-size:24px;
+                            font-weight:900;
+                            background: linear-gradient(94deg,#CF5E30 -5%,#AF58C9 27%,#8A982F 79%,#0979E5 110%);
+                            -webkit-background-clip:text;
+                            -webkit-text-fill-color:transparent;
+                            display:inline-block;
+                        ">
+                                                STUDIO
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                            </td>
+                        </tr>
+                    </table>
+
 
 
 
