@@ -35,7 +35,7 @@ class PackagePurchasedMailable extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '¡Tu paquete ya está activo! 🎟️',
+            subject: '¡Tu paquete ya está activo!',
         );
     }
 

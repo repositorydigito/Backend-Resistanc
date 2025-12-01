@@ -207,8 +207,11 @@
 
 @php
     $company = \App\Models\Company::first();
-    $package = $userPackage->package;
-    $disciplines = $package->disciplines ?? collect();
+    $package = $userPackage->package ?? null;
+    $disciplines = $package ? ($package->disciplines ?? collect()) : collect();
+    $packageName = $package->name ?? 'Paquete';
+    $classesQuantity = $package->classes_quantity ?? 0;
+    $firstDiscipline = $disciplines->isNotEmpty() ? $disciplines->first()->name ?? '' : '';
 @endphp
 
 <body>
@@ -230,7 +233,7 @@
                         @endif
 
                         <img class="card__img--target" src="{{ asset('image/emails/package/package-imagen.png') }}"
-                            alt="card">
+                            alt="card" onerror="this.src='{{ asset('image/emails/activacion/card-activacion.png') }}'">
 
                     </div>
 
@@ -267,7 +270,7 @@
 
                     <div class="card__body">
 
-                        <p>¡Esperamos estés teniendo un súper día! Te dejamos acá el detalle de lo que incluye el paquete <strong style="font-weight: 800;">{{ $package->name }}</strong> que acabas de adquirir ❤️</p>
+                        <p>¡Esperamos estés teniendo un súper día! Te dejamos acá el detalle de lo que incluye el paquete <strong style="font-weight: 800;">{{ $packageName }}</strong> que acabas de adquirir ❤️</p>
                     </div>
 
                     <!-- BOTÓN CENTRADO 100% COMPATIBLE -->
@@ -303,7 +306,7 @@
                             <td align="center" style="padding-bottom: 20px;">
                                 <!-- Título con degradado -->
                                 <h3 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 800; font-family: 'Outfit', sans-serif; background: linear-gradient(94deg, #CF5E30 -5.25%, #AF58C9 27.54%, #8A982F 79.49%, #0979E5 110.6%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                                    {{ strtoupper($package->classes_quantity) }} CLASES
+                                    {{ strtoupper($classesQuantity) }} CLASES
                                 </h3>
                                 <h4 style="color: #5D6D7A; font-size: 16px; margin: 0; font-weight: 400; font-family: 'Outfit', sans-serif;">
                                     TU PAQUETE INCLUYE
@@ -332,11 +335,11 @@
                                                 <tr>
                                                     <td align="center">
                                                         <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
-                                                            {{ $package->classes_quantity }} clases
+                                                            {{ $classesQuantity }} clases
                                                         </p>
-                                                        @if($disciplines->isNotEmpty())
+                                                        @if($firstDiscipline)
                                                         <p style="font-size: 14px; color: #5D6D7A; margin: 5px 0; font-weight: 500; font-family: 'Outfit', sans-serif;">
-                                                            {{ $disciplines->first()->name ?? '' }}
+                                                            {{ $firstDiscipline }}
                                                         </p>
                                                         @endif
                                                     </td>
@@ -365,14 +368,16 @@
                                                             Válido por
                                                         </p>
                                                         @php
-                                                            $monthsValid = $userPackage->expiry_date->diffInMonths(now());
-                                                            $daysValid = $userPackage->expiry_date->diffInDays(now());
+                                                            $monthsValid = $userPackage && $userPackage->expiry_date ? $userPackage->expiry_date->diffInMonths(now()) : 0;
+                                                            $daysValid = $userPackage && $userPackage->expiry_date ? $userPackage->expiry_date->diffInDays(now()) : 0;
                                                         @endphp
                                                         <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
                                                             @if($monthsValid > 0)
                                                                 {{ $monthsValid }} {{ $monthsValid == 1 ? 'mes' : 'meses' }}
-                                                            @else
+                                                            @elseif($daysValid > 0)
                                                                 {{ $daysValid }} {{ $daysValid == 1 ? 'día' : 'días' }}
+                                                            @else
+                                                                Indefinido
                                                             @endif
                                                         </p>
                                                     </td>

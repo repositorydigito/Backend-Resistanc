@@ -836,18 +836,35 @@ final class PackageController extends Controller
                 // Cargar relaciones necesarias para el correo
                 $userPackage->load(['package.disciplines']);
 
-                // Enviar correo de confirmación de compra
-                try {
-                    Mail::to($user->email)->send(new PackagePurchasedMailable($user, $userPackage));
-                } catch (\Exception $emailException) {
-                    // Log del error pero no fallar la transacción
+                // Verificar que el paquete existe antes de enviar el correo
+                if ($userPackage->package && $user->email) {
+                    // Enviar correo de confirmación de compra
+                    try {
+                        Mail::to($user->email)->send(new PackagePurchasedMailable($user, $userPackage));
+                    } catch (\Exception $emailException) {
+                        // Log del error pero no fallar la transacción
+                        Log::create([
+                            'user_id' => $userId,
+                            'action' => 'Error al enviar correo de paquete comprado',
+                            'description' => 'Error al enviar correo de paquete comprado',
+                            'data' => json_encode([
+                                'user_package_id' => $userPackage->id,
+                                'user_email' => $user->email,
+                                'error' => $emailException->getMessage(),
+                                'trace' => $emailException->getTraceAsString(),
+                            ]),
+                        ]);
+                    }
+                } else {
+                    // Log si no se puede enviar el correo por datos faltantes
                     Log::create([
                         'user_id' => $userId,
-                        'action' => 'Error al enviar correo de paquete comprado',
-                        'description' => 'Error al enviar correo de paquete comprado',
+                        'action' => 'No se pudo enviar correo de paquete comprado',
+                        'description' => 'Datos faltantes para enviar correo',
                         'data' => json_encode([
                             'user_package_id' => $userPackage->id,
-                            'error' => $emailException->getMessage(),
+                            'has_package' => $userPackage->package ? true : false,
+                            'has_email' => $user->email ? true : false,
                         ]),
                     ]);
                 }
