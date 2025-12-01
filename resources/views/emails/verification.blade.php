@@ -399,8 +399,8 @@
 
 
                     <div class="card__body">
-                          <p class="">Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu
-                        navegador:</p>
+                        <p class="">Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu
+                            navegador:</p>
                     </div>
 
                     <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
@@ -408,44 +408,106 @@
                     </p>
 
 
-                    {{-- Beneficios --}}
+                    <!-- Sección de Beneficios -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                        style="background: url('{{ asset('image/emails/activacion/fondo-activacion.png') }}') no-repeat center; background-size: cover; border-radius: 15px; padding: 20px; margin: 20px auto; max-width: 500px;">
+                        <tr>
+                            <td align="center" style="padding: 20px;">
+                                <!-- Título "BENEFICIOS" -->
+                                <h3
+                                    style="
+                font-family: Arial, sans-serif;
+                font-size: 36px;
+                font-weight: bold;
+                color: #000;
+                background: linear-gradient(90deg, #EC008C, #4FC3F7, #2ECC71);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                display: inline-block;
+                margin: 0;
+                padding: 0;
+                letter-spacing: -1px;
+            ">
+                                    BENEFICIOS
+                                </h3>
+                                <h4 style="color: #5D6D7A; font-size: 16px; margin: 5px 0; font-weight: normal;">
+                                    al activar tu cuenta hoy
+                                </h4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0 20px;">
+                                <!-- Lista de beneficios -->
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                                    style="margin: 15px auto; text-align: left;">
+                                    <!-- Beneficio 1 -->
+                                    <tr>
+                                        <td style="padding: 8px 0; vertical-align: top;">
+                                            <table role="presentation" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
+                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
+                                                            alt="Icono" width="20" height="20"
+                                                            style="display: block;">
+                                                    </td>
+                                                    <td style="vertical-align: top;">
+                                                        <p
+                                                            style="font-size: 14px; color: #5D6D7A; margin: 0; font-weight: 500;">
+                                                            <strong>Acceso a todas nuestros planes</strong> por
+                                                            disciplinas: R Cycling, R Reformer, R Pilates y R Box.
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <!-- Beneficio 2 -->
+                                    <tr>
+                                        <td style="padding: 8px 0; vertical-align: top;">
+                                            <table role="presentation" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
+                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
+                                                            alt="Icono" width="20" height="20"
+                                                            style="display: block;">
+                                                    </td>
+                                                    <td style="vertical-align: top;">
+                                                        <p
+                                                            style="font-size: 14px; color: #5D6D7A; margin: 0; font-weight: 500;">
+                                                            <strong>Descuentos exclusivos</strong> en accesorios y
+                                                            shakes de recuperación.
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <!-- Beneficio 3 -->
+                                    <tr>
+                                        <td style="padding: 8px 0; vertical-align: top;">
+                                            <table role="presentation" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
+                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
+                                                            alt="Icono" width="20" height="20"
+                                                            style="display: block;">
+                                                    </td>
+                                                    <td style="vertical-align: top;">
+                                                        <p
+                                                            style="font-size: 14px; color: #5D6D7A; margin: 0; font-weight: 500;">
+                                                            <strong>Seguimiento de tu progreso</strong> desde la app.
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
 
-                    <div class="beneficios" style="background: url('{{ asset("image/emails/activacion/fondo-activacion.png") }}'); border-radius: 15px; background-repeat: no-repeat; background-position: center;">
-                        <div class="">
-
-                   <h3 style="
-        font-family: Arial, sans-serif;
-        font-size: 48px;
-        font-weight: bold;
-        color: #000;
-        background: linear-gradient(90deg, #EC008C, #4FC3F7, #2ECC71);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-        margin: 0;
-        padding: 0;
-        letter-spacing: -1px;
-    ">
-        BENEFICIOS
-    </h3>
-                            <h2>
-                                al activar tu cuenta hoy
-                            </h2>
-                        </div>
-
-                        <div class="beneficios__list">
-                            <span>
-                                <img src="" alt="">
-                                <p><strong>Acceso a todas nuestros planes </strong>por disciplinas: R Cycling, R
-                                    Reformer, R Pilates y R Box.</p>
-                            </span>
-                        </div>
-
-
-
-
-                    </div>
 
 
                     <div class="nota">
@@ -456,13 +518,10 @@
                     <div class="footer__correo">
 
                         @if ($company->signature_image)
-
                             {{-- Produccion --}}
                             <img class="footer__firma" src="{{ asset('storage/' . $company->signature_image) }}"
                                 alt="firma">
                         @else
-
-
                             {{-- Produccion --}}
                             <img class="footer__firma" src="{{ asset('image/emails/firma.png') }}" alt="firma">
                         @endif
