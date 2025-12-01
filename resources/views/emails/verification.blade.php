@@ -11,10 +11,10 @@
             padding: 0;
             margin: 0;
             box-sizing: border-box;
-            outline: 1px solid red;
+            /* outline: 1px solid red; */
         }
 
-       html {
+        html {
             background: #EFF0F2;
         }
 
@@ -197,13 +197,19 @@
             justify-content: center;
         }
 
+        .card__title--img img {
+            height: 2.5rem;
+            object-fit: contain;
+            margin-right: .3rem;
+        }
+
 
         .verificacion__btn {
             position: relative;
 
             margin-top: 1rem;
             margin-bottom: 1rem;
-            background: blue;
+            /* background: blue; */
         }
 
         .verificacion__btn a {
@@ -222,7 +228,7 @@
             color: #ffffff !important;
             text-decoration: none !important;
             border-radius: 30px !important;
-            font-weight:600;
+            font-weight: 600;
             text-align: center !important;
             font-size: .8rem !important;
             border: none !important;
@@ -235,6 +241,32 @@
         .verificacion__btn a {
             text-decoration: none !important;
             color: inherit !important;
+        }
+
+        .titulo__acoiris {
+            text-align: center;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            font-weight: 900;
+
+            background: var(--gradient2,
+                    linear-gradient(94deg,
+                        #CF5E30 -5.25%,
+                        #AF58C9 27.54%,
+                        #8A982F 79.49%,
+                        #0979E5 110.6%));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .beneficios{
+            padding: 1rem;
+        }
+        .beneficios__list{
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
@@ -299,7 +331,8 @@
                             ¡Bienvenido/a a la comunidad
                         </h2>
                         <div class="card__title--img">
-                            <img class="" src="{{ asset('image/emails/logos/icon.png') }}" alt="">
+                            <img class="" src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
+                                alt="rsistanc-logo">
                             <h2 class="card__title--negrita logo__studio" style="">STUDIO</h2>
                         </div>
                     </div>
@@ -317,9 +350,9 @@
                         <p>Haz clic en el botón de abajo para activar tu cuenta:</p>
                     </div>
 
-
+                    <span class="verificacion__btn--enlace">ACTIVAR MI CUENTA</span>
                     <div class="verificacion__btn">
-                        <span class="verificacion__btn--enlace">ACTIVAR MI CUENTA</span>
+
                         <!-- Enlace transparente que cubre todo el botón -->
                         {{-- <a href="{{ $verificationUrl }}"
                             style="position: absolute;
@@ -335,15 +368,16 @@
                     </div>
 
 
-                    <p>Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu navegador:</p>
+                    <p class="card__body">Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu
+                        navegador:</p>
                     <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
                         {{ $verificationUrl }}
                     </p>
 
-                    <div class="">
+                    <div class="beneficios">
                         <div class="">
 
-                            <h3>
+                            <h3 class="titulo__acoiris">
                                 BENEFICIOS
                             </h3>
                             <h2>
@@ -351,7 +385,7 @@
                             </h2>
                         </div>
 
-                        <div class="">
+                        <div class="beneficios__list">
                             <span>
                                 <img src="" alt="">
                                 <p><strong>Acceso a todas nuestros planes </strong>por disciplinas: R Cycling, R
