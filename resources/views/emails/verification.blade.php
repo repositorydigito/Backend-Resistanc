@@ -411,7 +411,7 @@
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
                         style="background: url('{{ asset('image/emails/activacion/fondo-activacion.png') }}') no-repeat center; background-size: cover; border-radius: 15px; padding: 20px; margin: 20px auto; max-width: 500px;">
                         <tr>
-                            <td align="center" style="padding: 20px;">
+                            <td align="center" style="padding-top: 20px;">
                                 <!-- Imagen del título "BENEFICIOS" con degradado -->
                                 <img src="{{ asset('image/emails/activacion/benficios.png') }}"
                                     alt="BENEFICIOS" width="170" style="display: block; margin: 0 auto;">
@@ -431,7 +431,7 @@
                                             <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/benficios.png') }}"
+                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
                                                             alt="Icono" width="20" height="20"
                                                             style="display: block;">
                                                     </td>
@@ -452,7 +452,7 @@
                                             <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/benficios.png') }}"
+                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
                                                             alt="Icono" width="20" height="20"
                                                             style="display: block;">
                                                     </td>
@@ -473,7 +473,7 @@
                                             <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/benficios.png') }}"
+                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
                                                             alt="Icono" width="20" height="20"
                                                             style="display: block;">
                                                     </td>
