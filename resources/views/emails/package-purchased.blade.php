@@ -62,7 +62,7 @@
         }
 
         .card__title--negrita {
-            color: #B0694C;
+            /* color: #B0694C; */
             font-weight: 800;
             margin: auto;
             text-align: center;
@@ -229,7 +229,7 @@
                                 alt="">
                         @endif
 
-                        <img class="card__img--target" src="{{ asset('image/emails/activacion/card-activacion.png') }}"
+                        <img class="card__img--target" src="{{ asset('image/emails/package/package-imagen.png') }}"
                             alt="card">
 
                     </div>
@@ -245,14 +245,11 @@
                                     <!-- Imagen + texto juntos -->
                                     <table role="presentation" cellpadding="0" cellspacing="0">
                                         <tr>
-                                            <td style="vertical-align:middle; padding-right:5px;">
-                                                <img src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
-                                                    alt="rsistanc-logo" style="height:22px; display:block;">
-                                            </td>
+
 
                                             <td style="vertical-align:middle;">
                                                 <span class="card__title--negrita logo__studio">
-                                                    STUDIO
+                                                  LET’S<strong style=" color: #B0694C;">STUDIO </strong>
                                                 </span>
                                             </td>
                                         </tr>
@@ -270,7 +267,7 @@
 
                     <div class="card__body">
 
-                        <p>¡Esperamos estés teniendo un súper día! Te dejamos acá el detalle de lo que incluye el paquete <strong>RSISTANC</strong> que acabas de adquirir ❤️</p>
+                        <p>¡Esperamos estés teniendo un súper día! Te dejamos acá el detalle de lo que incluye el paquete <strong style="font-weight: 800;">{{ $package->name }}</strong> que acabas de adquirir ❤️</p>
                     </div>
 
                     <!-- BOTÓN CENTRADO 100% COMPATIBLE -->
@@ -301,106 +298,82 @@
 
                     <!-- INFORMACIÓN DEL PAQUETE -->
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                        style="background: url('{{ asset('image/emails/activacion/fondo-activacion.png') }}') no-repeat center; background-size: cover; border-radius: 15px; padding: 20px; margin: 20px auto; max-width: 500px;">
+                        style="background: #EFF0F2; border-radius: 15px; padding: 30px 20px; margin: 20px auto; max-width: 500px;">
                         <tr>
-                            <td align="center" style="padding-top: 20px;">
-                                <h3 style="color: #5D6D7A; font-size: 22px; margin: 5px 0; font-weight: 600; font-family: Outfit;">
+                            <td align="center" style="padding-bottom: 20px;">
+                                <!-- Título con degradado -->
+                                <h3 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 800; font-family: 'Outfit', sans-serif; background: linear-gradient(94deg, #CF5E30 -5.25%, #AF58C9 27.54%, #8A982F 79.49%, #0979E5 110.6%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                                     {{ strtoupper($package->classes_quantity) }} CLASES
                                 </h3>
-                                <h4 style="color: #5D6D7A; font-size: 18px; margin: 5px 0; font-weight: 100; font-family: Outfit;">
+                                <h4 style="color: #5D6D7A; font-size: 16px; margin: 0; font-weight: 400; font-family: 'Outfit', sans-serif;">
                                     TU PAQUETE INCLUYE
                                 </h4>
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding: 0 20px;">
-                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                                    style="margin: 15px auto; text-align: left;">
-                                    <!-- Clases -->
+                            <td>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
-                                        <td style="padding: 8px 0; vertical-align: top;">
-                                            <table role="presentation" cellpadding="0" cellspacing="0">
+                                        <!-- Tarjeta 1: Clases con icono de fuego -->
+                                        <td width="48%" style="background: #ffffff; border-radius: 15px; padding: 20px; text-align: center; vertical-align: top;">
+                                            <!-- Icono circular con degradado -->
+                                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                                 <tr>
-                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
-                                                            alt="Icono" width="20" height="20"
-                                                            style="display: block;">
+                                                    <td align="center" style="padding-bottom: 15px;">
+                                                        <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(94deg, #CF5E30 -5.25%, #AF58C9 27.54%, #8A982F 79.49%, #0979E5 110.6%); display: inline-block; padding: 12px; box-sizing: border-box;">
+                                                            <img src="{{ asset('image/emails/package/fire-white.png') }}" 
+                                                                alt="Fuego" 
+                                                                width="36" 
+                                                                height="36" 
+                                                                style="display: block; width: 100%; height: auto; object-fit: contain;">
+                                                        </div>
                                                     </td>
-                                                    <td style="vertical-align: top;">
-                                                        <p
-                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>{{ $package->classes_quantity }} clases</strong> disponibles para usar
+                                                </tr>
+                                                <tr>
+                                                    <td align="center">
+                                                        <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
+                                                            {{ $package->classes_quantity }} clases
                                                         </p>
+                                                        @if($disciplines->isNotEmpty())
+                                                        <p style="font-size: 14px; color: #5D6D7A; margin: 5px 0; font-weight: 500; font-family: 'Outfit', sans-serif;">
+                                                            {{ $disciplines->first()->name ?? '' }}
+                                                        </p>
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             </table>
                                         </td>
-                                    </tr>
-                                    <!-- Disciplinas -->
-                                    @if($disciplines->isNotEmpty())
-                                    <tr>
-                                        <td style="padding: 8px 0; vertical-align: top;">
-                                            <table role="presentation" cellpadding="0" cellspacing="0">
+                                        <td width="4%"></td>
+                                        <!-- Tarjeta 2: Validez con icono de calendario -->
+                                        <td width="48%" style="background: #ffffff; border-radius: 15px; padding: 20px; text-align: center; vertical-align: top;">
+                                            <!-- Icono circular con degradado -->
+                                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                                 <tr>
-                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
-                                                            alt="Icono" width="20" height="20"
-                                                            style="display: block;">
-                                                    </td>
-                                                    <td style="vertical-align: top;">
-                                                        <p
-                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Disciplinas:</strong> {{ $disciplines->pluck('name')->join(', ') }}
-                                                        </p>
+                                                    <td align="center" style="padding-bottom: 15px;">
+                                                        <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(94deg, #CF5E30 -5.25%, #AF58C9 27.54%, #8A982F 79.49%, #0979E5 110.6%); display: inline-block; padding: 12px; box-sizing: border-box;">
+                                                            <img src="{{ asset('image/emails/package/calender-white.png') }}" 
+                                                                alt="Calendario" 
+                                                                width="36" 
+                                                                height="36" 
+                                                                style="display: block; width: 100%; height: auto; object-fit: contain;">
+                                                        </div>
                                                     </td>
                                                 </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    @endif
-                                    <!-- Validez -->
-                                    @php
-                                        $monthsValid = $userPackage->expiry_date->diffInMonths(now());
-                                        $daysValid = $userPackage->expiry_date->diffInDays(now());
-                                    @endphp
-                                    <tr>
-                                        <td style="padding: 8px 0; vertical-align: top;">
-                                            <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
-                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
-                                                            alt="Icono" width="20" height="20"
-                                                            style="display: block;">
-                                                    </td>
-                                                    <td style="vertical-align: top;">
-                                                        <p
-                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Válido por:</strong> 
+                                                    <td align="center">
+                                                        <p style="font-size: 14px; color: #5D6D7A; margin: 5px 0; font-weight: 400; font-family: 'Outfit', sans-serif;">
+                                                            Válido por
+                                                        </p>
+                                                        @php
+                                                            $monthsValid = $userPackage->expiry_date->diffInMonths(now());
+                                                            $daysValid = $userPackage->expiry_date->diffInDays(now());
+                                                        @endphp
+                                                        <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
                                                             @if($monthsValid > 0)
                                                                 {{ $monthsValid }} {{ $monthsValid == 1 ? 'mes' : 'meses' }}
                                                             @else
                                                                 {{ $daysValid }} {{ $daysValid == 1 ? 'día' : 'días' }}
                                                             @endif
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <!-- Fecha de expiración -->
-                                    <tr>
-                                        <td style="padding: 8px 0; vertical-align: top;">
-                                            <table role="presentation" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/check.png') }}"
-                                                            alt="Icono" width="20" height="20"
-                                                            style="display: block;">
-                                                    </td>
-                                                    <td style="vertical-align: top;">
-                                                        <p
-                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
-                                                            <strong>Vence el:</strong> {{ $userPackage->expiry_date->format('d/m/Y') }}
                                                         </p>
                                                     </td>
                                                 </tr>
