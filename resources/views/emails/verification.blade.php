@@ -458,82 +458,74 @@
                         <p class="footer__text">
                             Estás recibiendo este correo electrónico porque te registraste a través de nuestro app.
                         </p>
-                        <div class="redes">
+                        <!-- Redes sociales (compatible con Gmail/Outlook) -->
+                        <table role="presentation" cellpadding="0" cellspacing="0" align="center"
+                            style="margin: 20px auto;">
+                            <tr>
 
-                            {{-- Facebook --}}
-                            @if ($company->facebook_url)
-                                <a class="red__social" href="{{ $company->facebook_url }}">
-                                    {{-- Desarrollo --}}
-                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="facebook-rsistanc"> --}}
-                                    {{-- Produccion --}}
-                                    <img src="{{ asset('image/redes/facebook.png') }}" alt="facebook-rsistanc">
-                                </a>
-                            @endif
+                                @if ($company->facebook_url)
+                                    <td style="padding: 0 6px;">
+                                        <a href="{{ $company->facebook_url }}" target="_blank"
+                                            style="text-decoration:none; display:inline-block;">
+                                            <img src="{{ asset('image/redes/facebook.png') }}" alt="facebook"
+                                                width="20" height="20" style="display:block;">
+                                        </a>
+                                    </td>
+                                @endif
 
-                            {{-- Instagram --}}
-                            @if ($company->instagram_url)
-                                <a class="red__social" href="{{ $company->instagram_url }}">
+                                @if ($company->instagram_url)
+                                    <td style="padding: 0 6px;">
+                                        <a href="{{ $company->instagram_url }}" target="_blank"
+                                            style="text-decoration:none; display:inline-block;">
+                                            <img src="{{ asset('image/redes/instagram.png') }}" alt="instagram"
+                                                width="20" height="20" style="display:block;">
+                                        </a>
+                                    </td>
+                                @endif
 
-                                    {{-- Desarrollo --}}
-                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Instagram-rsistanc"> --}}
-                                    {{-- Produccion --}}
-                                    <img src="{{ asset('image/redes/instagram.png') }}" alt="facebook-rsistanc">
+                                @if ($company->twitter_url)
+                                    <td style="padding: 0 6px;">
+                                        <a href="{{ $company->twitter_url }}" target="_blank"
+                                            style="text-decoration:none; display:inline-block;">
+                                            <img src="{{ asset('image/redes/new-twitter.png') }}" alt="twitter"
+                                                width="20" height="20" style="display:block;">
+                                        </a>
+                                    </td>
+                                @endif
 
-                                </a>
-                            @endif
+                                @if ($company->linkedin_url)
+                                    <td style="padding: 0 6px;">
+                                        <a href="{{ $company->linkedin_url }}" target="_blank"
+                                            style="text-decoration:none; display:inline-block;">
+                                            <img src="{{ asset('image/redes/linkedin.png') }}" alt="linkedin"
+                                                width="20" height="20" style="display:block;">
+                                        </a>
+                                    </td>
+                                @endif
 
-                            {{-- Twiter --}}
-                            @if ($company->twitter_url)
-                                <a class="red__social" href="{{ $company->twitter_url }}">
-                                    {{-- Desarrollo --}}
-                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Twiter-rsistanc"> --}}
+                                @if ($company->youtube_url)
+                                    <td style="padding: 0 6px;">
+                                        <a href="{{ $company->youtube_url }}" target="_blank"
+                                            style="text-decoration:none; display:inline-block;">
+                                            <img src="{{ asset('image/redes/youtube.png') }}" alt="youtube"
+                                                width="20" height="20" style="display:block;">
+                                        </a>
+                                    </td>
+                                @endif
 
-                                    {{-- Produccion --}}
-                                    <img src="{{ asset('image/redes/new-twitter.png') }}" alt="Twiter-rsistanc">
-                                </a>
-                            @endif
-                            {{-- linkedin --}}
-                            @if ($company->linkedin_url)
-                                <a class="red__social" href="{{ $company->linkedin_url }}">
-                                    {{-- Desarrollo --}}
-                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="linkedin-rsistanc"> --}}
+                                @if ($company->tiktok_url)
+                                    <td style="padding: 0 6px;">
+                                        <a href="{{ $company->tiktok_url }}" target="_blank"
+                                            style="text-decoration:none; display:inline-block;">
+                                            <img src="{{ asset('image/redes/tiktok.png') }}" alt="tiktok"
+                                                width="20" height="20" style="display:block;">
+                                        </a>
+                                    </td>
+                                @endif
 
-                                    {{-- Produccion --}}
-                                    <img src="{{ asset('image/redes/linkedin.png') }}" alt="Twiter-rsistanc">
+                            </tr>
+                        </table>
 
-                                </a>
-                            @endif
-                            {{-- Youtube --}}
-                            @if ($company->youtube_url)
-                                <a class="red__social" href="{{ $company->youtube_url }}">
-
-                                    {{-- Desarrollo --}}
-                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                    alt="Youtube-rsistanc"> --}}
-
-                                    {{-- Produccion --}}
-                                    <img src="{{ asset('image/redes/youtube.png') }}" alt="Youtube-rsistanc">
-
-                                </a>
-                            @endif
-
-                            {{-- Tiktok --}}
-                            @if ($company->tiktok_url)
-                                <a class="red__social" href="{{ $company->tiktok_url }}">
-                                    {{-- Desarrollo --}}
-                                    {{-- <img src="https://cdn-icons-png.flaticon.com/512/59/59439.png"
-                                        alt="Tiktok-rsistanc"> --}}
-
-                                    {{-- Produccion --}}
-                                    <img src="{{ asset('image/redes/tiktok.png') }}" alt="tiktok-rsistanc">
-                                </a>
-                            @endif
-
-                        </div>
 
                         <p class="footer__direccion"> {{ $company->address }} </p>
                         <div class="footer__logo">
