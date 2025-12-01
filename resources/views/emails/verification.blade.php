@@ -414,8 +414,8 @@
                             <td align="center" style="padding: 20px;">
                                 <!-- Imagen del título "BENEFICIOS" con degradado -->
                                 <img src="{{ asset('image/emails/activacion/benficios.png') }}"
-                                    alt="BENEFICIOS" width="300" style="display: block; margin: 0 auto;">
-                                <h4 style="color: #5D6D7A; font-size: 16px; margin: 5px 0; font-weight: normal;">
+                                    alt="BENEFICIOS" width="170" style="display: block; margin: 0 auto;">
+                                <h4 style="color: #5D6D7A; font-size: 22px; margin: 5px 0; font-weight: normal;">
                                     al activar tu cuenta hoy
                                 </h4>
                             </td>
@@ -431,13 +431,13 @@
                                             <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/icono-beneficio1.png') }}"
+                                                        <img src="{{ asset('image/emails/activacion/benficios.png') }}"
                                                             alt="Icono" width="20" height="20"
                                                             style="display: block;">
                                                     </td>
                                                     <td style="vertical-align: top;">
                                                         <p
-                                                            style="font-size: 14px; color: #5D6D7A; margin: 0; font-weight: 500;">
+                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
                                                             <strong>Acceso a todas nuestros planes</strong> por
                                                             disciplinas: R Cycling, R Reformer, R Pilates y R Box.
                                                         </p>
@@ -452,13 +452,13 @@
                                             <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/icono-beneficio2.png') }}"
+                                                        <img src="{{ asset('image/emails/activacion/benficios.png') }}"
                                                             alt="Icono" width="20" height="20"
                                                             style="display: block;">
                                                     </td>
                                                     <td style="vertical-align: top;">
                                                         <p
-                                                            style="font-size: 14px; color: #5D6D7A; margin: 0; font-weight: 500;">
+                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
                                                             <strong>Descuentos exclusivos</strong> en accesorios y
                                                             shakes de recuperación.
                                                         </p>
@@ -473,13 +473,13 @@
                                             <table role="presentation" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="width: 20px; vertical-align: top; padding-right: 10px;">
-                                                        <img src="{{ asset('image/emails/activacion/icono-beneficio3.png') }}"
+                                                        <img src="{{ asset('image/emails/activacion/benficios.png') }}"
                                                             alt="Icono" width="20" height="20"
                                                             style="display: block;">
                                                     </td>
                                                     <td style="vertical-align: top;">
                                                         <p
-                                                            style="font-size: 14px; color: #5D6D7A; margin: 0; font-weight: 500;">
+                                                            style="font-size: 16px; color: #5D6D7A; margin: 0; font-weight: 500;">
                                                             <strong>Seguimiento de tu progreso</strong> desde la app.
                                                         </p>
                                                     </td>
