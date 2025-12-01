@@ -343,15 +343,7 @@
                                         </td>
 
                                         <td style="vertical-align:middle;">
-                                            <span
-                                                style="
-                            font-size:24px;
-                            font-weight:900;
-                            background: linear-gradient(94deg,#CF5E30 -5%,#AF58C9 27%,#8A982F 79%,#0979E5 110%);
-                            -webkit-background-clip:text;
-                            -webkit-text-fill-color:transparent;
-                            display:inline-block;
-                        ">
+                                            <span class="card__title--negrita logo__studio">
                                                 STUDIO
                                             </span>
                                         </td>
