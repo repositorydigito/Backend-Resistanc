@@ -410,7 +410,7 @@
 
                     {{-- Beneficios --}}
 
-                    <div class="beneficios" style="background: url({{ asset('image/emails/activacion/fondo-activacion.png';) }}); border-radius: 15px; background-repeat: no-repeat; background-position: center;">
+                    <div class="beneficios" style="background: url('{{ asset("image/emails/activacion/fondo-activacion.png") }}'); border-radius: 15px; background-repeat: no-repeat; background-position: center;">
                         <div class="">
 
                    <h3 style="
