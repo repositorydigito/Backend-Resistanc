@@ -329,30 +329,33 @@
 
 
                     <!-- Contenedor -->
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                        style="text-align:center;">
-                        <tr>
-                            <td align="center">
+                    <div class="" style="padding-top: 2rem;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                            style="text-align:center;">
+                            <tr>
+                                <td align="center">
 
-                                <!-- Imagen + texto juntos -->
-                                <table role="presentation" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td style="vertical-align:middle; padding-right:5px;">
-                                            <img src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
-                                                alt="rsistanc-logo" style="height:32px; display:block;">
-                                        </td>
+                                    <!-- Imagen + texto juntos -->
+                                    <table role="presentation" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="vertical-align:middle; padding-right:5px;">
+                                                <img src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
+                                                    alt="rsistanc-logo" style="height:28px; display:block;">
+                                            </td>
 
-                                        <td style="vertical-align:middle;">
-                                            <span class="card__title--negrita logo__studio">
-                                                STUDIO
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </table>
+                                            <td style="vertical-align:middle;">
+                                                <span class="card__title--negrita logo__studio">
+                                                    STUDIO
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
 
-                            </td>
-                        </tr>
-                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
 
 
 
