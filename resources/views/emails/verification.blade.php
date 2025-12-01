@@ -261,7 +261,8 @@
         }
 
         .beneficios {
-            padding: 1rem;
+            padding: 2rem;
+
         }
 
         .beneficios__list {
@@ -397,18 +398,37 @@
 
 
 
-                    <p class="card__body">Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu
+                    <div class="card__body">
+                          <p class="">Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu
                         navegador:</p>
+                    </div>
+
                     <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
                         {{ $verificationUrl }}
                     </p>
 
-                    <div class="beneficios">
+
+                    {{-- Beneficios --}}
+
+                    <div class="beneficios" style="background: url({{ asset('image/emails/activacion/fondo-activacion.png';) }}); border-radius: 15px; background-repeat: no-repeat; background-position: center;">
                         <div class="">
 
-                            <h3 class="titulo__acoiris">
-                                BENEFICIOS
-                            </h3>
+                   <h3 style="
+        font-family: Arial, sans-serif;
+        font-size: 48px;
+        font-weight: bold;
+        color: #000;
+        background: linear-gradient(90deg, #EC008C, #4FC3F7, #2ECC71);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        letter-spacing: -1px;
+    ">
+        BENEFICIOS
+    </h3>
                             <h2>
                                 al activar tu cuenta hoy
                             </h2>
@@ -436,18 +456,12 @@
                     <div class="footer__correo">
 
                         @if ($company->signature_image)
-                            {{-- Desarrollo --}}
-                            {{-- <img class="footer__firma"
-                                src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png"
-                                alt=""> --}}
+
                             {{-- Produccion --}}
                             <img class="footer__firma" src="{{ asset('storage/' . $company->signature_image) }}"
                                 alt="firma">
                         @else
-                            {{-- Desarrollo --}}
-                            {{-- <img class="footer__firma"
-                                src="https://upload.wikimedia.org/wikipedia/commons/8/82/Firma-Miguel.png"
-                                alt=""> --}}
+
 
                             {{-- Produccion --}}
                             <img class="footer__firma" src="{{ asset('image/emails/firma.png') }}" alt="firma">
@@ -530,10 +544,7 @@
                         <p class="footer__direccion"> {{ $company->address }} </p>
                         <div class="footer__logo">
 
-                            {{-- Desarrollo --}}
-                            {{-- <img class=""
-                                src="https://e7.pngegg.com/pngimages/415/762/png-clipart-circle-crescent-logo-circle-white-logo.png"
-                                alt="Logo-footer"> --}}
+
 
                             {{-- Produccion --}}
                             <img src="{{ asset('image/emails/logo-rsistanc-correo.png') }}" alt="">
