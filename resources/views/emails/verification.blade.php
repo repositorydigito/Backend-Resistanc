@@ -340,7 +340,7 @@
                                         <tr>
                                             <td style="vertical-align:middle; padding-right:5px;">
                                                 <img src="{{ asset('image/emails/activacion/rsistanc-logo-marron.png') }}"
-                                                    alt="rsistanc-logo" style="height:28px; display:block;">
+                                                    alt="rsistanc-logo" style="height:22px; display:block;">
                                             </td>
 
                                             <td style="vertical-align:middle;">
@@ -371,22 +371,30 @@
                         <p>Haz clic en el botón de abajo para activar tu cuenta:</p>
                     </div>
 
-                    <span class="verificacion__btn--enlace">ACTIVAR MI CUENTA</span>
-                    <div class="verificacion__btn">
+                    <!-- BOTÓN CENTRADO 100% COMPATIBLE -->
+                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center"
+                        style="margin: 20px auto;">
+                        <tr>
+                            <td align="center" bgcolor="#899830"
+                                style="
+            border-radius: 30px;
+            padding: 12px 30px;
+        ">
+                                <a href="{{ $verificationUrl }}" target="_blank"
+                                    style="
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    text-decoration: none;
+                    text-transform: uppercase;
+                    display: inline-block;
+                ">
+                                    ACTIVAR MI CUENTA
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
 
-                        <!-- Enlace transparente que cubre todo el botón -->
-                        {{-- <a href="{{ $verificationUrl }}"
-                            style="position: absolute;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              opacity: 0;
-              cursor: pointer;
-              z-index: 10;
-              text-decoration: none !important;">
-                        </a> --}}
-                    </div>
 
 
                     <p class="card__body">Si el botón no funciona, puedes copiar y pegar el siguiente enlace en tu
