@@ -228,6 +228,7 @@ class MembershipController extends Controller
                     'description' => $membership->description,
                     'is_active' => $membership->is_active,
                     'color_hex' => $membership->color_hex,
+                    'colors' => $membership->colors ?? null, // Array de colores
                     // Información de progreso hacia esta membresía
                     'progress' => [
                         'is_reached' => $isReached,
@@ -417,6 +418,8 @@ class MembershipController extends Controller
                             'name' => $currentMembershipByProgress->name,
                             'level' => $currentMembershipByProgress->level,
                             'class_completed_required' => $currentMembershipByProgress->class_completed,
+                            'color_hex' => $currentMembershipByProgress->color_hex,
+                            'colors' => $currentMembershipByProgress->colors ?? null,
                         ] : null,
                         'next_membership' => $nextMembership ? [
                             'id' => $nextMembership->id,
@@ -424,6 +427,8 @@ class MembershipController extends Controller
                             'level' => $nextMembership->level,
                             'class_completed_required' => $nextMembership->class_completed,
                             'classes_needed' => max(0, $nextMembership->class_completed - $totalCompletedClasses),
+                            'color_hex' => $nextMembership->color_hex,
+                            'colors' => $nextMembership->colors ?? null,
                         ] : null,
                     ],
                     'summary' => [
