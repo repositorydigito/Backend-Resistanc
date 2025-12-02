@@ -252,7 +252,7 @@
 
                                             <td style="vertical-align:middle;">
                                                 <span class="card__title--negrita logo__studio">
-                                                  LET’S<strong style=" color: #B0694C;">STUDIO </strong>
+                                                  LET’S<strong style=" color: #B0694C;"> STUDIO </strong>
                                                 </span>
                                             </td>
                                         </tr>
@@ -305,7 +305,7 @@
                         <tr>
                             <td align="center" style="padding-bottom: 20px;">
                                 <!-- Título con color representativo del degradado (compatible con todos los clientes de email) -->
-                                <h3 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 800; font-family: 'Outfit', sans-serif; color: #AF58C9;">
+                                <h3 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 800; font-family: 'Outfit', sans-serif; color: #B0694C;">
                                     {{ strtoupper($package->name) }}
                                 </h3>
                                 <h4 style="color: #5D6D7A; font-size: 16px; margin: 0; font-weight: 400; font-family: 'Outfit', sans-serif;">
@@ -328,8 +328,7 @@
                                                                 <td align="center" valign="middle" style="padding: 12px;">
                                                                     <img src="{{ asset('image/emails/package/fire-white.png') }}"
                                                                         alt="Fuego"
-                                                                        width="36"
-                                                                        height="36"
+
                                                                         style="display: block; width: 36px; height: 36px; margin: 0 auto;">
                                                                 </td>
                                                             </tr>
@@ -362,8 +361,7 @@
                                                                 <td align="center" valign="middle" style="padding: 12px;">
                                                                     <img src="{{ asset('image/emails/package/calender-white.png') }}"
                                                                         alt="Calendario"
-                                                                        width="36"
-                                                                        height="36"
+
                                                                         style="display: block; width: 36px; height: 36px; margin: 0 auto;">
                                                                 </td>
                                                             </tr>
@@ -376,28 +374,34 @@
                                                             Válido por
                                                         </p>
                                                         @php
-                                                            // Usar expiry_date si existe, si no usar estimated_expiry_date
-                                                            $expiryDate = $userPackage->expiry_date ?? ($userPackage->estimated_expiry_date ?? null);
+                                                            // Obtener la fecha de expiración
+                                                            $expiryDate = null;
                                                             
-                                                            if ($expiryDate) {
-                                                                // Asegurarse de que es una instancia de Carbon
-                                                                if (is_string($expiryDate)) {
-                                                                    $expiryDate = \Carbon\Carbon::parse($expiryDate);
-                                                                }
-                                                                $monthsValid = $expiryDate->diffInMonths(now(), false);
-                                                                $daysValid = $expiryDate->diffInDays(now(), false);
+                                                            // Primero intentar usar expiry_date directamente
+                                                            if ($userPackage->expiry_date) {
+                                                                $expiryDate = \Carbon\Carbon::parse($userPackage->expiry_date);
                                                             } else {
-                                                                // Si no hay fecha, intentar calcular desde el paquete
-                                                                if ($package && ($package->duration_in_months || $package->validity_days)) {
-                                                                    $expiryDate = $package->duration_in_months 
-                                                                        ? now()->addMonths($package->duration_in_months)
-                                                                        : now()->addDays($package->validity_days ?? 30);
-                                                                    $monthsValid = $expiryDate->diffInMonths(now(), false);
-                                                                    $daysValid = $expiryDate->diffInDays(now(), false);
-                                                                } else {
-                                                                    $monthsValid = 0;
-                                                                    $daysValid = 0;
+                                                                // Si no existe, calcular desde purchase_date o activation_date + duration_in_months
+                                                                $startDate = $userPackage->activation_date ?? $userPackage->purchase_date;
+                                                                
+                                                                if ($startDate && $package && $package->duration_in_months) {
+                                                                    $expiryDate = \Carbon\Carbon::parse($startDate)->addMonths($package->duration_in_months);
                                                                 }
+                                                            }
+                                                            
+                                                            // Calcular la diferencia desde hoy hasta la fecha de expiración
+                                                            if ($expiryDate) {
+                                                                // Calcular diferencia desde hoy (now) hasta expiry_date
+                                                                // El parámetro false permite valores negativos, pero los convertiremos a 0
+                                                                $monthsValid = now()->diffInMonths($expiryDate, false);
+                                                                $daysValid = now()->diffInDays($expiryDate, false);
+                                                                
+                                                                // Solo mostrar valores positivos (fechas futuras)
+                                                                if ($monthsValid < 0) $monthsValid = 0;
+                                                                if ($daysValid < 0) $daysValid = 0;
+                                                            } else {
+                                                                $monthsValid = 0;
+                                                                $daysValid = 0;
                                                             }
                                                         @endphp
                                                         <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
