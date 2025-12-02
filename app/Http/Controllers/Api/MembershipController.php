@@ -499,20 +499,39 @@ class MembershipController extends Controller
             // Seleccionar la membresía actual: PRIMERO verificar UserMemberships/paquetes activos y NO EXPIRADOS
             // Si tiene una UserMembership activa y no expirada, esa es su membresía actual
             // Solo si NO tiene ninguna UserMembership/paquete activo, usar la basada en clases completadas
+            // IMPORTANTE: NO considerar membresías vencidas (UserMembership expirada)
             $currentMembershipByProgress = $availableMemberships
                 ->unique('id')
                 ->sortByDesc('level')
                 ->first();
             
             // Si no tiene ninguna UserMembership/paquete activo y no expirado, usar la basada en clases completadas
-            // IMPORTANTE: Solo usar clases completadas si NO tiene ninguna membresía vigente
+            // PERO verificar que la membresía basada en clases NO tenga UserMembership expirada
             if (!$currentMembershipByProgress) {
-                $currentMembershipByProgress = $categorias
+                $membershipByClasses = $categorias
                     ->filter(function ($m) use ($totalCompletedClasses) {
                         return $totalCompletedClasses >= $m->class_completed;
                     })
                     ->sortByDesc('level')
                     ->first();
+                
+                // Verificar que la membresía basada en clases NO tenga UserMembership expirada
+                if ($membershipByClasses) {
+                    $allUserMembershipsForThis = $allUserMemberships->where('membership_id', $membershipByClasses->id);
+                    $hasExpiredUserMembership = $allUserMembershipsForThis->contains(function ($userMembership) {
+                        return $userMembership->status === 'active' &&
+                               $userMembership->expiry_date &&
+                               $userMembership->expiry_date->isPast();
+                    });
+                    $hasValidUserMembership = $allActiveUserMemberships->contains(function ($userMembership) use ($membershipByClasses) {
+                        return $userMembership->membership_id === $membershipByClasses->id;
+                    });
+                    
+                    // Solo usar si NO tiene UserMembership expirada (o tiene una válida)
+                    if (!($hasExpiredUserMembership && !$hasValidUserMembership)) {
+                        $currentMembershipByProgress = $membershipByClasses;
+                    }
+                }
             }
             
             // IMPORTANTE: Priorizar UserMemberships/paquetes activos y no expirados sobre clases completadas
