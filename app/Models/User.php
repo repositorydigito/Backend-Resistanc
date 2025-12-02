@@ -499,11 +499,12 @@ final class User extends Authenticatable implements MustVerifyEmail
             ->count();
 
         // 2. Sumar clases otorgadas por membresías VIGENTES adquiridas por compra de paquete
-        // Solo contar la membresía más alta adquirida por paquete (para no duplicar)
+        // IMPORTANTE: Solo contar UNA VEZ la membresía más alta, aunque tenga múltiples paquetes con la misma membresía
+        // Si tiene 2 paquetes Gold (100 puntos cada uno), solo cuenta 100 puntos una vez, no 200
         $membershipGrantedClasses = 0;
 
         // Obtener la membresía más alta del usuario que fue adquirida por compra de paquete
-        // Primero buscar en UserMembership
+        // Primero buscar en UserMembership, ordenando por nivel (más alto primero)
         $highestPackageMembership = \App\Models\UserMembership::where('user_id', $this->id)
             ->whereNotNull('source_package_id')
             ->where('status', 'active')
@@ -521,18 +522,22 @@ final class User extends Authenticatable implements MustVerifyEmail
             ->whereHas('membership', function ($query) {
                 $query->where('is_active', true);
             })
-            ->orderBy('created_at', 'desc')
+            ->join('memberships', 'user_memberships.membership_id', '=', 'memberships.id')
+            ->orderBy('memberships.level', 'desc')
+            ->select('user_memberships.*')
             ->first();
 
         $membershipGrantedClasses = 0;
 
         if ($highestPackageMembership && $highestPackageMembership->membership) {
             // Si el usuario adquirió una membresía por paquete, se le otorgan las clases que requiere esa membresía
-            // Por ejemplo, si compró Rsistanc (requiere 100 clases), se le otorgan 100 clases base
+            // IMPORTANTE: Solo cuenta UNA VEZ, aunque tenga múltiples paquetes con la misma membresía
+            // Por ejemplo, si compró 2 paquetes Gold (100 puntos cada uno), solo cuenta 100 puntos una vez
             $membershipGrantedClasses = $highestPackageMembership->membership->class_completed ?? 0;
         } else {
             // Si no se encontró UserMembership, buscar directamente en los paquetes activos del usuario
             // que tengan una membresía asociada (is_membresia = true)
+            // IMPORTANTE: Ordenar por nivel de membresía (más alto primero), no por fecha
             $activePackage = \App\Models\UserPackage::where('user_id', $this->id)
                 ->where('status', 'active')
                 ->where(function ($query) {
@@ -552,11 +557,15 @@ final class User extends Authenticatable implements MustVerifyEmail
                 ->whereHas('package.membership', function ($query) {
                     $query->where('is_active', true);
                 })
-                ->orderBy('created_at', 'desc')
+                ->join('packages', 'user_packages.package_id', '=', 'packages.id')
+                ->join('memberships', 'packages.membership_id', '=', 'memberships.id')
+                ->orderBy('memberships.level', 'desc')
+                ->select('user_packages.*')
                 ->first();
 
             if ($activePackage && $activePackage->package && $activePackage->package->membership) {
                 // Encontramos un paquete activo con membresía, usar sus clases base
+                // IMPORTANTE: Solo cuenta UNA VEZ, aunque tenga múltiples paquetes con la misma membresía
                 $membershipGrantedClasses = $activePackage->package->membership->class_completed ?? 0;
 
                 \App\Models\Log::create([
