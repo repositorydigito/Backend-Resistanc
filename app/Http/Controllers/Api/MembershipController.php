@@ -87,8 +87,9 @@ class MembershipController extends Controller
                 ->with(['package.disciplines', 'package.membership'])
                 ->get();
 
-            // Determinar primero la membresía actual basada en clases completadas
+            // Determinar primero la membresía actual basada SOLO en clases completadas
             // Esto es necesario para filtrar puntos de membresías inferiores
+            // La membresía basada en clases es la verdadera membresía del usuario
             $currentMembershipByClasses = $categorias
                 ->filter(function ($m) use ($totalCompletedClasses) {
                     return $totalCompletedClasses >= $m->class_completed;
@@ -104,7 +105,7 @@ class MembershipController extends Controller
                 $userMembershipsForThis = $userMemberships->where('membership_id', $membership->id);
                 
                 // Buscar puntos ganados con esta membresía
-                // IMPORTANTE: Solo contar puntos de membresías con nivel >= a la membresía actual
+                // IMPORTANTE: Solo contar puntos de membresías con nivel >= a la membresía actual (basada en clases)
                 // Los puntos de membresías inferiores ya se usaron para llegar a la actual
                 $pointsEarnedWithMembership = $userPoints->filter(function ($point) use ($membership, $currentMembershipLevel) {
                     // Solo considerar puntos de esta membresía si su nivel es >= a la membresía actual
@@ -454,21 +455,27 @@ class MembershipController extends Controller
                 return $hasValidPackage;
             });
             
-            // Seleccionar la membresía de mayor nivel entre todas las disponibles
-            $currentMembershipByProgress = $availableMemberships
-                ->unique('id')
+            // Seleccionar la membresía actual: PRIMERO por clases completadas (prioridad)
+            // Si tiene suficientes clases para una membresía, esa es su membresía actual
+            // Independientemente de si tiene UserMemberships activas o paquetes
+            $currentMembershipByProgress = $categorias
+                ->filter(function ($m) use ($totalCompletedClasses) {
+                    return $totalCompletedClasses >= $m->class_completed;
+                })
                 ->sortByDesc('level')
                 ->first();
             
-            // Si no hay ninguna membresía disponible, calcular basado en clases completadas
+            // Si no tiene suficientes clases para ninguna membresía, usar la de mayor nivel disponible
+            // (UserMemberships activas o paquetes)
             if (!$currentMembershipByProgress) {
-                $currentMembershipByProgress = $categorias
-                    ->filter(function ($m) use ($totalCompletedClasses) {
-                        return $totalCompletedClasses >= $m->class_completed;
-                    })
+                $currentMembershipByProgress = $availableMemberships
+                    ->unique('id')
                     ->sortByDesc('level')
                     ->first();
             }
+            
+            // IMPORTANTE: Si tiene clases suficientes, la membresía actual es la basada en clases
+            // No usar UserMemberships/paquetes si ya alcanzó una membresía por clases completadas
 
             // Determinar la siguiente membresía:
             // Si tiene membresía actual, la siguiente es la que tiene level mayor
