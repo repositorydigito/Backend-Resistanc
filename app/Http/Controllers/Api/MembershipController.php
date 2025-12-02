@@ -135,23 +135,28 @@ class MembershipController extends Controller
                     return !$point->isExpired();
                 })->sum('quantity_point');
                 
-                // Detalles de los puntos
-                $pointsDetails = $pointsEarnedWithMembership->map(function ($point) {
-                    return [
-                        'id' => $point->id,
-                        'quantity_point' => $point->quantity_point,
-                        'date_expire' => $point->date_expire->format('Y-m-d'),
-                        'is_expired' => $point->isExpired(),
-                        'is_active' => $point->isActive(),
-                        'active_membership_id' => $point->active_membership_id,
-                        'active_membership_name' => $point->activeMembership->name ?? null,
-                        'package_id' => $point->package_id,
-                        'package_name' => $point->package->name ?? null,
-                        'user_package_id' => $point->user_package_id,
-                        'user_package_code' => $point->userPackage->package_code ?? null,
-                        'days_until_expire' => $point->isActive() ? now()->diffInDays($point->date_expire, false) : null,
-                    ];
-                })->values();
+                // Detalles de los puntos (solo no expirados)
+                $pointsDetails = $pointsEarnedWithMembership
+                    ->filter(function ($point) {
+                        return !$point->isExpired(); // Solo puntos no expirados
+                    })
+                    ->map(function ($point) {
+                        return [
+                            'id' => $point->id,
+                            'quantity_point' => $point->quantity_point,
+                            'date_expire' => $point->date_expire->format('Y-m-d'),
+                            'is_expired' => $point->isExpired(),
+                            'is_active' => $point->isActive(),
+                            'active_membership_id' => $point->active_membership_id,
+                            'active_membership_name' => $point->activeMembership->name ?? null,
+                            'package_id' => $point->package_id,
+                            'package_name' => $point->package->name ?? null,
+                            'user_package_id' => $point->user_package_id,
+                            'user_package_code' => $point->userPackage->package_code ?? null,
+                            'days_until_expire' => $point->isActive() ? now()->diffInDays($point->date_expire, false) : null,
+                        ];
+                    })
+                    ->values();
 
                 // Calcular clases válidas de membresías
                 $validMembershipClasses = $userMembershipsForThis->sum(function ($userMembership) {
