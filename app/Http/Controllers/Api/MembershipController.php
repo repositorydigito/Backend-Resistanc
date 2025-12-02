@@ -87,13 +87,30 @@ class MembershipController extends Controller
                 ->with(['package.disciplines', 'package.membership'])
                 ->get();
 
+            // Determinar primero la membresía actual basada en clases completadas
+            // Esto es necesario para filtrar puntos de membresías inferiores
+            $currentMembershipByClasses = $categorias
+                ->filter(function ($m) use ($totalCompletedClasses) {
+                    return $totalCompletedClasses >= $m->class_completed;
+                })
+                ->sortByDesc('level')
+                ->first();
+            
+            $currentMembershipLevel = $currentMembershipByClasses ? $currentMembershipByClasses->level : 0;
+            
             // Mapear las categorías con información de clases válidas
-            $membresiasConClases = $categorias->map(function ($membership) use ($userMemberships, $userPackages, $totalCompletedClasses, $categorias, $userPoints) {
+            $membresiasConClases = $categorias->map(function ($membership) use ($userMemberships, $userPackages, $totalCompletedClasses, $categorias, $userPoints, $currentMembershipLevel) {
                 // Buscar membresías del usuario para esta membresía
                 $userMembershipsForThis = $userMemberships->where('membership_id', $membership->id);
                 
                 // Buscar puntos ganados con esta membresía
-                $pointsEarnedWithMembership = $userPoints->where('membresia_id', $membership->id);
+                // IMPORTANTE: Solo contar puntos de membresías con nivel >= a la membresía actual
+                // Los puntos de membresías inferiores ya se usaron para llegar a la actual
+                $pointsEarnedWithMembership = $userPoints->filter(function ($point) use ($membership, $currentMembershipLevel) {
+                    // Solo considerar puntos de esta membresía si su nivel es >= a la membresía actual
+                    return $point->membresia_id === $membership->id && 
+                           $membership->level >= $currentMembershipLevel;
+                });
                 
                 // Buscar puntos que están siendo usados con esta membresía activa
                 $pointsUsedWithMembership = $userPoints->where('active_membership_id', $membership->id);
@@ -128,7 +145,7 @@ class MembershipController extends Controller
                     // Si el máximo es 0 (membresía sin límite), sumar todos los puntos del primer paquete
                     if ($maxPointsForMembership > 0) {
                         // Solo contar hasta el máximo permitido, sin importar cuántos registros haya
-                        $totalPointsEarned = $maxPointsForMembership;
+                        $totalPointsEarned = min($firstPackagePoints->sum('quantity_point'), $maxPointsForMembership);
                     } else {
                         // Si no hay límite, sumar todos los puntos del primer paquete
                         $totalPointsEarned = $firstPackagePoints->sum('quantity_point');
@@ -140,7 +157,9 @@ class MembershipController extends Controller
                     return !$point->isExpired();
                 })->sum('quantity_point');
                 
-                // Detalles de los puntos (solo no expirados)
+                // Detalles de los puntos (solo no expirados y de membresías válidas)
+                // IMPORTANTE: Solo mostrar puntos de membresías con nivel >= a la membresía actual
+                // Los puntos de membresías inferiores ya se usaron para llegar a la actual
                 $pointsDetails = $pointsEarnedWithMembership
                     ->filter(function ($point) {
                         return !$point->isExpired(); // Solo puntos no expirados
@@ -482,9 +501,27 @@ class MembershipController extends Controller
                 return $point->isExpired();
             });
             
+            // Calcular la membresía actual para el resumen (usar la que se calculó arriba o recalcular)
+            $currentMembershipForSummary = $currentMembershipByProgress ?? $currentMembershipByClasses;
+            $currentLevelForSummary = $currentMembershipForSummary ? $currentMembershipForSummary->level : 0;
+            
+            // Filtrar puntos solo de membresías con nivel >= a la membresía actual
+            // Los puntos de membresías inferiores ya se usaron para llegar a la actual
+            $validActivePoints = $activePoints->filter(function ($point) use ($categorias, $currentLevelForSummary) {
+                if (!$point->membresia_id) {
+                    return false;
+                }
+                $membership = $categorias->firstWhere('id', $point->membresia_id);
+                if (!$membership) {
+                    return false;
+                }
+                // Solo contar puntos de membresías con nivel >= a la membresía actual
+                return $membership->level >= $currentLevelForSummary;
+            });
+            
             $pointsSummary = [
-                'total_points' => $activePoints->sum('quantity_point'),
-                'total_points_by_membership_earned' => $activePoints->filter(function ($point) {
+                'total_points' => $validActivePoints->sum('quantity_point'),
+                'total_points_by_membership_earned' => $validActivePoints->filter(function ($point) {
                     return $point->membresia_id !== null;
                 })->groupBy('membresia_id')->map(function ($points) {
                     $firstPoint = $points->first();
