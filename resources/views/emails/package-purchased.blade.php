@@ -211,7 +211,19 @@
     $disciplines = $package ? ($package->disciplines ?? collect()) : collect();
     $packageName = $package->name ?? 'Paquete';
     $classesQuantity = $package->classes_quantity ?? 0;
-    $firstDiscipline = $disciplines->isNotEmpty() ? $disciplines->first()->name ?? '' : '';
+    
+    // Preparar texto de disciplinas
+    $disciplinesText = '';
+    if ($disciplines->isNotEmpty()) {
+        $disciplineNames = $disciplines->pluck('name')->filter()->values();
+        if ($disciplineNames->count() === 1) {
+            $disciplinesText = $disciplineNames->first();
+        } elseif ($disciplineNames->count() <= 3) {
+            $disciplinesText = $disciplineNames->implode(', ');
+        } else {
+            $disciplinesText = 'Múltiples disciplinas';
+        }
+    }
 @endphp
 
 <body>
@@ -340,9 +352,9 @@
                                                         <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
                                                             {{ $classesQuantity }} clases
                                                         </p>
-                                                        @if($firstDiscipline)
+                                                        @if($disciplinesText)
                                                         <p style="font-size: 14px; color: #5D6D7A; margin: 5px 0; font-weight: 500; font-family: 'Outfit', sans-serif;">
-                                                            {{ $firstDiscipline }}
+                                                            {{ $disciplinesText }}
                                                         </p>
                                                         @endif
                                                     </td>
