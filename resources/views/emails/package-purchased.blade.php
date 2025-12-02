@@ -362,7 +362,7 @@
                                                                     <img src="{{ asset('image/emails/package/calender-white.png') }}"
                                                                         alt="Calendario"
 
-                                                                        style="display: block; width: 36px; height: 36px; margin: 0 auto;">
+                                                                        style="display: block; width: 30px; height: 30px; margin: 0 auto;">
                                                                 </td>
                                                             </tr>
                                                         </table>
@@ -374,43 +374,14 @@
                                                             Válido por
                                                         </p>
                                                         @php
-                                                            // Obtener la fecha de expiración
-                                                            $expiryDate = null;
-                                                            
-                                                            // Primero intentar usar expiry_date directamente
-                                                            if ($userPackage->expiry_date) {
-                                                                $expiryDate = \Carbon\Carbon::parse($userPackage->expiry_date);
-                                                            } else {
-                                                                // Si no existe, calcular desde purchase_date o activation_date + duration_in_months
-                                                                $startDate = $userPackage->activation_date ?? $userPackage->purchase_date;
-                                                                
-                                                                if ($startDate && $package && $package->duration_in_months) {
-                                                                    $expiryDate = \Carbon\Carbon::parse($startDate)->addMonths($package->duration_in_months);
-                                                                }
-                                                            }
-                                                            
-                                                            // Calcular la diferencia desde hoy hasta la fecha de expiración
-                                                            if ($expiryDate) {
-                                                                // Calcular diferencia desde hoy (now) hasta expiry_date
-                                                                // El parámetro false permite valores negativos, pero los convertiremos a 0
-                                                                $monthsValid = now()->diffInMonths($expiryDate, false);
-                                                                $daysValid = now()->diffInDays($expiryDate, false);
-                                                                
-                                                                // Solo mostrar valores positivos (fechas futuras)
-                                                                if ($monthsValid < 0) $monthsValid = 0;
-                                                                if ($daysValid < 0) $daysValid = 0;
-                                                            } else {
-                                                                $monthsValid = 0;
-                                                                $daysValid = 0;
-                                                            }
+                                                            // Obtener la cantidad de meses de validez del paquete
+                                                            $monthsValid = $package ? ($package->duration_in_months ?? 0) : 0;
                                                         @endphp
                                                         <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
                                                             @if($monthsValid > 0)
                                                                 {{ $monthsValid }} {{ $monthsValid == 1 ? 'mes' : 'meses' }}
-                                                            @elseif($daysValid > 0)
-                                                                {{ $daysValid }} {{ $daysValid == 1 ? 'día' : 'días' }}
                                                             @else
-                                                                Indefinido
+
                                                             @endif
                                                         </p>
                                                     </td>
