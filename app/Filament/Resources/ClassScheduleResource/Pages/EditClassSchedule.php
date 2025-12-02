@@ -67,6 +67,109 @@ class EditClassSchedule extends EditRecord
                 ->send();
         }
 
+        // Verificar si se activó el envío de correos de reemplazo
+        if ($this->record->wasChanged('replaced_email') && $this->record->replaced_email === true) {
+            try {
+                // Cargar relaciones necesarias
+                $this->record->load(['class.discipline', 'instructor', 'substituteInstructor', 'seatAssignments.user']);
+                
+                // Verificar que tenga instructor suplente
+                if (!$this->record->substitute_instructor_id || !$this->record->substituteInstructor) {
+                    $this->record->update(['replaced_email' => false]);
+                    Notification::make()
+                        ->title('Error')
+                        ->body('No se ha configurado un instructor suplente.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                // Obtener todos los usuarios únicos con asientos reservados
+                $reservedSeats = $this->record->seatAssignments()
+                    ->whereIn('status', ['reserved', 'occupied'])
+                    ->whereNotNull('user_id')
+                    ->with('user')
+                    ->get();
+
+                $users = $reservedSeats->pluck('user')->filter()->unique('id');
+
+                if ($users->isEmpty()) {
+                    $this->record->update(['replaced_email' => false]);
+                    Notification::make()
+                        ->title('Sin estudiantes')
+                        ->body('No hay estudiantes inscritos en esta clase.')
+                        ->warning()
+                        ->send();
+                    return;
+                }
+
+                // Dividir usuarios en grupos de 50 (límite de BCC)
+                $userGroups = $users->chunk(50);
+                $totalGroups = $userGroups->count();
+                $sentCount = 0;
+
+                // Enviar correos por grupos
+                foreach ($userGroups as $groupIndex => $userGroup) {
+                    $emails = $userGroup->pluck('email')->filter()->toArray();
+                    
+                    if (empty($emails)) {
+                        continue;
+                    }
+
+                    $primaryUser = $userGroup->first();
+                    $bccEmails = array_slice($emails, 1);
+
+                    try {
+                        $mail = new \App\Mail\InstructorReplacedMailable($primaryUser, $this->record);
+                        
+                        if (!empty($bccEmails)) {
+                            $mail->bcc($bccEmails);
+                        }
+                        
+                        \Illuminate\Support\Facades\Mail::send($mail);
+                        $sentCount += count($emails);
+                        
+                        \Illuminate\Support\Facades\Log::info('Correos de reemplazo enviados', [
+                            'class_schedule_id' => $this->record->id,
+                            'group' => $groupIndex + 1,
+                            'total_groups' => $totalGroups,
+                            'emails_sent' => count($emails),
+                        ]);
+                        
+                        if ($groupIndex < $totalGroups - 1) {
+                            usleep(500000);
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Error enviando correo de reemplazo', [
+                            'class_schedule_id' => $this->record->id,
+                            'group' => $groupIndex + 1,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                Notification::make()
+                    ->title('Correos enviados')
+                    ->body("Se enviaron {$sentCount} correo(s) a los estudiantes inscritos en {$totalGroups} grupo(s).")
+                    ->success()
+                    ->send();
+
+            } catch (\Exception $e) {
+                $this->record->update(['replaced_email' => false]);
+                \Illuminate\Support\Facades\Log::error('Error al enviar correos de reemplazo', [
+                    'class_schedule_id' => $this->record->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
+                Notification::make()
+                    ->title('Error')
+                    ->body('Ocurrió un error al enviar los correos: ' . $e->getMessage())
+                    ->danger()
+                    ->send();
+            }
+        }
+
         // Emitir evento JavaScript para actualizar componentes Livewire
         $this->dispatch('schedule-updated', scheduleId: $this->record->id);
     }

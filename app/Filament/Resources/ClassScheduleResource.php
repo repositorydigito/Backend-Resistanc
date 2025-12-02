@@ -76,12 +76,14 @@ class ClassScheduleResource extends Resource
                                     // La validación final se hace en mutateFormDataBeforeCreate/Save
                                     $scheduledDate = $get('scheduled_date');
                                     $startTime = $get('start_time');
+                                    $currentId = $get('id'); // ID del registro actual (si está editando)
 
                                     if ($value && $scheduledDate && $startTime) {
                                         $existing = \App\Models\ClassSchedule::where('class_id', $value)
                                             ->whereDate('scheduled_date', $scheduledDate)
                                             ->where('start_time', $startTime)
                                             ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                            ->when($currentId, fn($query) => $query->where('id', '!=', $currentId)) // Excluir el registro actual
                                             ->first();
 
                                         if ($existing) {
@@ -270,12 +272,14 @@ class ClassScheduleResource extends Resource
                                     // La validación final se hace en mutateFormDataBeforeCreate/Save
                                     $classId = $get('class_id');
                                     $startTime = $get('start_time');
+                                    $currentId = $get('id'); // ID del registro actual (si está editando)
 
                                     if ($value && $classId && $startTime) {
                                         $existing = \App\Models\ClassSchedule::where('class_id', $classId)
                                             ->whereDate('scheduled_date', $value)
                                             ->where('start_time', $startTime)
                                             ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                            ->when($currentId, fn($query) => $query->where('id', '!=', $currentId)) // Excluir el registro actual
                                             ->first();
 
                                         if ($existing) {
@@ -306,12 +310,14 @@ class ClassScheduleResource extends Resource
                                     // La validación final se hace en mutateFormDataBeforeCreate/Save
                                     $classId = $get('class_id');
                                     $scheduledDate = $get('scheduled_date');
+                                    $currentId = $get('id'); // ID del registro actual (si está editando)
 
                                     if ($value && $classId && $scheduledDate) {
                                         $existing = \App\Models\ClassSchedule::where('class_id', $classId)
                                             ->whereDate('scheduled_date', $scheduledDate)
                                             ->where('start_time', $value)
                                             ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                            ->when($currentId, fn($query) => $query->where('id', '!=', $currentId)) // Excluir el registro actual
                                             ->first();
 
                                         if ($existing) {
@@ -471,10 +477,10 @@ class ClassScheduleResource extends Resource
                             ->helperText('Selecciona el instructor suplente que reemplazará al instructor original. Solo se mostrarán instructores que enseñan la misma disciplina.'),
 
                         Forms\Components\Toggle::make('replaced_email')
-                            ->label('¿Se enviaron los correos de reemplazo?')
+                            ->label('Enviar aviso a estudiantes inscritos')
                             ->visible(fn(Get $get): bool => $get('is_replaced') === true) // Solo visible si hay reemplazo
                             ->default(false)
-                            ->helperText('Marca esta opción cuando hayas enviado los correos electrónicos a todos los estudiantes inscritos informándoles sobre el cambio de instructor.'),
+                            ->helperText('Al activar esta opción y guardar, se enviarán automáticamente los correos electrónicos a todos los estudiantes inscritos informándoles sobre el cambio de instructor.'),
                     ])
             ]);
     }
