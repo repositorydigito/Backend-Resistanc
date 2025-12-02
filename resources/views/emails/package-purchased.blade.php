@@ -211,7 +211,7 @@
     $disciplines = $package ? ($package->disciplines ?? collect()) : collect();
     $packageName = $package->name ?? 'Paquete';
     $classesQuantity = $package->classes_quantity ?? 0;
-    
+
     // Preparar texto de disciplinas
     $disciplinesText = '';
     if ($disciplines->isNotEmpty()) {
@@ -264,7 +264,7 @@
 
                                             <td style="vertical-align:middle;">
                                                 <span class="card__title--negrita logo__studio">
-                                                  LET’S<strong style=" color: #B0694C;"> STUDIO </strong>
+                                                  LET’S<strong style=" color: #B0694C;"> MOVE!</strong>
                                                 </span>
                                             </td>
                                         </tr>
