@@ -99,14 +99,22 @@ class MembershipController extends Controller
                 
                 // Solo contar puntos del PRIMER paquete encontrado, hasta el máximo permitido
                 // No sumar puntos de múltiples paquetes
+                // Si hay múltiples registros del mismo paquete, solo contar hasta el máximo de la membresía
                 $totalPointsEarned = 0;
                 if ($pointsByPackage->isNotEmpty()) {
                     // Tomar solo el primer grupo de puntos (primer paquete)
                     $firstPackagePoints = $pointsByPackage->first();
-                    $firstPackagePointsSum = $firstPackagePoints->sum('quantity_point');
                     
-                    // Limitar al máximo permitido por la membresía
-                    $totalPointsEarned = min($firstPackagePointsSum, $maxPointsForMembership);
+                    // Si hay múltiples registros del mismo paquete, solo contar hasta el máximo
+                    // No sumar todos los registros, solo contar hasta el límite de la membresía
+                    // Si el máximo es 0 (membresía sin límite), sumar todos los puntos del primer paquete
+                    if ($maxPointsForMembership > 0) {
+                        // Solo contar hasta el máximo permitido, sin importar cuántos registros haya
+                        $totalPointsEarned = $maxPointsForMembership;
+                    } else {
+                        // Si no hay límite, sumar todos los puntos del primer paquete
+                        $totalPointsEarned = $firstPackagePoints->sum('quantity_point');
+                    }
                 }
                 
                 // Calcular puntos totales que se están usando con esta membresía activa (solo no expirados)
