@@ -799,6 +799,17 @@ final class PackageController extends Controller
                     'notes' => $request->notes ?? 'Compra realizada desde la aplicación',
                 ]);
 
+                // Actualizar los puntos creados anteriormente con el user_package_id
+                if ($package->membership_id && $package->membership) {
+                    \App\Models\UserPoint::where('user_id', $userId)
+                        ->where('membresia_id', $package->membership_id)
+                        ->whereNull('user_package_id')
+                        ->where('package_id', $package->id)
+                        ->orderBy('created_at', 'desc')
+                        ->limit(1)
+                        ->update(['user_package_id' => $userPackage->id]);
+                }
+
                 // Actualizar metadata de Stripe con el user_package_id
                 if ($stripeSubscriptionId) {
                     try {

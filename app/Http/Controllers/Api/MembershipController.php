@@ -36,7 +36,7 @@ class MembershipController extends Controller
 
             // Obtener todos los puntos del usuario
             $userPoints = \App\Models\UserPoint::where('user_id', $userId)
-                ->with(['membership', 'activeMembership', 'package'])
+                ->with(['membership', 'activeMembership', 'package', 'userPackage'])
                 ->get();
 
             // Obtener las membresías activas y vigentes del usuario
@@ -81,9 +81,19 @@ class MembershipController extends Controller
                 $pointsUsedWithMembership = $userPoints->where('active_membership_id', $membership->id);
                 
                 // Calcular puntos totales ganados con esta membresía (solo no expirados)
-                $totalPointsEarned = $pointsEarnedWithMembership->filter(function ($point) {
+                // Limitar a un máximo basado en class_completed de la membresía
+                $activePointsEarned = $pointsEarnedWithMembership->filter(function ($point) {
                     return !$point->isExpired();
-                })->sum('quantity_point');
+                });
+                
+                $totalPointsEarned = $activePointsEarned->sum('quantity_point');
+                
+                // Limitar los puntos contados al máximo permitido por la membresía (class_completed)
+                // Por ejemplo, si Gold tiene class_completed = 100, solo se cuentan hasta 100 puntos
+                $maxPointsForMembership = $membership->class_completed ?? 0;
+                if ($maxPointsForMembership > 0 && $totalPointsEarned > $maxPointsForMembership) {
+                    $totalPointsEarned = $maxPointsForMembership;
+                }
                 
                 // Calcular puntos totales que se están usando con esta membresía activa (solo no expirados)
                 $totalPointsUsed = $pointsUsedWithMembership->filter(function ($point) {
@@ -102,6 +112,8 @@ class MembershipController extends Controller
                         'active_membership_name' => $point->activeMembership->name ?? null,
                         'package_id' => $point->package_id,
                         'package_name' => $point->package->name ?? null,
+                        'user_package_id' => $point->user_package_id,
+                        'user_package_code' => $point->userPackage->package_code ?? null,
                         'days_until_expire' => $point->isActive() ? now()->diffInDays($point->date_expire, false) : null,
                     ];
                 })->values();

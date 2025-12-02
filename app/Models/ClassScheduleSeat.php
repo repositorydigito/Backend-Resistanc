@@ -326,6 +326,9 @@ class ClassScheduleSeat extends Model
             // (esto significa que el usuario está en la membresía más alta)
             $activeMembershipId = $nextMembershipId ?? $membershipIdEarned;
 
+            // Obtener el user_package_id si se usó un paquete
+            $userPackageId = $this->user_package_id ?? null;
+
             // Crear el registro de puntos
             \App\Models\UserPoint::create([
                 'user_id' => $user->id,
@@ -334,6 +337,7 @@ class ClassScheduleSeat extends Model
                 'membresia_id' => $membershipIdEarned, // Membresía con la que se ganaron los puntos
                 'active_membership_id' => $activeMembershipId, // Membresía activa (siguiente membresía si existe, sino la misma)
                 'package_id' => $packageId, // Paquete consumido
+                'user_package_id' => $userPackageId, // Paquete específico del usuario consumido
             ]);
 
             \Illuminate\Support\Facades\Log::info('Puntos creados para el usuario', [

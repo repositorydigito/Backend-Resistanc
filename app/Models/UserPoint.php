@@ -26,6 +26,7 @@ class UserPoint extends Model
         'membresia_id',
         'active_membership_id',
         'package_id',
+        'user_package_id',
     ];
 
     /**
@@ -71,6 +72,14 @@ class UserPoint extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    /**
+     * Get the user package associated with these points.
+     */
+    public function userPackage(): BelongsTo
+    {
+        return $this->belongsTo(UserPackage::class);
     }
 
     /**
