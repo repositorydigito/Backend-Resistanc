@@ -28,27 +28,46 @@ class EditClassSchedule extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        // Si algunos campos están deshabilitados (como cuando is_replaced es true),
+        // no vienen en $data, así que usamos los valores del record actual
+        $scheduledDate = $data['scheduled_date'] ?? $this->record->scheduled_date;
+        $startTime = $data['start_time'] ?? $this->record->start_time;
+        $classId = $data['class_id'] ?? $this->record->class_id;
+
         // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
         // Excluir el registro actual
-        $existing = \App\Models\ClassSchedule::where('class_id', $data['class_id'])
-            ->whereDate('scheduled_date', $data['scheduled_date'])
-            ->where('start_time', $data['start_time'])
-            ->where('status', '!=', 'cancelled') // Excluir cancelados
-            ->where('id', '!=', $this->record->id) // Excluir el registro actual
-            ->first();
+        if ($classId && $scheduledDate && $startTime) {
+            $existing = \App\Models\ClassSchedule::where('class_id', $classId)
+                ->whereDate('scheduled_date', $scheduledDate)
+                ->where('start_time', $startTime)
+                ->where('status', '!=', 'cancelled') // Excluir cancelados
+                ->where('id', '!=', $this->record->id) // Excluir el registro actual
+                ->first();
 
-        // COMENTADO: Causa error de JSON en Livewire
-        // if ($existing) {
-        //     $class = $existing->class->name ?? 'Clase';
-        //     Notification::make()
-        //         ->title('Error: Horario duplicado')
-        //         ->body("Ya existe otro horario para esta clase el {$data['scheduled_date']} a las {$data['start_time']}. Horario ID: {$existing->id}")
-        //         ->danger()
-        //         ->persistent()
-        //         ->send();
-        //     
-        //     $this->halt(); // Detener el proceso de actualización
-        // }
+            // COMENTADO: Causa error de JSON en Livewire
+            // if ($existing) {
+            //     $class = $existing->class->name ?? 'Clase';
+            //     Notification::make()
+            //         ->title('Error: Horario duplicado')
+            //         ->body("Ya existe otro horario para esta clase el {$scheduledDate} a las {$startTime}. Horario ID: {$existing->id}")
+            //         ->danger()
+            //         ->persistent()
+            //         ->send();
+            //     
+            //     $this->halt(); // Detener el proceso de actualización
+            // }
+        }
+
+        // Asegurar que los campos deshabilitados se mantengan con sus valores actuales
+        if (!isset($data['scheduled_date']) && $this->record->scheduled_date) {
+            $data['scheduled_date'] = $this->record->scheduled_date;
+        }
+        if (!isset($data['start_time']) && $this->record->start_time) {
+            $data['start_time'] = $this->record->start_time;
+        }
+        if (!isset($data['end_time']) && $this->record->end_time) {
+            $data['end_time'] = $this->record->end_time;
+        }
 
         return $data;
     }
