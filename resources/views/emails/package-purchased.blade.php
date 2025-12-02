@@ -304,8 +304,8 @@
                         style="background: url('{{ asset('image/emails/activacion/fondo-activacion.png') }}') no-repeat center; background-size: cover; border-radius: 15px; padding: 20px; margin: 20px auto; max-width: 500px;">
                         <tr>
                             <td align="center" style="padding-bottom: 20px;">
-                                <!-- Título con degradado -->
-                                <h3 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 800; font-family: 'Outfit', sans-serif; background: linear-gradient(94deg, #CF5E30 -5.25%, #AF58C9 27.54%, #8A982F 79.49%, #0979E5 110.6%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                <!-- Título con color representativo del degradado (compatible con todos los clientes de email) -->
+                                <h3 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 800; font-family: 'Outfit', sans-serif; color: #AF58C9;">
                                     {{ strtoupper($package->name) }}
                                 </h3>
                                 <h4 style="color: #5D6D7A; font-size: 16px; margin: 0; font-weight: 400; font-family: 'Outfit', sans-serif;">
@@ -323,13 +323,17 @@
                                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td align="center" style="padding-bottom: 15px;">
-                                                        <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #B0694C 31.48%, #A267B4 113.36%); display: inline-block; padding: 12px; box-sizing: border-box;">
-                                                            <img style="height: 25px; object-fit: contain; object-position: center;" src="{{ asset('image/emails/package/fire-white.png') }}"
-                                                                alt="Fuego"
-                                                                width="36"
-                                                                height="36"
-                                                                style="display: block; width: 100%; height: auto; object-fit: contain;">
-                                                        </div>
+                                                        <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #B0694C 31.48%, #A267B4 113.36%);">
+                                                            <tr>
+                                                                <td align="center" valign="middle" style="padding: 12px;">
+                                                                    <img src="{{ asset('image/emails/package/fire-white.png') }}"
+                                                                        alt="Fuego"
+                                                                        width="36"
+                                                                        height="36"
+                                                                        style="display: block; width: 36px; height: 36px; margin: 0 auto;">
+                                                                </td>
+                                                            </tr>
+                                                        </table>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -353,13 +357,17 @@
                                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td align="center" style="padding-bottom: 15px;">
-                                                        <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #B0694C 31.48%, #A267B4 113.36%); display: inline-block; padding: 12px; box-sizing: border-box;">
-                                                            <img style="height: 25px; object-fit: contain; object-position: center;" src="{{ asset('image/emails/package/calender-white.png') }}"
-                                                                alt="Calendario"
-                                                                width="36"
-                                                                height="36"
-                                                                style="display: block; width: 100%; height: auto; object-fit: contain;">
-                                                        </div>
+                                                        <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #B0694C 31.48%, #A267B4 113.36%);">
+                                                            <tr>
+                                                                <td align="center" valign="middle" style="padding: 12px;">
+                                                                    <img src="{{ asset('image/emails/package/calender-white.png') }}"
+                                                                        alt="Calendario"
+                                                                        width="36"
+                                                                        height="36"
+                                                                        style="display: block; width: 36px; height: 36px; margin: 0 auto;">
+                                                                </td>
+                                                            </tr>
+                                                        </table>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -368,8 +376,29 @@
                                                             Válido por
                                                         </p>
                                                         @php
-                                                            $monthsValid = $userPackage && $userPackage->expiry_date ? $userPackage->expiry_date->diffInMonths(now()) : 0;
-                                                            $daysValid = $userPackage && $userPackage->expiry_date ? $userPackage->expiry_date->diffInDays(now()) : 0;
+                                                            // Usar expiry_date si existe, si no usar estimated_expiry_date
+                                                            $expiryDate = $userPackage->expiry_date ?? ($userPackage->estimated_expiry_date ?? null);
+                                                            
+                                                            if ($expiryDate) {
+                                                                // Asegurarse de que es una instancia de Carbon
+                                                                if (is_string($expiryDate)) {
+                                                                    $expiryDate = \Carbon\Carbon::parse($expiryDate);
+                                                                }
+                                                                $monthsValid = $expiryDate->diffInMonths(now(), false);
+                                                                $daysValid = $expiryDate->diffInDays(now(), false);
+                                                            } else {
+                                                                // Si no hay fecha, intentar calcular desde el paquete
+                                                                if ($package && ($package->duration_in_months || $package->validity_days)) {
+                                                                    $expiryDate = $package->duration_in_months 
+                                                                        ? now()->addMonths($package->duration_in_months)
+                                                                        : now()->addDays($package->validity_days ?? 30);
+                                                                    $monthsValid = $expiryDate->diffInMonths(now(), false);
+                                                                    $daysValid = $expiryDate->diffInDays(now(), false);
+                                                                } else {
+                                                                    $monthsValid = 0;
+                                                                    $daysValid = 0;
+                                                                }
+                                                            }
                                                         @endphp
                                                         <p style="font-size: 18px; color: #5D6D7A; margin: 5px 0; font-weight: 600; font-family: 'Outfit', sans-serif;">
                                                             @if($monthsValid > 0)
