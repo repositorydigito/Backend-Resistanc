@@ -247,6 +247,7 @@ class MembershipController extends Controller
             });
 
             // Obtener la membresía activa del usuario (si tiene una)
+            // Seleccionar la de mayor nivel (level) si hay múltiples activas
             $activeUserMembership = UserMembership::with(['membership'])
                 ->where('user_id', $userId)
                 ->where('status', 'active')
@@ -254,6 +255,13 @@ class MembershipController extends Controller
                     $query->whereNull('expiry_date')
                         ->orWhere('expiry_date', '>', now());
                 })
+                ->where(function ($query) {
+                    $query->whereNull('activation_date')
+                        ->orWhere('activation_date', '<=', now());
+                })
+                ->join('memberships', 'user_memberships.membership_id', '=', 'memberships.id')
+                ->orderBy('memberships.level', 'desc')
+                ->select('user_memberships.*')
                 ->first();
 
             // Determinar la membresía actual:
