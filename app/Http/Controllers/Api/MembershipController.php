@@ -100,15 +100,26 @@ class MembershipController extends Controller
             $currentMembershipLevel = $currentMembershipByClasses ? $currentMembershipByClasses->level : 0;
             
             // Mapear las categorías con información de clases válidas
-            $membresiasConClases = $categorias->map(function ($membership) use ($userMemberships, $userPackages, $totalCompletedClasses, $categorias, $userPoints, $currentMembershipLevel, $allActiveUserMemberships) {
+            $membresiasConClases = $categorias->map(function ($membership) use ($userMemberships, $userPackages, $totalCompletedClasses, $categorias, $userPoints, $currentMembershipLevel, $allActiveUserMemberships, $allUserMemberships) {
                 // Buscar membresías del usuario para esta membresía
                 $userMembershipsForThis = $userMemberships->where('membership_id', $membership->id);
                 
-                // Verificar si esta membresía está vigente (tiene UserMembership activa o paquete activo)
+                // Verificar TODAS las UserMemberships del usuario para esta membresía (incluidas expiradas)
+                $allUserMembershipsForThis = $allUserMemberships->where('membership_id', $membership->id);
+                
+                // Verificar si hay alguna UserMembership expirada
+                $hasExpiredUserMembership = $allUserMembershipsForThis->contains(function ($userMembership) {
+                    return $userMembership->status === 'active' &&
+                           $userMembership->expiry_date &&
+                           $userMembership->expiry_date->isPast();
+                });
+                
+                // Verificar si esta membresía tiene UserMembership activa y NO EXPIRADA
                 $hasValidUserMembership = $allActiveUserMemberships->contains(function ($userMembership) use ($membership) {
                     return $userMembership->membership_id === $membership->id;
                 });
                 
+                // Verificar si tiene paquetes activos
                 $hasValidPackage = $userPackages->contains(function ($userPackage) use ($membership) {
                     return $userPackage->package &&
                            $userPackage->package->membership_id === $membership->id &&
@@ -117,7 +128,19 @@ class MembershipController extends Controller
                            (!$userPackage->activation_date || $userPackage->activation_date->isPast());
                 });
                 
-                $isMembershipValid = $hasValidUserMembership || $hasValidPackage;
+                // IMPORTANTE: Si tiene UserMembership expirada y NO tiene UserMembership válida,
+                // NO considerar esta membresía como vigente, incluso si tiene paquetes activos
+                $isMembershipValid = false;
+                if ($hasExpiredUserMembership && !$hasValidUserMembership) {
+                    // Tiene UserMembership expirada sin válida, no es vigente
+                    $isMembershipValid = false;
+                } elseif ($hasValidUserMembership) {
+                    // Tiene UserMembership válida, es vigente
+                    $isMembershipValid = true;
+                } elseif ($hasValidPackage) {
+                    // No tiene UserMembership (ni expirada ni válida), pero tiene paquete activo
+                    $isMembershipValid = true;
+                }
                 
                 // Buscar puntos ganados con esta membresía
                 // IMPORTANTE: Solo contar puntos de membresías con nivel >= a la membresía actual (basada en clases)
@@ -526,8 +549,10 @@ class MembershipController extends Controller
                 return $point->isExpired();
             });
             
-            // Calcular la membresía actual para el resumen (usar la que se calculó arriba o recalcular)
-            $currentMembershipForSummary = $currentMembershipByProgress ?? $currentMembershipByClasses;
+            // Calcular la membresía actual para el resumen
+            // IMPORTANTE: Usar la membresía basada en clases completadas, no la basada en UserMemberships
+            // Esto asegura que no cuente puntos de membresías inferiores si ya alcanzó una superior
+            $currentMembershipForSummary = $currentMembershipByClasses;
             $currentLevelForSummary = $currentMembershipForSummary ? $currentMembershipForSummary->level : 0;
             
             // Filtrar puntos solo de membresías con nivel >= a la membresía actual
@@ -556,7 +581,7 @@ class MembershipController extends Controller
                         'total_points' => $points->sum('quantity_point'),
                     ];
                 })->values(),
-                'total_points_by_active_membership' => $activePoints->filter(function ($point) use ($allActiveUserMemberships, $userPackages, $categorias) {
+                'total_points_by_active_membership' => $activePoints->filter(function ($point) use ($allActiveUserMemberships, $allUserMemberships, $userPackages, $categorias) {
                     if (!$point->active_membership_id) {
                         return false;
                     }
@@ -565,11 +590,34 @@ class MembershipController extends Controller
                     if (!$activeMembership) {
                         return false;
                     }
+                    
+                    // Verificar TODAS las UserMemberships del usuario para esta membresía (incluidas expiradas)
+                    $allUserMembershipsForThis = $allUserMemberships->where('membership_id', $activeMembership->id);
+                    
+                    // Verificar si hay alguna UserMembership expirada
+                    $hasExpiredUserMembership = $allUserMembershipsForThis->contains(function ($userMembership) {
+                        return $userMembership->status === 'active' &&
+                               $userMembership->expiry_date &&
+                               $userMembership->expiry_date->isPast();
+                    });
+                    
                     // Verificar si tiene UserMembership activa y no expirada
                     $hasValidUserMembership = $allActiveUserMemberships->contains(function ($userMembership) use ($activeMembership) {
                         return $userMembership->membership_id === $activeMembership->id;
                     });
-                    // Verificar si tiene paquetes activos y no expirados
+                    
+                    // IMPORTANTE: Si tiene UserMembership expirada y NO tiene UserMembership válida,
+                    // NO contar puntos, incluso si tiene paquetes activos
+                    if ($hasExpiredUserMembership && !$hasValidUserMembership) {
+                        return false; // No contar si tiene UserMembership expirada
+                    }
+                    
+                    // Si tiene UserMembership válida, contar
+                    if ($hasValidUserMembership) {
+                        return true;
+                    }
+                    
+                    // Si NO tiene UserMembership (ni expirada ni válida), verificar paquetes activos
                     $hasValidPackage = $userPackages->contains(function ($userPackage) use ($activeMembership) {
                         return $userPackage->package &&
                                $userPackage->package->membership_id === $activeMembership->id &&
@@ -577,8 +625,8 @@ class MembershipController extends Controller
                                (!$userPackage->expiry_date || $userPackage->expiry_date->isFuture()) &&
                                (!$userPackage->activation_date || $userPackage->activation_date->isPast());
                     });
-                    // Solo contar si la membresía está vigente
-                    return $hasValidUserMembership || $hasValidPackage;
+                    
+                    return $hasValidPackage;
                 })->groupBy('active_membership_id')->map(function ($points) {
                     $firstPoint = $points->first();
                     return [
