@@ -81,18 +81,32 @@ class MembershipController extends Controller
                 $pointsUsedWithMembership = $userPoints->where('active_membership_id', $membership->id);
                 
                 // Calcular puntos totales ganados con esta membresía (solo no expirados)
-                // Limitar a un máximo basado en class_completed de la membresía
+                // IMPORTANTE: Si hay múltiples paquetes de la misma membresía, solo contar los puntos de UN paquete
+                // No sumar puntos de múltiples paquetes de la misma membresía
                 $activePointsEarned = $pointsEarnedWithMembership->filter(function ($point) {
                     return !$point->isExpired();
                 });
                 
-                $totalPointsEarned = $activePointsEarned->sum('quantity_point');
-                
-                // Limitar los puntos contados al máximo permitido por la membresía (class_completed)
-                // Por ejemplo, si Gold tiene class_completed = 100, solo se cuentan hasta 100 puntos
+                // Obtener el máximo permitido por la membresía (class_completed)
                 $maxPointsForMembership = $membership->class_completed ?? 0;
-                if ($maxPointsForMembership > 0 && $totalPointsEarned > $maxPointsForMembership) {
-                    $totalPointsEarned = $maxPointsForMembership;
+                
+                // Agrupar puntos por user_package_id (o package_id si no tiene user_package_id)
+                // Esto permite identificar puntos de diferentes paquetes
+                $pointsByPackage = $activePointsEarned->groupBy(function ($point) {
+                    // Agrupar por user_package_id si existe, sino por package_id
+                    return $point->user_package_id ?? $point->package_id ?? 'no_package';
+                });
+                
+                // Solo contar puntos del PRIMER paquete encontrado, hasta el máximo permitido
+                // No sumar puntos de múltiples paquetes
+                $totalPointsEarned = 0;
+                if ($pointsByPackage->isNotEmpty()) {
+                    // Tomar solo el primer grupo de puntos (primer paquete)
+                    $firstPackagePoints = $pointsByPackage->first();
+                    $firstPackagePointsSum = $firstPackagePoints->sum('quantity_point');
+                    
+                    // Limitar al máximo permitido por la membresía
+                    $totalPointsEarned = min($firstPackagePointsSum, $maxPointsForMembership);
                 }
                 
                 // Calcular puntos totales que se están usando con esta membresía activa (solo no expirados)
