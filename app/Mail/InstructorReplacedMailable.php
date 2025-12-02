@@ -4,7 +4,6 @@ namespace App\Mail;
 
 use App\Models\ClassSchedule;
 use App\Models\Company;
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -15,7 +14,6 @@ class InstructorReplacedMailable extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $user;
     public $classSchedule;
     public $company;
     public $originalInstructor;
@@ -24,9 +22,8 @@ class InstructorReplacedMailable extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(User $user, ClassSchedule $classSchedule)
+    public function __construct(ClassSchedule $classSchedule)
     {
-        $this->user = $user;
         $this->classSchedule = $classSchedule;
         $this->company = Company::first();
         $this->originalInstructor = $classSchedule->instructor;
@@ -51,7 +48,6 @@ class InstructorReplacedMailable extends Mailable
         return new Content(
             view: 'emails.instructor-replaced',
             with: [
-                'user' => $this->user,
                 'classSchedule' => $this->classSchedule,
                 'company' => $this->company,
                 'originalInstructor' => $this->originalInstructor,

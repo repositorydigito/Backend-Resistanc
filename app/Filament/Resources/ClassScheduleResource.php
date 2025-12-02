@@ -946,13 +946,12 @@ class ClassScheduleResource extends Resource
                                 return;
                             }
 
-                            // Dividir usuarios en grupos de 50 (límite de BCC)
+                            // Dividir usuarios en grupos de 50 (límite de BCC por correo)
                             $userGroups = $users->chunk(50);
                             $totalGroups = $userGroups->count();
-                            $totalUsers = $users->count();
                             $sentCount = 0;
 
-                            // Enviar correos por grupos (máximo 50 BCC por correo)
+                            // Enviar un correo por grupo con todos los destinatarios en BCC
                             foreach ($userGroups as $groupIndex => $userGroup) {
                                 $emails = $userGroup->pluck('email')->filter()->toArray();
                                 
@@ -960,13 +959,16 @@ class ClassScheduleResource extends Resource
                                     continue;
                                 }
 
-                                // Usar el primer usuario como destinatario principal (para el contenido personalizado)
-                                // y todos los demás en BCC para mantener privacidad
-                                $primaryUser = $userGroup->first();
-                                $bccEmails = array_slice($emails, 1); // Resto de emails en BCC
-
                                 try {
-                                    $mail = new \App\Mail\InstructorReplacedMailable($primaryUser, $record);
+                                    // Crear un correo general (sin usuario específico)
+                                    $mail = new \App\Mail\InstructorReplacedMailable($record);
+                                    
+                                    // Usar el primer email como destinatario principal (requerido por Laravel)
+                                    // Todos los demás van en BCC para mantener privacidad
+                                    $primaryEmail = $emails[0];
+                                    $bccEmails = array_slice($emails, 1);
+                                    
+                                    $mail->to($primaryEmail);
                                     
                                     // Agregar todos los demás emails en BCC
                                     if (!empty($bccEmails)) {
@@ -983,9 +985,9 @@ class ClassScheduleResource extends Resource
                                         'emails_sent' => count($emails),
                                     ]);
                                     
-                                    // Pequeña pausa entre grupos para evitar sobrecarga del servidor de correo
+                                    // Pausa entre grupos para evitar sobrecarga del servidor de correo
                                     if ($groupIndex < $totalGroups - 1) {
-                                        usleep(500000); // 0.5 segundos
+                                        usleep(500000); // 0.5 segundos entre grupos
                                     }
                                 } catch (\Exception $e) {
                                     \Illuminate\Support\Facades\Log::error('Error enviando correo de reemplazo', [
@@ -994,8 +996,6 @@ class ClassScheduleResource extends Resource
                                         'error' => $e->getMessage(),
                                         'trace' => $e->getTraceAsString(),
                                     ]);
-                                    
-                                    // Continuar con el siguiente grupo aunque falle uno
                                 }
                             }
 

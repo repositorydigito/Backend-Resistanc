@@ -122,12 +122,12 @@ class EditClassSchedule extends EditRecord
                     return;
                 }
 
-                // Dividir usuarios en grupos de 50 (límite de BCC)
+                // Dividir usuarios en grupos de 50 (límite de BCC por correo)
                 $userGroups = $users->chunk(50);
                 $totalGroups = $userGroups->count();
                 $sentCount = 0;
 
-                // Enviar correos por grupos
+                // Enviar un correo por grupo con todos los destinatarios en BCC
                 foreach ($userGroups as $groupIndex => $userGroup) {
                     $emails = $userGroup->pluck('email')->filter()->toArray();
                     
@@ -135,12 +135,18 @@ class EditClassSchedule extends EditRecord
                         continue;
                     }
 
-                    $primaryUser = $userGroup->first();
-                    $bccEmails = array_slice($emails, 1);
-
                     try {
-                        $mail = new \App\Mail\InstructorReplacedMailable($primaryUser, $this->record);
+                        // Crear un correo general (sin usuario específico)
+                        $mail = new \App\Mail\InstructorReplacedMailable($this->record);
                         
+                        // Usar el primer email como destinatario principal (requerido por Laravel)
+                        // Todos los demás van en BCC para mantener privacidad
+                        $primaryEmail = $emails[0];
+                        $bccEmails = array_slice($emails, 1);
+                        
+                        $mail->to($primaryEmail);
+                        
+                        // Agregar todos los demás emails en BCC
                         if (!empty($bccEmails)) {
                             $mail->bcc($bccEmails);
                         }
@@ -155,14 +161,16 @@ class EditClassSchedule extends EditRecord
                             'emails_sent' => count($emails),
                         ]);
                         
+                        // Pausa entre grupos para evitar sobrecarga del servidor de correo
                         if ($groupIndex < $totalGroups - 1) {
-                            usleep(500000);
+                            usleep(500000); // 0.5 segundos entre grupos
                         }
                     } catch (\Exception $e) {
                         \Illuminate\Support\Facades\Log::error('Error enviando correo de reemplazo', [
                             'class_schedule_id' => $this->record->id,
                             'group' => $groupIndex + 1,
                             'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
                         ]);
                     }
                 }

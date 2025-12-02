@@ -158,7 +158,7 @@
                     </h2>
 
                     <!-- Saludo -->
-                    <h1 class="card__saludo">¡Hola {{ $user->name }}!</h1>
+                    <h1 class="card__saludo">¡Hola!</h1>
 
                     <!-- Contenido -->
                     <div class="card__body">
