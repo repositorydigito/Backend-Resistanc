@@ -118,10 +118,31 @@ class ClassScheduleResource extends Resource
                             })
                             ->searchable()
                             ->dehydrated() // ✅ AGREGAR ESTO - asegura que se envíe aunque esté disabled
-                            ->disabled(fn(Get $get): bool => !filled($get('class_id')))
+                            ->disabled(function (Get $get, $record): bool {
+                                // Deshabilitar si no hay class_id seleccionado
+                                if (!filled($get('class_id'))) {
+                                    return true;
+                                }
+
+                                // Deshabilitar si ya tiene asientos reservados POR USUARIOS
+                                if ($record && $record->seats()->wherePivotNotNull('user_id')->exists()) {
+                                    return true;
+                                }
+
+                                return false;
+                            })
                             ->live() // Reacciona a cambios
                             ->afterStateUpdated(fn(Set $set) => $set('studio_id', null)) // Limpiar sala al cambiar instructor
-                            ->helperText('Primero selecciona una clase para ver instructores disponibles'),
+                            ->helperText(function (Get $get, $record) {
+                                if ($record && $record->seats()->wherePivotNotNull('user_id')->exists()) {
+                                    $seatsCount = $record->seats()->wherePivotNotNull('user_id')->count();
+                                    return "⚠️ No se puede cambiar el instructor porque hay {$seatsCount} asiento(s) reservado(s) por usuarios";
+                                }
+                                if (!filled($get('class_id'))) {
+                                    return 'Primero selecciona una clase para ver instructores disponibles';
+                                }
+                                return null;
+                            }),
 
 
                         Forms\Components\Select::make('studio_id')
@@ -240,6 +261,7 @@ class ClassScheduleResource extends Resource
                             ->default(now())
                             ->label('Fecha Programada')
                             ->required()
+                            ->disabled(fn(Get $get): bool => $get('is_replaced') === true) // Deshabilitar si hay reemplazo
                             ->live() // Hacer reactivo para validar duplicados
                             ->rules([
                                 fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
@@ -267,6 +289,7 @@ class ClassScheduleResource extends Resource
                         Forms\Components\TimePicker::make('start_time')
                             ->label('Hora de Inicio')
                             ->seconds(false)
+                            ->disabled(fn(Get $get): bool => $get('is_replaced') === true) // Deshabilitar si hay reemplazo
                             ->live() // Importante para que reaccione a cambios
                             ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                 $endTime = $get('end_time');
@@ -302,6 +325,7 @@ class ClassScheduleResource extends Resource
                         Forms\Components\TimePicker::make('end_time')
                             ->label('Hora de Fin')
                             ->seconds(false)
+                            ->disabled(fn(Get $get): bool => $get('is_replaced') === true) // Deshabilitar si hay reemplazo
                             ->live()
                             ->rules([
                                 fn(Get $get): Closure => function (string $attribute, $value, Closure $fail) use ($get) {
@@ -325,7 +349,16 @@ class ClassScheduleResource extends Resource
                             ->numeric()
                             ->disabled() // Solo lectura
                             ->dehydrated(false) // No se envía en el formulario
-                            ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
+                            ->visible(fn(string $operation): bool => $operation === 'edit') // Solo en editar
+                            ->default(function ($record) {
+                                // Calcular dinámicamente desde los asientos reales
+                                if ($record && $record->exists) {
+                                    // Recargar la relación para obtener los datos más actuales
+                                    $record->load('seatAssignments');
+                                    return $record->seatAssignments()->where('status', 'available')->count();
+                                }
+                                return 0;
+                            }),
 
                         // Forms\Components\TextInput::make('booked_spots')
                         //     ->label('Lugares Reservados')
@@ -397,21 +430,22 @@ class ClassScheduleResource extends Resource
                     ->description('Usar solo cuando el instructor original no pueda asistir y necesite ser reemplazado por un suplente.')
                     ->icon('heroicon-o-arrow-path')
                     ->collapsible()
-                    ->collapsed()
+                    ->collapsed(false) // No colapsado por defecto
                     ->visible(fn(string $operation): bool => $operation === 'edit')
                     ->schema([
                         Forms\Components\Toggle::make('is_replaced')
                             ->label('¿El instructor será reemplazado?')
                             ->live() // Hacer reactivo
                             ->default(false)
-                            ->helperText('Marca esta opción si el instructor original no puede asistir y será reemplazado por un suplente.'),
+                            ->helperText('Marca esta opción si el instructor original no puede asistir y será reemplazado por un suplente. Al activar esto, la fecha y hora se deshabilitarán.'),
 
                         Forms\Components\Select::make('substitute_instructor_id')
                             ->label('Instructor Suplente')
-                            ->visible(fn(Get $get): bool => $get('is_replaced')) // Solo visible si es reemplazo
-                            ->options(function (Get $get) {
+                            ->visible(fn(Get $get): bool => $get('is_replaced') === true) // Solo visible si es reemplazo
+                            ->options(function (Get $get, $record) {
                                 $classId = $get('class_id');
-                                $primary = $get('instructor_id');
+                                // Obtener el instructor actual del record o del get
+                                $primary = $record?->instructor_id ?? $get('instructor_id');
 
                                 if (!$classId) {
                                     return [];
@@ -433,7 +467,14 @@ class ClassScheduleResource extends Resource
                             })
                             ->searchable()
                             ->nullable()
+                            ->required(fn(Get $get): bool => $get('is_replaced') === true) // Requerido si hay reemplazo
                             ->helperText('Selecciona el instructor suplente que reemplazará al instructor original. Solo se mostrarán instructores que enseñan la misma disciplina.'),
+
+                        Forms\Components\Toggle::make('replaced_email')
+                            ->label('¿Se enviaron los correos de reemplazo?')
+                            ->visible(fn(Get $get): bool => $get('is_replaced') === true) // Solo visible si hay reemplazo
+                            ->default(false)
+                            ->helperText('Marca esta opción cuando hayas enviado los correos electrónicos a todos los estudiantes inscritos informándoles sobre el cambio de instructor.'),
                     ])
             ]);
     }
@@ -856,6 +897,124 @@ class ClassScheduleResource extends Resource
                             ->body($notificationBody)
                             ->success()
                             ->send();
+                    }),
+
+                Tables\Actions\Action::make('send_replacement_email')
+                    ->label('Enviar Correo de Reemplazo')
+                    ->icon('heroicon-o-envelope')
+                    ->color('info')
+                    ->visible(fn($record) => $record->is_replaced && $record->substitute_instructor_id && !$record->replaced_email)
+                    ->requiresConfirmation()
+                    ->modalHeading('Enviar Correo de Reemplazo')
+                    ->modalDescription('¿Estás seguro de que quieres enviar los correos a todos los estudiantes inscritos informándoles sobre el cambio de instructor?')
+                    ->action(function ($record) {
+                        try {
+                            // Cargar relaciones necesarias
+                            $record->load(['class.discipline', 'instructor', 'substituteInstructor', 'seatAssignments.user']);
+                            
+                            // Verificar que tenga instructor suplente
+                            if (!$record->substitute_instructor_id || !$record->substituteInstructor) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Error')
+                                    ->body('No se ha configurado un instructor suplente.')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // Obtener todos los usuarios únicos con asientos reservados
+                            $reservedSeats = $record->seatAssignments()
+                                ->whereIn('status', ['reserved', 'occupied'])
+                                ->whereNotNull('user_id')
+                                ->with('user')
+                                ->get();
+
+                            $users = $reservedSeats->pluck('user')->filter()->unique('id');
+
+                            if ($users->isEmpty()) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Sin estudiantes')
+                                    ->body('No hay estudiantes inscritos en esta clase.')
+                                    ->warning()
+                                    ->send();
+                                return;
+                            }
+
+                            // Dividir usuarios en grupos de 50 (límite de BCC)
+                            $userGroups = $users->chunk(50);
+                            $totalGroups = $userGroups->count();
+                            $totalUsers = $users->count();
+                            $sentCount = 0;
+
+                            // Enviar correos por grupos (máximo 50 BCC por correo)
+                            foreach ($userGroups as $groupIndex => $userGroup) {
+                                $emails = $userGroup->pluck('email')->filter()->toArray();
+                                
+                                if (empty($emails)) {
+                                    continue;
+                                }
+
+                                // Usar el primer usuario como destinatario principal (para el contenido personalizado)
+                                // y todos los demás en BCC para mantener privacidad
+                                $primaryUser = $userGroup->first();
+                                $bccEmails = array_slice($emails, 1); // Resto de emails en BCC
+
+                                try {
+                                    $mail = new \App\Mail\InstructorReplacedMailable($primaryUser, $record);
+                                    
+                                    // Agregar todos los demás emails en BCC
+                                    if (!empty($bccEmails)) {
+                                        $mail->bcc($bccEmails);
+                                    }
+                                    
+                                    \Illuminate\Support\Facades\Mail::send($mail);
+                                    $sentCount += count($emails);
+                                    
+                                    \Illuminate\Support\Facades\Log::info('Correos de reemplazo enviados', [
+                                        'class_schedule_id' => $record->id,
+                                        'group' => $groupIndex + 1,
+                                        'total_groups' => $totalGroups,
+                                        'emails_sent' => count($emails),
+                                    ]);
+                                    
+                                    // Pequeña pausa entre grupos para evitar sobrecarga del servidor de correo
+                                    if ($groupIndex < $totalGroups - 1) {
+                                        usleep(500000); // 0.5 segundos
+                                    }
+                                } catch (\Exception $e) {
+                                    \Illuminate\Support\Facades\Log::error('Error enviando correo de reemplazo', [
+                                        'class_schedule_id' => $record->id,
+                                        'group' => $groupIndex + 1,
+                                        'error' => $e->getMessage(),
+                                        'trace' => $e->getTraceAsString(),
+                                    ]);
+                                    
+                                    // Continuar con el siguiente grupo aunque falle uno
+                                }
+                            }
+
+                            // Actualizar el campo replaced_email
+                            $record->update(['replaced_email' => true]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Correos enviados')
+                                ->body("Se enviaron {$sentCount} correo(s) a los estudiantes inscritos en {$totalGroups} grupo(s).")
+                                ->success()
+                                ->send();
+
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Error al enviar correos de reemplazo', [
+                                'class_schedule_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString(),
+                            ]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('Ocurrió un error al enviar los correos: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
 
                 Tables\Actions\EditAction::make(),

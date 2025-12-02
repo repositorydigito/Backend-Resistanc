@@ -22,29 +22,31 @@ final class ClassSchedule extends Model
         'max_capacity',
         'booked_spots',
         'available_spots',
-        'waitlist_count',
+        'waitlist_spots', // Nota: La migración usa waitlist_spots, pero el modelo también puede usar waitlist_count
+        'waitlist_count', // Mantener ambos por compatibilidad
         'price_per_class',
         'special_price',
         'instructor_notes',
         'class_notes',
+        'special_notes', // Campo de la migración
         'is_cancelled',
         'cancellation_reason',
         'status',
+        'booking_opens_at', // Campo de la migración
+        'booking_closes_at', // Campo de la migración
+        'cancellation_deadline', // Campo de la migración
+        'is_holiday_schedule', // Campo de la migración
 
-        'booking_opens_at',     // ✅ Asegúrate de que estén aquí
-        'booking_closes_at',    // ✅
-        'cancellation_deadline', // ✅
-        // ✅ FALTABA: Agregar los campos de las relaciones
+        // ✅ Campos de las relaciones
         'instructor_id',
         'studio_id',
         'substitute_instructor_id', // Nuevo campo para suplente
         'is_replaced', // Nuevo campo para indicar si es un reemplazo
+        'replaced_email', // Campo para indicar si se enviaron los correos de reemplazo
 
-
-        // Nuevo
+        // Campos adicionales
         'img_url',
         'theme',
-
     ];
     protected static function boot()
     {
@@ -208,19 +210,19 @@ final class ClassSchedule extends Model
 
             // Verificar si se canceló la clase directamente (sin usar el método cancel())
             // También verificar si is_cancelled cambió a true
-            if (($classSchedule->wasChanged('status') && 
-                $classSchedule->status === 'cancelled' && 
+            if (($classSchedule->wasChanged('status') &&
+                $classSchedule->status === 'cancelled' &&
                 $classSchedule->getOriginal('status') !== 'cancelled') ||
-                ($classSchedule->wasChanged('is_cancelled') && 
+                ($classSchedule->wasChanged('is_cancelled') &&
                 $classSchedule->is_cancelled === true &&
                 $classSchedule->getOriginal('is_cancelled') !== true)) {
-                
+
                 // Asegurarse de que el status también esté en 'cancelled'
                 if ($classSchedule->status !== 'cancelled') {
                     $classSchedule->status = 'cancelled';
                     $classSchedule->saveQuietly(); // Guardar sin disparar eventos para evitar loops
                 }
-                
+
                 // Cancelar automáticamente las reservas de zapatos
                 $reason = $classSchedule->cancellation_reason ?? 'Clase cancelada';
                 try {
@@ -247,10 +249,14 @@ final class ClassSchedule extends Model
         'max_capacity' => 'integer',
         'booked_spots' => 'integer',
         'available_spots' => 'integer',
+        'waitlist_spots' => 'integer',
         'waitlist_count' => 'integer',
         'price_per_class' => 'decimal:2',
         'special_price' => 'decimal:2',
         'is_cancelled' => 'boolean',
+        'is_holiday_schedule' => 'boolean',
+        'is_replaced' => 'boolean',
+        'replaced_email' => 'boolean',
     ];
 
     /**
@@ -679,7 +685,7 @@ final class ClassSchedule extends Model
 
             // Reordenar los números de asientos del studio
             $studio->reorderSeatNumbers();
-            
+
             // Recargar los asientos para obtener los seat_number actualizados
             $studioSeats = $studio->seats()->get();
         }
