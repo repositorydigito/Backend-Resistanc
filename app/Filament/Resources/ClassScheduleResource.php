@@ -366,18 +366,6 @@ class ClassScheduleResource extends Resource
                                 return 0;
                             }),
 
-                        // Forms\Components\TextInput::make('booked_spots')
-                        //     ->label('Lugares Reservados')
-                        //     ->numeric()
-                        //     ->default(0)
-                        //     ->disabled() // Solo lectura
-                        //     ->dehydrated(false) // No se envía en el formulario
-                        //     ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
-
-
-                        // Forms\Components\TextInput::make('theme')
-                        //     ->label('Tema'), // Ocupa todo el ancho
-
                         Forms\Components\TextInput::make('waitlist_spots')
                             ->label('Lista de Espera')
                             ->numeric()
@@ -385,37 +373,12 @@ class ClassScheduleResource extends Resource
                             ->disabled() // Solo lectura
                             ->dehydrated(false) // No se envía en el formulario
                             ->visible(fn(string $operation): bool => $operation === 'edit'), // Solo en editar
-                        // Forms\Components\DateTimePicker::make('booking_opens_at')
-                        //     ->label('Reservas Abren'),
-                        // Forms\Components\DateTimePicker::make('booking_closes_at')
-                        //     ->label('Reservas Cierran'),
-                        // Forms\Components\DateTimePicker::make('cancellation_deadline')
-                        //     ->label('Límite de Cancelación'),
+
                         Forms\Components\Textarea::make('special_notes')
                             ->label('Notas Especiales')
                             ->columnSpanFull(),
 
-                        // 🆕 Vista previa del mapa de asientos
-                        // Forms\Components\Placeholder::make('seat_preview')
-                        //     ->label('Vista Previa de Asientos')
-                        //     ->content(function (Get $get) {
-                        //         $studioId = $get('studio_id');
-                        //         if (!$studioId) {
-                        //             return view('filament.forms.components.studio-seat-empty')->render();
-                        //         }
 
-                        //         $studio = \App\Models\Studio::find($studioId);
-                        //         if (!$studio) {
-                        //             return view('filament.forms.components.studio-seat-not-found')->render();
-                        //         }
-
-                        //         return view('filament.forms.components.studio-seat-map', compact('studio'))->render();
-                        //     })
-                        //     ->columnSpanFull()
-                        //     ->visible(fn(Get $get): bool => filled($get('studio_id'))),
-                        // Forms\Components\Toggle::make('is_holiday_schedule')
-                        //     ->label('Horario de Feriado')
-                        //     ->required(),
 
                         Forms\Components\Select::make('status')
                             ->label('Estado')
@@ -554,27 +517,7 @@ class ClassScheduleResource extends Resource
                     ->badge()
                     ->color('gray')
                     ->visible(fn($record) => $record && in_array($record->status, ['completed'])),
-                // Tables\Columns\TextColumn::make('available_spots')
-                //     ->label('Lugares Disponibles')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('booked_spots')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('waitlist_spots')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('booking_opens_at')
-                //     ->dateTime()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('booking_closes_at')
-                //     ->dateTime()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('cancellation_deadline')
-                //     ->dateTime()
-                //     ->sortable(),
-                // Tables\Columns\IconColumn::make('is_holiday_schedule')
-                //     ->boolean(),
+
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn(string $state): string => match ($state) {
@@ -594,14 +537,7 @@ class ClassScheduleResource extends Resource
                         default => 'gray',
                     })
                     ->label('Estado'),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('updated_at')
-                //     ->dateTime()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->defaultSort('scheduled_date', 'desc')
             ->filters([
@@ -703,19 +639,33 @@ class ClassScheduleResource extends Resource
                             ->where('status', 'occupied')
                             ->whereNotNull('user_id')
                             ->get();
-                        
+
                         // Actualizar cada asiento individualmente para que se dispare el evento 'updated'
-                        // Esto creará los puntos automáticamente para cada usuario
+                        // IMPORTANTE: Cada asiento completado = 1 clase completada = 1 punto
+                        // Si un usuario reservó 20 asientos, se crearán 20 puntos y 20 clases completadas
+                        $seatsProcessedCount = 0;
+                        $pointsCreatedCount = 0;
+                        $seatsByUser = [];
+
                         foreach ($occupiedSeats as $seat) {
                             try {
                                 $seat->status = 'Completed';
-                                $seat->save(); // save() dispara el evento updated que crea los puntos
+                                $seat->save(); // save() dispara el evento updated que crea 1 punto por asiento
+
+                                $seatsProcessedCount++;
                                 
-                                \Illuminate\Support\Facades\Log::info('Asiento actualizado a Completed - puntos se crearán automáticamente', [
+                                // Contar asientos por usuario para el log
+                                if (!isset($seatsByUser[$seat->user_id])) {
+                                    $seatsByUser[$seat->user_id] = 0;
+                                }
+                                $seatsByUser[$seat->user_id]++;
+
+                                \Illuminate\Support\Facades\Log::info('Asiento actualizado a Completed - 1 punto se creará automáticamente', [
                                     'seat_id' => $seat->id,
                                     'user_id' => $seat->user_id,
                                     'user_package_id' => $seat->user_package_id,
                                     'user_membership_id' => $seat->user_membership_id,
+                                    'total_seats_for_user' => $seatsByUser[$seat->user_id],
                                 ]);
                             } catch (\Exception $e) {
                                 // Log del error pero continuar con los demás asientos
@@ -726,14 +676,28 @@ class ClassScheduleResource extends Resource
                                 ]);
                             }
                         }
-                        
+
                         // Log de resumen
+                        // IMPORTANTE: Cada asiento completado crea 1 punto y cuenta como 1 clase completada
+                        $seatsByUserDetails = [];
+                        foreach ($seatsByUser as $userId => $count) {
+                            $seatsByUserDetails[] = [
+                                'user_id' => $userId,
+                                'seats_completed' => $count,
+                                'points_created' => $count, // 1 punto por asiento
+                                'classes_completed' => $count, // 1 clase por asiento
+                            ];
+                        }
+
                         \App\Models\Log::create([
                             'action' => 'Asientos actualizados a Completed',
-                            'description' => "Se procesaron " . count($occupiedSeats) . " asientos ocupados. Los puntos se crearán automáticamente mediante eventos.",
+                            'description' => "Se procesaron {$seatsProcessedCount} asientos ocupados. Se crearán {$seatsProcessedCount} puntos (1 por asiento) y se contarán {$seatsProcessedCount} clases completadas.",
                             'data' => [
                                 'class_schedule_id' => $record->id,
-                                'seats_processed' => count($occupiedSeats),
+                                'total_seats_processed' => $seatsProcessedCount,
+                                'total_points_to_create' => $seatsProcessedCount, // 1 punto por asiento
+                                'total_classes_to_count' => $seatsProcessedCount, // 1 clase por asiento
+                                'seats_by_user' => $seatsByUserDetails,
                             ],
                         ]);
 
@@ -753,7 +717,7 @@ class ClassScheduleResource extends Resource
                             if ($user) {
                                 // Recalcular clases efectivas desde cero (incluye clases físicas + base de membresía)
                                 $effectiveClasses = $user->calculateAndUpdateEffectiveCompletedClasses();
-                                
+
                                 // Log para debug
                                 \App\Models\Log::create([
                                     'user_id' => $userId,
@@ -764,7 +728,7 @@ class ClassScheduleResource extends Resource
                                         'class_schedule_id' => $record->id,
                                     ],
                                 ]);
-                                
+
                                 // Recargar el usuario para obtener el valor actualizado
                                 $user->refresh();
                             }
@@ -917,7 +881,7 @@ class ClassScheduleResource extends Resource
                         try {
                             // Cargar relaciones necesarias
                             $record->load(['class.discipline', 'instructor', 'substituteInstructor', 'seatAssignments.user']);
-                            
+
                             // Verificar que tenga instructor suplente
                             if (!$record->substitute_instructor_id || !$record->substituteInstructor) {
                                 \Filament\Notifications\Notification::make()
@@ -954,7 +918,7 @@ class ClassScheduleResource extends Resource
                             // Enviar un correo por grupo con todos los destinatarios en BCC
                             foreach ($userGroups as $groupIndex => $userGroup) {
                                 $emails = $userGroup->pluck('email')->filter()->toArray();
-                                
+
                                 if (empty($emails)) {
                                     continue;
                                 }
@@ -962,29 +926,29 @@ class ClassScheduleResource extends Resource
                                 try {
                                     // Crear un correo general (sin usuario específico)
                                     $mail = new \App\Mail\InstructorReplacedMailable($record);
-                                    
+
                                     // Usar el primer email como destinatario principal (requerido por Laravel)
                                     // Todos los demás van en BCC para mantener privacidad
                                     $primaryEmail = $emails[0];
                                     $bccEmails = array_slice($emails, 1);
-                                    
+
                                     $mail->to($primaryEmail);
-                                    
+
                                     // Agregar todos los demás emails en BCC
                                     if (!empty($bccEmails)) {
                                         $mail->bcc($bccEmails);
                                     }
-                                    
+
                                     \Illuminate\Support\Facades\Mail::send($mail);
                                     $sentCount += count($emails);
-                                    
+
                                     \Illuminate\Support\Facades\Log::info('Correos de reemplazo enviados', [
                                         'class_schedule_id' => $record->id,
                                         'group' => $groupIndex + 1,
                                         'total_groups' => $totalGroups,
                                         'emails_sent' => count($emails),
                                     ]);
-                                    
+
                                     // Pausa entre grupos para evitar sobrecarga del servidor de correo
                                     if ($groupIndex < $totalGroups - 1) {
                                         usleep(500000); // 0.5 segundos entre grupos

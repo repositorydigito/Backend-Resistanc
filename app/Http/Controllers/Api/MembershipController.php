@@ -314,10 +314,13 @@ class MembershipController extends Controller
                 $availableMemberships->push($activeUserMembership->membership);
             }
             
-            // 2. Membresías de paquetes activos
+            // 2. Membresías de paquetes activos (solo activas y no expiradas)
             $packageMemberships = $userPackages
                 ->filter(function ($userPackage) {
-                    return $userPackage->package && $userPackage->package->membership_id !== null;
+                    return $userPackage->package && 
+                           $userPackage->package->membership_id !== null &&
+                           $userPackage->package->membership &&
+                           $userPackage->package->membership->is_active; // Solo membresías activas
                 })
                 ->map(function ($userPackage) {
                     return $userPackage->package->membership;
@@ -328,12 +331,16 @@ class MembershipController extends Controller
             $availableMemberships = $availableMemberships->merge($packageMemberships);
             
             // 3. Membresías de puntos activos (tanto active_membership_id como membresia_id)
+            // IMPORTANTE: Solo considerar membresías activas y no expiradas
             $pointsMemberships = collect();
             
             // Membresías activas de los puntos
             $activePointsMemberships = $userPoints
                 ->filter(function ($point) {
-                    return !$point->isExpired() && $point->active_membership_id !== null;
+                    return !$point->isExpired() && 
+                           $point->active_membership_id !== null &&
+                           $point->activeMembership &&
+                           $point->activeMembership->is_active; // Solo membresías activas
                 })
                 ->map(function ($point) {
                     return $point->activeMembership;
@@ -344,7 +351,10 @@ class MembershipController extends Controller
             // Membresías con las que se ganaron los puntos
             $earnedPointsMemberships = $userPoints
                 ->filter(function ($point) {
-                    return !$point->isExpired() && $point->membresia_id !== null;
+                    return !$point->isExpired() && 
+                           $point->membresia_id !== null &&
+                           $point->membership &&
+                           $point->membership->is_active; // Solo membresías activas
                 })
                 ->map(function ($point) {
                     return $point->membership;
@@ -354,6 +364,50 @@ class MembershipController extends Controller
             
             $pointsMemberships = $pointsMemberships->merge($activePointsMemberships)->merge($earnedPointsMemberships);
             $availableMemberships = $availableMemberships->merge($pointsMemberships);
+            
+            // Filtrar membresías para asegurar que estén activas y no expiradas
+            // IMPORTANTE: Solo considerar membresías que tengan una fuente válida (UserMembership activa, paquetes activos, o puntos activos)
+            $availableMemberships = $availableMemberships->filter(function ($membership) use ($userMemberships, $userPackages, $userPoints) {
+                if (!$membership || !$membership->is_active) {
+                    return false;
+                }
+                
+                // Verificar que el usuario tenga una UserMembership activa y no expirada para esta membresía
+                $hasValidUserMembership = $userMemberships->contains(function ($userMembership) use ($membership) {
+                    return $userMembership->membership_id === $membership->id &&
+                           $userMembership->status === 'active' &&
+                           (!$userMembership->expiry_date || $userMembership->expiry_date->isFuture()) &&
+                           (!$userMembership->activation_date || $userMembership->activation_date->isPast());
+                });
+                
+                if ($hasValidUserMembership) {
+                    return true;
+                }
+                
+                // Si no hay UserMembership válida, verificar que tenga paquetes activos con esta membresía
+                $hasValidPackage = $userPackages->contains(function ($userPackage) use ($membership) {
+                    return $userPackage->package &&
+                           $userPackage->package->membership_id === $membership->id &&
+                           $userPackage->status === 'active' &&
+                           (!$userPackage->expiry_date || $userPackage->expiry_date->isFuture()) &&
+                           (!$userPackage->activation_date || $userPackage->activation_date->isPast());
+                });
+                
+                if ($hasValidPackage) {
+                    return true;
+                }
+                
+                // Si no hay UserMembership ni paquetes válidos, verificar si hay puntos activos (no expirados) con esta membresía
+                // Los puntos activos indican que el usuario tuvo acceso a esta membresía recientemente
+                $hasActivePoints = $userPoints->contains(function ($point) use ($membership) {
+                    return !$point->isExpired() && (
+                        ($point->membresia_id === $membership->id && $point->membership && $point->membership->is_active) ||
+                        ($point->active_membership_id === $membership->id && $point->activeMembership && $point->activeMembership->is_active)
+                    );
+                });
+                
+                return $hasActivePoints;
+            });
             
             // Seleccionar la membresía de mayor nivel entre todas las disponibles
             $currentMembershipByProgress = $availableMemberships

@@ -330,9 +330,12 @@ class ClassScheduleSeat extends Model
             $userPackageId = $this->user_package_id ?? null;
 
             // Crear el registro de puntos
+            // IMPORTANTE: 1 asiento completado = 1 punto = 1 clase completada
+            // Si un usuario reservó 20 asientos en una clase y todos se completan,
+            // se crearán 20 registros de puntos (uno por cada asiento)
             \App\Models\UserPoint::create([
                 'user_id' => $user->id,
-                'quantity_point' => 1, // 1 punto por clase completada
+                'quantity_point' => 1, // 1 punto por asiento completado (cada asiento = 1 clase completada)
                 'date_expire' => $dateExpire,
                 'membresia_id' => $membershipIdEarned, // Membresía con la que se ganaron los puntos
                 'active_membership_id' => $activeMembershipId, // Membresía activa (siguiente membresía si existe, sino la misma)
