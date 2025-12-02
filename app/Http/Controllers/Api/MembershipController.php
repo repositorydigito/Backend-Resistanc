@@ -267,60 +267,73 @@ class MembershipController extends Controller
                 ->first();
 
             // Determinar la membresía actual:
-            // 1. Si tiene una membresía activa con clases restantes, usar esa (prioridad)
-            // 2. Si no, verificar los puntos activos para ver si indican una membresía activa
-            // 3. Si no, buscar en los paquetes activos la membresía de mayor nivel
-            // 4. Si no, usar la membresía basada en clases completadas
-            $currentMembershipByProgress = null;
+            // Siempre seleccionar la membresía de MAYOR NIVEL disponible, sin importar su origen
+            // 1. Recolectar todas las membresías disponibles de todas las fuentes
+            // 2. Seleccionar la de mayor nivel (level)
+            // 3. Si no hay ninguna, usar la membresía basada en clases completadas
+            
+            $availableMemberships = collect();
+            
+            // 1. Membresías activas con clases restantes
             if ($activeUserMembership && $activeUserMembership->membership) {
-                // El usuario tiene una membresía activa con clases restantes, esa es su membresía actual
-                $currentMembershipByProgress = $activeUserMembership->membership;
-            } else {
-                // No tiene membresía activa con clases, verificar puntos activos
-                $activePointsWithMembership = $userPoints
-                    ->filter(function ($point) {
-                        return !$point->isExpired() && $point->active_membership_id !== null;
+                $availableMemberships->push($activeUserMembership->membership);
+            }
+            
+            // 2. Membresías de paquetes activos
+            $packageMemberships = $userPackages
+                ->filter(function ($userPackage) {
+                    return $userPackage->package && $userPackage->package->membership_id !== null;
+                })
+                ->map(function ($userPackage) {
+                    return $userPackage->package->membership;
+                })
+                ->filter()
+                ->unique('id');
+            
+            $availableMemberships = $availableMemberships->merge($packageMemberships);
+            
+            // 3. Membresías de puntos activos (tanto active_membership_id como membresia_id)
+            $pointsMemberships = collect();
+            
+            // Membresías activas de los puntos
+            $activePointsMemberships = $userPoints
+                ->filter(function ($point) {
+                    return !$point->isExpired() && $point->active_membership_id !== null;
+                })
+                ->map(function ($point) {
+                    return $point->activeMembership;
+                })
+                ->filter()
+                ->unique('id');
+            
+            // Membresías con las que se ganaron los puntos
+            $earnedPointsMemberships = $userPoints
+                ->filter(function ($point) {
+                    return !$point->isExpired() && $point->membresia_id !== null;
+                })
+                ->map(function ($point) {
+                    return $point->membership;
+                })
+                ->filter()
+                ->unique('id');
+            
+            $pointsMemberships = $pointsMemberships->merge($activePointsMemberships)->merge($earnedPointsMemberships);
+            $availableMemberships = $availableMemberships->merge($pointsMemberships);
+            
+            // Seleccionar la membresía de mayor nivel entre todas las disponibles
+            $currentMembershipByProgress = $availableMemberships
+                ->unique('id')
+                ->sortByDesc('level')
+                ->first();
+            
+            // Si no hay ninguna membresía disponible, calcular basado en clases completadas
+            if (!$currentMembershipByProgress) {
+                $currentMembershipByProgress = $categorias
+                    ->filter(function ($m) use ($totalCompletedClasses) {
+                        return $totalCompletedClasses >= $m->class_completed;
                     })
-                    ->groupBy('active_membership_id')
-                    ->map(function ($points) {
-                        return [
-                            'membership_id' => $points->first()->active_membership_id,
-                            'membership' => $points->first()->activeMembership,
-                            'total_points' => $points->sum('quantity_point'),
-                        ];
-                    })
-                    ->sortByDesc(function ($item) {
-                        return $item['membership']->level ?? 0;
-                    })
+                    ->sortByDesc('level')
                     ->first();
-
-                if ($activePointsWithMembership && $activePointsWithMembership['membership']) {
-                    // Usar la membresía indicada por los puntos activos (de mayor nivel)
-                    $currentMembershipByProgress = $activePointsWithMembership['membership'];
-                } else {
-                    // No hay puntos que indiquen membresía activa, buscar en paquetes activos
-                    $activePackageWithMembership = $userPackages
-                        ->filter(function ($userPackage) {
-                            return $userPackage->package && $userPackage->package->membership_id !== null;
-                        })
-                        ->sortByDesc(function ($userPackage) {
-                            return $userPackage->package->membership->level ?? 0;
-                        })
-                        ->first();
-
-                    if ($activePackageWithMembership && $activePackageWithMembership->package->membership) {
-                        // Usar la membresía del paquete activo de mayor nivel
-                        $currentMembershipByProgress = $activePackageWithMembership->package->membership;
-                    } else {
-                        // No tiene paquetes con membresía, calcular basado en clases completadas
-                        $currentMembershipByProgress = $categorias
-                            ->filter(function ($m) use ($totalCompletedClasses) {
-                                return $totalCompletedClasses >= $m->class_completed;
-                            })
-                            ->sortByDesc('level')
-                            ->first();
-                    }
-                }
             }
 
             // Determinar la siguiente membresía:
