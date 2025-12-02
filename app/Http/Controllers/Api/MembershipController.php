@@ -34,10 +34,15 @@ class MembershipController extends Controller
             $user->refresh();
             $totalCompletedClasses = $user->effective_completed_classes ?? 0;
 
-            // Obtener todos los puntos del usuario
-            $userPoints = \App\Models\UserPoint::where('user_id', $userId)
+            // Obtener todos los puntos del usuario (incluyendo expirados para referencia)
+            $allUserPoints = \App\Models\UserPoint::where('user_id', $userId)
                 ->with(['membership', 'activeMembership', 'package', 'userPackage'])
                 ->get();
+            
+            // Filtrar solo puntos no expirados para usar en cálculos
+            $userPoints = $allUserPoints->filter(function ($point) {
+                return !$point->isExpired();
+            });
 
             // Obtener las membresías activas y vigentes del usuario (solo las que tienen clases restantes)
             $userMemberships = UserMembership::where('user_id', $userId)
@@ -469,11 +474,11 @@ class MembershipController extends Controller
             }
 
             // Calcular resumen de puntos del usuario
-            $activePoints = $userPoints->filter(function ($point) {
-                return !$point->isExpired();
-            });
+            // $userPoints ya contiene solo puntos no expirados
+            $activePoints = $userPoints;
             
-            $expiredPoints = $userPoints->filter(function ($point) {
+            // Obtener puntos expirados desde la colección completa
+            $expiredPoints = $allUserPoints->filter(function ($point) {
                 return $point->isExpired();
             });
             
