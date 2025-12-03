@@ -305,24 +305,35 @@ class ClassScheduleResource extends Resource
                             ->required()
                             ->rules([
                                 fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                                    // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
-                                    // Nota: Esta validación es solo para feedback inmediato.
-                                    // La validación final se hace en mutateFormDataBeforeCreate/Save
-                                    $classId = $get('class_id');
                                     $scheduledDate = $get('scheduled_date');
                                     $currentId = $get('id'); // ID del registro actual (si está editando)
 
-                                    if ($value && $classId && $scheduledDate) {
-                                        $existing = \App\Models\ClassSchedule::where('class_id', $classId)
-                                            ->whereDate('scheduled_date', $scheduledDate)
-                                            ->where('start_time', $value)
-                                            ->where('status', '!=', 'cancelled') // Excluir cancelados
-                                            ->when($currentId, fn($query) => $query->where('id', '!=', $currentId)) // Excluir el registro actual
-                                            ->first();
+                                    // Validar que la hora de inicio no sea menor a la hora actual si la fecha es hoy
+                                    if ($value && $scheduledDate) {
+                                        $scheduledDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $value);
+                                        $now = now();
 
-                                        if ($existing) {
-                                            $class = $existing->class->name ?? 'Clase';
-                                            $fail("Ya existe un horario para esta clase el {$scheduledDate} a las {$value}. Horario ID: {$existing->id}");
+                                        // Si la fecha programada es hoy, la hora no puede ser anterior a la hora actual
+                                        if ($scheduledDateTime->isToday() && $scheduledDateTime->lt($now)) {
+                                            $fail("La hora de inicio no puede ser anterior a la hora actual ({$now->format('H:i')}).");
+                                        }
+
+                                        // Validar que no exista otro horario con la misma clase, fecha y hora de inicio
+                                        // Nota: Esta validación es solo para feedback inmediato.
+                                        // La validación final se hace en mutateFormDataBeforeCreate/Save
+                                        $classId = $get('class_id');
+                                        if ($classId) {
+                                            $existing = \App\Models\ClassSchedule::where('class_id', $classId)
+                                                ->whereDate('scheduled_date', $scheduledDate)
+                                                ->where('start_time', $value)
+                                                ->where('status', '!=', 'cancelled') // Excluir cancelados
+                                                ->when($currentId, fn($query) => $query->where('id', '!=', $currentId)) // Excluir el registro actual
+                                                ->first();
+
+                                            if ($existing) {
+                                                $class = $existing->class->name ?? 'Clase';
+                                                $fail("Ya existe un horario para esta clase el {$scheduledDate} a las {$value}. Horario ID: {$existing->id}");
+                                            }
                                         }
                                     }
                                 },
