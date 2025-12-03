@@ -95,18 +95,24 @@ class UserPoint extends Model
 
     /**
      * Scope para obtener puntos no expirados.
+     * Usa la zona horaria configurada en la aplicación.
      */
     public function scopeNotExpired($query)
     {
-        return $query->where('date_expire', '>=', now()->toDateString());
+        $timezone = config('app.timezone', 'America/Lima');
+        $today = now($timezone)->toDateString();
+        return $query->where('date_expire', '>=', $today);
     }
 
     /**
      * Scope para obtener puntos expirados.
+     * Usa la zona horaria configurada en la aplicación.
      */
     public function scopeExpired($query)
     {
-        return $query->where('date_expire', '<', now()->toDateString());
+        $timezone = config('app.timezone', 'America/Lima');
+        $today = now($timezone)->toDateString();
+        return $query->where('date_expire', '<', $today);
     }
 
     /**
@@ -123,17 +129,22 @@ class UserPoint extends Model
      */
     public static function updateActiveMembershipForUser(int $userId, ?int $newMembershipId): int
     {
+        $timezone = config('app.timezone', 'America/Lima');
+        $today = now($timezone)->toDateString();
         return static::where('user_id', $userId)
-            ->where('date_expire', '>=', now()->toDateString()) // Solo puntos no expirados
+            ->where('date_expire', '>=', $today) // Solo puntos no expirados
             ->update(['active_membership_id' => $newMembershipId]);
     }
 
     /**
      * Verificar si el punto está expirado.
+     * Usa la zona horaria configurada en la aplicación.
      */
     public function isExpired(): bool
     {
-        return $this->date_expire < now()->toDateString();
+        $timezone = config('app.timezone', 'America/Lima');
+        $today = now($timezone)->toDateString();
+        return $this->date_expire < $today;
     }
 
     /**

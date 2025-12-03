@@ -560,10 +560,12 @@ class MembershipController extends Controller
             }
 
             // Calcular resumen de puntos del usuario
-            // $userPoints ya contiene solo puntos no expirados
-            $activePoints = $userPoints;
+            // IMPORTANTE: $userPoints ya contiene solo puntos NO EXPIRADOS (filtrados arriba)
+            // Los puntos expirados NO se usan en ningún cálculo
+            $activePoints = $userPoints; // Solo puntos activos (no expirados)
             
-            // Obtener puntos expirados desde la colección completa
+            // Obtener puntos expirados SOLO para información/debug (NO se usan en cálculos)
+            // Estos puntos NO se cuentan en total_points ni en ningún otro campo
             $expiredPoints = $allUserPoints->filter(function ($point) {
                 return $point->isExpired();
             });
