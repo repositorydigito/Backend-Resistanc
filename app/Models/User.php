@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
+
 
 use Laravel\Cashier\Billable;
 
@@ -301,7 +301,7 @@ final class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Relación con los métodos de pago almacenados en la base de datos
-     * Nota: Este método se renombró a storedPaymentMethods() para evitar conflicto 
+     * Nota: Este método se renombró a storedPaymentMethods() para evitar conflicto
      * con paymentMethods() del trait Billable de Cashier que obtiene métodos de Stripe
      */
     public function storedPaymentMethods(): HasMany
@@ -472,7 +472,7 @@ final class User extends Authenticatable implements MustVerifyEmail
      *    - Solo cuenta clases cuyo paquete asociado (user_package_id) está activo y no expirado
      * 2. Clases otorgadas por membresías VIGENTES adquiridas por compra de paquete
      *    - Solo cuenta si la membresía está activa y no expirada
-     * 
+     *
      * @return int Número de clases efectivas completadas
      */
     public function calculateAndUpdateEffectiveCompletedClasses(): int
@@ -523,7 +523,7 @@ final class User extends Authenticatable implements MustVerifyEmail
         // 2. Sumar clases otorgadas por membresías VIGENTES adquiridas por compra de paquete
         // Solo contar la membresía más alta adquirida por paquete (para no duplicar)
         $membershipGrantedClasses = 0;
-        
+
         // Obtener la membresía más alta del usuario que fue adquirida por compra de paquete
         // Primero buscar en UserMembership
         $highestPackageMembership = \App\Models\UserMembership::where('user_id', $this->id)
@@ -545,9 +545,9 @@ final class User extends Authenticatable implements MustVerifyEmail
             })
             ->orderBy('created_at', 'desc')
             ->first();
-        
+
         $membershipGrantedClasses = 0;
-        
+
         if ($highestPackageMembership && $highestPackageMembership->membership) {
             // Si el usuario adquirió una membresía por paquete, se le otorgan las clases que requiere esa membresía
             // Por ejemplo, si compró Rsistanc (requiere 100 clases), se le otorgan 100 clases base
@@ -576,11 +576,11 @@ final class User extends Authenticatable implements MustVerifyEmail
                 })
                 ->orderBy('created_at', 'desc')
                 ->first();
-            
+
             if ($activePackage && $activePackage->package && $activePackage->package->membership) {
                 // Encontramos un paquete activo con membresía, usar sus clases base
                 $membershipGrantedClasses = $activePackage->package->membership->class_completed ?? 0;
-                
+
                 \App\Models\Log::create([
                     'user_id' => $this->id,
                     'action' => 'Cálculo de clases efectivas - Membresía encontrada desde paquete',
@@ -614,17 +614,17 @@ final class User extends Authenticatable implements MustVerifyEmail
         //   Ejemplo: Rsistanc (100 base) + 7 físicas = 107 clases efectivas
         // - Si NO tienes membresía por paquete pero sí clases físicas: solo cuentan las físicas
         //   Ejemplo: 50 clases físicas = 50 clases efectivas
-        
+
         // IMPORTANTE: Solo contar clases físicas que sean ADICIONALES a la base de la membresía
         // Si ya tienes 100 clases físicas y la membresía otorga 100 base, no sumar 100+100=200
         // En ese caso, las clases físicas ya incluyen la base
-        
+
         if ($membershipGrantedClasses > 0) {
             // Si tiene membresía por paquete, las clases físicas se suman a la base
             // PERO solo si las clases físicas son menores que la base
             // Si las clases físicas ya superan la base, significa que las ganó por completar clases
             // y no necesita sumar la base (ya está incluida)
-            
+
             if ($physicalCompletedClasses < $membershipGrantedClasses) {
                 // Tiene membresía base pero pocas clases físicas
                 // Sumar: base + físicas = total
@@ -656,7 +656,7 @@ final class User extends Authenticatable implements MustVerifyEmail
     {
         // Recalcular desde cero para asegurar precisión
         $newTotal = $this->calculateAndUpdateEffectiveCompletedClasses();
-        
+
         \App\Models\Log::create([
             'user_id' => $this->id,
             'action' => 'Clases efectivas actualizadas',

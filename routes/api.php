@@ -41,8 +41,6 @@ Route::prefix('invoices')->name('invoices.')->middleware('auth:sanctum')->group(
     Route::post('/generate', [InvoiceController::class, 'generarComprobante'])->name('generate');
 });
 
-// Pasarela de pago
-Route::post('/payment/create', [MercardoPagoController::class, 'create'])->name('payment.create');
 
 
 // Apis de auth login y registro
