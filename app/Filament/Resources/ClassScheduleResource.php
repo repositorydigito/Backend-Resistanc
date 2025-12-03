@@ -310,8 +310,10 @@ class ClassScheduleResource extends Resource
 
                                     // Validar que la hora de inicio no sea menor a la hora actual si la fecha es hoy
                                     if ($value && $scheduledDate) {
-                                        $scheduledDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $value);
-                                        $now = now();
+                                        // Usar la zona horaria configurada en la aplicación
+                                        $timezone = config('app.timezone', 'America/Lima');
+                                        $scheduledDateTime = \Carbon\Carbon::parse($scheduledDate . ' ' . $value)->setTimezone($timezone);
+                                        $now = now($timezone);
 
                                         // Si la fecha programada es hoy, la hora no puede ser anterior a la hora actual
                                         if ($scheduledDateTime->isToday() && $scheduledDateTime->lt($now)) {
