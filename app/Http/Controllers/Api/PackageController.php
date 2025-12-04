@@ -10,6 +10,7 @@ use App\Models\Package;
 use App\Models\UserPackage;
 use App\Models\UserMembership;
 use App\Models\Log;
+use App\Services\SunatServices;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
@@ -295,8 +296,9 @@ final class PackageController extends Controller
             $request->validate([
                 'package_id' => 'required|integer|exists:packages,id',
                 'payment_method_id' => 'required|string', // ID de Stripe directamente
-                'promo_code' => 'nullable|string|max:50',
-                'notes' => 'nullable|string|max:500',
+                'promo_code' => 'sometimes|string|max:50',
+                'notes' => 'sometimes|string|max:500',
+                'invoice_type' => 'sometimes|string|in:boleta,factura', // Tipo de comprobante (por defecto: boleta)
             ]);
 
             $userId = Auth::id();
@@ -903,6 +905,60 @@ final class PackageController extends Controller
                         'applied' => true
                     ] : null,
                 ];
+
+                // Generar comprobante electrónico (boleta o factura)
+                $invoiceType = $request->string('invoice_type', 'boleta')->value(); // Por defecto: boleta
+                
+                try {
+                    // Preparar datos del cliente
+                    $clientData = $this->prepareClientDataForInvoice($user);
+                    
+                    // Preparar items del comprobante
+                    $items = $this->prepareItemsForInvoice($package, $finalPrice, $originalPrice, $promoCodeUsed, $discountPercentage);
+                    
+                    // Generar comprobante según el tipo solicitado
+                    $sunatService = app(SunatServices::class);
+                    
+                    if ($invoiceType === 'factura') {
+                        // Validar que el usuario tenga RUC para factura
+                        if (!$user->is_company || !$user->document_number || strlen($user->document_number) !== 11) {
+                            // Si no tiene RUC válido, generar boleta en su lugar
+                            $invoiceData = $sunatService->generarBoleta($clientData, $items, $userId, null, $userPackage->id);
+                            $invoiceType = 'boleta'; // Actualizar tipo real generado
+                        } else {
+                            $invoiceData = $sunatService->generarFactura($clientData, $items, $userId, null, $userPackage->id);
+                        }
+                    } else {
+                        // Por defecto: boleta
+                        $invoiceData = $sunatService->generarBoleta($clientData, $items, $userId, null, $userPackage->id);
+                    }
+                    
+                    // Si la generación fue exitosa, agregar a la respuesta
+                    if ($invoiceData['success'] ?? false) {
+                        $responseData['invoice'] = [
+                            'id' => $invoiceData['data']['id'] ?? null,
+                            'serie' => $invoiceData['data']['serie'] ?? null,
+                            'numero' => $invoiceData['data']['numero'] ?? null,
+                            'numero_completo' => $invoiceData['data']['numero_completo'] ?? null,
+                            'tipo' => $invoiceType,
+                            'total' => $invoiceData['data']['total'] ?? null,
+                            'enlace_pdf' => $invoiceData['data']['enlace_pdf'] ?? null,
+                            'enlace_xml' => $invoiceData['data']['enlace_xml'] ?? null,
+                            'aceptada_por_sunat' => $invoiceData['data']['aceptada_por_sunat'] ?? false,
+                            'envio_estado' => $invoiceData['data']['envio_estado'] ?? null,
+                            'procesado_instantaneo' => $invoiceData['data']['procesado_instantaneo'] ?? false,
+                        ];
+                    }
+                } catch (\Exception $invoiceException) {
+                    // Log del error pero no fallar la transacción
+                    Log::create([
+                        'user_id' => $userId,
+                        'action' => 'Error al generar comprobante electrónico',
+                        'description' => 'Error al generar comprobante electrónico',
+                        'data' => $invoiceException->getMessage(),
+                    ]);
+                    // Continuar sin fallar la compra
+                }
 
                 // Agregar información de membresía si se creó
                 if ($membershipData) {
@@ -2116,5 +2172,82 @@ final class PackageController extends Controller
         }
 
         return new StripeClient($secret);
+    }
+
+    /**
+     * Preparar datos del cliente para el comprobante electrónico
+     */
+    private function prepareClientDataForInvoice($user): array
+    {
+        $profile = $user->profile;
+        
+        // Determinar tipo de documento y número
+        $documentType = '1'; // DNI por defecto
+        $documentNumber = $user->document_number ?? '';
+        
+        // Si es empresa y tiene RUC, usar factura
+        if ($user->is_company && $user->document_number && strlen($user->document_number) === 11) {
+            $documentType = '6'; // RUC
+        } elseif ($user->document_type) {
+            // Mapear tipos de documento comunes
+            $documentTypeMap = [
+                'dni' => '1',
+                'ce' => '4', // Carné de extranjería
+                'ruc' => '6',
+            ];
+            $documentType = $documentTypeMap[strtolower($user->document_type)] ?? '1';
+        }
+        
+        // Obtener nombre o razón social
+        $razonSocial = $user->business_name ?? $user->name ?? $user->email ?? 'Cliente';
+        
+        // Si tiene perfil, usar nombre completo
+        if ($profile && $profile->full_name) {
+            $razonSocial = $profile->full_name;
+        }
+        
+        // Obtener dirección fiscal si existe
+        $direccion = $profile->fiscal_address ?? $profile->adress ?? null;
+        
+        return [
+            'tipoDoc' => $documentType,
+            'numDoc' => $documentNumber,
+            'rznSocial' => $razonSocial,
+            'direccion' => $direccion,
+            'email' => $user->email,
+        ];
+    }
+
+    /**
+     * Preparar items del comprobante desde el paquete
+     */
+    private function prepareItemsForInvoice(Package $package, float $finalPrice, float $originalPrice, ?string $promoCodeUsed, float $discountPercentage): array
+    {
+        $igvPercentage = (float) ($package->igv ?? 18);
+        
+        // Calcular precio sin IGV
+        $finalPriceSinIgv = $finalPrice;
+        $mtoValorUnitario = $finalPriceSinIgv;
+        $mtoPrecioUnitario = $finalPriceSinIgv * (1 + ($igvPercentage / 100));
+        
+        // Descripción del producto
+        $descripcion = $package->name;
+        if ($package->description) {
+            $descripcion .= ' - ' . $package->description;
+        }
+        if ($promoCodeUsed) {
+            $descripcion .= " (Código promocional: {$promoCodeUsed} - {$discountPercentage}% desc.)";
+        }
+        
+        return [
+            [
+                'codProducto' => 'PKG-' . str_pad($package->id, 6, '0', STR_PAD_LEFT),
+                'unidad' => 'NIU',
+                'cantidad' => 1,
+                'mtoValorUnitario' => round($mtoValorUnitario, 2),
+                'descripcion' => $descripcion,
+                'mtoPrecioUnitario' => round($mtoPrecioUnitario, 2),
+            ],
+        ];
     }
 }

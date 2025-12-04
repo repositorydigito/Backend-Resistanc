@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "bezhansalleh/filament-shield": "^3.9",
+        "codersfree/laravel-greenter": "^1.0",
         "dedoc/scramble": "^0.13.5",
         "filament/filament": "3.3",
         "greenter/lite": "^5.1",

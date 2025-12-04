@@ -204,18 +204,34 @@ class CompanyResource extends Resource
                 Forms\Components\Section::make('Configuración de Facturación')
                     ->description('Configuración general de facturación electrónica')
                     ->schema([
-                        Forms\Components\TextInput::make('invoice_series')
-                            ->label('Serie de Facturación')
-                            ->maxLength(4)
-                            ->default('F001')
-                            ->placeholder('Ej: F001')
-                            ->helperText('Serie para las facturas (ej: F001, B001)'),
-                        Forms\Components\TextInput::make('invoice_initial_correlative')
-                            ->label('Correlativo Inicial')
-                            ->numeric()
-                            ->default(1)
-                            ->minValue(1)
-                            ->helperText('Número inicial para el correlativo de facturación'),
+                        Forms\Components\Group::make([
+                            Forms\Components\TextInput::make('invoice_series')
+                                ->label('Serie de Facturas')
+                                ->maxLength(4)
+                                ->default('F001')
+                                ->placeholder('Ej: F001')
+                                ->helperText('Serie para las facturas (ej: F001)'),
+                            Forms\Components\TextInput::make('invoice_initial_correlative')
+                                ->label('Correlativo Inicial Facturas')
+                                ->numeric()
+                                ->default(1)
+                                ->minValue(1)
+                                ->helperText('Número inicial para el correlativo de facturas'),
+                        ])->columns(2),
+                        Forms\Components\Group::make([
+                            Forms\Components\TextInput::make('boleta_series')
+                                ->label('Serie de Boletas')
+                                ->maxLength(4)
+                                ->default('B001')
+                                ->placeholder('Ej: B001')
+                                ->helperText('Serie para las boletas (ej: B001)'),
+                            Forms\Components\TextInput::make('boleta_initial_correlative')
+                                ->label('Correlativo Inicial Boletas')
+                                ->numeric()
+                                ->default(1)
+                                ->minValue(1)
+                                ->helperText('Número inicial para el correlativo de boletas'),
+                        ])->columns(2),
                         Forms\Components\TextInput::make('stripe_commission_percentage')
                             ->label('Comisión de Stripe (%)')
                             ->numeric()
@@ -229,71 +245,71 @@ class CompanyResource extends Resource
                     ->columns(2)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Configuración de Producción (Greenter)')
-                    ->description('Credenciales para facturación electrónica en modo producción')
-                    ->schema([
-                        Forms\Components\Toggle::make('is_production')
-                            ->label('Modo Producción')
-                            ->helperText('Activar para facturar en modo producción')
-                            ->default(false),
-                        Forms\Components\TextInput::make('sol_user_production')
-                            ->label('Usuario SOL Producción')
-                            ->maxLength(255)
-                            ->placeholder('Usuario SOL para producción'),
-                        Forms\Components\TextInput::make('sol_user_password_production')
-                            ->label('Contraseña SOL Producción')
-                            ->password()
-                            ->maxLength(255)
-                            ->placeholder('Contraseña SOL para producción'),
-                        Forms\Components\FileUpload::make('cert_path_production')
-                            ->label('Certificado Digital Producción')
-                            ->directory('company-certificates')
-                            ->visibility('private')
-                            ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
-                            ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para producción'),
-                        Forms\Components\TextInput::make('client_id_production')
-                            ->label('Client ID Producción')
-                            ->maxLength(255)
-                            ->placeholder('Client ID para producción'),
-                        Forms\Components\TextInput::make('client_secret_production')
-                            ->label('Client Secret Producción')
-                            ->password()
-                            ->maxLength(255)
-                            ->placeholder('Client secret para producción'),
-                    ])
-                    ->columns(2)
-                    ->collapsible(),
+                // Forms\Components\Section::make('Configuración de Producción (Greenter)')
+                //     ->description('Credenciales para facturación electrónica en modo producción')
+                //     ->schema([
+                //         Forms\Components\Toggle::make('is_production')
+                //             ->label('Modo Producción')
+                //             ->helperText('Activar para facturar en modo producción')
+                //             ->default(false),
+                //         Forms\Components\TextInput::make('sol_user_production')
+                //             ->label('Usuario SOL Producción')
+                //             ->maxLength(255)
+                //             ->placeholder('Usuario SOL para producción'),
+                //         Forms\Components\TextInput::make('sol_user_password_production')
+                //             ->label('Contraseña SOL Producción')
+                //             ->password()
+                //             ->maxLength(255)
+                //             ->placeholder('Contraseña SOL para producción'),
+                //         Forms\Components\FileUpload::make('cert_path_production')
+                //             ->label('Certificado Digital Producción')
+                //             ->directory('company-certificates')
+                //             ->visibility('private')
+                //             ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
+                //             ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para producción'),
+                //         Forms\Components\TextInput::make('client_id_production')
+                //             ->label('Client ID Producción')
+                //             ->maxLength(255)
+                //             ->placeholder('Client ID para producción'),
+                //         Forms\Components\TextInput::make('client_secret_production')
+                //             ->label('Client Secret Producción')
+                //             ->password()
+                //             ->maxLength(255)
+                //             ->placeholder('Client secret para producción'),
+                //     ])
+                //     ->columns(2)
+                //     ->collapsible(),
 
-                Forms\Components\Section::make('Configuración de Pruebas - QA (Greenter)')
-                    ->description('Credenciales para facturación electrónica en modo de pruebas')
-                    ->schema([
-                        Forms\Components\TextInput::make('sol_user_evidence')
-                            ->label('Usuario SOL Pruebas (QA)')
-                            ->maxLength(255)
-                            ->placeholder('Usuario SOL para pruebas'),
-                        Forms\Components\TextInput::make('sol_user_password_evidence')
-                            ->label('Contraseña SOL Pruebas (QA)')
-                            ->password()
-                            ->maxLength(255)
-                            ->placeholder('Contraseña SOL para pruebas'),
-                        Forms\Components\FileUpload::make('cert_path_evidence')
-                            ->label('Certificado Digital Pruebas (QA)')
-                            ->directory('company-certificates')
-                            ->visibility('private')
-                            // ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
-                            ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para pruebas'),
-                        Forms\Components\TextInput::make('client_id_evidence')
-                            ->label('Client ID Pruebas (QA)')
-                            ->maxLength(255)
-                            ->placeholder('Client ID para pruebas'),
-                        Forms\Components\TextInput::make('client_secret_evidence')
-                            ->label('Client Secret Pruebas (QA)')
-                            ->password()
-                            ->maxLength(255)
-                            ->placeholder('Client secret para pruebas'),
-                    ])
-                    ->columns(2)
-                    ->collapsible(),
+                // Forms\Components\Section::make('Configuración de Pruebas - QA (Greenter)')
+                //     ->description('Credenciales para facturación electrónica en modo de pruebas')
+                //     ->schema([
+                //         Forms\Components\TextInput::make('sol_user_evidence')
+                //             ->label('Usuario SOL Pruebas (QA)')
+                //             ->maxLength(255)
+                //             ->placeholder('Usuario SOL para pruebas'),
+                //         Forms\Components\TextInput::make('sol_user_password_evidence')
+                //             ->label('Contraseña SOL Pruebas (QA)')
+                //             ->password()
+                //             ->maxLength(255)
+                //             ->placeholder('Contraseña SOL para pruebas'),
+                //         Forms\Components\FileUpload::make('cert_path_evidence')
+                //             ->label('Certificado Digital Pruebas (QA)')
+                //             ->directory('company-certificates')
+                //             ->visibility('private')
+                //             // ->acceptedFileTypes(['text/plain', 'application/x-pem-file'])
+                //             ->helperText('Formatos permitidos: .pem, .txt. Archivo del certificado digital para pruebas'),
+                //         Forms\Components\TextInput::make('client_id_evidence')
+                //             ->label('Client ID Pruebas (QA)')
+                //             ->maxLength(255)
+                //             ->placeholder('Client ID para pruebas'),
+                //         Forms\Components\TextInput::make('client_secret_evidence')
+                //             ->label('Client Secret Pruebas (QA)')
+                //             ->password()
+                //             ->maxLength(255)
+                //             ->placeholder('Client secret para pruebas'),
+                //     ])
+                //     ->columns(2)
+                //     ->collapsible(),
             ]);
     }
 

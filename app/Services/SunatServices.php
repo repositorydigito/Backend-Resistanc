@@ -2,306 +2,582 @@
 
 namespace App\Services;
 
+use App\Jobs\ProcessSunatInvoice;
 use App\Models\Company;
-use DateTime;
-use Greenter\Model\Client\Client;
-use Greenter\Model\Company\Address;
-use Greenter\Model\Company\Company as GreenterCompany;
-use Greenter\Model\Sale\FormaPagos\FormaPagoContado;
-use Greenter\Model\Sale\Invoice;
-use Greenter\Model\Sale\Legend;
-use Greenter\Model\Sale\SaleDetail;
-use Greenter\See;
-use Greenter\Ws\Services\SunatEndpoints;
-use Illuminate\Support\Facades\Storage;
-use NumberFormatter;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Log as LogModel;
+use App\Models\User;
+use CodersFree\LaravelGreenter\Facades\Greenter;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SunatServices
 {
-    protected $company;
-    protected $currentCorrelative;
-
-    public function __construct()
-    {
-        $this->company = Company::first();
-
-        if (!$this->company) {
-            throw new \RuntimeException('No se encontró configuración de empresa');
-        }
-    }
-
     /**
-     * Configura y retorna el objeto See para enviar factura a SUNAT
+     * Verificar si el procesamiento debe ser instantáneo o en segundo plano
      */
-    public function getSee()
+    protected function isInstantMode(): bool
     {
-        if (!$this->company) {
-            throw new \RuntimeException('No se encontró configuración de empresa');
-        }
-
-        $see = new See();
-
-        // Usar certificado según el modo (producción o pruebas)
-        $certPath = $this->company->is_production
-            ? $this->company->cert_path_production
-            : $this->company->cert_path_evidence;
-
-        if (!$certPath || !Storage::exists($certPath)) {
-            throw new \RuntimeException('Certificado digital no encontrado. Verifique la configuración de la empresa.');
-        }
-
-        $see->setCertificate(Storage::get($certPath));
-        $see->setService($this->company->is_production ? SunatEndpoints::FE_PRODUCCION : SunatEndpoints::FE_BETA);
-
-        // Usar credenciales según el modo
-        $solUser = $this->company->is_production
-            ? $this->company->sol_user_production
-            : $this->company->sol_user_evidence;
-
-        $solPassword = $this->company->is_production
-            ? $this->company->sol_user_password_production
-            : $this->company->sol_user_password_evidence;
-
-        if (!$solUser || !$solPassword) {
-            throw new \RuntimeException('Credenciales SOL no configuradas. Verifique la configuración de la empresa.');
-        }
-
-        $see->setClaveSOL($this->company->ruc ?? '20000000001', $solUser, $solPassword);
-
-        return $see;
+        return env('SUNAT_PROCESS_MODE', 'instant') === 'instant';
     }
 
     /**
-     * Genera una factura usando la información de la compañía desde la BD
-     *
-     * @param array $invoiceData Datos de la factura (cliente, detalles, montos, etc.)
-     * @param int|null $correlative Número correlativo (opcional, se genera automáticamente si no se proporciona)
-     * @return Invoice
+     * Guardar log de error en base de datos
      */
-    public function getInvoice(array $invoiceData, ?int $correlative = null)
+    protected function logError(string $action, string $description, string $errorMessage, ?int $userId = null): void
     {
-        if (!$this->company) {
-            throw new \RuntimeException('No se encontró configuración de empresa');
+        try {
+            LogModel::create([
+                'user_id' => $userId,
+                'action' => $action,
+                'description' => $description,
+                'data' => $errorMessage,
+            ]);
+        } catch (\Exception $e) {
+            // Si falla el log, al menos registrar en Laravel
+            Log::error('Error al guardar log en base de datos', [
+                'error' => $e->getMessage(),
+                'original_action' => $action,
+            ]);
         }
+    }
 
-        // Obtener serie configurada o usar por defecto
-        $serie = $this->company->invoice_series ?? 'F001';
-
-        // Obtener correlativo
-        if ($correlative === null) {
-            $this->currentCorrelative = $this->getNextCorrelative();
-        } else {
-            $this->currentCorrelative = $correlative;
+    /**
+     * Obtener la empresa (configuración)
+     */
+    protected function getCompany(): Company
+    {
+        $company = Company::first();
+        
+        if (!$company) {
+            throw new \Exception('No se encontró la configuración de la empresa');
         }
-
-        // Crear factura
-        $invoice = (new Invoice())
-            ->setUblVersion('2.1')
-            ->setTipoOperacion($invoiceData['tipo_operacion'] ?? '0101') // Venta - Catalog. 51
-            ->setTipoDoc($invoiceData['tipo_doc'] ?? '01') // Factura - Catalog. 01
-            ->setSerie($serie)
-            ->setCorrelativo((string) $this->currentCorrelative)
-            ->setFechaEmision(new DateTime($invoiceData['fecha_emision'] ?? 'now'))
-            ->setFormaPago(new FormaPagoContado()) // FormaPago: Contado
-            ->setTipoMoneda($invoiceData['tipo_moneda'] ?? 'PEN') // Sol - Catalog. 02
-            ->setCompany($this->getCompany())
-            ->setClient($this->getClient($invoiceData['client'] ?? []))
-            ->setMtoOperGravadas($invoiceData['mto_oper_gravadas'] ?? 0)
-            ->setMtoIGV($invoiceData['mto_igv'] ?? 0)
-            ->setTotalImpuestos($invoiceData['total_impuestos'] ?? 0)
-            ->setValorVenta($invoiceData['valor_venta'] ?? 0)
-            ->setSubTotal($invoiceData['sub_total'] ?? 0)
-            ->setMtoImpVenta($invoiceData['mto_imp_venta'] ?? 0)
-            ->setDetails($this->getDetails($invoiceData['details'] ?? []))
-            ->setLegends($this->getLegends($invoiceData['total_amount'] ?? 0));
-
-        return $invoice;
+        
+        return $company;
     }
 
     /**
-     * Obtiene información de la compañía desde la BD
+     * Obtener y actualizar el siguiente correlativo para boletas
      */
-    public function getCompany(): GreenterCompany
+    protected function getNextBoletaCorrelative(Company $company): int
     {
-        if (!$this->company->ruc) {
-            throw new \RuntimeException('RUC de la empresa no configurado');
+        DB::beginTransaction();
+        try {
+            $correlativo = $company->boleta_initial_correlative;
+            $company->increment('boleta_initial_correlative');
+            DB::commit();
+            return $correlativo;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        return (new GreenterCompany())
-            ->setRuc($this->company->ruc)
-            ->setRazonSocial($this->company->social_reason ?? $this->company->name)
-            ->setNombreComercial($this->company->commercial_name ?? $this->company->name)
-            ->setAddress($this->getAddress());
     }
 
     /**
-     * Crea el objeto Client con datos proporcionados o por defecto
+     * Obtener y actualizar el siguiente correlativo para facturas
      */
-    public function getClient(array $clientData = []): Client
+    protected function getNextFacturaCorrelative(Company $company): int
     {
-        return (new Client())
-            ->setTipoDoc($clientData['tipo_doc'] ?? '6') // RUC por defecto
-            ->setNumDoc($clientData['num_doc'] ?? '20000000001')
-            ->setRznSocial($clientData['rzn_social'] ?? 'CLIENTE GENÉRICO');
-    }
-
-    /**
-     * Obtiene la dirección de la compañía desde la BD
-     */
-    public function getAddress(): Address
-    {
-        return (new Address())
-            ->setUbigueo($this->company->ubigeo ?? '150101')
-            ->setDepartamento($this->company->department ?? 'LIMA')
-            ->setProvincia($this->company->province ?? 'LIMA')
-            ->setDistrito($this->company->district ?? 'LIMA')
-            ->setUrbanizacion($this->company->urbanization ?? '-')
-            ->setDireccion($this->company->address ?? '')
-            ->setCodLocal($this->company->establishment_code ?? '0000');
-    }
-
-    /**
-     * Obtiene los detalles de la factura
-     */
-    public function getDetails(array $detailsData = []): array
-    {
-        if (empty($detailsData)) {
-            // Retornar detalle por defecto si no se proporcionan
-            $item = (new SaleDetail())
-                ->setCodProducto('P001')
-                ->setUnidad('NIU')
-                ->setCantidad(1)
-                ->setMtoValorUnitario(100.00)
-                ->setDescripcion('PRODUCTO/SERVICIO')
-                ->setMtoBaseIgv(100.00)
-                ->setPorcentajeIgv(18.00)
-                ->setIgv(18.00)
-                ->setTipAfeIgv('10')
-                ->setTotalImpuestos(18.00)
-                ->setMtoValorVenta(100.00)
-                ->setMtoPrecioUnitario(118.00);
-
-            return [$item];
+        DB::beginTransaction();
+        try {
+            $correlativo = $company->invoice_initial_correlative;
+            $company->increment('invoice_initial_correlative');
+            DB::commit();
+            return $correlativo;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        // Construir detalles desde los datos proporcionados
-        $details = [];
-        foreach ($detailsData as $detail) {
-            $item = (new SaleDetail())
-                ->setCodProducto($detail['cod_producto'] ?? 'P001')
-                ->setUnidad($detail['unidad'] ?? 'NIU')
-                ->setCantidad($detail['cantidad'] ?? 1)
-                ->setMtoValorUnitario($detail['mto_valor_unitario'] ?? 0)
-                ->setDescripcion($detail['descripcion'] ?? '')
-                ->setMtoBaseIgv($detail['mto_base_igv'] ?? 0)
-                ->setPorcentajeIgv($detail['porcentaje_igv'] ?? 18.00)
-                ->setIgv($detail['igv'] ?? 0)
-                ->setTipAfeIgv($detail['tip_afe_igv'] ?? '10')
-                ->setTotalImpuestos($detail['total_impuestos'] ?? 0)
-                ->setMtoValorVenta($detail['mto_valor_venta'] ?? 0)
-                ->setMtoPrecioUnitario($detail['mto_precio_unitario'] ?? 0);
-
-            $details[] = $item;
-        }
-
-        return $details;
     }
 
     /**
-     * Genera las leyendas de la factura
-     */
-    public function getLegends(float $totalAmount = 0): array
-    {
-        $amountInWords = $this->numberToWords($totalAmount);
-
-        $legend = (new Legend())
-            ->setCode('1000') // Monto en letras - Catalog. 52
-            ->setValue($amountInWords);
-
-        return [$legend];
-    }
-
-    /**
-     * Convierte un número a palabras en español (Perú)
+     * Formatear número a texto (para leyendas)
      */
     protected function numberToWords(float $number): string
     {
-        $formatter = new NumberFormatter('es_PE', NumberFormatter::SPELLOUT);
-        $entero = floor($number);
-        $decimal = round(($number - $entero) * 100);
-
-        $words = $formatter->format($entero);
-        $words = mb_strtoupper(mb_substr($words, 0, 1)) . mb_substr($words, 1);
-
-        return "SON {$words} CON " . str_pad($decimal, 2, '0', STR_PAD_LEFT) . "/100 SOLES";
+        // Implementación básica - puedes usar una librería más completa
+        $entero = (int) $number;
+        $decimal = (int) (($number - $entero) * 100);
+        
+        $texto = $this->convertNumberToWords($entero);
+        $texto .= " CON " . str_pad($decimal, 2, '0', STR_PAD_LEFT) . "/100 SOLES";
+        
+        return strtoupper($texto);
     }
 
     /**
-     * Obtiene el siguiente correlativo disponible
+     * Convertir número a palabras (implementación básica)
      */
-    protected function getNextCorrelative(): int
+    protected function convertNumberToWords(int $number): string
     {
-        $initialCorrelative = $this->company->invoice_initial_correlative ?? 1;
-
-        // Por ahora retorna el inicial, pero debería consultar el último usado
-        // y devolver el siguiente. Esto se puede implementar con una tabla o archivo
-        // que almacene el último correlativo usado por serie.
-
-        return $initialCorrelative;
-    }
-
-    /**
-     * Procesa la respuesta de SUNAT
-     */
-    public function sunatResponse($result): array
-    {
-        $response = [
-            'success' => $result->isSuccess(),
-        ];
-
-        if (!$response['success']) {
-            // Error al conectarse a SUNAT
-            $error = $result->getError();
-            $response['error'] = [
-                'code' => $error->getCode(),
-                'message' => $error->getMessage()
-            ];
-            return $response;
+        // Implementación simplificada - considera usar una librería como "numalet" para español
+        if ($number == 0) return 'CERO';
+        if ($number == 100) return 'CIEN';
+        if ($number < 100) {
+            $unidades = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+            $decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+            $especiales = [11 => 'ONCE', 12 => 'DOCE', 13 => 'TRECE', 14 => 'CATORCE', 15 => 'QUINCE'];
+            
+            if (isset($especiales[$number])) {
+                return $especiales[$number];
+            }
+            
+            $decena = (int)($number / 10);
+            $unidad = $number % 10;
+            
+            if ($decena == 0) return $unidades[$unidad];
+            if ($unidad == 0) return $decenas[$decena];
+            
+            return $decenas[$decena] . ' Y ' . $unidades[$unidad];
         }
-
-        // Éxito
-        $response['cdrZip'] = base64_encode($result->getCdrZip());
-        $cdr = $result->getCdrResponse();
-
-        $response['cdrResponse'] = [
-            'code' => (int) $cdr->getCode(),
-            'description' => $cdr->getDescription(),
-            'notes' => $cdr->getNotes(),
-        ];
-
-        return $response;
+        
+        return 'CIEN'; // Simplificado para números mayores
     }
 
     /**
-     * Envía la factura a SUNAT
+     * Generar una boleta de venta
+     * 
+     * @param array $clientData Datos del cliente ['tipoDoc' => '1', 'numDoc' => '12345678', 'rznSocial' => 'Nombre', 'direccion' => 'Dirección', 'email' => 'email@example.com']
+     * @param array $items Array de items [['codProducto' => 'COD001', 'unidad' => 'NIU', 'cantidad' => 1, 'descripcion' => 'Descripción', 'mtoValorUnitario' => 84.75, 'mtoPrecioUnitario' => 100.00]]
+     * @param int|null $userId ID del usuario (opcional)
+     * @param int|null $orderId ID de la orden o user_package_id (opcional)
+     * @param int|null $userPackageId ID del paquete del usuario (opcional, si se proporciona se usa en lugar de orderId)
+     * @return array
      */
-    public function sendInvoice(array $invoiceData, ?int $correlative = null): array
+    public function generarBoleta(array $clientData, array $items, ?int $userId = null, ?int $orderId = null, ?int $userPackageId = null): array
     {
         try {
-            $see = $this->getSee();
-            $invoice = $this->getInvoice($invoiceData, $correlative);
-
-            $result = $see->send($invoice);
-
-            return $this->sunatResponse($result);
-        } catch (\Exception $e) {
+            $company = $this->getCompany();
+            
+            // Obtener siguiente correlativo
+            $correlativo = $this->getNextBoletaCorrelative($company);
+            $serie = $company->boleta_series ?? 'B001';
+            
+            // Calcular totales
+            $mtoOperGravadas = 0;
+            $mtoIGV = 0;
+            $totalImpuestos = 0;
+            $valorVenta = 0;
+            $subTotal = 0;
+            $mtoImpVenta = 0;
+            
+            $details = [];
+            foreach ($items as $item) {
+                $mtoValorUnitario = $item['mtoValorUnitario'] ?? 0;
+                $mtoPrecioUnitario = $item['mtoPrecioUnitario'] ?? $mtoValorUnitario * 1.18;
+                $cantidad = $item['cantidad'] ?? 1;
+                $igv = ($mtoPrecioUnitario - $mtoValorUnitario) * $cantidad;
+                
+                $mtoOperGravadas += $mtoValorUnitario * $cantidad;
+                $mtoIGV += $igv;
+                $valorVenta += $mtoValorUnitario * $cantidad;
+                $subTotal += $mtoPrecioUnitario * $cantidad;
+                
+                $details[] = [
+                    "codProducto" => $item['codProducto'] ?? 'PROD001',
+                    "unidad" => $item['unidad'] ?? 'NIU',
+                    "cantidad" => $cantidad,
+                    "mtoValorUnitario" => $mtoValorUnitario,
+                    "descripcion" => $item['descripcion'] ?? 'Producto',
+                    "mtoBaseIgv" => $mtoValorUnitario * $cantidad,
+                    "porcentajeIgv" => 18.00,
+                    "igv" => $igv,
+                    "tipAfeIgv" => "10",
+                    "totalImpuestos" => $igv,
+                    "mtoValorVenta" => $mtoValorUnitario * $cantidad,
+                    "mtoPrecioUnitario" => $mtoPrecioUnitario,
+                ];
+            }
+            
+            $totalImpuestos = $mtoIGV;
+            $mtoImpVenta = $subTotal;
+            
+            // Preparar datos para Greenter
+            $data = [
+                "ublVersion" => "2.1",
+                "tipoOperacion" => "0101",
+                "tipoDoc" => "03", // Boleta
+                "serie" => $serie,
+                "correlativo" => (string) $correlativo,
+                "fechaEmision" => now(),
+                "formaPago" => ['tipo' => 'Contado'],
+                "tipoMoneda" => "PEN",
+                "client" => [
+                    "tipoDoc" => $clientData['tipoDoc'] ?? '1',
+                    "numDoc" => $clientData['numDoc'] ?? '',
+                    "rznSocial" => $clientData['rznSocial'] ?? '',
+                ],
+                "mtoOperGravadas" => round($mtoOperGravadas, 2),
+                "mtoIGV" => round($mtoIGV, 2),
+                "totalImpuestos" => round($totalImpuestos, 2),
+                "valorVenta" => round($valorVenta, 2),
+                "subTotal" => round($subTotal, 2),
+                "mtoImpVenta" => round($mtoImpVenta, 2),
+                "details" => $details,
+                "legends" => [
+                    [
+                        "code" => "1000",
+                        "value" => $this->numberToWords($mtoImpVenta),
+                    ],
+                ],
+            ];
+            
+            // Guardar en base de datos primero (con estado pendiente si es en segundo plano)
+            $envioEstado = $this->isInstantMode() ? Invoice::ENVIO_PENDIENTE : Invoice::ENVIO_PENDIENTE;
+            $invoice = $this->guardarComprobante($data, [], Invoice::TIPO_BOLETA, $userId, $orderId, $items, $envioEstado, $userPackageId);
+            
+            // Procesar según el modo configurado
+            if ($this->isInstantMode()) {
+                // Modo instantáneo: procesar inmediatamente
+                try {
+                    $response = Greenter::send('invoice', $data);
+                    
+                    // Verificar si la respuesta es válida
+                    if (!is_array($response)) {
+                        $response = [];
+                    }
+                    
+                    // Actualizar factura con la respuesta
+                    $invoice->update([
+                        'envio_estado' => Invoice::ENVIO_ENVIADA,
+                        'enviada_a_nubefact' => true,
+                        'enlace_del_pdf' => $response['enlace_del_pdf'] ?? null,
+                        'enlace_del_xml' => $response['enlace_del_xml'] ?? null,
+                        'enlace_del_cdr' => $response['enlace_del_cdr'] ?? null,
+                        'aceptada_por_sunat' => $response['aceptada_por_sunat'] ?? false,
+                        'sunat_description' => $response['sunat_description'] ?? null,
+                        'sunat_responsecode' => $response['sunat_responsecode'] ?? null,
+                        'codigo_hash' => $response['codigo_hash'] ?? null,
+                    ]);
+                    
+                } catch (\Throwable $e) {
+                    // Actualizar factura con error
+                    $invoice->update([
+                        'envio_estado' => Invoice::ENVIO_FALLIDA,
+                        'error_envio' => $e->getMessage(),
+                    ]);
+                    
+                    // Log de error en base de datos
+                    $this->logError(
+                        'Generar Boleta - Error',
+                        "Error al generar boleta {$serie}-{$correlativo}",
+                        $e->getMessage(),
+                        $userId
+                    );
+                    
+                    throw $e;
+                }
+            } else {
+                // Modo en segundo plano: despachar job
+                ProcessSunatInvoice::dispatch($invoice->id);
+            }
+            
             return [
-                'success' => false,
-                'error' => [
-                    'code' => 'EXCEPTION',
-                    'message' => $e->getMessage()
+                'success' => true,
+                'message' => $this->isInstantMode() ? 'Boleta generada exitosamente' : 'Boleta creada, procesándose en segundo plano',
+                'data' => [
+                    'id' => $invoice->id,
+                    'serie' => $serie,
+                    'numero' => $correlativo,
+                    'numero_completo' => "{$serie}-{$correlativo}",
+                    'cliente' => $clientData['rznSocial'] ?? '',
+                    'total' => $mtoImpVenta,
+                    'fecha' => now()->format('d/m/Y'),
+                    'enlace_pdf' => $invoice->enlace_del_pdf,
+                    'enlace_xml' => $invoice->enlace_del_xml,
+                    'aceptada_por_sunat' => $invoice->aceptada_por_sunat,
+                    'envio_estado' => $invoice->envio_estado,
+                    'procesado_instantaneo' => $this->isInstantMode(),
                 ]
             ];
+            
+        } catch (\Throwable $e) {
+            // Log de error en base de datos
+            $this->logError(
+                'Generar Boleta - Error General',
+                'Error al obtener el historial',
+                $e->getMessage(),
+                $userId
+            );
+            
+            // También log en Laravel
+            Log::error('Error al generar boleta', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            throw $e;
         }
+    }
+
+    /**
+     * Generar una factura
+     * 
+     * @param array $clientData Datos del cliente
+     * @param array $items Array de items
+     * @param int|null $userId ID del usuario (opcional)
+     * @param int|null $orderId ID de la orden o user_package_id (opcional)
+     * @param int|null $userPackageId ID del paquete del usuario (opcional, si se proporciona se usa en lugar de orderId)
+     * @return array
+     */
+    public function generarFactura(array $clientData, array $items, ?int $userId = null, ?int $orderId = null, ?int $userPackageId = null): array
+    {
+        try {
+            $company = $this->getCompany();
+            
+            // Obtener siguiente correlativo
+            $correlativo = $this->getNextFacturaCorrelative($company);
+            $serie = $company->invoice_series ?? 'F001';
+            
+            // Calcular totales (mismo proceso que boletas)
+            $mtoOperGravadas = 0;
+            $mtoIGV = 0;
+            $totalImpuestos = 0;
+            $valorVenta = 0;
+            $subTotal = 0;
+            $mtoImpVenta = 0;
+            
+            $details = [];
+            foreach ($items as $item) {
+                $mtoValorUnitario = $item['mtoValorUnitario'] ?? 0;
+                $mtoPrecioUnitario = $item['mtoPrecioUnitario'] ?? $mtoValorUnitario * 1.18;
+                $cantidad = $item['cantidad'] ?? 1;
+                $igv = ($mtoPrecioUnitario - $mtoValorUnitario) * $cantidad;
+                
+                $mtoOperGravadas += $mtoValorUnitario * $cantidad;
+                $mtoIGV += $igv;
+                $valorVenta += $mtoValorUnitario * $cantidad;
+                $subTotal += $mtoPrecioUnitario * $cantidad;
+                
+                $details[] = [
+                    "codProducto" => $item['codProducto'] ?? 'PROD001',
+                    "unidad" => $item['unidad'] ?? 'NIU',
+                    "cantidad" => $cantidad,
+                    "mtoValorUnitario" => $mtoValorUnitario,
+                    "descripcion" => $item['descripcion'] ?? 'Producto',
+                    "mtoBaseIgv" => $mtoValorUnitario * $cantidad,
+                    "porcentajeIgv" => 18.00,
+                    "igv" => $igv,
+                    "tipAfeIgv" => "10",
+                    "totalImpuestos" => $igv,
+                    "mtoValorVenta" => $mtoValorUnitario * $cantidad,
+                    "mtoPrecioUnitario" => $mtoPrecioUnitario,
+                ];
+            }
+            
+            $totalImpuestos = $mtoIGV;
+            $mtoImpVenta = $subTotal;
+            
+            // Preparar datos para Greenter
+            $data = [
+                "ublVersion" => "2.1",
+                "tipoOperacion" => "0101",
+                "tipoDoc" => "01", // Factura
+                "serie" => $serie,
+                "correlativo" => (string) $correlativo,
+                "fechaEmision" => now(),
+                "formaPago" => ['tipo' => 'Contado'],
+                "tipoMoneda" => "PEN",
+                "client" => [
+                    "tipoDoc" => $clientData['tipoDoc'] ?? '6', // RUC para facturas
+                    "numDoc" => $clientData['numDoc'] ?? '',
+                    "rznSocial" => $clientData['rznSocial'] ?? '',
+                ],
+                "mtoOperGravadas" => round($mtoOperGravadas, 2),
+                "mtoIGV" => round($mtoIGV, 2),
+                "totalImpuestos" => round($totalImpuestos, 2),
+                "valorVenta" => round($valorVenta, 2),
+                "subTotal" => round($subTotal, 2),
+                "mtoImpVenta" => round($mtoImpVenta, 2),
+                "details" => $details,
+                "legends" => [
+                    [
+                        "code" => "1000",
+                        "value" => $this->numberToWords($mtoImpVenta),
+                    ],
+                ],
+            ];
+            
+            // Guardar en base de datos primero (con estado pendiente)
+            $invoice = $this->guardarComprobante($data, [], Invoice::TIPO_FACTURA, $userId, $orderId, $items, Invoice::ENVIO_PENDIENTE, $userPackageId);
+            
+            // Procesar según el modo configurado
+            if ($this->isInstantMode()) {
+                // Modo instantáneo: procesar inmediatamente
+                try {
+                    $response = Greenter::send('invoice', $data);
+                    
+                    // Verificar si la respuesta es válida
+                    if (!is_array($response)) {
+                        $response = [];
+                    }
+                    
+                    // Actualizar factura con la respuesta
+                    $invoice->update([
+                        'envio_estado' => Invoice::ENVIO_ENVIADA,
+                        'enviada_a_nubefact' => true,
+                        'enlace_del_pdf' => $response['enlace_del_pdf'] ?? null,
+                        'enlace_del_xml' => $response['enlace_del_xml'] ?? null,
+                        'enlace_del_cdr' => $response['enlace_del_cdr'] ?? null,
+                        'aceptada_por_sunat' => $response['aceptada_por_sunat'] ?? false,
+                        'sunat_description' => $response['sunat_description'] ?? null,
+                        'sunat_responsecode' => $response['sunat_responsecode'] ?? null,
+                        'codigo_hash' => $response['codigo_hash'] ?? null,
+                    ]);
+                    
+                } catch (\Throwable $e) {
+                    // Actualizar factura con error
+                    $invoice->update([
+                        'envio_estado' => Invoice::ENVIO_FALLIDA,
+                        'error_envio' => $e->getMessage(),
+                    ]);
+                    
+                    // Log de error en base de datos
+                    $this->logError(
+                        'Generar Factura - Error',
+                        "Error al generar factura {$serie}-{$correlativo}",
+                        $e->getMessage(),
+                        $userId
+                    );
+                    
+                    throw $e;
+                }
+            } else {
+                // Modo en segundo plano: despachar job
+                ProcessSunatInvoice::dispatch($invoice->id);
+            }
+            
+            return [
+                'success' => true,
+                'message' => $this->isInstantMode() ? 'Factura generada exitosamente' : 'Factura creada, procesándose en segundo plano',
+                'data' => [
+                    'id' => $invoice->id,
+                    'serie' => $serie,
+                    'numero' => $correlativo,
+                    'numero_completo' => "{$serie}-{$correlativo}",
+                    'cliente' => $clientData['rznSocial'] ?? '',
+                    'total' => $mtoImpVenta,
+                    'fecha' => now()->format('d/m/Y'),
+                    'enlace_pdf' => $invoice->enlace_del_pdf,
+                    'enlace_xml' => $invoice->enlace_del_xml,
+                    'aceptada_por_sunat' => $invoice->aceptada_por_sunat,
+                    'envio_estado' => $invoice->envio_estado,
+                    'procesado_instantaneo' => $this->isInstantMode(),
+                ]
+            ];
+            
+        } catch (\Throwable $e) {
+            // Log de error en base de datos
+            $this->logError(
+                'Generar Factura - Error General',
+                'Error al obtener el historial',
+                $e->getMessage(),
+                $userId
+            );
+            
+            // También log en Laravel
+            Log::error('Error al generar factura', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Guardar comprobante en la base de datos
+     */
+    protected function guardarComprobante(array $data, $response, int $tipoComprobante, ?int $userId, ?int $orderId, array $items, string $envioEstado = Invoice::ENVIO_PENDIENTE, ?int $userPackageId = null): Invoice
+    {
+        DB::beginTransaction();
+        try {
+            // Crear el comprobante
+            $invoice = Invoice::create([
+                'tipo_de_comprobante' => $tipoComprobante,
+                'serie' => $data['serie'],
+                'numero' => (int) $data['correlativo'],
+                'cliente_tipo_de_documento' => (int) $data['client']['tipoDoc'],
+                'cliente_numero_de_documento' => $data['client']['numDoc'],
+                'cliente_denominacion' => $data['client']['rznSocial'],
+                'fecha_de_emision' => now(),
+                'moneda' => 1, // PEN
+                'porcentaje_de_igv' => 18.00,
+                'total_gravada' => $data['mtoOperGravadas'],
+                'total_igv' => $data['mtoIGV'],
+                'total' => $data['mtoImpVenta'],
+                'user_id' => $userId,
+                'order_id' => $orderId,
+                'user_package_id' => $userPackageId,
+                'envio_estado' => $envioEstado,
+                'enviada_a_nubefact' => $envioEstado === Invoice::ENVIO_ENVIADA,
+                'enlace_del_pdf' => $response['enlace_del_pdf'] ?? null,
+                'enlace_del_xml' => $response['enlace_del_xml'] ?? null,
+                'enlace_del_cdr' => $response['enlace_del_cdr'] ?? null,
+                'aceptada_por_sunat' => $response['aceptada_por_sunat'] ?? false,
+                'sunat_description' => $response['sunat_description'] ?? null,
+                'sunat_responsecode' => $response['sunat_responsecode'] ?? null,
+                'codigo_hash' => $response['codigo_hash'] ?? null,
+            ]);
+            
+            // Guardar items
+            foreach ($items as $index => $item) {
+                $cantidad = $item['cantidad'] ?? 1;
+                $mtoValorUnitario = $item['mtoValorUnitario'] ?? 0;
+                $mtoPrecioUnitario = $item['mtoPrecioUnitario'] ?? ($mtoValorUnitario * 1.18);
+                $igvUnitario = $mtoPrecioUnitario - $mtoValorUnitario;
+                
+                InvoiceItem::create([
+                    'invoice_id' => $invoice->id,
+                    'unidad_de_medida' => $item['unidad'] ?? 'NIU',
+                    'codigo' => $item['codProducto'] ?? 'PROD001',
+                    'descripcion' => $item['descripcion'] ?? 'Producto',
+                    'cantidad' => $cantidad,
+                    'valor_unitario' => $mtoValorUnitario,
+                    'precio_unitario' => $mtoPrecioUnitario,
+                    'subtotal' => $mtoValorUnitario * $cantidad,
+                    'tipo_de_igv' => 10,
+                    'igv' => $igvUnitario * $cantidad,
+                    'total' => $mtoPrecioUnitario * $cantidad,
+                ]);
+            }
+            
+            DB::commit();
+            return $invoice;
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Método de prueba para boletas (mantener compatibilidad)
+     */
+    public function testBoletaMensual()
+    {
+        $clientData = [
+            'tipoDoc' => '1',
+            'numDoc' => '12345678',
+            'rznSocial' => 'JUAN PEREZ GARCIA',
+        ];
+        
+        $items = [
+            [
+                'codProducto' => 'PLAN-MENSUAL',
+                'unidad' => 'NIU',
+                'cantidad' => 1,
+                'mtoValorUnitario' => 84.75,
+                'descripcion' => 'Plan Mensual Gimnasio Premium - Acceso completo',
+                'mtoPrecioUnitario' => 100.00,
+            ],
+        ];
+        
+        return $this->generarBoleta($clientData, $items);
     }
 }

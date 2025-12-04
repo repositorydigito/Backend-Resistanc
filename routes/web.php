@@ -3,6 +3,7 @@
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\PackageController;
 use App\Http\Controllers\Client\PrivacityController;
+use App\Http\Controllers\Client\TestSunarController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -15,6 +16,10 @@ Route::get('/packages', [PackageController::class, 'index'])->name('package');
 Route::get('/test', function () {
     return 'Ruta de prueba funcionando';
 });
+
+// Rutas de prueba para Sunat
+Route::get('/test/sunat/boleta-mensual', [TestSunarController::class, 'testBoletaMensual'])->name('test.sunat.boleta-mensual');
+Route::get('/test/sunat/factura', [TestSunarController::class, 'testFactura'])->name('test.sunat.factura');
 
 // Rutas de verificación de email para clientes (completamente públicas)
 Route::get('/email/verify', function () {
