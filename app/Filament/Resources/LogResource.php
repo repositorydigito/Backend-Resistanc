@@ -93,12 +93,35 @@ class LogResource extends Resource
                             ->placeholder('Descripción detallada de lo ocurrido')
                             ->columnSpanFull(),
 
-                        Forms\Components\Textarea::make('data')
-                            ->rows(6)
+                        Forms\Components\Textarea::make('data_json')
                             ->label('Datos Adicionales')
                             ->disabled()
-                            ->placeholder('Información adicional en formato JSON u otro')
-                            ->helperText('Generalmente contiene datos técnicos o payloads')
+                            ->dehydrated(false)
+                            ->formatStateUsing(function ($record) {
+                                if (!$record || !$record->data) {
+                                    return 'Sin datos adicionales';
+                                }
+                                
+                                $data = $record->data;
+                                
+                                // Si es un array u objeto, formatear como JSON
+                                if (is_array($data) || is_object($data)) {
+                                    return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                }
+                                
+                                // Si es un string, verificar si es JSON válido
+                                if (is_string($data)) {
+                                    $decoded = json_decode($data, true);
+                                    if (json_last_error() === JSON_ERROR_NONE) {
+                                        return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                    }
+                                    return $data;
+                                }
+                                
+                                return print_r($data, true);
+                            })
+                            ->rows(15)
+                            ->helperText('Datos técnicos en formato JSON formateado')
                             ->columnSpanFull(),
                     ]),
 
