@@ -371,6 +371,19 @@ class SunatServices
             $totalImpuestos = $mtoIGV;
             $mtoImpVenta = $subTotal;
             
+            // Validar que los datos del cliente estén completos para facturas
+            if (empty($clientData['tipoDoc']) || $clientData['tipoDoc'] !== '6') {
+                throw new \Exception('Para generar una factura, el tipo de documento debe ser RUC (6). Tipo recibido: ' . ($clientData['tipoDoc'] ?? 'vacío'));
+            }
+            
+            if (empty($clientData['numDoc']) || strlen($clientData['numDoc']) !== 11) {
+                throw new \Exception('Para generar una factura, el RUC es obligatorio y debe tener 11 dígitos. RUC recibido: ' . ($clientData['numDoc'] ?? 'vacío'));
+            }
+            
+            if (empty($clientData['rznSocial'])) {
+                throw new \Exception('Para generar una factura, la razón social es obligatoria.');
+            }
+            
             // Preparar datos para Greenter
             $data = [
                 "ublVersion" => "2.1",
@@ -382,9 +395,10 @@ class SunatServices
                 "formaPago" => ['tipo' => 'Contado'],
                 "tipoMoneda" => "PEN",
                 "client" => [
-                    "tipoDoc" => $clientData['tipoDoc'] ?? '6', // RUC para facturas
-                    "numDoc" => $clientData['numDoc'] ?? '',
-                    "rznSocial" => $clientData['rznSocial'] ?? '',
+                    "tipoDoc" => $clientData['tipoDoc'], // RUC (6) para facturas - obligatorio
+                    "numDoc" => $clientData['numDoc'], // RUC - obligatorio
+                    "rznSocial" => $clientData['rznSocial'], // Razón social - obligatorio
+                    "direccion" => $clientData['direccion'] ?? '', // Dirección fiscal
                 ],
                 "mtoOperGravadas" => round($mtoOperGravadas, 2),
                 "mtoIGV" => round($mtoIGV, 2),
@@ -429,21 +443,38 @@ class SunatServices
                     ]);
                     
                 } catch (\Throwable $e) {
+                    // Extraer mensaje de error más claro
+                    $errorMessage = $e->getMessage();
+                    
+                    // Si la respuesta contiene información de error de Nubefact/Greenter
+                    if (isset($response) && is_array($response)) {
+                        if (isset($response['sunat_description']) && !empty($response['sunat_description'])) {
+                            $errorMessage = $response['sunat_description'];
+                        } elseif (isset($response['mensajeUsuario']) && !empty($response['mensajeUsuario'])) {
+                            $errorMessage = $response['mensajeUsuario'];
+                        } elseif (isset($response['error']) && !empty($response['error'])) {
+                            $errorMessage = $response['error'];
+                        }
+                    }
+                    
                     // Actualizar factura con error
                     $invoice->update([
                         'envio_estado' => Invoice::ENVIO_FALLIDA,
-                        'error_envio' => $e->getMessage(),
+                        'error_envio' => $errorMessage,
+                        'sunat_description' => (isset($response) && is_array($response)) ? ($response['sunat_description'] ?? null) : null,
+                        'sunat_responsecode' => (isset($response) && is_array($response)) ? ($response['sunat_responsecode'] ?? null) : null,
                     ]);
                     
                     // Log de error en base de datos
                     $this->logError(
                         'Generar Factura - Error',
                         "Error al generar factura {$serie}-{$correlativo}",
-                        $e->getMessage(),
+                        $errorMessage,
                         $userId
                     );
                     
-                    throw $e;
+                    // Crear excepción con mensaje mejorado
+                    throw new \Exception($errorMessage);
                 }
             } else {
                 // Modo en segundo plano: despachar job

@@ -110,6 +110,25 @@ class InvoiceResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('fecha_de_emision')
+                    ->label('Fecha')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tipo_comprobante_nombre')
+                    ->label('Tipo')
+                    ->badge()
+                    ->color(fn ($record) => $record->isFactura() ? 'info' : 'success')
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function ($q) use ($search) {
+                            if (stripos($search, 'factura') !== false) {
+                                $q->where('tipo_de_comprobante', Invoice::TIPO_FACTURA);
+                            } elseif (stripos($search, 'boleta') !== false) {
+                                $q->where('tipo_de_comprobante', Invoice::TIPO_BOLETA);
+                            }
+                        });
+                    }),
                 Tables\Columns\TextColumn::make('serie')
                     ->label('Serie')
                     ->searchable(),
@@ -117,13 +136,19 @@ class InvoiceResource extends Resource
                     ->label('Número')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('cliente_tipo_documento_nombre')
+                    ->label('Tipo Doc.')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('cliente_numero_de_documento')
+                    ->label('N° Doc.')
+                    ->searchable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('cliente_denominacion')
                     ->label('Cliente')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('fecha_de_emision')
-                    ->label('Fecha emisión')
-                    ->date()
-                    ->sortable(),
+                    ->searchable()
+                    ->limit(30),
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('PEN')

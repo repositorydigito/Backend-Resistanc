@@ -910,8 +910,28 @@ final class PackageController extends Controller
                 $invoiceType = $request->string('invoice_type', 'boleta')->value(); // Por defecto: boleta
                 
                 try {
-                    // Preparar datos del cliente
-                    $clientData = $this->prepareClientDataForInvoice($user);
+                    // Preparar datos del cliente según el tipo de comprobante
+                    $clientData = $this->prepareClientDataForInvoice($user, $invoiceType);
+                    
+                    // Validar datos del cliente si es factura
+                    if ($invoiceType === 'factura') {
+                        $validationErrors = $this->validateClientDataForInvoice($clientData);
+                        
+                        if (!empty($validationErrors)) {
+                            // Retornar error con los campos faltantes/incorrectos
+                            return response()->json([
+                                'exito' => false,
+                                'codMensaje' => 0,
+                                'mensajeUsuario' => 'No se puede generar la factura. Datos del cliente incompletos o incorrectos.',
+                                'datoAdicional' => [
+                                    'errors' => $validationErrors,
+                                    'invoice_type' => 'factura',
+                                    'user_package_id' => $userPackage->id,
+                                    'message' => 'Por favor complete o corrija los datos del cliente para generar una factura.',
+                                ]
+                            ], 200);
+                        }
+                    }
                     
                     // Preparar items del comprobante
                     $items = $this->prepareItemsForInvoice($package, $finalPrice, $originalPrice, $promoCodeUsed, $discountPercentage);
@@ -920,14 +940,7 @@ final class PackageController extends Controller
                     $sunatService = app(SunatServices::class);
                     
                     if ($invoiceType === 'factura') {
-                        // Validar que el usuario tenga RUC para factura
-                        if (!$user->is_company || !$user->document_number || strlen($user->document_number) !== 11) {
-                            // Si no tiene RUC válido, generar boleta en su lugar
-                            $invoiceData = $sunatService->generarBoleta($clientData, $items, $userId, null, $userPackage->id);
-                            $invoiceType = 'boleta'; // Actualizar tipo real generado
-                        } else {
-                            $invoiceData = $sunatService->generarFactura($clientData, $items, $userId, null, $userPackage->id);
-                        }
+                        $invoiceData = $sunatService->generarFactura($clientData, $items, $userId, null, $userPackage->id);
                     } else {
                         // Por defecto: boleta
                         $invoiceData = $sunatService->generarBoleta($clientData, $items, $userId, null, $userPackage->id);
@@ -948,16 +961,45 @@ final class PackageController extends Controller
                             'envio_estado' => $invoiceData['data']['envio_estado'] ?? null,
                             'procesado_instantaneo' => $invoiceData['data']['procesado_instantaneo'] ?? false,
                         ];
+                    } else {
+                        // Si falló la generación, agregar información del error
+                        $errorMessage = $invoiceData['error'] ?? $invoiceData['message'] ?? 'Error desconocido al generar comprobante';
+                        
+                        $responseData['invoice_error'] = [
+                            'message' => $errorMessage,
+                            'tipo' => $invoiceType,
+                        ];
                     }
                 } catch (\Exception $invoiceException) {
                     // Log del error pero no fallar la transacción
+                    $errorMessage = $invoiceException->getMessage();
+                    
+                    // Intentar extraer mensaje de error más claro si viene de Nubefact/Greenter
+                    if (strpos($errorMessage, 'sunat_description') !== false || 
+                        strpos($errorMessage, 'nubefact') !== false ||
+                        strpos($errorMessage, 'SUNAT') !== false) {
+                        // El error ya viene formateado de Nubefact
+                        $cleanMessage = $errorMessage;
+                    } else {
+                        $cleanMessage = "Error al generar {$invoiceType}: {$errorMessage}";
+                    }
+                    
                     Log::create([
                         'user_id' => $userId,
                         'action' => 'Error al generar comprobante electrónico',
                         'description' => 'Error al generar comprobante electrónico',
-                        'data' => $invoiceException->getMessage(),
+                        'data' => json_encode([
+                            'error' => $cleanMessage,
+                            'invoice_type' => $invoiceType,
+                            'trace' => $invoiceException->getTraceAsString(),
+                        ]),
                     ]);
-                    // Continuar sin fallar la compra
+                    
+                    // Agregar el error a la respuesta pero no fallar la compra
+                    $responseData['invoice_error'] = [
+                        'message' => $cleanMessage,
+                        'tipo' => $invoiceType,
+                    ];
                 }
 
                 // Agregar información de membresía si se creó
@@ -2177,15 +2219,41 @@ final class PackageController extends Controller
     /**
      * Preparar datos del cliente para el comprobante electrónico
      */
-    private function prepareClientDataForInvoice($user): array
+    private function prepareClientDataForInvoice($user, string $invoiceType = 'boleta'): array
     {
         $profile = $user->profile;
         
-        // Determinar tipo de documento y número
+        // Para facturas, todos los campos son obligatorios
+        if ($invoiceType === 'factura') {
+            // Para factura, SIEMPRE usar RUC (tipo 6)
+            $documentType = '6'; // RUC obligatorio para facturas
+            $documentNumber = $user->document_number ?? '';
+            
+            // Razón social (obligatorio para facturas)
+            $razonSocial = $user->business_name ?? $user->name ?? '';
+            
+            // Si tiene perfil y nombre completo, usarlo como respaldo
+            if (empty($razonSocial) && $profile && $profile->full_name) {
+                $razonSocial = $profile->full_name;
+            }
+            
+            // Dirección fiscal (obligatorio para facturas)
+            $direccion = $profile->fiscal_address ?? $profile->adress ?? '';
+            
+            return [
+                'tipoDoc' => $documentType,
+                'numDoc' => $documentNumber,
+                'rznSocial' => $razonSocial,
+                'direccion' => $direccion,
+                'email' => $user->email ?? '',
+            ];
+        }
+        
+        // Para boletas, los campos pueden ser opcionales
         $documentType = '1'; // DNI por defecto
         $documentNumber = $user->document_number ?? '';
         
-        // Si es empresa y tiene RUC, usar factura
+        // Si es empresa y tiene RUC
         if ($user->is_company && $user->document_number && strlen($user->document_number) === 11) {
             $documentType = '6'; // RUC
         } elseif ($user->document_type) {
@@ -2216,6 +2284,53 @@ final class PackageController extends Controller
             'direccion' => $direccion,
             'email' => $user->email,
         ];
+    }
+
+    /**
+     * Validar datos del cliente para factura
+     */
+    private function validateClientDataForInvoice(array $clientData): array
+    {
+        $errors = [];
+        
+        // Validar tipo de documento (debe ser RUC = 6)
+        if (empty($clientData['tipoDoc']) || $clientData['tipoDoc'] !== '6') {
+            $errors[] = 'El tipo de documento debe ser RUC (6) para facturas';
+        }
+        
+        // Validar número de documento (RUC debe tener 11 dígitos)
+        $ruc = trim($clientData['numDoc'] ?? '');
+        if (empty($ruc)) {
+            $errors[] = 'El número de documento (RUC) es obligatorio para facturas';
+        } elseif (strlen($ruc) !== 11) {
+            $errors[] = 'El RUC debe tener exactamente 11 dígitos';
+        } elseif (!preg_match('/^[0-9]{11}$/', $ruc)) {
+            $errors[] = 'El RUC debe contener solo números';
+        }
+        
+        // Validar razón social
+        $razonSocial = trim($clientData['rznSocial'] ?? '');
+        if (empty($razonSocial)) {
+            $errors[] = 'La razón social es obligatoria para facturas';
+        } elseif (strlen($razonSocial) < 3) {
+            $errors[] = 'La razón social debe tener al menos 3 caracteres';
+        }
+        
+        // Validar dirección
+        $direccion = trim($clientData['direccion'] ?? '');
+        if (empty($direccion)) {
+            $errors[] = 'La dirección fiscal es obligatoria para facturas';
+        } elseif (strlen($direccion) < 5) {
+            $errors[] = 'La dirección fiscal debe tener al menos 5 caracteres';
+        }
+        
+        // Validar email (opcional pero recomendado)
+        $email = trim($clientData['email'] ?? '');
+        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'El correo electrónico no es válido';
+        }
+        
+        return $errors;
     }
 
     /**

@@ -150,4 +150,19 @@ class Invoice extends Model
     {
         return "{$this->serie}-{$this->numero}";
     }
+
+    /**
+     * Obtener el nombre del tipo de documento del cliente
+     */
+    public function getClienteTipoDocumentoNombreAttribute(): string
+    {
+        return match((int) $this->cliente_tipo_de_documento) {
+            1 => 'DNI',
+            4 => 'Carné de Extranjería',
+            6 => 'RUC',
+            7 => 'Pasaporte',
+            0 => 'Sin Documento',
+            default => 'Desconocido (' . $this->cliente_tipo_de_documento . ')',
+        };
+    }
 }
