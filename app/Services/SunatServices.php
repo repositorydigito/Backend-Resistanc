@@ -24,21 +24,51 @@ class SunatServices
 
     /**
      * Guardar log de error en base de datos
+     * 
+     * @param string $action Acción que generó el error
+     * @param string $description Descripción del error
+     * @param string|array|object $errorData Mensaje de error o array/objeto con información detallada
+     * @param int|null $userId ID del usuario (opcional)
+     * @param array $additionalData Información adicional a incluir en el log
      */
-    protected function logError(string $action, string $description, string $errorMessage, ?int $userId = null): void
+    protected function logError(string $action, string $description, $errorData, ?int $userId = null, array $additionalData = []): void
     {
         try {
+            // Normalizar los datos del error
+            $normalizedData = [];
+            
+            // Si errorData es un string, convertirlo a array
+            if (is_string($errorData)) {
+                $normalizedData['error_message'] = $errorData;
+            } elseif (is_array($errorData) || is_object($errorData)) {
+                // Si es array u objeto, usar directamente
+                $normalizedData = is_object($errorData) ? (array) $errorData : $errorData;
+            } else {
+                // Cualquier otro tipo, convertirlo a string
+                $normalizedData['error_message'] = (string) $errorData;
+            }
+            
+            // Agregar información adicional si se proporciona
+            if (!empty($additionalData)) {
+                $normalizedData = array_merge($normalizedData, $additionalData);
+            }
+            
+            // Agregar timestamp para mejor rastreabilidad
+            $normalizedData['logged_at'] = now()->toIso8601String();
+            
             LogModel::create([
                 'user_id' => $userId,
                 'action' => $action,
                 'description' => $description,
-                'data' => $errorMessage,
+                'data' => $normalizedData,
             ]);
         } catch (\Exception $e) {
             // Si falla el log, al menos registrar en Laravel
             Log::error('Error al guardar log en base de datos', [
                 'error' => $e->getMessage(),
                 'original_action' => $action,
+                'original_description' => $description,
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
@@ -252,6 +282,21 @@ class SunatServices
                     ]);
                     
                 } catch (\Throwable $e) {
+                    // Obtener información detallada del error
+                    $errorDetails = [
+                        'error_message' => $e->getMessage(),
+                        'error_line' => $e->getLine(),
+                        'error_file' => $e->getFile(),
+                        'serie' => $serie,
+                        'correlativo' => $correlativo,
+                        'tipo_comprobante' => 'Boleta',
+                    ];
+                    
+                    // Si hay respuesta de Greenter, incluirla
+                    if (isset($response) && is_array($response)) {
+                        $errorDetails['greenter_response'] = $response;
+                    }
+                    
                     // Actualizar factura con error
                     $invoice->update([
                         'envio_estado' => Invoice::ENVIO_FALLIDA,
@@ -262,8 +307,13 @@ class SunatServices
                     $this->logError(
                         'Generar Boleta - Error',
                         "Error al generar boleta {$serie}-{$correlativo}",
-                        $e->getMessage(),
-                        $userId
+                        $errorDetails,
+                        $userId,
+                        [
+                            'invoice_id' => $invoice->id,
+                            'user_package_id' => $userPackageId,
+                            'order_id' => $orderId,
+                        ]
                     );
                     
                     throw $e;
@@ -296,9 +346,18 @@ class SunatServices
             // Log de error en base de datos
             $this->logError(
                 'Generar Boleta - Error General',
-                'Error al obtener el historial',
-                $e->getMessage(),
-                $userId
+                'Error al generar boleta',
+                [
+                    'error_message' => $e->getMessage(),
+                    'error_line' => $e->getLine(),
+                    'error_file' => $e->getFile(),
+                    'trace' => $e->getTraceAsString(),
+                ],
+                $userId,
+                [
+                    'user_package_id' => $userPackageId,
+                    'order_id' => $orderId,
+                ]
             );
             
             // También log en Laravel
@@ -414,7 +473,7 @@ class SunatServices
                     ],
                 ],
             ];
-            
+
             // Guardar en base de datos primero (con estado pendiente)
             $invoice = $this->guardarComprobante($data, [], Invoice::TIPO_FACTURA, $userId, $orderId, $items, Invoice::ENVIO_PENDIENTE, $userPackageId);
             
@@ -422,8 +481,8 @@ class SunatServices
             if ($this->isInstantMode()) {
                 // Modo instantáneo: procesar inmediatamente
                 try {
-                    $response = Greenter::send('invoice', $data);
-                    
+            $response = Greenter::send('invoice', $data);
+
                     // Verificar si la respuesta es válida
                     if (!is_array($response)) {
                         $response = [];
@@ -446,14 +505,41 @@ class SunatServices
                     // Extraer mensaje de error más claro
                     $errorMessage = $e->getMessage();
                     
+                    // Preparar detalles del error
+                    $errorDetails = [
+                        'error_message' => $errorMessage,
+                        'error_line' => $e->getLine(),
+                        'error_file' => $e->getFile(),
+                        'serie' => $serie,
+                        'correlativo' => $correlativo,
+                        'tipo_comprobante' => 'Factura',
+                    ];
+                    
                     // Si la respuesta contiene información de error de Nubefact/Greenter
                     if (isset($response) && is_array($response)) {
+                        // Incluir toda la respuesta de Greenter en el log
+                        $errorDetails['greenter_response'] = $response;
+                        
                         if (isset($response['sunat_description']) && !empty($response['sunat_description'])) {
                             $errorMessage = $response['sunat_description'];
+                            $errorDetails['sunat_description'] = $response['sunat_description'];
                         } elseif (isset($response['mensajeUsuario']) && !empty($response['mensajeUsuario'])) {
                             $errorMessage = $response['mensajeUsuario'];
+                            $errorDetails['mensaje_usuario'] = $response['mensajeUsuario'];
                         } elseif (isset($response['error']) && !empty($response['error'])) {
                             $errorMessage = $response['error'];
+                            $errorDetails['greenter_error'] = $response['error'];
+                        }
+                        
+                        // Agregar códigos y mensajes adicionales si existen
+                        if (isset($response['codMensaje'])) {
+                            $errorDetails['cod_mensaje'] = $response['codMensaje'];
+                        }
+                        if (isset($response['exito'])) {
+                            $errorDetails['exito'] = $response['exito'];
+                        }
+                        if (isset($response['sunat_responsecode'])) {
+                            $errorDetails['sunat_responsecode'] = $response['sunat_responsecode'];
                         }
                     }
                     
@@ -469,8 +555,18 @@ class SunatServices
                     $this->logError(
                         'Generar Factura - Error',
                         "Error al generar factura {$serie}-{$correlativo}",
-                        $errorMessage,
-                        $userId
+                        $errorDetails,
+                        $userId,
+                        [
+                            'invoice_id' => $invoice->id,
+                            'user_package_id' => $userPackageId,
+                            'order_id' => $orderId,
+                            'client_data' => [
+                                'tipoDoc' => $clientData['tipoDoc'] ?? null,
+                                'numDoc' => $clientData['numDoc'] ?? null,
+                                'rznSocial' => $clientData['rznSocial'] ?? null,
+                            ],
+                        ]
                     );
                     
                     // Crear excepción con mensaje mejorado
@@ -499,14 +595,23 @@ class SunatServices
                     'procesado_instantaneo' => $this->isInstantMode(),
                 ]
             ];
-            
+
         } catch (\Throwable $e) {
             // Log de error en base de datos
             $this->logError(
                 'Generar Factura - Error General',
-                'Error al obtener el historial',
-                $e->getMessage(),
-                $userId
+                'Error al generar factura',
+                [
+                    'error_message' => $e->getMessage(),
+                    'error_line' => $e->getLine(),
+                    'error_file' => $e->getFile(),
+                    'trace' => $e->getTraceAsString(),
+                ],
+                $userId,
+                [
+                    'user_package_id' => $userPackageId,
+                    'order_id' => $orderId,
+                ]
             );
             
             // También log en Laravel

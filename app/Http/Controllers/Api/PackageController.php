@@ -534,6 +534,53 @@ final class PackageController extends Controller
                 // El canje de shakes se realiza bajo demanda; aquí solo se registran las cantidades disponibles.
             }
 
+            // ============================================
+            // VALIDAR FACTURACIÓN ANTES DE PROCESAR PAGO
+            // ============================================
+            // Validar los datos de facturación ANTES de procesar el pago en Stripe
+            // Si la facturación no puede generarse, NO se debe cobrar
+            $invoiceType = $request->string('invoice_type', 'boleta')->value(); // Por defecto: boleta
+            $clientData = $this->prepareClientDataForInvoice($user, $invoiceType);
+            
+            // Si es factura, validar que tenga todos los datos necesarios
+            if ($invoiceType === 'factura') {
+                $validationErrors = $this->validateClientDataForInvoice($clientData);
+                
+                if (!empty($validationErrors)) {
+                    // Guardar log del error
+                    Log::create([
+                        'user_id' => $userId,
+                        'action' => 'Validación de factura fallida - Datos incompletos (ANTES del pago)',
+                        'description' => 'No se puede generar la factura. Datos del cliente incompletos o incorrectos. El pago NO se procesará.',
+                        'data' => [
+                            'errors' => $validationErrors,
+                            'invoice_type' => 'factura',
+                            'user_id' => $userId,
+                            'package_id' => $package->id,
+                            'client_data' => [
+                                'tipoDoc' => $clientData['tipoDoc'] ?? null,
+                                'numDoc' => $clientData['numDoc'] ?? null,
+                                'rznSocial' => $clientData['rznSocial'] ?? null,
+                                'direccion' => $clientData['direccion'] ?? null,
+                            ],
+                            'message' => 'Por favor complete o corrija los datos del cliente para generar una factura.',
+                        ],
+                    ]);
+                    
+                    // Retornar error ANTES de procesar el pago
+                    return response()->json([
+                        'exito' => false,
+                        'codMensaje' => 0,
+                        'mensajeUsuario' => 'No se puede procesar la compra. Datos del cliente incompletos o incorrectos para generar la factura.',
+                        'datoAdicional' => [
+                            'errors' => $validationErrors,
+                            'invoice_type' => 'factura',
+                            'message' => 'Por favor complete o corrija los datos del cliente para generar una factura. El pago no se ha procesado.',
+                        ]
+                    ], 200);
+                }
+            }
+
             // Crear el UserPackage usando transacción
             DB::beginTransaction();
             try {
@@ -907,32 +954,8 @@ final class PackageController extends Controller
                 ];
 
                 // Generar comprobante electrónico (boleta o factura)
-                $invoiceType = $request->string('invoice_type', 'boleta')->value(); // Por defecto: boleta
-                
+                // NOTA: La validación de datos ya se hizo ANTES del pago, así que aquí solo generamos
                 try {
-                    // Preparar datos del cliente según el tipo de comprobante
-                    $clientData = $this->prepareClientDataForInvoice($user, $invoiceType);
-                    
-                    // Validar datos del cliente si es factura
-                    if ($invoiceType === 'factura') {
-                        $validationErrors = $this->validateClientDataForInvoice($clientData);
-                        
-                        if (!empty($validationErrors)) {
-                            // Retornar error con los campos faltantes/incorrectos
-                            return response()->json([
-                                'exito' => false,
-                                'codMensaje' => 0,
-                                'mensajeUsuario' => 'No se puede generar la factura. Datos del cliente incompletos o incorrectos.',
-                                'datoAdicional' => [
-                                    'errors' => $validationErrors,
-                                    'invoice_type' => 'factura',
-                                    'user_package_id' => $userPackage->id,
-                                    'message' => 'Por favor complete o corrija los datos del cliente para generar una factura.',
-                                ]
-                            ], 200);
-                        }
-                    }
-                    
                     // Preparar items del comprobante
                     $items = $this->prepareItemsForInvoice($package, $finalPrice, $originalPrice, $promoCodeUsed, $discountPercentage);
                     
@@ -971,7 +994,12 @@ final class PackageController extends Controller
                         ];
                     }
                 } catch (\Exception $invoiceException) {
-                    // Log del error pero no fallar la transacción
+                    // IMPORTANTE: Si la generación de factura falla DESPUÉS del pago exitoso,
+                    // no revertimos la compra porque el pago ya se procesó en Stripe.
+                    // La factura quedará pendiente y se puede reintentar después mediante
+                    // el comando programado o manualmente desde el admin.
+                    // NOTA: La validación de datos de factura se hace ANTES del pago.
+                    
                     $errorMessage = $invoiceException->getMessage();
                     
                     // Intentar extraer mensaje de error más claro si viene de Nubefact/Greenter
@@ -986,19 +1014,23 @@ final class PackageController extends Controller
                     
                     Log::create([
                         'user_id' => $userId,
-                        'action' => 'Error al generar comprobante electrónico',
-                        'description' => 'Error al generar comprobante electrónico',
-                        'data' => json_encode([
+                        'action' => 'Error al generar comprobante electrónico (DESPUÉS del pago)',
+                        'description' => 'Error al generar comprobante electrónico después de procesar el pago exitosamente',
+                        'data' => [
                             'error' => $cleanMessage,
                             'invoice_type' => $invoiceType,
+                            'user_package_id' => $userPackage->id,
+                            'package_id' => $package->id,
                             'trace' => $invoiceException->getTraceAsString(),
-                        ]),
+                            'note' => 'El pago ya se procesó exitosamente en Stripe. La factura quedará pendiente y se puede reintentar después.',
+                        ],
                     ]);
                     
                     // Agregar el error a la respuesta pero no fallar la compra
                     $responseData['invoice_error'] = [
                         'message' => $cleanMessage,
                         'tipo' => $invoiceType,
+                        'note' => 'La compra se completó exitosamente, pero la factura no pudo generarse. Se puede reintentar después.',
                     ];
                 }
 
