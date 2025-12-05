@@ -299,6 +299,12 @@ final class PackageController extends Controller
                 'promo_code' => 'sometimes|string|max:50',
                 'notes' => 'sometimes|string|max:500',
                 'invoice_type' => 'sometimes|string|in:boleta,factura', // Tipo de comprobante (por defecto: boleta)
+                // Datos de facturación (requeridos solo si invoice_type es 'factura')
+                'invoice_data' => 'required_if:invoice_type,factura|array',
+                'invoice_data.ruc' => 'required_if:invoice_type,factura|string|size:11|regex:/^[0-9]{11}$/',
+                'invoice_data.razon_social' => 'required_if:invoice_type,factura|string|min:3|max:255',
+                'invoice_data.direccion_fiscal' => 'required_if:invoice_type,factura|string|min:5|max:500',
+                'invoice_data.email' => 'sometimes|email|max:255',
             ]);
 
             $userId = Auth::id();
@@ -540,7 +546,7 @@ final class PackageController extends Controller
             // Validar los datos de facturación ANTES de procesar el pago en Stripe
             // Si la facturación no puede generarse, NO se debe cobrar
             $invoiceType = $request->string('invoice_type', 'boleta')->value(); // Por defecto: boleta
-            $clientData = $this->prepareClientDataForInvoice($user, $invoiceType);
+            $clientData = $this->prepareClientDataForInvoice($user, $invoiceType, $request);
             
             // Si es factura, validar que tenga todos los datos necesarios
             if ($invoiceType === 'factura') {
@@ -970,7 +976,7 @@ final class PackageController extends Controller
                     }
                     
                     // Si la generación fue exitosa, agregar a la respuesta
-                    if ($invoiceData['success'] ?? false) {
+                    if (isset($invoiceData['success']) && $invoiceData['success'] === true) {
                         $responseData['invoice'] = [
                             'id' => $invoiceData['data']['id'] ?? null,
                             'serie' => $invoiceData['data']['serie'] ?? null,
@@ -985,12 +991,13 @@ final class PackageController extends Controller
                             'procesado_instantaneo' => $invoiceData['data']['procesado_instantaneo'] ?? false,
                         ];
                     } else {
-                        // Si falló la generación, agregar información del error
+                        // Si falló la generación (pero no lanzó excepción), agregar información del error
                         $errorMessage = $invoiceData['error'] ?? $invoiceData['message'] ?? 'Error desconocido al generar comprobante';
                         
                         $responseData['invoice_error'] = [
                             'message' => $errorMessage,
                             'tipo' => $invoiceType,
+                            'note' => 'La compra se completó exitosamente, pero la factura no pudo generarse. Se puede reintentar después.',
                         ];
                     }
                 } catch (\Exception $invoiceException) {
@@ -2251,7 +2258,7 @@ final class PackageController extends Controller
     /**
      * Preparar datos del cliente para el comprobante electrónico
      */
-    private function prepareClientDataForInvoice($user, string $invoiceType = 'boleta'): array
+    private function prepareClientDataForInvoice($user, string $invoiceType = 'boleta', ?Request $request = null): array
     {
         $profile = $user->profile;
         
@@ -2259,17 +2266,28 @@ final class PackageController extends Controller
         if ($invoiceType === 'factura') {
             // Para factura, SIEMPRE usar RUC (tipo 6)
             $documentType = '6'; // RUC obligatorio para facturas
-            $documentNumber = $user->document_number ?? '';
             
-            // Razón social (obligatorio para facturas)
+            // Si el request tiene datos de facturación, usarlos (vienen del frontend)
+            if ($request && $request->has('invoice_data')) {
+                $invoiceData = $request->input('invoice_data');
+                
+                return [
+                    'tipoDoc' => $documentType, // Siempre '6' para facturas
+                    'numDoc' => $invoiceData['ruc'] ?? '',
+                    'rznSocial' => $invoiceData['razon_social'] ?? '',
+                    'direccion' => $invoiceData['direccion_fiscal'] ?? '',
+                    'email' => $invoiceData['email'] ?? $user->email ?? '',
+                ];
+            }
+            
+            // Fallback: intentar obtener de la BD (por si acaso)
+            $documentNumber = $user->document_number ?? '';
             $razonSocial = $user->business_name ?? $user->name ?? '';
             
-            // Si tiene perfil y nombre completo, usarlo como respaldo
             if (empty($razonSocial) && $profile && $profile->full_name) {
                 $razonSocial = $profile->full_name;
             }
             
-            // Dirección fiscal (obligatorio para facturas)
             $direccion = $profile->fiscal_address ?? $profile->adress ?? '';
             
             return [

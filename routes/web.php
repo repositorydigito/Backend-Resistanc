@@ -20,6 +20,7 @@ Route::get('/test', function () {
 // Rutas de prueba para Sunat
 Route::get('/test/sunat/boleta-mensual', [TestSunarController::class, 'testBoletaMensual'])->name('test.sunat.boleta-mensual');
 Route::get('/test/sunat/factura', [TestSunarController::class, 'testFactura'])->name('test.sunat.factura');
+Route::get('/test/sunat/factura-digito-peru', [TestSunarController::class, 'testFacturaDigitoPeru'])->name('test.sunat.factura-digito-peru');
 
 // Rutas de verificación de email para clientes (completamente públicas)
 Route::get('/email/verify', function () {

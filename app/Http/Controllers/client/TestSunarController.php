@@ -47,4 +47,30 @@ class TestSunarController extends Controller
         
         return $this->sunatService->generarFactura($clientData, $items);
     }
+
+    /**
+     * Ruta de prueba para generar una factura a DIGITO PERU S.A.C.
+     */
+    public function testFacturaDigitoPeru()
+    {
+        $clientData = [
+            'tipoDoc' => '6', // RUC
+            'numDoc' => '20604813418',
+            'rznSocial' => 'DIGITO PERU S.A.C.',
+            'direccion' => 'AV. VICTOR ANDRES BELAUNDE NRO. 280 DPTO. 701 INT. C URB. EL ROSARIO LIMA - LIMA - SAN ISIDRO',
+        ];
+        
+        $items = [
+            [
+                'codProducto' => 'SERVICIO-001',
+                'unidad' => 'NIU',
+                'cantidad' => 1,
+                'mtoValorUnitario' => 84.75,
+                'descripcion' => 'Servicio Premium - Acceso completo',
+                'mtoPrecioUnitario' => 100.00,
+            ],
+        ];
+        
+        return $this->sunatService->generarFactura($clientData, $items);
+    }
 }
