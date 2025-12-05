@@ -641,6 +641,8 @@ class SunatServices
                 'cliente_tipo_de_documento' => (int) $data['client']['tipoDoc'],
                 'cliente_numero_de_documento' => $data['client']['numDoc'],
                 'cliente_denominacion' => $data['client']['rznSocial'],
+                'cliente_direccion' => $data['client']['direccion'] ?? null,
+                'cliente_email' => $data['client']['email'] ?? null,
                 'fecha_de_emision' => now(),
                 'moneda' => 1, // PEN
                 'porcentaje_de_igv' => 18.00,

@@ -109,6 +109,9 @@ class InvoiceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->with('items');
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('fecha_de_emision')
                     ->label('Fecha')
@@ -149,6 +152,13 @@ class InvoiceResource extends Resource
                     ->label('Cliente')
                     ->searchable()
                     ->limit(30),
+                Tables\Columns\TextColumn::make('items_count')
+                    ->label('Items')
+                    ->counts('items')
+                    ->badge()
+                    ->color('info')
+                    ->toggleable()
+                    ->visible(fn($record) => $record->items_count > 0),
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('PEN')
