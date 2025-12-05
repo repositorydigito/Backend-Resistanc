@@ -293,7 +293,7 @@ final class PackageController extends Controller
     {
         try {
             // Validar datos de entrada
-            $request->validate([
+            $validationRules = [
                 'package_id' => 'required|integer|exists:packages,id',
                 'payment_method_id' => 'required|string', // ID de Stripe directamente
                 'promo_code' => 'sometimes|string|max:50',
@@ -304,8 +304,14 @@ final class PackageController extends Controller
                 'invoice_data.ruc' => 'required_if:invoice_type,factura|string|size:11|regex:/^[0-9]{11}$/',
                 'invoice_data.razon_social' => 'required_if:invoice_type,factura|string|min:3|max:255',
                 'invoice_data.direccion_fiscal' => 'required_if:invoice_type,factura|string|min:5|max:500',
-                'invoice_data.email' => 'sometimes|email|max:255',
-            ]);
+            ];
+            
+            // Validar email solo si está presente y no está vacío
+            if ($request->has('invoice_data.email') && !empty($request->input('invoice_data.email'))) {
+                $validationRules['invoice_data.email'] = 'email|max:255';
+            }
+            
+            $request->validate($validationRules);
 
             $userId = Auth::id();
 
